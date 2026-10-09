@@ -1,0 +1,1187 @@
+{
+ "subsistemas": {
+  "Arranque y bucle principal": {
+   "ficheros": 12,
+   "codigo": 1764,
+   "sdl": 68,
+   "lua_api": 212,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 4
+  },
+  "Textos y codificaciones": {
+   "ficheros": 6,
+   "codigo": 3576,
+   "sdl": 0,
+   "lua_api": 304,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  },
+  "Ficheros (ISO, RNC, lfs)": {
+   "ficheros": 8,
+   "codigo": 944,
+   "sdl": 0,
+   "lua_api": 95,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  },
+  "Enlace C++ ↔ Lua (registro de clases)": {
+   "ficheros": 8,
+   "codigo": 1288,
+   "sdl": 0,
+   "lua_api": 396,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  },
+  "Música (MIDI)": {
+   "ficheros": 5,
+   "codigo": 1021,
+   "sdl": 4,
+   "lua_api": 54,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 1
+  },
+  "Guardado de partidas": {
+   "ficheros": 4,
+   "codigo": 1284,
+   "sdl": 0,
+   "lua_api": 425,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  },
+  "Números aleatorios": {
+   "ficheros": 1,
+   "codigo": 106,
+   "sdl": 0,
+   "lua_api": 34,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  },
+  "Sonido (efectos)": {
+   "ficheros": 4,
+   "codigo": 910,
+   "sdl": 95,
+   "lua_api": 170,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 4
+  },
+  "Gráficos: formatos, animaciones y fuentes": {
+   "ficheros": 7,
+   "codigo": 4092,
+   "sdl": 3,
+   "lua_api": 661,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 2
+  },
+  "Gráficos: render con SDL": {
+   "ficheros": 2,
+   "codigo": 1609,
+   "sdl": 196,
+   "lua_api": 6,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 2
+  },
+  "Mapa y superposiciones": {
+   "ficheros": 5,
+   "codigo": 3000,
+   "sdl": 0,
+   "lua_api": 357,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  },
+  "Vídeo (FMV)": {
+   "ficheros": 3,
+   "codigo": 962,
+   "sdl": 59,
+   "lua_api": 36,
+   "ffmpeg": 148,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 3
+  },
+  "Pathfinding": {
+   "ficheros": 2,
+   "codigo": 703,
+   "sdl": 0,
+   "lua_api": 29,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "ficheros_con_sdl": 0
+  }
+ },
+ "ficheros": [
+  {
+   "fichero": "CorsixTH/Src/bootstrap.cpp",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 324,
+   "codigo": 268,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "th_lua.h"
+   ],
+   "sdl": 0,
+   "lua_api": 8,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/bootstrap.h",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 33,
+   "codigo": 6,
+   "includes": [
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 2,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/config.h.in",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 118,
+   "codigo": 49,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/cp437_table.h",
+   "subsistema": "Textos y codificaciones",
+   "lineas": 28,
+   "codigo": 22,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/cp936_table.h",
+   "subsistema": "Textos y codificaciones",
+   "lineas": 2787,
+   "codigo": 2778,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/cpmik_table.h",
+   "subsistema": "Textos y codificaciones",
+   "lineas": 28,
+   "codigo": 22,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/iso_fs.cpp",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 597,
+   "codigo": 375,
+   "includes": [
+    "iso_fs.h",
+    "th.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/iso_fs.h",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 160,
+   "codigo": 46,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/lua.hpp",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 74,
+   "codigo": 35,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 20,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/lua_rnc.cpp",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 80,
+   "codigo": 50,
+   "includes": [
+    "config.h",
+    "lua_rnc.h",
+    "rnc.h",
+    "th_lua.h"
+   ],
+   "sdl": 0,
+   "lua_api": 16,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/lua_rnc.h",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 8,
+   "codigo": 5,
+   "includes": [
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 1,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/lua_sdl.h",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 49,
+   "codigo": 13,
+   "includes": [
+    "lua.hpp"
+   ],
+   "sdl": 10,
+   "lua_api": 2,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/main.cpp",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 231,
+   "codigo": 165,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "lua_rnc.h",
+    "lua_sdl.h",
+    "persist_lua.h",
+    "th_lua.h",
+    "whereami.h"
+   ],
+   "sdl": 0,
+   "lua_api": 47,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/main.h",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 64,
+   "codigo": 8,
+   "includes": [
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 8,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/midi_player.cpp",
+   "subsistema": "Música (MIDI)",
+   "lineas": 608,
+   "codigo": 411,
+   "includes": [
+    "config.h",
+    "lua_sdl.h",
+    "midi_player.h",
+    "xmi2mid.h"
+   ],
+   "sdl": 4,
+   "lua_api": 1,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/midi_player.h",
+   "subsistema": "Música (MIDI)",
+   "lineas": 309,
+   "codigo": 87,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/persist_lua.cpp",
+   "subsistema": "Guardado de partidas",
+   "lineas": 1342,
+   "codigo": 1011,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "persist_lua.h",
+    "th_lua.h"
+   ],
+   "sdl": 0,
+   "lua_api": 405,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/persist_lua.h",
+   "subsistema": "Guardado de partidas",
+   "lineas": 158,
+   "codigo": 100,
+   "includes": [
+    "config.h",
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 13,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/random.c",
+   "subsistema": "Números aleatorios",
+   "lineas": 203,
+   "codigo": 106,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 34,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/run_length_encoder.cpp",
+   "subsistema": "Guardado de partidas",
+   "lineas": 180,
+   "codigo": 131,
+   "includes": [
+    "persist_lua.h",
+    "run_length_encoder.h"
+   ],
+   "sdl": 0,
+   "lua_api": 2,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/run_length_encoder.h",
+   "subsistema": "Guardado de partidas",
+   "lineas": 120,
+   "codigo": 42,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 5,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/sdl_audio.cpp",
+   "subsistema": "Sonido (efectos)",
+   "lineas": 328,
+   "codigo": 244,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "lua_sdl.h",
+    "th_lua.h",
+    "xmi2mid.h"
+   ],
+   "sdl": 40,
+   "lua_api": 78,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/sdl_core.cpp",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 490,
+   "codigo": 411,
+   "includes": [
+    "lua.hpp",
+    "lua_sdl.h",
+    "sdl_core.h",
+    "th_lua.h"
+   ],
+   "sdl": 46,
+   "lua_api": 106,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/sdl_core.h",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 33,
+   "codigo": 8,
+   "includes": [
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 4,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/sdl_wm.cpp",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 77,
+   "codigo": 42,
+   "includes": [
+    "lua.hpp",
+    "resource.h",
+    "th_lua.h"
+   ],
+   "sdl": 8,
+   "lua_api": 8,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th.cpp",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 232,
+   "codigo": 166,
+   "includes": [
+    "config.h",
+    "cp437_table.h",
+    "cp936_table.h",
+    "cpmik_table.h",
+    "th.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th.h",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 122,
+   "codigo": 45,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx.cpp",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 1882,
+   "codigo": 1422,
+   "includes": [
+    "config.h",
+    "persist_lua.h",
+    "th_gfx.h",
+    "th_gfx_sdl.h",
+    "th_lua.h",
+    "th_map.h",
+    "th_sound.h"
+   ],
+   "sdl": 0,
+   "lua_api": 35,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx.h",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 675,
+   "codigo": 314,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "th.h",
+    "th_gfx_common.h",
+    "th_gfx_sdl.h",
+    "th_lua.h"
+   ],
+   "sdl": 0,
+   "lua_api": 7,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx_common.h",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 39,
+   "codigo": 9,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx_font.cpp",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 791,
+   "codigo": 637,
+   "includes": [
+    "config.h",
+    "th_gfx.h",
+    "th_gfx_font.h",
+    "th_strings.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx_font.h",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 370,
+   "codigo": 125,
+   "includes": [
+    "config.h",
+    "th_gfx_sdl.h"
+   ],
+   "sdl": 2,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx_sdl.cpp",
+   "subsistema": "Gráficos: render con SDL",
+   "lineas": 1778,
+   "codigo": 1306,
+   "includes": [
+    "config.h",
+    "persist_lua.h",
+    "th_gfx.h",
+    "th_gfx_common.h",
+    "th_gfx_font.h",
+    "th_gfx_sdl.h"
+   ],
+   "sdl": 175,
+   "lua_api": 2,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_gfx_sdl.h",
+   "subsistema": "Gráficos: render con SDL",
+   "lineas": 750,
+   "codigo": 303,
+   "includes": [
+    "config.h",
+    "th_gfx_common.h"
+   ],
+   "sdl": 21,
+   "lua_api": 4,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua.cpp",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 467,
+   "codigo": 368,
+   "includes": [
+    "api_version.lua",
+    "bootstrap.h",
+    "config.h",
+    "lua.hpp",
+    "th.h",
+    "th_lua.h",
+    "th_lua_internal.h"
+   ],
+   "sdl": 0,
+   "lua_api": 189,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua.h",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 549,
+   "codigo": 396,
+   "includes": [
+    "config.h",
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 117,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_anims.cpp",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 804,
+   "codigo": 640,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "persist_lua.h",
+    "th.h",
+    "th_gfx.h",
+    "th_lua.h",
+    "th_lua_internal.h",
+    "th_map.h"
+   ],
+   "sdl": 0,
+   "lua_api": 256,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_gfx.cpp",
+   "subsistema": "Gráficos: formatos, animaciones y fuentes",
+   "lineas": 1201,
+   "codigo": 945,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "persist_lua.h",
+    "th_gfx.h",
+    "th_gfx_font.h",
+    "th_gfx_sdl.h",
+    "th_lua.h",
+    "th_lua_internal.h"
+   ],
+   "sdl": 1,
+   "lua_api": 363,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_internal.h",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 217,
+   "codigo": 120,
+   "includes": [
+    "config.h",
+    "th_lua.h"
+   ],
+   "sdl": 0,
+   "lua_api": 56,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_iso.cpp",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 189,
+   "codigo": 119,
+   "includes": [
+    "config.h",
+    "iso_fs.h",
+    "lua.hpp",
+    "th_lua.h",
+    "th_lua_internal.h"
+   ],
+   "sdl": 0,
+   "lua_api": 51,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_lfs_ext.cpp",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 99,
+   "codigo": 67,
+   "includes": [
+    "lua.hpp",
+    "th_lua.h",
+    "th_lua_internal.h"
+   ],
+   "sdl": 0,
+   "lua_api": 27,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_map.cpp",
+   "subsistema": "Mapa y superposiciones",
+   "lineas": 1138,
+   "codigo": 925,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "th_gfx.h",
+    "th_lua.h",
+    "th_lua_internal.h",
+    "th_map.h",
+    "th_pathfind.h"
+   ],
+   "sdl": 0,
+   "lua_api": 338,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_midi.cpp",
+   "subsistema": "Música (MIDI)",
+   "lineas": 261,
+   "codigo": 194,
+   "includes": [
+    "lua.hpp",
+    "midi_player.h",
+    "th_lua.h",
+    "th_lua_internal.h"
+   ],
+   "sdl": 0,
+   "lua_api": 53,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_movie.cpp",
+   "subsistema": "Vídeo (FMV)",
+   "lineas": 182,
+   "codigo": 130,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "th_gfx_sdl.h",
+    "th_lua.h",
+    "th_lua_internal.h",
+    "th_movie.h"
+   ],
+   "sdl": 2,
+   "lua_api": 35,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_sound.cpp",
+   "subsistema": "Sonido (efectos)",
+   "lineas": 386,
+   "codigo": 301,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "lua_sdl.h",
+    "th_lua.h",
+    "th_lua_internal.h",
+    "th_sound.h"
+   ],
+   "sdl": 22,
+   "lua_api": 92,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_strings.cpp",
+   "subsistema": "Textos y codificaciones",
+   "lineas": 695,
+   "codigo": 470,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "persist_lua.h",
+    "th_lua.h",
+    "th_lua_internal.h"
+   ],
+   "sdl": 0,
+   "lua_api": 304,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_ui.cpp",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 185,
+   "codigo": 138,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "th_gfx_sdl.h",
+    "th_lua.h",
+    "th_lua_internal.h",
+    "th_lua_ui.h",
+    "th_map.h"
+   ],
+   "sdl": 0,
+   "lua_api": 14,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_lua_ui.h",
+   "subsistema": "Enlace C++ ↔ Lua (registro de clases)",
+   "lineas": 38,
+   "codigo": 20,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_map.cpp",
+   "subsistema": "Mapa y superposiciones",
+   "lineas": 1851,
+   "codigo": 1520,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "persist_lua.h",
+    "run_length_encoder.h",
+    "th.h",
+    "th_gfx.h",
+    "th_gfx_sdl.h",
+    "th_lua.h",
+    "th_map.h",
+    "th_map_overlays.h"
+   ],
+   "sdl": 0,
+   "lua_api": 15,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_map.h",
+   "subsistema": "Mapa y superposiciones",
+   "lineas": 618,
+   "codigo": 329,
+   "includes": [
+    "config.h",
+    "th.h"
+   ],
+   "sdl": 0,
+   "lua_api": 4,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_map_overlays.cpp",
+   "subsistema": "Mapa y superposiciones",
+   "lineas": 201,
+   "codigo": 157,
+   "includes": [
+    "th_gfx_font.h",
+    "th_gfx_sdl.h",
+    "th_map.h",
+    "th_map_overlays.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_map_overlays.h",
+   "subsistema": "Mapa y superposiciones",
+   "lineas": 112,
+   "codigo": 69,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_movie.cpp",
+   "subsistema": "Vídeo (FMV)",
+   "lineas": 808,
+   "codigo": 643,
+   "includes": [
+    "config.h",
+    "lua_sdl.h",
+    "th_movie.h"
+   ],
+   "sdl": 44,
+   "lua_api": 1,
+   "ffmpeg": 97,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_movie.h",
+   "subsistema": "Vídeo (FMV)",
+   "lineas": 495,
+   "codigo": 189,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 13,
+   "lua_api": 0,
+   "ffmpeg": 51,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_pathfind.cpp",
+   "subsistema": "Pathfinding",
+   "lineas": 673,
+   "codigo": 551,
+   "includes": [
+    "config.h",
+    "lua.hpp",
+    "persist_lua.h",
+    "th_map.h",
+    "th_pathfind.h"
+   ],
+   "sdl": 0,
+   "lua_api": 21,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_pathfind.h",
+   "subsistema": "Pathfinding",
+   "lineas": 325,
+   "codigo": 152,
+   "includes": [
+    "config.h",
+    "lua.hpp"
+   ],
+   "sdl": 0,
+   "lua_api": 8,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_sound.cpp",
+   "subsistema": "Sonido (efectos)",
+   "lineas": 386,
+   "codigo": 300,
+   "includes": [
+    "config.h",
+    "th.h",
+    "th_sound.h"
+   ],
+   "sdl": 29,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_sound.h",
+   "subsistema": "Sonido (efectos)",
+   "lineas": 186,
+   "codigo": 65,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 4,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "CorsixTH/Src/th_strings.cpp",
+   "subsistema": "Textos y codificaciones",
+   "lineas": 289,
+   "codigo": 271,
+   "includes": [
+    "config.h",
+    "th_strings.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/th_strings.h",
+   "subsistema": "Textos y codificaciones",
+   "lineas": 23,
+   "codigo": 13,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/xmi2mid.cpp",
+   "subsistema": "Música (MIDI)",
+   "lineas": 392,
+   "codigo": 290,
+   "includes": [
+    "config.h",
+    "xmi2mid.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/Src/xmi2mid.h",
+   "subsistema": "Música (MIDI)",
+   "lineas": 92,
+   "codigo": 39,
+   "includes": [
+    "config.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "CorsixTH/SrcUnshared/main.cpp",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 181,
+   "codigo": 118,
+   "includes": [
+    "bootstrap.h",
+    "config.h",
+    "lua.hpp",
+    "main.h",
+    "sdl_core.h",
+    "th_lua.h"
+   ],
+   "sdl": 4,
+   "lua_api": 27,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": true
+  },
+  {
+   "fichero": "libs/rnc/rnc.cpp",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 450,
+   "codigo": 265,
+   "includes": [
+    "rnc.h"
+   ],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "libs/rnc/rnc.h",
+   "subsistema": "Ficheros (ISO, RNC, lfs)",
+   "lineas": 47,
+   "codigo": 17,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "libs/whereami/whereami.c",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 804,
+   "codigo": 657,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  },
+  {
+   "fichero": "libs/whereami/whereami.h",
+   "subsistema": "Arranque y bucle principal",
+   "lineas": 67,
+   "codigo": 19,
+   "includes": [],
+   "sdl": 0,
+   "lua_api": 0,
+   "ffmpeg": 0,
+   "fluidsynth": 0,
+   "incluye_sdl": false
+  }
+ ]
+}

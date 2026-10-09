@@ -1,0 +1,2244 @@
+{
+  "batch": 30,
+  "cpu_s": 5.14871,
+  "every": 1000,
+  "ficheros_inclusivo": [
+    {
+      "clave": "bench/lib/th64.lua",
+      "muestras": 79985
+    },
+    {
+      "clave": "app.lua",
+      "muestras": 79957
+    },
+    {
+      "clave": "world.lua",
+      "muestras": 78632
+    },
+    {
+      "clave": "entities/humanoids/staff.lua",
+      "muestras": 49336
+    },
+    {
+      "clave": "entities/humanoid.lua",
+      "muestras": 48802
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua",
+      "muestras": 30483
+    },
+    {
+      "clave": "entities/humanoids/patient.lua",
+      "muestras": 22581
+    },
+    {
+      "clave": "entity.lua",
+      "muestras": 16048
+    },
+    {
+      "clave": "entity_map.lua",
+      "muestras": 15179
+    },
+    {
+      "clave": "humanoid_actions/walk.lua",
+      "muestras": 7623
+    },
+    {
+      "clave": "class.lua",
+      "muestras": 7222
+    },
+    {
+      "clave": "utility.lua",
+      "muestras": 7045
+    },
+    {
+      "clave": "hospital.lua",
+      "muestras": 3208
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua",
+      "muestras": 2227
+    },
+    {
+      "clave": "humanoid_actions/queue.lua",
+      "muestras": 2156
+    },
+    {
+      "clave": "room.lua",
+      "muestras": 2070
+    },
+    {
+      "clave": "epidemic.lua",
+      "muestras": 2065
+    },
+    {
+      "clave": "game_ui.lua",
+      "muestras": 1383
+    },
+    {
+      "clave": "humanoid_actions/meander.lua",
+      "muestras": 1375
+    },
+    {
+      "clave": "queue.lua",
+      "muestras": 1300
+    },
+    {
+      "clave": "rooms/gp.lua",
+      "muestras": 1186
+    },
+    {
+      "clave": "window.lua",
+      "muestras": 1037
+    },
+    {
+      "clave": "calls_dispatcher.lua",
+      "muestras": 973
+    },
+    {
+      "clave": "humanoid_actions/idle.lua",
+      "muestras": 940
+    },
+    {
+      "clave": "humanoid_actions/answer_call.lua",
+      "muestras": 714
+    },
+    {
+      "clave": "entities/humanoids/staff/handyman.lua",
+      "muestras": 686
+    },
+    {
+      "clave": "map.lua",
+      "muestras": 646
+    },
+    {
+      "clave": "humanoid_actions/seek_room.lua",
+      "muestras": 550
+    },
+    {
+      "clave": "ui.lua",
+      "muestras": 532
+    },
+    {
+      "clave": "humanoid_actions/sweep_floor.lua",
+      "muestras": 521
+    },
+    {
+      "clave": "hospitals/player_hospital.lua",
+      "muestras": 362
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua",
+      "muestras": 357
+    },
+    {
+      "clave": "humanoid_actions/use_staffroom.lua",
+      "muestras": 191
+    },
+    {
+      "clave": "humanoid_actions/seek_reception.lua",
+      "muestras": 176
+    },
+    {
+      "clave": "humanoid_action.lua",
+      "muestras": 159
+    },
+    {
+      "clave": "cheats.lua",
+      "muestras": 156
+    },
+    {
+      "clave": "staff_profile.lua",
+      "muestras": 149
+    },
+    {
+      "clave": "humanoid_actions/call_checkpoint.lua",
+      "muestras": 132
+    },
+    {
+      "clave": "objects/litter.lua",
+      "muestras": 127
+    },
+    {
+      "clave": "dialogs/menu.lua",
+      "muestras": 127
+    },
+    {
+      "clave": "string_extensions.lua",
+      "muestras": 99
+    },
+    {
+      "clave": "entities/object.lua",
+      "muestras": 94
+    },
+    {
+      "clave": "objects/reception_desk.lua",
+      "muestras": 87
+    },
+    {
+      "clave": "humanoid_actions/multi_use_object.lua",
+      "muestras": 83
+    },
+    {
+      "clave": "objects/door.lua",
+      "muestras": 73
+    },
+    {
+      "clave": "humanoid_actions/vomit.lua",
+      "muestras": 71
+    },
+    {
+      "clave": "date.lua",
+      "muestras": 71
+    },
+    {
+      "clave": "objects/doors/entrance_right_door.lua",
+      "muestras": 69
+    },
+    {
+      "clave": "announcer.lua",
+      "muestras": 68
+    },
+    {
+      "clave": "dialogs/message.lua",
+      "muestras": 66
+    },
+    {
+      "clave": "humanoid_actions/seek_toilets.lua",
+      "muestras": 62
+    },
+    {
+      "clave": "rooms/psych.lua",
+      "muestras": 62
+    },
+    {
+      "clave": "graphics.lua",
+      "muestras": 61
+    },
+    {
+      "clave": "rooms/operating_theatre.lua",
+      "muestras": 57
+    },
+    {
+      "clave": "humanoid_actions/pee.lua",
+      "muestras": 42
+    },
+    {
+      "clave": "dialogs/adviser.lua",
+      "muestras": 41
+    },
+    {
+      "clave": "rooms/toilets.lua",
+      "muestras": 38
+    },
+    {
+      "clave": "objects/doors/swing_door_right.lua",
+      "muestras": 37
+    },
+    {
+      "clave": "objects/plant.lua",
+      "muestras": 31
+    },
+    {
+      "clave": "humanoid_actions/use_screen.lua",
+      "muestras": 30
+    },
+    {
+      "clave": "humanoid_actions/spawn.lua",
+      "muestras": 23
+    },
+    {
+      "clave": "rooms/scanner_room.lua",
+      "muestras": 18
+    },
+    {
+      "clave": "rooms/ward.lua",
+      "muestras": 18
+    },
+    {
+      "clave": "humanoid_actions/knock_door.lua",
+      "muestras": 16
+    },
+    {
+      "clave": "strings.lua",
+      "muestras": 15
+    },
+    {
+      "clave": "rooms/blood_machine_room.lua",
+      "muestras": 13
+    },
+    {
+      "clave": "research_department.lua",
+      "muestras": 13
+    },
+    {
+      "clave": "rooms/general_diag.lua",
+      "muestras": 12
+    },
+    {
+      "clave": "entities/humanoids/staff/receptionist.lua",
+      "muestras": 12
+    },
+    {
+      "clave": "rooms/x_ray_room.lua",
+      "muestras": 10
+    },
+    {
+      "clave": "dialogs/fullscreen/fax.lua",
+      "muestras": 9
+    },
+    {
+      "clave": "entities/machine.lua",
+      "muestras": 8
+    },
+    {
+      "clave": "dialogs/subtitles.lua",
+      "muestras": 8
+    },
+    {
+      "clave": "entities/humanoids/staff/nurse.lua",
+      "muestras": 6
+    },
+    {
+      "clave": "rooms/pharmacy.lua",
+      "muestras": 5
+    },
+    {
+      "clave": "humanoid_actions/vip_go_to_next_room.lua",
+      "muestras": 4
+    },
+    {
+      "clave": "humanoid_actions/die.lua",
+      "muestras": 3
+    },
+    {
+      "clave": "audio.lua",
+      "muestras": 2
+    },
+    {
+      "clave": "humanoid_actions/yawn.lua",
+      "muestras": 2
+    },
+    {
+      "clave": "diseases/iron_lungs.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "diseases/fractured_bones.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "diseases/gut_rot.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "diseases/slack_tongue.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "entities/humanoids/vip.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "filesystem.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "diseases/heaped_piles.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "diseases/gastric_ejections.lua",
+      "muestras": 1
+    }
+  ],
+  "ficheros_propio": [
+    {
+      "clave": "entities/humanoid.lua",
+      "muestras": 24164
+    },
+    {
+      "clave": "entity_map.lua",
+      "muestras": 14004
+    },
+    {
+      "clave": "utility.lua",
+      "muestras": 7045
+    },
+    {
+      "clave": "class.lua",
+      "muestras": 6982
+    },
+    {
+      "clave": "entity.lua",
+      "muestras": 6442
+    },
+    {
+      "clave": "entities/humanoids/staff.lua",
+      "muestras": 6427
+    },
+    {
+      "clave": "world.lua",
+      "muestras": 3962
+    },
+    {
+      "clave": "entities/humanoids/patient.lua",
+      "muestras": 2476
+    },
+    {
+      "clave": "humanoid_actions/walk.lua",
+      "muestras": 1520
+    },
+    {
+      "clave": "hospital.lua",
+      "muestras": 1176
+    },
+    {
+      "clave": "epidemic.lua",
+      "muestras": 681
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua",
+      "muestras": 662
+    },
+    {
+      "clave": "map.lua",
+      "muestras": 646
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua",
+      "muestras": 541
+    },
+    {
+      "clave": "window.lua",
+      "muestras": 485
+    },
+    {
+      "clave": "room.lua",
+      "muestras": 298
+    },
+    {
+      "clave": "game_ui.lua",
+      "muestras": 289
+    },
+    {
+      "clave": "humanoid_actions/queue.lua",
+      "muestras": 271
+    },
+    {
+      "clave": "calls_dispatcher.lua",
+      "muestras": 259
+    },
+    {
+      "clave": "humanoid_action.lua",
+      "muestras": 159
+    },
+    {
+      "clave": "cheats.lua",
+      "muestras": 156
+    },
+    {
+      "clave": "staff_profile.lua",
+      "muestras": 116
+    },
+    {
+      "clave": "humanoid_actions/meander.lua",
+      "muestras": 111
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua",
+      "muestras": 109
+    },
+    {
+      "clave": "string_extensions.lua",
+      "muestras": 99
+    },
+    {
+      "clave": "entities/object.lua",
+      "muestras": 92
+    },
+    {
+      "clave": "date.lua",
+      "muestras": 71
+    },
+    {
+      "clave": "objects/doors/entrance_right_door.lua",
+      "muestras": 65
+    },
+    {
+      "clave": "humanoid_actions/idle.lua",
+      "muestras": 65
+    },
+    {
+      "clave": "graphics.lua",
+      "muestras": 60
+    },
+    {
+      "clave": "dialogs/message.lua",
+      "muestras": 57
+    },
+    {
+      "clave": "queue.lua",
+      "muestras": 57
+    },
+    {
+      "clave": "objects/reception_desk.lua",
+      "muestras": 54
+    },
+    {
+      "clave": "dialogs/adviser.lua",
+      "muestras": 41
+    },
+    {
+      "clave": "announcer.lua",
+      "muestras": 30
+    },
+    {
+      "clave": "bench/lib/th64.lua",
+      "muestras": 29
+    },
+    {
+      "clave": "rooms/psych.lua",
+      "muestras": 25
+    },
+    {
+      "clave": "humanoid_actions/use_staffroom.lua",
+      "muestras": 21
+    },
+    {
+      "clave": "objects/plant.lua",
+      "muestras": 20
+    },
+    {
+      "clave": "objects/door.lua",
+      "muestras": 18
+    },
+    {
+      "clave": "app.lua",
+      "muestras": 15
+    },
+    {
+      "clave": "strings.lua",
+      "muestras": 15
+    },
+    {
+      "clave": "ui.lua",
+      "muestras": 14
+    },
+    {
+      "clave": "entities/humanoids/staff/handyman.lua",
+      "muestras": 14
+    },
+    {
+      "clave": "research_department.lua",
+      "muestras": 13
+    },
+    {
+      "clave": "humanoid_actions/seek_reception.lua",
+      "muestras": 12
+    },
+    {
+      "clave": "objects/litter.lua",
+      "muestras": 9
+    },
+    {
+      "clave": "hospitals/player_hospital.lua",
+      "muestras": 9
+    },
+    {
+      "clave": "dialogs/subtitles.lua",
+      "muestras": 8
+    },
+    {
+      "clave": "rooms/toilets.lua",
+      "muestras": 8
+    },
+    {
+      "clave": "humanoid_actions/sweep_floor.lua",
+      "muestras": 7
+    },
+    {
+      "clave": "dialogs/menu.lua",
+      "muestras": 7
+    },
+    {
+      "clave": "rooms/gp.lua",
+      "muestras": 7
+    },
+    {
+      "clave": "rooms/operating_theatre.lua",
+      "muestras": 6
+    },
+    {
+      "clave": "entities/humanoids/staff/receptionist.lua",
+      "muestras": 6
+    },
+    {
+      "clave": "humanoid_actions/seek_room.lua",
+      "muestras": 6
+    },
+    {
+      "clave": "entities/humanoids/staff/nurse.lua",
+      "muestras": 6
+    },
+    {
+      "clave": "humanoid_actions/spawn.lua",
+      "muestras": 5
+    },
+    {
+      "clave": "humanoid_actions/vomit.lua",
+      "muestras": 5
+    },
+    {
+      "clave": "humanoid_actions/multi_use_object.lua",
+      "muestras": 4
+    },
+    {
+      "clave": "humanoid_actions/answer_call.lua",
+      "muestras": 4
+    },
+    {
+      "clave": "humanoid_actions/use_screen.lua",
+      "muestras": 3
+    },
+    {
+      "clave": "humanoid_actions/seek_toilets.lua",
+      "muestras": 2
+    },
+    {
+      "clave": "entities/machine.lua",
+      "muestras": 2
+    },
+    {
+      "clave": "rooms/ward.lua",
+      "muestras": 2
+    },
+    {
+      "clave": "audio.lua",
+      "muestras": 2
+    },
+    {
+      "clave": "humanoid_actions/knock_door.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "dialogs/fullscreen/fax.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "entities/humanoids/vip.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "filesystem.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "humanoid_actions/die.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "rooms/x_ray_room.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "rooms/pharmacy.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "diseases/iron_lungs.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "humanoid_actions/pee.lua",
+      "muestras": 1
+    },
+    {
+      "clave": "rooms/general_diag.lua",
+      "muestras": 1
+    }
+  ],
+  "finish": {
+    "date": "1-10-01T42",
+    "entities": {
+      "by_class": {
+        "Bench": 30,
+        "Doctor": 33,
+        "Door": 32,
+        "EntranceDoor": 18,
+        "Handyman": 10,
+        "Litter": 203,
+        "Machine": 13,
+        "Nurse": 10,
+        "Object": 80,
+        "OperatingSink": 4,
+        "OperatingTable": 2,
+        "Patient": 310,
+        "Plant": 41,
+        "RadiationShield": 2,
+        "Rathole": 2,
+        "ReceptionDesk": 4,
+        "Receptionist": 4,
+        "SideObject": 66,
+        "SurgeonScreen": 1,
+        "SwingDoor": 8,
+        "Vip": 1
+      },
+      "doctors": 33,
+      "handymen": 10,
+      "nurses": 10,
+      "objects": 303,
+      "other": 203,
+      "other_humanoids": 1,
+      "patients": 310,
+      "receptionists": 4,
+      "rooms": 36,
+      "staff": 57,
+      "total": 874
+    }
+  },
+  "frames": false,
+  "funciones_inclusivo": [
+    {
+      "clave": "bench/lib/th64.lua:193",
+      "muestras": 79985
+    },
+    {
+      "clave": "bench/lib/th64.lua:224",
+      "muestras": 79985
+    },
+    {
+      "clave": "bench/lib/th64.lua:111",
+      "muestras": 79981,
+      "nombre": "timed_timer"
+    },
+    {
+      "clave": "app.lua:1276",
+      "muestras": 79956,
+      "nombre": "orig"
+    },
+    {
+      "clave": "world.lua:862",
+      "muestras": 78568,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:114",
+      "muestras": 47303,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entities/humanoid.lua:543",
+      "muestras": 37786,
+      "nombre": "findObjectsInSquare"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:73",
+      "muestras": 29193,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entity.lua:199",
+      "muestras": 15391,
+      "nombre": "tick"
+    },
+    {
+      "clave": "world.lua:1004",
+      "muestras": 13330,
+      "nombre": "onEndDay"
+    },
+    {
+      "clave": "entity_map.lua:137",
+      "muestras": 12081,
+      "nombre": "getObjectsAtCoordinate"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:598",
+      "muestras": 11555,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:933",
+      "muestras": 10953,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:782",
+      "muestras": 8723,
+      "nombre": "_dailyObjectHappinessEffects"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:177",
+      "muestras": 7516,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "class.lua:127",
+      "muestras": 6902,
+      "nombre": "is"
+    },
+    {
+      "clave": "utility.lua:172",
+      "muestras": 6554,
+      "nombre": "ipairs"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:346",
+      "muestras": 4530,
+      "nombre": "updateSpeed"
+    },
+    {
+      "clave": "entities/humanoid.lua:585",
+      "muestras": 4213,
+      "nombre": "startAction"
+    },
+    {
+      "clave": "entities/humanoid.lua:696",
+      "muestras": 3517,
+      "nombre": "finishAction"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:114",
+      "muestras": 3456,
+      "nombre": "action_walk_raw"
+    },
+    {
+      "clave": "entity.lua:176",
+      "muestras": 3380,
+      "nombre": "setTilePositionSpeed"
+    },
+    {
+      "clave": "entities/humanoid.lua:908",
+      "muestras": 3001,
+      "nombre": "changeAttribute"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:330",
+      "muestras": 2836,
+      "nombre": "tire"
+    },
+    {
+      "clave": "entity.lua:116",
+      "muestras": 2668,
+      "nombre": "setTile"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:639",
+      "muestras": 2288,
+      "nombre": "updateDynamicInfo"
+    },
+    {
+      "clave": "hospital.lua:553",
+      "muestras": 2278,
+      "nombre": "tick"
+    },
+    {
+      "clave": "hospital.lua:1050",
+      "muestras": 2247,
+      "nombre": "manageEpidemics"
+    },
+    {
+      "clave": "epidemic.lua:100",
+      "muestras": 2057,
+      "nombre": "tick"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:345",
+      "muestras": 1992,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "epidemic.lua:125",
+      "muestras": 1948,
+      "nombre": "infectOtherPatients"
+    },
+    {
+      "clave": "entities/humanoid.lua:429",
+      "muestras": 1944,
+      "nombre": "getRoom"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:1014",
+      "muestras": 1892,
+      "nombre": "setTile"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:42",
+      "muestras": 1883,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:197",
+      "muestras": 1777,
+      "nombre": "isTiring"
+    },
+    {
+      "clave": "humanoid_actions/queue.lua:201",
+      "muestras": 1519,
+      "nombre": "onChangeQueuePosition"
+    },
+    {
+      "clave": "entity.lua:185",
+      "muestras": 1475,
+      "nombre": "_tick"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:152",
+      "muestras": 1425,
+      "nombre": "action_use_phase"
+    },
+    {
+      "clave": "game_ui.lua:840",
+      "muestras": 1383,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:385",
+      "muestras": 1382,
+      "nombre": "on_next_tile_set"
+    },
+    {
+      "clave": "humanoid_actions/meander.lua:30",
+      "muestras": 1374,
+      "nombre": "?"
+    },
+    {
+      "clave": "entity_map.lua:84",
+      "muestras": 1363,
+      "nombre": "removeEntity"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:39",
+      "muestras": 1273,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:379",
+      "muestras": 1270,
+      "nombre": "checkIfNeedRest"
+    },
+    {
+      "clave": "room.lua:550",
+      "muestras": 1235,
+      "nombre": "tryAdvanceQueue"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:764",
+      "muestras": 1231,
+      "nombre": "isVeryTired"
+    },
+    {
+      "clave": "entities/humanoid.lua:683",
+      "muestras": 1219,
+      "nombre": "queueAction"
+    },
+    {
+      "clave": "room.lua:570",
+      "muestras": 1203,
+      "nombre": "onHumanoidLeave"
+    },
+    {
+      "clave": "queue.lua:249",
+      "muestras": 1177,
+      "nombre": "pop"
+    },
+    {
+      "clave": "rooms/gp.lua:185",
+      "muestras": 1092,
+      "nombre": "onHumanoidLeave"
+    },
+    {
+      "clave": "world.lua:2327",
+      "muestras": 1084,
+      "nombre": "getRoom"
+    },
+    {
+      "clave": "calls_dispatcher.lua:322",
+      "muestras": 973,
+      "nombre": "answerCall"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:124",
+      "muestras": 934,
+      "nombre": "setHumanoidTileSpeed"
+    },
+    {
+      "clave": "entities/humanoid.lua:1160",
+      "muestras": 922,
+      "nombre": "getAttribute"
+    },
+    {
+      "clave": "entity_map.lua:187",
+      "muestras": 916,
+      "nombre": "getPatientsInAdjacentSquares"
+    },
+    {
+      "clave": "epidemic.lua:132",
+      "muestras": 878,
+      "nombre": "canInfectOther"
+    },
+    {
+      "clave": "entity_map.lua:51",
+      "muestras": 819,
+      "nombre": "addEntity"
+    },
+    {
+      "clave": "humanoid_actions/idle.lua:60",
+      "muestras": 807,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "humanoid_actions/answer_call.lua:30",
+      "muestras": 712,
+      "nombre": "?"
+    },
+    {
+      "clave": "entities/humanoids/staff/handyman.lua:112",
+      "muestras": 669,
+      "nombre": "searchForHandymanTask"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:770",
+      "muestras": 668,
+      "nombre": "isCrackUpTired"
+    },
+    {
+      "clave": "entity_map.lua:127",
+      "muestras": 620,
+      "nombre": "getHumanoidsAtCoordinate"
+    },
+    {
+      "clave": "map.lua:62",
+      "muestras": 603,
+      "nombre": "getRoomId"
+    },
+    {
+      "clave": "entities/humanoid.lua:1074",
+      "muestras": 601,
+      "nombre": "getCurrentAction"
+    },
+    {
+      "clave": "hospital.lua:2054",
+      "muestras": 584,
+      "nombre": "searchForHandymanTask"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:262",
+      "muestras": 568
+    },
+    {
+      "clave": "humanoid_actions/seek_room.lua:198",
+      "muestras": 550,
+      "nombre": "?"
+    },
+    {
+      "clave": "ui.lua:1029",
+      "muestras": 531,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/humanoid.lua:935",
+      "muestras": 524,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:107",
+      "muestras": 523,
+      "nombre": "isLearningOnTheJob"
+    },
+    {
+      "clave": "window.lua:1904",
+      "muestras": 518,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entity.lua:142",
+      "muestras": 486,
+      "nombre": "getRoom"
+    },
+    {
+      "clave": "humanoid_actions/queue.lua:371",
+      "muestras": 480,
+      "nombre": "?"
+    },
+    {
+      "clave": "world.lua:1711",
+      "muestras": 444,
+      "nombre": "findRoomNear"
+    },
+    {
+      "clave": "game_ui.lua:431",
+      "muestras": 442,
+      "nombre": "onCursorWorldPositionChange"
+    },
+    {
+      "clave": "humanoid_actions/queue.lua:356",
+      "muestras": 426,
+      "nombre": "on_interrupt"
+    },
+    {
+      "clave": "hospital.lua:632",
+      "muestras": 414,
+      "nombre": "isInHospital"
+    },
+    {
+      "clave": "entity_map.lua:64",
+      "muestras": 411,
+      "nombre": "remove_entity_from_table"
+    },
+    {
+      "clave": "world.lua:1531",
+      "muestras": 405,
+      "nombre": "getFreeBench"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:654",
+      "muestras": 399,
+      "nombre": "_dailyHealthChecks"
+    },
+    {
+      "clave": "world.lua:1535",
+      "muestras": 389
+    },
+    {
+      "clave": "world.lua:2250",
+      "muestras": 384,
+      "nombre": "getObject"
+    },
+    {
+      "clave": "humanoid_actions/sweep_floor.lua:40",
+      "muestras": 366,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "class.lua:66",
+      "muestras": 333,
+      "nombre": "UseObjectAction"
+    },
+    {
+      "clave": "hospitals/player_hospital.lua:484",
+      "muestras": 331,
+      "nombre": "onEndDay"
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua:644",
+      "muestras": 329,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "utility.lua:353",
+      "muestras": 327,
+      "nombre": "rangeMapLookup"
+    },
+    {
+      "clave": "room.lua:683",
+      "muestras": 318,
+      "nombre": "getUsageScore"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:528",
+      "muestras": 314,
+      "nombre": "isIdle"
+    },
+    {
+      "clave": "entity.lua:324",
+      "muestras": 273,
+      "nombre": "setDynamicInfo"
+    },
+    {
+      "clave": "entities/humanoid.lua:612",
+      "muestras": 269,
+      "nombre": "setNextAction"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:865",
+      "muestras": 268,
+      "nombre": "_handleExcessThirst"
+    },
+    {
+      "clave": "room.lua:271",
+      "muestras": 242,
+      "nombre": "testStaffCriteria"
+    },
+    {
+      "clave": "world.lua:548",
+      "muestras": 241,
+      "nombre": "getObjectToNotifyOfOccupants"
+    },
+    {
+      "clave": "entity.lua:99",
+      "muestras": 230,
+      "nombre": "setAnimation"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:439",
+      "muestras": 225,
+      "nombre": "?"
+    },
+    {
+      "clave": "room.lua:247",
+      "muestras": 218,
+      "nombre": "getMissingStaff"
+    },
+    {
+      "clave": "window.lua:1554",
+      "muestras": 217,
+      "nombre": "onCursorWorldPositionChange"
+    },
+    {
+      "clave": "humanoid_actions/seek_reception.lua:64",
+      "muestras": 175,
+      "nombre": "?"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:903",
+      "muestras": 171,
+      "nombre": "_checkPatientIsStillQueueingForARoom"
+    },
+    {
+      "clave": "entity_map.lua:149",
+      "muestras": 166,
+      "nombre": "getAdjacentSquares"
+    },
+    {
+      "clave": "room.lua:317",
+      "muestras": 163,
+      "nombre": "onHumanoidEnter"
+    },
+    {
+      "clave": "cheats.lua:342",
+      "muestras": 156,
+      "nombre": "isCheatActive"
+    },
+    {
+      "clave": "utility.lua:354",
+      "muestras": 154,
+      "nombre": "boundaryCheck"
+    },
+    {
+      "clave": "room.lua:758",
+      "muestras": 153,
+      "nombre": "isRoomInDemand"
+    },
+    {
+      "clave": "utility.lua:426",
+      "muestras": 152,
+      "nombre": "table_contains"
+    },
+    {
+      "clave": "window.lua:1609",
+      "muestras": 151,
+      "nombre": "hitTest"
+    },
+    {
+      "clave": "room.lua:174",
+      "muestras": 150,
+      "nombre": "getPatientCount"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:742",
+      "muestras": 139,
+      "nombre": "_dailyBowelChecks"
+    },
+    {
+      "clave": "world.lua:1814",
+      "muestras": 135,
+      "nombre": "newObject"
+    },
+    {
+      "clave": "humanoid_actions/call_checkpoint.lua:37",
+      "muestras": 132,
+      "nombre": "?"
+    },
+    {
+      "clave": "dialogs/menu.lua:62",
+      "muestras": 127,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:124",
+      "muestras": 126,
+      "nombre": "updateSkill"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:408",
+      "muestras": 125,
+      "nombre": "?"
+    },
+    {
+      "clave": "world.lua:2175",
+      "muestras": 123,
+      "nombre": "objectPlaced"
+    },
+    {
+      "clave": "humanoid_actions/seek_room.lua:121",
+      "muestras": 121,
+      "nombre": "action_seek_room_goto_room"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:157",
+      "muestras": 117,
+      "nombre": "checkIfWaitedTooLongForRaise"
+    },
+    {
+      "clave": "humanoid_actions/use_staffroom.lua:114",
+      "muestras": 116,
+      "nombre": "loop_callback"
+    },
+    {
+      "clave": "humanoid_actions/sweep_floor.lua:44",
+      "muestras": 109,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "humanoid_actions/idle.lua:69",
+      "muestras": 106,
+      "nombre": "?"
+    },
+    {
+      "clave": "entity.lua:253",
+      "muestras": 104,
+      "nombre": "setTimer"
+    },
+    {
+      "clave": "entity.lua:154",
+      "muestras": 103,
+      "nombre": "setPosition"
+    },
+    {
+      "clave": "objects/litter.lua:96",
+      "muestras": 103,
+      "nombre": "remove"
+    },
+    {
+      "clave": "humanoid_action.lua:29",
+      "muestras": 102,
+      "nombre": "HumanoidAction"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:340",
+      "muestras": 100,
+      "nombre": "wake"
+    },
+    {
+      "clave": "string_extensions.lua:119",
+      "muestras": 99,
+      "nombre": "format"
+    },
+    {
+      "clave": "hospital.lua:1054",
+      "muestras": 98,
+      "nombre": "can_be_revealed"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:633",
+      "muestras": 97,
+      "nombre": "setDynamicInfoText"
+    },
+    {
+      "clave": "entity.lua:163",
+      "muestras": 96,
+      "nombre": "setSpeed"
+    },
+    {
+      "clave": "world.lua:1446",
+      "muestras": 93,
+      "nombre": "getPathDistance"
+    },
+    {
+      "clave": "entities/humanoid.lua:474",
+      "muestras": 92,
+      "nombre": "setMood"
+    },
+    {
+      "clave": "room.lua:150",
+      "muestras": 89,
+      "nombre": "getPatients"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:30",
+      "muestras": 89,
+      "nombre": "constructor"
+    },
+    {
+      "clave": "entities/humanoid.lua:972",
+      "muestras": 88,
+      "nombre": "goingToUseObject"
+    },
+    {
+      "clave": "room.lua:697",
+      "muestras": 86,
+      "nombre": "canHumanoidEnter"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:726",
+      "muestras": 83,
+      "nombre": "_calculateNausea"
+    },
+    {
+      "clave": "objects/reception_desk.lua:94",
+      "muestras": 81,
+      "nombre": "tick"
+    },
+    {
+      "clave": "queue.lua:201",
+      "muestras": 81,
+      "nombre": "push"
+    },
+    {
+      "clave": "entities/humanoids/staff/handyman.lua:174",
+      "muestras": 80,
+      "nombre": "assignHandymanTask"
+    },
+    {
+      "clave": "window.lua:565",
+      "muestras": 80,
+      "nombre": "getWindow"
+    },
+    {
+      "clave": "world.lua:1792",
+      "muestras": 79,
+      "nombre": "destroyEntity"
+    },
+    {
+      "clave": "humanoid_actions/use_staffroom.lua:81",
+      "muestras": 75,
+      "nombre": "?"
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua:669",
+      "muestras": 74,
+      "nombre": "_messageDoorTick"
+    },
+    {
+      "clave": "queue.lua:166",
+      "muestras": 73,
+      "nombre": "_getHumanoidQueuePriority"
+    },
+    {
+      "clave": "objects/door.lua:70",
+      "muestras": 72,
+      "nombre": "updateDynamicInfo"
+    },
+    {
+      "clave": "window.lua:1943",
+      "muestras": 71,
+      "nombre": "onWorldTick"
+    },
+    {
+      "clave": "announcer.lua:186",
+      "muestras": 68,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "rooms/gp.lua:65",
+      "muestras": 67,
+      "nombre": "loop_callback"
+    },
+    {
+      "clave": "humanoid_actions/vomit.lua:31",
+      "muestras": 67,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:709",
+      "muestras": 67,
+      "nombre": "_dailyHealthHistoryRefresh"
+    }
+  ],
+  "funciones_propio": [
+    {
+      "clave": "entities/humanoid.lua:543",
+      "muestras": 20020,
+      "nombre": "findObjectsInSquare"
+    },
+    {
+      "clave": "entity_map.lua:137",
+      "muestras": 12081,
+      "nombre": "getObjectsAtCoordinate"
+    },
+    {
+      "clave": "class.lua:127",
+      "muestras": 6902,
+      "nombre": "is"
+    },
+    {
+      "clave": "utility.lua:172",
+      "muestras": 6554,
+      "nombre": "ipairs"
+    },
+    {
+      "clave": "entity.lua:199",
+      "muestras": 2955,
+      "nombre": "tick"
+    },
+    {
+      "clave": "world.lua:862",
+      "muestras": 2286,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/humanoid.lua:908",
+      "muestras": 1610,
+      "nombre": "changeAttribute"
+    },
+    {
+      "clave": "entity.lua:185",
+      "muestras": 1475,
+      "nombre": "_tick"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:114",
+      "muestras": 1448,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:598",
+      "muestras": 1354,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:346",
+      "muestras": 1102,
+      "nombre": "updateSpeed"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:764",
+      "muestras": 966,
+      "nombre": "isVeryTired"
+    },
+    {
+      "clave": "entities/humanoid.lua:1160",
+      "muestras": 922,
+      "nombre": "getAttribute"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:639",
+      "muestras": 866,
+      "nombre": "updateDynamicInfo"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:177",
+      "muestras": 731,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:114",
+      "muestras": 636,
+      "nombre": "action_walk_raw"
+    },
+    {
+      "clave": "entity_map.lua:127",
+      "muestras": 620,
+      "nombre": "getHumanoidsAtCoordinate"
+    },
+    {
+      "clave": "map.lua:62",
+      "muestras": 603,
+      "nombre": "getRoomId"
+    },
+    {
+      "clave": "entities/humanoid.lua:1074",
+      "muestras": 601,
+      "nombre": "getCurrentAction"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:770",
+      "muestras": 532,
+      "nombre": "isCrackUpTired"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:197",
+      "muestras": 518,
+      "nombre": "isTiring"
+    },
+    {
+      "clave": "hospital.lua:2054",
+      "muestras": 496,
+      "nombre": "searchForHandymanTask"
+    },
+    {
+      "clave": "entity.lua:142",
+      "muestras": 486,
+      "nombre": "getRoom"
+    },
+    {
+      "clave": "world.lua:2327",
+      "muestras": 481,
+      "nombre": "getRoom"
+    },
+    {
+      "clave": "entities/humanoid.lua:429",
+      "muestras": 450,
+      "nombre": "getRoom"
+    },
+    {
+      "clave": "epidemic.lua:132",
+      "muestras": 450,
+      "nombre": "canInfectOther"
+    },
+    {
+      "clave": "entity.lua:116",
+      "muestras": 449,
+      "nombre": "setTile"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:379",
+      "muestras": 409,
+      "nombre": "checkIfNeedRest"
+    },
+    {
+      "clave": "hospital.lua:632",
+      "muestras": 377,
+      "nombre": "isInHospital"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:152",
+      "muestras": 327,
+      "nombre": "action_use_phase"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:73",
+      "muestras": 314,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:933",
+      "muestras": 303,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "entity_map.lua:64",
+      "muestras": 302,
+      "nombre": "remove_entity_from_table"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:330",
+      "muestras": 291,
+      "nombre": "tire"
+    },
+    {
+      "clave": "entity_map.lua:84",
+      "muestras": 280,
+      "nombre": "removeEntity"
+    },
+    {
+      "clave": "entity.lua:324",
+      "muestras": 273,
+      "nombre": "setDynamicInfo"
+    },
+    {
+      "clave": "entity_map.lua:187",
+      "muestras": 272,
+      "nombre": "getPatientsInAdjacentSquares"
+    },
+    {
+      "clave": "world.lua:2250",
+      "muestras": 265,
+      "nombre": "getObject"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:1014",
+      "muestras": 263,
+      "nombre": "setTile"
+    },
+    {
+      "clave": "calls_dispatcher.lua:322",
+      "muestras": 248,
+      "nombre": "answerCall"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:107",
+      "muestras": 246,
+      "nombre": "isLearningOnTheJob"
+    },
+    {
+      "clave": "world.lua:548",
+      "muestras": 241,
+      "nombre": "getObjectToNotifyOfOccupants"
+    },
+    {
+      "clave": "entity.lua:99",
+      "muestras": 230,
+      "nombre": "setAnimation"
+    },
+    {
+      "clave": "entity_map.lua:51",
+      "muestras": 224,
+      "nombre": "addEntity"
+    },
+    {
+      "clave": "entity.lua:176",
+      "muestras": 223,
+      "nombre": "setTilePositionSpeed"
+    },
+    {
+      "clave": "humanoid_actions/queue.lua:201",
+      "muestras": 203,
+      "nombre": "onChangeQueuePosition"
+    },
+    {
+      "clave": "entities/humanoid.lua:935",
+      "muestras": 190,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "window.lua:1554",
+      "muestras": 180,
+      "nombre": "onCursorWorldPositionChange"
+    },
+    {
+      "clave": "entity_map.lua:149",
+      "muestras": 166,
+      "nombre": "getAdjacentSquares"
+    },
+    {
+      "clave": "cheats.lua:342",
+      "muestras": 156,
+      "nombre": "isCheatActive"
+    },
+    {
+      "clave": "utility.lua:354",
+      "muestras": 154,
+      "nombre": "boundaryCheck"
+    },
+    {
+      "clave": "utility.lua:426",
+      "muestras": 152,
+      "nombre": "table_contains"
+    },
+    {
+      "clave": "utility.lua:353",
+      "muestras": 150,
+      "nombre": "rangeMapLookup"
+    },
+    {
+      "clave": "game_ui.lua:431",
+      "muestras": 145,
+      "nombre": "onCursorWorldPositionChange"
+    },
+    {
+      "clave": "world.lua:1004",
+      "muestras": 132,
+      "nombre": "onEndDay"
+    },
+    {
+      "clave": "epidemic.lua:125",
+      "muestras": 121,
+      "nombre": "infectOtherPatients"
+    },
+    {
+      "clave": "window.lua:1609",
+      "muestras": 120,
+      "nombre": "hitTest"
+    },
+    {
+      "clave": "window.lua:1904",
+      "muestras": 120,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:157",
+      "muestras": 117,
+      "nombre": "checkIfWaitedTooLongForRaise"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:782",
+      "muestras": 114,
+      "nombre": "_dailyObjectHappinessEffects"
+    },
+    {
+      "clave": "game_ui.lua:840",
+      "muestras": 112,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "humanoid_actions/meander.lua:30",
+      "muestras": 111,
+      "nombre": "?"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:903",
+      "muestras": 110,
+      "nombre": "_checkPatientIsStillQueueingForARoom"
+    },
+    {
+      "clave": "entity.lua:253",
+      "muestras": 104,
+      "nombre": "setTimer"
+    },
+    {
+      "clave": "entity.lua:154",
+      "muestras": 103,
+      "nombre": "setPosition"
+    },
+    {
+      "clave": "humanoid_action.lua:29",
+      "muestras": 102,
+      "nombre": "HumanoidAction"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:42",
+      "muestras": 100,
+      "nombre": "tickDay"
+    },
+    {
+      "clave": "entity.lua:163",
+      "muestras": 96,
+      "nombre": "setSpeed"
+    },
+    {
+      "clave": "room.lua:247",
+      "muestras": 94,
+      "nombre": "getMissingStaff"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:124",
+      "muestras": 94,
+      "nombre": "setHumanoidTileSpeed"
+    },
+    {
+      "clave": "world.lua:1446",
+      "muestras": 93,
+      "nombre": "getPathDistance"
+    },
+    {
+      "clave": "entities/humanoid.lua:474",
+      "muestras": 91,
+      "nombre": "setMood"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:345",
+      "muestras": 82,
+      "nombre": "timer_function"
+    },
+    {
+      "clave": "world.lua:1711",
+      "muestras": 81,
+      "nombre": "findRoomNear"
+    },
+    {
+      "clave": "class.lua:66",
+      "muestras": 80,
+      "nombre": "UseObjectAction"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:408",
+      "muestras": 76,
+      "nombre": "?"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:124",
+      "muestras": 75,
+      "nombre": "updateSkill"
+    },
+    {
+      "clave": "world.lua:1792",
+      "muestras": 75,
+      "nombre": "destroyEntity"
+    },
+    {
+      "clave": "world.lua:1535",
+      "muestras": 72
+    },
+    {
+      "clave": "entities/humanoid.lua:585",
+      "muestras": 68,
+      "nombre": "startAction"
+    },
+    {
+      "clave": "entities/humanoids/staff.lua:528",
+      "muestras": 66,
+      "nombre": "isIdle"
+    },
+    {
+      "clave": "world.lua:2238",
+      "muestras": 64,
+      "nombre": "getObjects"
+    },
+    {
+      "clave": "entity_map.lua:43",
+      "muestras": 59,
+      "nombre": "add_entity_to_table"
+    },
+    {
+      "clave": "hospital.lua:1050",
+      "muestras": 58,
+      "nombre": "manageEpidemics"
+    },
+    {
+      "clave": "entities/humanoid.lua:972",
+      "muestras": 58,
+      "nombre": "goingToUseObject"
+    },
+    {
+      "clave": "entities/humanoid.lua:683",
+      "muestras": 58,
+      "nombre": "queueAction"
+    },
+    {
+      "clave": "string_extensions.lua:119",
+      "muestras": 56,
+      "nombre": "format"
+    },
+    {
+      "clave": "graphics.lua:865",
+      "muestras": 55,
+      "nombre": "getAnimLength"
+    },
+    {
+      "clave": "humanoid_actions/idle.lua:69",
+      "muestras": 55,
+      "nombre": "?"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:709",
+      "muestras": 55,
+      "nombre": "_dailyHealthHistoryRefresh"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:726",
+      "muestras": 53,
+      "nombre": "_calculateNausea"
+    },
+    {
+      "clave": "entities/object.lua:249",
+      "muestras": 51,
+      "nombre": "getRenderAttachTile"
+    },
+    {
+      "clave": "staff_profile.lua:214",
+      "muestras": 51,
+      "nombre": "parseSkillLevel"
+    },
+    {
+      "clave": "staff_profile.lua:240",
+      "muestras": 49,
+      "nombre": "getFairWage"
+    },
+    {
+      "clave": "hospital.lua:2159",
+      "muestras": 49,
+      "nombre": "getIndexOfTask"
+    },
+    {
+      "clave": "objects/doors/entrance_right_door.lua:148",
+      "muestras": 47,
+      "nombre": "tick"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:742",
+      "muestras": 46,
+      "nombre": "_dailyBowelChecks"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:654",
+      "muestras": 44,
+      "nombre": "_dailyHealthChecks"
+    },
+    {
+      "clave": "string_extensions.lua:63",
+      "muestras": 43
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:865",
+      "muestras": 43,
+      "nombre": "_handleExcessThirst"
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua:562",
+      "muestras": 42,
+      "nombre": "_findMessageToShow"
+    },
+    {
+      "clave": "room.lua:683",
+      "muestras": 42,
+      "nombre": "getUsageScore"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:30",
+      "muestras": 42,
+      "nombre": "constructor"
+    },
+    {
+      "clave": "dialogs/adviser.lua:290",
+      "muestras": 41,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/humanoid.lua:696",
+      "muestras": 41,
+      "nombre": "finishAction"
+    },
+    {
+      "clave": "map.lua:127",
+      "muestras": 40
+    },
+    {
+      "clave": "epidemic.lua:274",
+      "muestras": 40,
+      "nombre": "checkPatientsForRemoval"
+    },
+    {
+      "clave": "entity.lua:371",
+      "muestras": 39,
+      "nombre": "getDrawingLayer"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:401",
+      "muestras": 38,
+      "nombre": "atFullyEmptyTile"
+    },
+    {
+      "clave": "objects/reception_desk.lua:94",
+      "muestras": 37,
+      "nombre": "tick"
+    },
+    {
+      "clave": "world.lua:1460",
+      "muestras": 37,
+      "nombre": "getIdleTile"
+    },
+    {
+      "clave": "hospital.lua:602",
+      "muestras": 37,
+      "nombre": "getPlayerIndex"
+    },
+    {
+      "clave": "utility.lua:80",
+      "muestras": 35,
+      "nombre": "getRandomEntryFromArray"
+    },
+    {
+      "clave": "humanoid_action.lua:55",
+      "muestras": 34,
+      "nombre": "setMustHappen"
+    },
+    {
+      "clave": "entities/humanoid.lua:612",
+      "muestras": 33,
+      "nombre": "setNextAction"
+    },
+    {
+      "clave": "dialogs/message.lua:168",
+      "muestras": 33,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "window.lua:1943",
+      "muestras": 32,
+      "nombre": "onWorldTick"
+    },
+    {
+      "clave": "room.lua:174",
+      "muestras": 32,
+      "nombre": "getPatientCount"
+    },
+    {
+      "clave": "announcer.lua:186",
+      "muestras": 30,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "entities/object.lua:189",
+      "muestras": 30,
+      "nombre": "tick"
+    },
+    {
+      "clave": "world.lua:1450",
+      "muestras": 28,
+      "nombre": "getPath"
+    },
+    {
+      "clave": "window.lua:565",
+      "muestras": 28,
+      "nombre": "getWindow"
+    },
+    {
+      "clave": "room.lua:94",
+      "muestras": 28,
+      "nombre": "getEntranceXY"
+    },
+    {
+      "clave": "hospital.lua:553",
+      "muestras": 28,
+      "nombre": "tick"
+    },
+    {
+      "clave": "humanoid_actions/walk.lua:262",
+      "muestras": 27
+    },
+    {
+      "clave": "world.lua:1616",
+      "muestras": 27,
+      "nombre": "findObjectNear"
+    },
+    {
+      "clave": "hospital.lua:1453",
+      "muestras": 27,
+      "nombre": "countStaffOfCategory"
+    },
+    {
+      "clave": "epidemic.lua:202",
+      "muestras": 25,
+      "nombre": "checkIfReadyToReveal"
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua:414",
+      "muestras": 25,
+      "nombre": "hitTest"
+    },
+    {
+      "clave": "room.lua:271",
+      "muestras": 24,
+      "nombre": "testStaffCriteria"
+    },
+    {
+      "clave": "humanoid_actions/queue.lua:306",
+      "muestras": 24,
+      "nombre": "isStanding"
+    },
+    {
+      "clave": "hospital.lua:1054",
+      "muestras": 24,
+      "nombre": "can_be_revealed"
+    },
+    {
+      "clave": "dialogs/message.lua:189",
+      "muestras": 24,
+      "nombre": "onWorldTick"
+    },
+    {
+      "clave": "rooms/psych.lua:90",
+      "muestras": 24,
+      "nombre": "loop_callback"
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua:644",
+      "muestras": 23,
+      "nombre": "onTick"
+    },
+    {
+      "clave": "hospital.lua:871",
+      "muestras": 23,
+      "nombre": "hasReceptionDesk"
+    },
+    {
+      "clave": "humanoid_actions/use_object.lua:70",
+      "muestras": 22,
+      "nombre": "action_use_next_phase"
+    },
+    {
+      "clave": "game_ui.lua:407",
+      "muestras": 19,
+      "nombre": "ScreenToWorld"
+    },
+    {
+      "clave": "objects/doors/entrance_right_door.lua:73",
+      "muestras": 18,
+      "nombre": "onOccupantChange"
+    },
+    {
+      "clave": "queue.lua:112",
+      "muestras": 18,
+      "nombre": "isFull"
+    },
+    {
+      "clave": "world.lua:1589",
+      "muestras": 18
+    },
+    {
+      "clave": "date.lua:319",
+      "muestras": 18,
+      "nombre": "_adjustDayOverflow"
+    },
+    {
+      "clave": "humanoid_actions/queue.lua:106",
+      "muestras": 17,
+      "nombre": "action_queue_find_idle"
+    },
+    {
+      "clave": "entities/humanoids/staff/doctor.lua:335",
+      "muestras": 17,
+      "nombre": "fulfillsCriterion"
+    },
+    {
+      "clave": "hospital.lua:537",
+      "muestras": 17,
+      "nombre": "countSittingStanding"
+    },
+    {
+      "clave": "objects/door.lua:70",
+      "muestras": 17,
+      "nombre": "updateDynamicInfo"
+    },
+    {
+      "clave": "entities/humanoids/patient.lua:1097",
+      "muestras": 16,
+      "nombre": "updateDynamicInfo"
+    },
+    {
+      "clave": "world.lua:1531",
+      "muestras": 16,
+      "nombre": "getFreeBench"
+    },
+    {
+      "clave": "dialogs/bottom_panel.lua:669",
+      "muestras": 16,
+      "nombre": "_messageDoorTick"
+    },
+    {
+      "clave": "bench/lib/th64.lua:111",
+      "muestras": 16,
+      "nombre": "timed_timer"
+    }
+  ],
+  "hours": 300,
+  "lua": "Lua 5.4",
+  "muestras": 79986,
+  "por_fase": {
+    "otro": 26,
+    "timer": 79960
+  },
+  "save": "lleno",
+  "start": {
+    "date": "1-09-25T02",
+    "entities": {
+      "by_class": {
+        "Bench": 30,
+        "Doctor": 33,
+        "Door": 32,
+        "EntranceDoor": 18,
+        "Handyman": 10,
+        "Litter": 198,
+        "Machine": 13,
+        "Nurse": 10,
+        "Object": 80,
+        "OperatingSink": 4,
+        "OperatingTable": 2,
+        "Patient": 304,
+        "Plant": 41,
+        "RadiationShield": 2,
+        "Rathole": 2,
+        "ReceptionDesk": 4,
+        "Receptionist": 4,
+        "SideObject": 66,
+        "SurgeonScreen": 1,
+        "SwingDoor": 8,
+        "Vip": 1
+      },
+      "doctors": 33,
+      "handymen": 10,
+      "nurses": 10,
+      "objects": 303,
+      "other": 198,
+      "other_humanoids": 1,
+      "patients": 304,
+      "receptionists": 4,
+      "rooms": 36,
+      "staff": 57,
+      "total": 863
+    }
+  },
+  "warmup_hours": 50
+}

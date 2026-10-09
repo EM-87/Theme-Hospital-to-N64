@@ -6,6 +6,9 @@
 #   --lua 5.4|5.5     versión de Lua (por defecto 5.4)
 #   --tracy           captura una traza de Tracy en <dir_salida>/traza.tracy
 #   --heaptrack       perfil de memoria en <dir_salida>/heaptrack.gz (build sin Tracy)
+#   --callgrind       perfil de instrucciones en <dir_salida>/callgrind.out.<pid> (build sin
+#                     Tracy), activo solo entre las líneas «perfil: medición inicio» y
+#                     «perfil: medición fin» del guion (bench/scenarios/perfil.lua)
 #   --timeout N       segundos máximos (por defecto 1800)
 #   --lua-hook        mantiene el hook de Tracy en cada llamada Lua (perfil por función)
 # Variables: CORSIXTH_SAVES (directorio de partidas; por defecto bench/saves)
@@ -20,6 +23,7 @@ while [ $# -gt 0 ]; do
     --lua) lua=$2; shift 2 ;;
     --tracy) mode=tracy; shift ;;
     --heaptrack) mode=heaptrack; shift ;;
+    --callgrind) mode=callgrind; shift ;;
     --timeout) timeout=$2; shift 2 ;;
     --lua-hook) extra+=(--th64-lua-hook=1); shift ;;
     *) break ;;
@@ -71,6 +75,11 @@ cmd=("$exe" --interpreter="$REPO_DIR/bench/th64bench.lua"
 if [ $mode = heaptrack ]; then
   cmd=(heaptrack -o "$out/heaptrack" "${cmd[@]}")
 fi
+if [ $mode = callgrind ]; then
+  # La carga de la partida va sin instrumentar (mucho más rápida); el bucle de
+  # abajo activa la instrumentación solo durante la medición.
+  cmd=(valgrind --tool=callgrind --instr-atstart=no --callgrind-out-file="$out/callgrind.out.%p" "${cmd[@]}")
+fi
 if [ $mode = tracy ]; then
 
   # Puerto propio: con varias ejecuciones a la vez, tracy-capture podría
@@ -95,6 +104,17 @@ if [ $mode = tracy ]; then
       break
     fi
     sleep 1
+  done
+fi
+if [ $mode = callgrind ]; then
+  state=off
+  while kill -0 "$cth_pid" 2>/dev/null; do
+    if [ $state = off ] && grep -q "^perfil: medición inicio" "$out/th64.log" 2>/dev/null; then
+      callgrind_control -i on > /dev/null && state=on
+    elif [ $state = on ] && grep -q "^perfil: medición fin" "$out/th64.log" 2>/dev/null; then
+      callgrind_control -i off > /dev/null && state=done
+    fi
+    sleep 0.2
   done
 fi
 wait "$cth_pid"

@@ -1,0 +1,2680 @@
+{
+ "grupos": {
+  "Eventos (epidemias, terremotos, trucos, locutor)": {
+   "ficheros": 4,
+   "codigo": 1024,
+   "lineas_ui": 17,
+   "lineas_audio": 14,
+   "lineas_graficos": 3,
+   "ficheros_sin_ui": 1,
+   "logica": true,
+   "perfil_propio": 0.010839396894456529
+  },
+  "Plataforma y servicios": {
+   "ficheros": 12,
+   "codigo": 5213,
+   "lineas_ui": 75,
+   "lineas_audio": 72,
+   "lineas_graficos": 43,
+   "ficheros_sin_ui": 7,
+   "logica": false,
+   "perfil_propio": 0.0024004200735128654
+  },
+  "Mundo, hospital y economía": {
+   "ficheros": 9,
+   "codigo": 5951,
+   "lineas_ui": 132,
+   "lineas_audio": 15,
+   "lineas_graficos": 7,
+   "ficheros_sin_ui": 4,
+   "logica": true,
+   "perfil_propio": 0.0699122346410622
+  },
+  "Utilidades del lenguaje": {
+   "ficheros": 4,
+   "codigo": 675,
+   "lineas_ui": 0,
+   "lineas_audio": 0,
+   "lineas_graficos": 10,
+   "ficheros_sin_ui": 4,
+   "logica": false,
+   "perfil_propio": 0.17625584477283524
+  },
+  "Entidades: objetos y máquinas": {
+   "ficheros": 63,
+   "codigo": 5953,
+   "lineas_ui": 15,
+   "lineas_audio": 7,
+   "lineas_graficos": 34,
+   "ficheros_sin_ui": 58,
+   "logica": true,
+   "perfil_propio": 0.08378966319105845
+  },
+  "Mapa y entidades en el mapa": {
+   "ficheros": 7,
+   "codigo": 1003,
+   "lineas_ui": 0,
+   "lineas_audio": 0,
+   "lineas_graficos": 1,
+   "ficheros_sin_ui": 7,
+   "logica": true,
+   "perfil_propio": 0.18315705248418473
+  },
+  "Interfaz": {
+   "ficheros": 65,
+   "codigo": 19512,
+   "lineas_ui": 2280,
+   "lineas_audio": 163,
+   "lineas_graficos": 544,
+   "ficheros_sin_ui": 1,
+   "logica": false,
+   "perfil_propio": 0.012639711949591176
+  },
+  "Acciones de humanoides": {
+   "ficheros": 33,
+   "codigo": 3070,
+   "lineas_ui": 9,
+   "lineas_audio": 3,
+   "lineas_graficos": 127,
+   "ficheros_sin_ui": 32,
+   "logica": true,
+   "perfil_propio": 0.03424349261120695
+  },
+  "Habitaciones": {
+   "ficheros": 24,
+   "codigo": 3110,
+   "lineas_ui": 8,
+   "lineas_audio": 0,
+   "lineas_graficos": 24,
+   "ficheros_sin_ui": 21,
+   "logica": true,
+   "perfil_propio": 0.004363263571124948
+  },
+  "Enfermedades y diagnóstico": {
+   "ficheros": 43,
+   "codigo": 1369,
+   "lineas_ui": 0,
+   "lineas_audio": 0,
+   "lineas_graficos": 227,
+   "ficheros_sin_ui": 43,
+   "logica": true,
+   "perfil_propio": 1.2502187882879503e-05
+  },
+  "Textos de idioma (languages/, datos)": {
+   "ficheros": 24,
+   "codigo": 54796,
+   "lineas_ui": 408,
+   "lineas_audio": 11,
+   "lineas_graficos": 0,
+   "ficheros_sin_ui": 1,
+   "logica": false
+  },
+  "Entidades: humanoides": {
+   "ficheros": 10,
+   "codigo": 3269,
+   "lineas_ui": 16,
+   "lineas_audio": 3,
+   "lineas_graficos": 51,
+   "ficheros_sin_ui": 6,
+   "logica": true,
+   "perfil_propio": 0.42202385417448063
+  }
+ },
+ "dependencias_entre_grupos": [
+  {
+   "de": "Interfaz",
+   "a": "Plataforma y servicios",
+   "referencias": 1032
+  },
+  {
+   "de": "Interfaz",
+   "a": "Utilidades del lenguaje",
+   "referencias": 238
+  },
+  {
+   "de": "Habitaciones",
+   "a": "Acciones de humanoides",
+   "referencias": 174
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Plataforma y servicios",
+   "referencias": 168
+  },
+  {
+   "de": "Enfermedades y diagnóstico",
+   "a": "Plataforma y servicios",
+   "referencias": 145
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Plataforma y servicios",
+   "referencias": 128
+  },
+  {
+   "de": "Acciones de humanoides",
+   "a": "Utilidades del lenguaje",
+   "referencias": 98
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Entidades: humanoides",
+   "referencias": 95
+  },
+  {
+   "de": "Habitaciones",
+   "a": "Plataforma y servicios",
+   "referencias": 93
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Utilidades del lenguaje",
+   "referencias": 85
+  },
+  {
+   "de": "Habitaciones",
+   "a": "Utilidades del lenguaje",
+   "referencias": 68
+  },
+  {
+   "de": "Acciones de humanoides",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 65
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Plataforma y servicios",
+   "referencias": 63
+  },
+  {
+   "de": "Acciones de humanoides",
+   "a": "Plataforma y servicios",
+   "referencias": 61
+  },
+  {
+   "de": "Habitaciones",
+   "a": "Entidades: humanoides",
+   "referencias": 55
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Utilidades del lenguaje",
+   "referencias": 55
+  },
+  {
+   "de": "Plataforma y servicios",
+   "a": "Utilidades del lenguaje",
+   "referencias": 54
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Acciones de humanoides",
+   "referencias": 47
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Utilidades del lenguaje",
+   "referencias": 46
+  },
+  {
+   "de": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "a": "Plataforma y servicios",
+   "referencias": 41
+  },
+  {
+   "de": "Plataforma y servicios",
+   "a": "Interfaz",
+   "referencias": 33
+  },
+  {
+   "de": "Acciones de humanoides",
+   "a": "Entidades: humanoides",
+   "referencias": 29
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Entidades: humanoides",
+   "referencias": 27
+  },
+  {
+   "de": "Interfaz",
+   "a": "Entidades: humanoides",
+   "referencias": 21
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Acciones de humanoides",
+   "referencias": 16
+  },
+  {
+   "de": "Plataforma y servicios",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 15
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Acciones de humanoides",
+   "referencias": 13
+  },
+  {
+   "de": "Mapa y entidades en el mapa",
+   "a": "Utilidades del lenguaje",
+   "referencias": 12
+  },
+  {
+   "de": "Interfaz",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 12
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Interfaz",
+   "referencias": 12
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Interfaz",
+   "referencias": 10
+  },
+  {
+   "de": "Mapa y entidades en el mapa",
+   "a": "Plataforma y servicios",
+   "referencias": 10
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 10
+  },
+  {
+   "de": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "a": "Utilidades del lenguaje",
+   "referencias": 9
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 9
+  },
+  {
+   "de": "Interfaz",
+   "a": "Acciones de humanoides",
+   "referencias": 7
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Interfaz",
+   "referencias": 7
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "referencias": 6
+  },
+  {
+   "de": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "a": "Acciones de humanoides",
+   "referencias": 5
+  },
+  {
+   "de": "Acciones de humanoides",
+   "a": "Mundo, hospital y economía",
+   "referencias": 5
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Mundo, hospital y economía",
+   "referencias": 5
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Mundo, hospital y economía",
+   "referencias": 5
+  },
+  {
+   "de": "Plataforma y servicios",
+   "a": "Mapa y entidades en el mapa",
+   "referencias": 4
+  },
+  {
+   "de": "Interfaz",
+   "a": "Habitaciones",
+   "referencias": 4
+  },
+  {
+   "de": "Habitaciones",
+   "a": "Interfaz",
+   "referencias": 4
+  },
+  {
+   "de": "Mapa y entidades en el mapa",
+   "a": "Entidades: humanoides",
+   "referencias": 3
+  },
+  {
+   "de": "Interfaz",
+   "a": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "referencias": 3
+  },
+  {
+   "de": "Acciones de humanoides",
+   "a": "Interfaz",
+   "referencias": 3
+  },
+  {
+   "de": "Entidades: objetos y máquinas",
+   "a": "Mapa y entidades en el mapa",
+   "referencias": 3
+  },
+  {
+   "de": "Plataforma y servicios",
+   "a": "Entidades: humanoides",
+   "referencias": 2
+  },
+  {
+   "de": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "a": "Interfaz",
+   "referencias": 2
+  },
+  {
+   "de": "Mapa y entidades en el mapa",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 2
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Mapa y entidades en el mapa",
+   "referencias": 2
+  },
+  {
+   "de": "Enfermedades y diagnóstico",
+   "a": "Utilidades del lenguaje",
+   "referencias": 2
+  },
+  {
+   "de": "Interfaz",
+   "a": "Mapa y entidades en el mapa",
+   "referencias": 2
+  },
+  {
+   "de": "Plataforma y servicios",
+   "a": "Mundo, hospital y economía",
+   "referencias": 1
+  },
+  {
+   "de": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "a": "Entidades: humanoides",
+   "referencias": 1
+  },
+  {
+   "de": "Mundo, hospital y economía",
+   "a": "Habitaciones",
+   "referencias": 1
+  },
+  {
+   "de": "Habitaciones",
+   "a": "Entidades: objetos y máquinas",
+   "referencias": 1
+  },
+  {
+   "de": "Interfaz",
+   "a": "Mundo, hospital y economía",
+   "referencias": 1
+  },
+  {
+   "de": "Entidades: humanoides",
+   "a": "Habitaciones",
+   "referencias": 1
+  }
+ ],
+ "herencia": {
+  "GameUI": "UI",
+  "UI": "Window",
+  "AIHospital": "Hospital",
+  "PlayerHospital": "Hospital",
+  "AnswerCallAction": "HumanoidAction",
+  "CallCheckPointAction": "HumanoidAction",
+  "CheckWatchAction": "HumanoidAction",
+  "DieAction": "HumanoidAction",
+  "FallingAction": "HumanoidAction",
+  "GetUpAction": "HumanoidAction",
+  "IdleAction": "HumanoidAction",
+  "IdleSpawnAction": "HumanoidAction",
+  "KnockDoorAction": "HumanoidAction",
+  "MeanderAction": "HumanoidAction",
+  "MultiUseObjectAction": "HumanoidAction",
+  "OnGroundAction": "HumanoidAction",
+  "PeeAction": "HumanoidAction",
+  "PickupAction": "HumanoidAction",
+  "QueueAction": "HumanoidAction",
+  "SeekReceptionAction": "HumanoidAction",
+  "SeekRoomAction": "HumanoidAction",
+  "SeekStaffRoomAction": "HumanoidAction",
+  "SeekToiletsAction": "HumanoidAction",
+  "ShakeFistAction": "HumanoidAction",
+  "SpawnAction": "HumanoidAction",
+  "StaffReceptionAction": "HumanoidAction",
+  "SweepFloorAction": "HumanoidAction",
+  "TapFootAction": "HumanoidAction",
+  "UseObjectAction": "HumanoidAction",
+  "UseScreenAction": "HumanoidAction",
+  "UseStaffRoomAction": "HumanoidAction",
+  "VaccinateAction": "HumanoidAction",
+  "VipGoToNextRoomAction": "HumanoidAction",
+  "VomitAction": "HumanoidAction",
+  "WalkAction": "HumanoidAction",
+  "YawnAction": "HumanoidAction",
+  "AtomAnalyser": "Object",
+  "Bench": "Object",
+  "Chair": "Object",
+  "Door": "Object",
+  "Helicopter": "Object",
+  "Litter": "Entity",
+  "OperatingSink": "Object",
+  "Plant": "Object",
+  "RadiationShield": "Object",
+  "Rathole": "Object",
+  "ReceptionDesk": "Object",
+  "SurgeonScreen": "Object",
+  "OperatingTable": "Machine",
+  "EntranceDoor": "Object",
+  "SwingDoor": "Door",
+  "BloodMachineRoom": "Room",
+  "CardiogramRoom": "Room",
+  "DecontaminationRoom": "Room",
+  "DNAFixerRoom": "Room",
+  "ElectrolysisRoom": "Room",
+  "FractureRoom": "Room",
+  "GeneralDiagRoom": "Room",
+  "GPRoom": "Room",
+  "HairRestorationRoom": "Room",
+  "InflationRoom": "Room",
+  "JellyVatRoom": "Room",
+  "OperatingTheatreRoom": "Room",
+  "PharmacyRoom": "Room",
+  "PsychRoom": "Room",
+  "ResearchRoom": "Room",
+  "ScannerRoom": "Room",
+  "SlackTongueRoom": "Room",
+  "StaffRoom": "Room",
+  "ToiletRoom": "Room",
+  "TrainingRoom": "Room",
+  "UltrascanRoom": "Room",
+  "WardRoom": "Room",
+  "XRayRoom": "Room",
+  "UIAdviser": "Window",
+  "UIBottomPanel": "Window",
+  "UIBuildRoom": "Window",
+  "UIConfirmDialog": "Window",
+  "UIEditRoom": "UIPlaceObjects",
+  "UIFullscreen": "Window",
+  "UIFurnishCorridor": "Window",
+  "UIHireStaff": "Window",
+  "UIInformation": "Window",
+  "UIJukebox": "Window",
+  "UIMachine": "Window",
+  "UIMenuBar": "Window",
+  "UIMessage": "Window",
+  "UIPatient": "Window",
+  "UIPlaceObjects": "Window",
+  "UIPlaceStaff": "Window",
+  "UIQueue": "Window",
+  "UIQueuePopup": "Window",
+  "UIResizable": "Window",
+  "UIStaff": "Window",
+  "UIStaffRise": "Window",
+  "Subtitles": "Window",
+  "FileTreeNode": "TreeNode",
+  "DummyRootNode": "TreeNode",
+  "TreeControl": "Window",
+  "UIWatch": "Window",
+  "UIAnnualReport": "UIFullscreen",
+  "UIBankManager": "UIFullscreen",
+  "UICasebook": "UIFullscreen",
+  "UIFax": "UIFullscreen",
+  "UIGraphs": "UIFullscreen",
+  "UIPolicy": "UIFullscreen",
+  "UIProgressReport": "UIFullscreen",
+  "UIResearch": "UIFullscreen",
+  "UIStaffManagement": "UIFullscreen",
+  "UITownMap": "UIFullscreen",
+  "UIAdviserHistory": "UIResizable",
+  "UICallsDispatcher": "UIResizable",
+  "UICheats": "UIResizable",
+  "UICustomise": "UIResizable",
+  "DirTreeNode": "FileTreeNode",
+  "InstallDirTreeNode": "DirTreeNode",
+  "UIDirectoryBrowser": "UIResizable",
+  "UIDropdown": "UIResizable",
+  "FilteredFileTreeNode": "FileTreeNode",
+  "FilteredTreeControl": "TreeControl",
+  "UIFileBrowser": "UIResizable",
+  "UIFolder": "UIResizable",
+  "UIHotkeyAssign": "UIResizable",
+  "UIHotkeyAssignKeyPane": "Window",
+  "UILuaConsole": "UIResizable",
+  "UIMachineMenu": "UIResizable",
+  "UIMainMenu": "UIResizable",
+  "UIMapEditor": "UIResizable",
+  "UIMenuList": "UIResizable",
+  "UINewGame": "UIResizable",
+  "UIOptions": "UIResizable",
+  "UIResolution": "UIResizable",
+  "UIScrollSpeed": "UIResizable",
+  "UIShiftScrollSpeed": "UIResizable",
+  "UIZoomSpeed": "UIResizable",
+  "UISoundSettings": "UIResizable",
+  "UITipOfTheDay": "UIResizable",
+  "UIUpdate": "UIResizable",
+  "UICustomCampaign": "UIMenuList",
+  "UICustomGame": "UIMenuList",
+  "UIMakeDebugPatient": "UIMenuList",
+  "UIChooseFont": "UIFileBrowser",
+  "UIChooseSoundfont": "UIFileBrowser",
+  "UILoadGame": "UIFileBrowser",
+  "UILoadMap": "UIFileBrowser",
+  "UISaveGame": "UIFileBrowser",
+  "UISaveMap": "UIFileBrowser",
+  "Humanoid": "Entity",
+  "Machine": "Object",
+  "Object": "Entity",
+  "SideObject": "Object",
+  "GrimReaper": "Humanoid",
+  "Inspector": "Humanoid",
+  "Patient": "Humanoid",
+  "Staff": "Humanoid",
+  "Vip": "Humanoid",
+  "Doctor": "Staff",
+  "Handyman": "Staff",
+  "Nurse": "Staff",
+  "Receptionist": "Staff"
+ },
+ "ficheros": {
+  "announcer.lua": {
+   "grupo": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "codigo": 143,
+   "ui": 1,
+   "audio": 10,
+   "graficos": 0
+  },
+  "api_version.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 2,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "app.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 1593,
+   "ui": 51,
+   "audio": 13,
+   "graficos": 17
+  },
+  "audio.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 629,
+   "ui": 8,
+   "audio": 44,
+   "graficos": 0
+  },
+  "base_config.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 420,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "calls_dispatcher.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 401,
+   "ui": 1,
+   "audio": 1,
+   "graficos": 0
+  },
+  "cheats.lua": {
+   "grupo": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "codigo": 270,
+   "ui": 5,
+   "audio": 1,
+   "graficos": 1
+  },
+  "class.lua": {
+   "grupo": "Utilidades del lenguaje",
+   "codigo": 81,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "config_finder.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 540,
+   "ui": 2,
+   "audio": 1,
+   "graficos": 0
+  },
+  "date.lua": {
+   "grupo": "Utilidades del lenguaje",
+   "codigo": 133,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "debug_script.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 0,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "earthquake.lua": {
+   "grupo": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "codigo": 150,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "endconditions.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 158,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "entity.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 205,
+   "ui": 0,
+   "audio": 4,
+   "graficos": 8
+  },
+  "entity_map.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 115,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "epidemic.lua": {
+   "grupo": "Eventos (epidemias, terremotos, trucos, locutor)",
+   "codigo": 461,
+   "ui": 11,
+   "audio": 3,
+   "graficos": 2
+  },
+  "filesystem.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 161,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "game_ui.lua": {
+   "grupo": "Interfaz",
+   "codigo": 1034,
+   "ui": 129,
+   "audio": 14,
+   "graficos": 41
+  },
+  "graphics.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 695,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 19
+  },
+  "hospital.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 1666,
+   "ui": 4,
+   "audio": 3,
+   "graficos": 0
+  },
+  "humanoid_action.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 64,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "map.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 753,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "movie_player.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 293,
+   "ui": 0,
+   "audio": 13,
+   "graficos": 3
+  },
+  "persistance.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 250,
+   "ui": 11,
+   "audio": 1,
+   "graficos": 4
+  },
+  "queue.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 221,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 2
+  },
+  "research_department.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 514,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "room.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 877,
+   "ui": 6,
+   "audio": 0,
+   "graficos": 6
+  },
+  "sprite_viewer.lua": {
+   "grupo": "Interfaz",
+   "codigo": 227,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 2
+  },
+  "staff_profile.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 219,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "strict.lua": {
+   "grupo": "Utilidades del lenguaje",
+   "codigo": 35,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "string_extensions.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 101,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "strings.lua": {
+   "grupo": "Plataforma y servicios",
+   "codigo": 529,
+   "ui": 3,
+   "audio": 0,
+   "graficos": 0
+  },
+  "ui.lua": {
+   "grupo": "Interfaz",
+   "codigo": 866,
+   "ui": 16,
+   "audio": 6,
+   "graficos": 54
+  },
+  "utility.lua": {
+   "grupo": "Utilidades del lenguaje",
+   "codigo": 426,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 10
+  },
+  "window.lua": {
+   "grupo": "Interfaz",
+   "codigo": 1620,
+   "ui": 78,
+   "audio": 2,
+   "graficos": 83
+  },
+  "world.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 2113,
+   "ui": 46,
+   "audio": 1,
+   "graficos": 3
+  },
+  "hospitals/ai_hospital.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 23,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "hospitals/player_hospital.lua": {
+   "grupo": "Mundo, hospital y economía",
+   "codigo": 636,
+   "ui": 79,
+   "audio": 10,
+   "graficos": 2
+  },
+  "walls/blue.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 27,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "walls/external.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 27,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "walls/green.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 27,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "walls/white.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 27,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "walls/yellow.lua": {
+   "grupo": "Mapa y entidades en el mapa",
+   "codigo": 27,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/answer_call.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 18,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/call_checkpoint.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 17,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/check_watch.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 21,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/die.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 222,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 16
+  },
+  "humanoid_actions/falling.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 20,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/get_up.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 15,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/idle.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 59,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 4
+  },
+  "humanoid_actions/idle_spawn.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 32,
+   "ui": 0,
+   "audio": 2,
+   "graficos": 2
+  },
+  "humanoid_actions/knock_door.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 57,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 2
+  },
+  "humanoid_actions/meander.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 77,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/multi_use_object.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 330,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 25
+  },
+  "humanoid_actions/on_ground.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 15,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/pee.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 23,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/pickup.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 61,
+   "ui": 9,
+   "audio": 1,
+   "graficos": 2
+  },
+  "humanoid_actions/queue.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 309,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/seek_reception.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 83,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/seek_room.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 254,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 9
+  },
+  "humanoid_actions/seek_staffroom.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 26,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/seek_toilets.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 35,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/shake_fist.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 21,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/spawn.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 75,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 2
+  },
+  "humanoid_actions/staff_reception.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 80,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 8
+  },
+  "humanoid_actions/sweep_floor.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 38,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 2
+  },
+  "humanoid_actions/tap_foot.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 21,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/use_object.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 360,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 17
+  },
+  "humanoid_actions/use_screen.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 159,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 11
+  },
+  "humanoid_actions/use_staffroom.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 96,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/vaccinate.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 75,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/vip_go_to_next_room.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 38,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "humanoid_actions/vomit.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 23,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "humanoid_actions/walk.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 330,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 18
+  },
+  "humanoid_actions/yawn.lua": {
+   "grupo": "Acciones de humanoides",
+   "codigo": 16,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "diseases/alien_dna.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 37,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/baldness.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 31,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 5
+  },
+  "diseases/bloaty_head.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 31,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 5
+  },
+  "diseases/broken_heart.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/broken_wind.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/chronic_nosehair.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/corrugated_ankles.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/discrete_itching.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/fake_blood.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/fractured_bones.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 42,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 9
+  },
+  "diseases/gastric_ejections.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/golf_stones.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/gut_rot.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/hairyitis.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 29,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 5
+  },
+  "diseases/heaped_piles.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/infectious_laughter.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 39,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/invisibility.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 33,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 5
+  },
+  "diseases/iron_lungs.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 36,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/jellyitis.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 42,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/kidney_beans.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/king_complex.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 28,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 5
+  },
+  "diseases/pregnant.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 35,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 5
+  },
+  "diseases/ruptured_nodules.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/serious_radiation.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 42,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/slack_tongue.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 34,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 6
+  },
+  "diseases/sleeping_illness.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/spare_ribs.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/sweaty_palms.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/the_squits.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/third_degree_sideburns.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/transparency.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 33,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/tv_personalities.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/uncommon_cold.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "diseases/unexpected_swelling.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 41,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 7
+  },
+  "objects/analyser.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 45,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/autopsy.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 83,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/bed.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 78,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/bench.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 164,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/bin.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 22,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/bookcase.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 33,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/cabinet.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 47,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/chair.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 143,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/comfortable_chair.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 45,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/computer.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 37,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/console.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 47,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/couch.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 44,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/crash_trolley.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 117,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/desk.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 93,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/door.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 151,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 4
+  },
+  "objects/drinks_machine.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 88,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/fire_extinguisher.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 29,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/gates_to_hell.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 40,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/helicopter.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 74,
+   "ui": 3,
+   "audio": 1,
+   "graficos": 1
+  },
+  "objects/lecture_chair.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 42,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/litter.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 123,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "objects/loo.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 111,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/op_sink1.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 46,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/op_sink2.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 24,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/pharmacy_cabinet.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 65,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/plant.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 237,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/pool_table.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 75,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/projector.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 45,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/radiation_shield.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 48,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/radiation_shield_b.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 28,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/radiator.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 28,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/rathole.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 25,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/reception_desk.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 191,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 1
+  },
+  "objects/screen.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 50,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/sink.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 48,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/skeleton.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 34,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/sofa.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 96,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/surgeon_screen.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 77,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/tv.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 26,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/video_game.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 38,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/x_ray_viewer.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 33,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/blood_machine.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 97,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/cardio.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 138,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/cast_remover.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 121,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/dna_fixer.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 56,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/electrolyser.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 70,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/hair_restorer.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 61,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/inflator.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 67,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/jelly_moulder.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 89,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/operating_table.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 100,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/operating_table_b.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 42,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/scanner.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 203,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/shower.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 60,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/slicer.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 64,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/ultrascanner.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 73,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/machines/x_ray.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 95,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/doors/entrance_left_door.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 13,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/doors/entrance_right_door.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 124,
+   "ui": 0,
+   "audio": 1,
+   "graficos": 0
+  },
+  "objects/doors/swing_door_left.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 12,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "objects/doors/swing_door_right.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 144,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 3
+  },
+  "rooms/blood_machine_room.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 51,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/cardiogram.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 92,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/decontamination.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 87,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/dna_fixer.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 54,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/electrolysis.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 69,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 3
+  },
+  "rooms/fracture_clinic.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 50,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 3
+  },
+  "rooms/general_diag.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 91,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/gp.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 153,
+   "ui": 1,
+   "audio": 0,
+   "graficos": 4
+  },
+  "rooms/hair_restoration.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 56,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "rooms/inflation.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 48,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "rooms/jelly_vat.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 44,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/operating_theatre.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 260,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "rooms/pharmacy.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 66,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/psych.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 105,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/research.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 161,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/scanner_room.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 107,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/slack_tongue.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 52,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "rooms/staff_room.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 42,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/toilets.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 124,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 4
+  },
+  "rooms/training.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 202,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/ultrascan.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 47,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/ward.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 213,
+   "ui": 1,
+   "audio": 0,
+   "graficos": 0
+  },
+  "rooms/x_ray_room.lua": {
+   "grupo": "Habitaciones",
+   "codigo": 59,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/brazilian_portuguese.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 2792,
+   "ui": 248,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/czech.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3814,
+   "ui": 6,
+   "audio": 2,
+   "graficos": 0
+  },
+  "languages/danish.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 2288,
+   "ui": 44,
+   "audio": 1,
+   "graficos": 0
+  },
+  "languages/developer.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 14,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/dutch.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3490,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/english.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 1165,
+   "ui": 9,
+   "audio": 2,
+   "graficos": 0
+  },
+  "languages/finnish.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 2792,
+   "ui": 3,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/french.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 1436,
+   "ui": 19,
+   "audio": 2,
+   "graficos": 0
+  },
+  "languages/german.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 903,
+   "ui": 4,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/greek.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3324,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/hungarian.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 1616,
+   "ui": 12,
+   "audio": 1,
+   "graficos": 0
+  },
+  "languages/iberic_portuguese.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 623,
+   "ui": 15,
+   "audio": 1,
+   "graficos": 0
+  },
+  "languages/italian.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 853,
+   "ui": 4,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/japanese.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 2333,
+   "ui": 1,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/korean.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 2531,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/norwegian.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3242,
+   "ui": 3,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/original_strings.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 1888,
+   "ui": 1,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/polish.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3241,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/russian.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3802,
+   "ui": 6,
+   "audio": 2,
+   "graficos": 0
+  },
+  "languages/simplified_chinese.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3493,
+   "ui": 3,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/spanish.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 1466,
+   "ui": 13,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/swedish.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 644,
+   "ui": 5,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/traditional_chinese.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3501,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "languages/ukrainian.lua": {
+   "grupo": "Textos de idioma (languages/, datos)",
+   "codigo": 3545,
+   "ui": 2,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_blood_machine.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 8,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_cardiogram.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 8,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_general_diag.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 7,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_gp.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 7,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_psych.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 7,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_scanner.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 8,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_ultrascan.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 8,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_ward.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 7,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "diagnosis/diag_x_ray.lua": {
+   "grupo": "Enfermedades y diagnóstico",
+   "codigo": 8,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/adviser.lua": {
+   "grupo": "Interfaz",
+   "codigo": 230,
+   "ui": 29,
+   "audio": 0,
+   "graficos": 7
+  },
+  "dialogs/bottom_panel.lua": {
+   "grupo": "Interfaz",
+   "codigo": 830,
+   "ui": 177,
+   "audio": 10,
+   "graficos": 6
+  },
+  "dialogs/build_room.lua": {
+   "grupo": "Interfaz",
+   "codigo": 193,
+   "ui": 35,
+   "audio": 2,
+   "graficos": 7
+  },
+  "dialogs/confirm_dialog.lua": {
+   "grupo": "Interfaz",
+   "codigo": 79,
+   "ui": 16,
+   "audio": 0,
+   "graficos": 3
+  },
+  "dialogs/edit_room.lua": {
+   "grupo": "Interfaz",
+   "codigo": 1349,
+   "ui": 128,
+   "audio": 4,
+   "graficos": 24
+  },
+  "dialogs/fullscreen.lua": {
+   "grupo": "Interfaz",
+   "codigo": 102,
+   "ui": 16,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/furnish_corridor.lua": {
+   "grupo": "Interfaz",
+   "codigo": 218,
+   "ui": 35,
+   "audio": 4,
+   "graficos": 6
+  },
+  "dialogs/hire_staff.lua": {
+   "grupo": "Interfaz",
+   "codigo": 237,
+   "ui": 45,
+   "audio": 7,
+   "graficos": 5
+  },
+  "dialogs/information.lua": {
+   "grupo": "Interfaz",
+   "codigo": 118,
+   "ui": 20,
+   "audio": 0,
+   "graficos": 3
+  },
+  "dialogs/jukebox.lua": {
+   "grupo": "Interfaz",
+   "codigo": 138,
+   "ui": 14,
+   "audio": 21,
+   "graficos": 5
+  },
+  "dialogs/machine_dialog.lua": {
+   "grupo": "Interfaz",
+   "codigo": 135,
+   "ui": 27,
+   "audio": 2,
+   "graficos": 3
+  },
+  "dialogs/menu.lua": {
+   "grupo": "Interfaz",
+   "codigo": 745,
+   "ui": 95,
+   "audio": 9,
+   "graficos": 3
+  },
+  "dialogs/message.lua": {
+   "grupo": "Interfaz",
+   "codigo": 169,
+   "ui": 27,
+   "audio": 3,
+   "graficos": 1
+  },
+  "dialogs/patient.lua": {
+   "grupo": "Interfaz",
+   "codigo": 246,
+   "ui": 48,
+   "audio": 4,
+   "graficos": 3
+  },
+  "dialogs/place_objects.lua": {
+   "grupo": "Interfaz",
+   "codigo": 852,
+   "ui": 76,
+   "audio": 3,
+   "graficos": 8
+  },
+  "dialogs/place_staff.lua": {
+   "grupo": "Interfaz",
+   "codigo": 142,
+   "ui": 29,
+   "audio": 1,
+   "graficos": 3
+  },
+  "dialogs/queue_dialog.lua": {
+   "grupo": "Interfaz",
+   "codigo": 313,
+   "ui": 50,
+   "audio": 0,
+   "graficos": 11
+  },
+  "dialogs/resizable.lua": {
+   "grupo": "Interfaz",
+   "codigo": 144,
+   "ui": 21,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/staff_dialog.lua": {
+   "grupo": "Interfaz",
+   "codigo": 324,
+   "ui": 51,
+   "audio": 0,
+   "graficos": 5
+  },
+  "dialogs/staff_rise.lua": {
+   "grupo": "Interfaz",
+   "codigo": 136,
+   "ui": 17,
+   "audio": 0,
+   "graficos": 7
+  },
+  "dialogs/subtitles.lua": {
+   "grupo": "Interfaz",
+   "codigo": 65,
+   "ui": 3,
+   "audio": 1,
+   "graficos": 1
+  },
+  "dialogs/tree_ctrl.lua": {
+   "grupo": "Interfaz",
+   "codigo": 550,
+   "ui": 6,
+   "audio": 0,
+   "graficos": 2
+  },
+  "dialogs/watch.lua": {
+   "grupo": "Interfaz",
+   "codigo": 165,
+   "ui": 25,
+   "audio": 3,
+   "graficos": 3
+  },
+  "dialogs/fullscreen/annual_report.lua": {
+   "grupo": "Interfaz",
+   "codigo": 447,
+   "ui": 27,
+   "audio": 0,
+   "graficos": 2
+  },
+  "dialogs/fullscreen/bank_manager.lua": {
+   "grupo": "Interfaz",
+   "codigo": 344,
+   "ui": 55,
+   "audio": 8,
+   "graficos": 10
+  },
+  "dialogs/fullscreen/drug_casebook.lua": {
+   "grupo": "Interfaz",
+   "codigo": 325,
+   "ui": 49,
+   "audio": 9,
+   "graficos": 3
+  },
+  "dialogs/fullscreen/fax.lua": {
+   "grupo": "Interfaz",
+   "codigo": 240,
+   "ui": 50,
+   "audio": 3,
+   "graficos": 5
+  },
+  "dialogs/fullscreen/graphs.lua": {
+   "grupo": "Interfaz",
+   "codigo": 351,
+   "ui": 24,
+   "audio": 2,
+   "graficos": 2
+  },
+  "dialogs/fullscreen/hospital_policy.lua": {
+   "grupo": "Interfaz",
+   "codigo": 185,
+   "ui": 21,
+   "audio": 0,
+   "graficos": 2
+  },
+  "dialogs/fullscreen/progress_report.lua": {
+   "grupo": "Interfaz",
+   "codigo": 187,
+   "ui": 22,
+   "audio": 0,
+   "graficos": 3
+  },
+  "dialogs/fullscreen/research_policy.lua": {
+   "grupo": "Interfaz",
+   "codigo": 202,
+   "ui": 27,
+   "audio": 5,
+   "graficos": 2
+  },
+  "dialogs/fullscreen/staff_management.lua": {
+   "grupo": "Interfaz",
+   "codigo": 573,
+   "ui": 55,
+   "audio": 7,
+   "graficos": 5
+  },
+  "dialogs/fullscreen/town_map.lua": {
+   "grupo": "Interfaz",
+   "codigo": 283,
+   "ui": 43,
+   "audio": 2,
+   "graficos": 3
+  },
+  "dialogs/resizables/adviser_history.lua": {
+   "grupo": "Interfaz",
+   "codigo": 131,
+   "ui": 30,
+   "audio": 0,
+   "graficos": 2
+  },
+  "dialogs/resizables/calls_dispatcher.lua": {
+   "grupo": "Interfaz",
+   "codigo": 144,
+   "ui": 19,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/cheats_dialog.lua": {
+   "grupo": "Interfaz",
+   "codigo": 103,
+   "ui": 16,
+   "audio": 1,
+   "graficos": 0
+  },
+  "dialogs/resizables/customise.lua": {
+   "grupo": "Interfaz",
+   "codigo": 212,
+   "ui": 41,
+   "audio": 8,
+   "graficos": 0
+  },
+  "dialogs/resizables/directory_browser.lua": {
+   "grupo": "Interfaz",
+   "codigo": 141,
+   "ui": 14,
+   "audio": 0,
+   "graficos": 2
+  },
+  "dialogs/resizables/dropdown.lua": {
+   "grupo": "Interfaz",
+   "codigo": 127,
+   "ui": 13,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/file_browser.lua": {
+   "grupo": "Interfaz",
+   "codigo": 152,
+   "ui": 11,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/folder_settings.lua": {
+   "grupo": "Interfaz",
+   "codigo": 201,
+   "ui": 30,
+   "audio": 2,
+   "graficos": 1
+  },
+  "dialogs/resizables/hotkey_assign.lua": {
+   "grupo": "Interfaz",
+   "codigo": 468,
+   "ui": 29,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/lua_console.lua": {
+   "grupo": "Interfaz",
+   "codigo": 91,
+   "ui": 12,
+   "audio": 0,
+   "graficos": 2
+  },
+  "dialogs/resizables/machine_menu.lua": {
+   "grupo": "Interfaz",
+   "codigo": 336,
+   "ui": 39,
+   "audio": 0,
+   "graficos": 5
+  },
+  "dialogs/resizables/main_menu.lua": {
+   "grupo": "Interfaz",
+   "codigo": 139,
+   "ui": 38,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/map_editor.lua": {
+   "grupo": "Interfaz",
+   "codigo": 1104,
+   "ui": 69,
+   "audio": 1,
+   "graficos": 180
+  },
+  "dialogs/resizables/menu_list_dialog.lua": {
+   "grupo": "Interfaz",
+   "codigo": 83,
+   "ui": 12,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/new_game.lua": {
+   "grupo": "Interfaz",
+   "codigo": 124,
+   "ui": 24,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/options.lua": {
+   "grupo": "Interfaz",
+   "codigo": 640,
+   "ui": 124,
+   "audio": 0,
+   "graficos": 3
+  },
+  "dialogs/resizables/sound_setting.lua": {
+   "grupo": "Interfaz",
+   "codigo": 323,
+   "ui": 37,
+   "audio": 19,
+   "graficos": 1
+  },
+  "dialogs/resizables/tip_of_the_day.lua": {
+   "grupo": "Interfaz",
+   "codigo": 59,
+   "ui": 13,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/update.lua": {
+   "grupo": "Interfaz",
+   "codigo": 71,
+   "ui": 9,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/menu_list_dialogs/custom_campaign.lua": {
+   "grupo": "Interfaz",
+   "codigo": 108,
+   "ui": 12,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/menu_list_dialogs/custom_game.lua": {
+   "grupo": "Interfaz",
+   "codigo": 107,
+   "ui": 18,
+   "audio": 0,
+   "graficos": 4
+  },
+  "dialogs/resizables/menu_list_dialogs/make_debug_patient.lua": {
+   "grupo": "Interfaz",
+   "codigo": 29,
+   "ui": 9,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/file_browsers/choose_font.lua": {
+   "grupo": "Interfaz",
+   "codigo": 33,
+   "ui": 9,
+   "audio": 0,
+   "graficos": 1
+  },
+  "dialogs/resizables/file_browsers/choose_soundfont.lua": {
+   "grupo": "Interfaz",
+   "codigo": 32,
+   "ui": 8,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/file_browsers/load_game.lua": {
+   "grupo": "Interfaz",
+   "codigo": 29,
+   "ui": 12,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/file_browsers/load_map.lua": {
+   "grupo": "Interfaz",
+   "codigo": 21,
+   "ui": 10,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/file_browsers/save_game.lua": {
+   "grupo": "Interfaz",
+   "codigo": 68,
+   "ui": 17,
+   "audio": 0,
+   "graficos": 0
+  },
+  "dialogs/resizables/file_browsers/save_map.lua": {
+   "grupo": "Interfaz",
+   "codigo": 72,
+   "ui": 19,
+   "audio": 0,
+   "graficos": 0
+  },
+  "entities/humanoid.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 850,
+   "ui": 4,
+   "audio": 0,
+   "graficos": 10
+  },
+  "entities/machine.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 382,
+   "ui": 3,
+   "audio": 0,
+   "graficos": 8
+  },
+  "entities/object.lua": {
+   "grupo": "Entidades: objetos y máquinas",
+   "codigo": 867,
+   "ui": 5,
+   "audio": 1,
+   "graficos": 8
+  },
+  "entities/humanoids/grim_reaper.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 25,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "entities/humanoids/inspector.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 37,
+   "ui": 1,
+   "audio": 1,
+   "graficos": 1
+  },
+  "entities/humanoids/patient.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 943,
+   "ui": 4,
+   "audio": 0,
+   "graficos": 26
+  },
+  "entities/humanoids/staff.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 539,
+   "ui": 7,
+   "audio": 2,
+   "graficos": 10
+  },
+  "entities/humanoids/vip.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 369,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 1
+  },
+  "entities/humanoids/staff/doctor.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 259,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 2
+  },
+  "entities/humanoids/staff/handyman.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 155,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "entities/humanoids/staff/nurse.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 24,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  },
+  "entities/humanoids/staff/receptionist.lua": {
+   "grupo": "Entidades: humanoides",
+   "codigo": 68,
+   "ui": 0,
+   "audio": 0,
+   "graficos": 0
+  }
+ }
+}

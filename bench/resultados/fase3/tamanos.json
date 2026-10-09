@@ -1,0 +1,22 @@
+{
+ "x86_64": {
+  "map_tile": 120,
+  "map_tile_flags": 21,
+  "link_list": 24,
+  "level_map": 160,
+  "animation": 144,
+  "sprite_render_list": 120,
+  "path_node": 40,
+  "pathfinder": 240,
+  "tiles_128x128_map_tile_x2": 3932160
+ },
+ "n64": {
+  "level_map": 124,
+  "link_list": 12,
+  "map_tile": 84,
+  "path_node": 28,
+  "pathfinder": 144,
+  "tiles_128x128_map_tile_x2": 2752512,
+  "path_nodes_128x128": 458752
+ }
+}

@@ -1,0 +1,413 @@
+{
+ "instrucciones": 3687110749,
+ "horas": 150.0,
+ "instrucciones_por_hora": 24580738.326666668,
+ "por_objeto": {
+  "liblua5.4.so.0.0.0": 2819607128,
+  "corsix-th": 806806754,
+  "libc.so.6": 46763184,
+  "???": 9754334,
+  "libstdc++.so.6.0.33": 2719837,
+  "liblua5.4-lpeg.so.2.0.0": 712823,
+  "libX11.so.6.4.0": 277489,
+  "libxcb.so.1.1.0": 255228,
+  "libSDL2-2.0.so.0.3000.0": 211825,
+  "ld-linux-x86-64.so.2": 2095,
+  "libm.so.6": 52
+ },
+ "corsixth_por_fichero": {
+  "th_map.cpp": 494438617,
+  "th_pathfind.cpp": 241726408,
+  "th_lua.h": 17276519,
+  "th_lua_map.cpp": 13027875,
+  "stl_vector.h": 12717592,
+  "th_pathfind.h": 11160204,
+  "stl_tree.h": 4287693,
+  "th_gfx.cpp": 4177859,
+  "lua.hpp": 2168315,
+  "th_lua_anims.cpp": 1468452,
+  "th_lua_strings.cpp": 864391,
+  "stl_list.h": 755841,
+  "th_map.h": 734885,
+  "new_allocator.h": 622470,
+  "stl_iterator.h": 545742,
+  "th_lua.cpp": 316518,
+  "random.c": 298818,
+  "th_gfx.h": 110868,
+  "th.cpp": 70246,
+  "th_gfx_sdl.cpp": 20322,
+  "sdl_core.cpp": 13704,
+  "vector.tcc": 1318,
+  "basic_string.h": 474,
+  "stl_uninitialized.h": 470,
+  "char_traits.h": 372,
+  "stl_algobase.h": 370,
+  "basic_string.tcc": 252,
+  "sdl_wm.cpp": 72,
+  "th_lua_gfx.cpp": 48,
+  "stl_iterator_base_funcs.h": 24,
+  "persist_lua.cpp": 15
+ },
+ "funciones": [
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x000000000001dde0'2",
+   "ir": 940413317
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000012540",
+   "ir": 659089295
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_map.cpp",
+   "funcion": "level_map::thermal_neighbour(unsigned int&, bool, long, map_tile*, int) const",
+   "ir": 290977200
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000013390",
+   "ir": 166549232
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_map.cpp",
+   "funcion": "level_map::update_temperatures(unsigned short, unsigned short)",
+   "ir": 156178926
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000011440'2",
+   "ir": 155031463
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x000000000001d660",
+   "ir": 150011892
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000018040",
+   "ir": 89534923
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000012840",
+   "ir": 82900220
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "basic_pathfinder::try_node(path_node*, map_tile_flags, path_node*, travel_direction)",
+   "ir": 56863858
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "pathfinder::pop_from_open_heap()",
+   "ir": 44893630
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "abstract_pathfinder::record_neighbour_if_passable(path_node*, map_tile_flags, bool, path_node*)",
+   "ir": 42455876
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000016a70",
+   "ir": 41607397
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "abstract_pathfinder::search_neighbours(path_node*, map_tile_flags, int)",
+   "ir": 38192046
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_tointegerx",
+   "ir": 35620448
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "luaL_checkinteger",
+   "ir": 30987040
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_getmetatable",
+   "ir": 27058722
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_map.cpp",
+   "funcion": "level_map::get_tile_unchecked(int, int) const",
+   "ir": 26965147
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_compare",
+   "ir": 25950849
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000007c40",
+   "ir": 24253533
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000017df0",
+   "ir": 23555197
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_geti",
+   "ir": 22313794
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x000000000001d8c0",
+   "ir": 21663050
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000030d60",
+   "ir": 20068360
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "pathfinder::open_heap_promote(path_node*)",
+   "ir": 19915265
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000030e00",
+   "ir": 19465978
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000018740",
+   "ir": 16539088
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "basic_pathfinder::find_path(level_map const*, int, int, int, int)",
+   "ir": 15062719
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x00000000000135c0",
+   "ir": 14458864
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_settop",
+   "ir": 13897887
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000018170",
+   "ir": 13795148
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000018740'2",
+   "ir": 13548882
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_type",
+   "ir": 12522979
+  },
+  {
+   "objeto": "libc.so.6",
+   "fichero": "malloc.c",
+   "funcion": "_int_malloc",
+   "ir": 12424935
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_lua.h",
+   "funcion": "level_map* luaT_testuserdata<level_map>(lua_State*, int, int, bool)",
+   "ir": 11405905
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_touserdata",
+   "ir": 11333422
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x000000000000d200",
+   "ir": 10751902
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000017ba0",
+   "ir": 10436115
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x000000000002e110",
+   "ir": 9954676
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "pathfinder::push_to_open_heap(path_node*)",
+   "ir": 9324346
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "luaL_checkany",
+   "ir": 8911420
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000017f50",
+   "ir": 8281477
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000013010",
+   "ir": 8251863
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.cpp",
+   "funcion": "basic_pathfinder::guess_distance(path_node*)",
+   "ir": 7934290
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000026ec0",
+   "ir": 7843003
+  },
+  {
+   "objeto": "libc.so.6",
+   "fichero": "strcmp-avx2.S",
+   "funcion": "__strcmp_avx2",
+   "ir": 7840191
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_settable",
+   "ir": 7766549
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_lua_map.cpp",
+   "funcion": "(anonymous namespace)::l_map_get_room_id(lua_State*)",
+   "ir": 7719738
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_map.cpp",
+   "funcion": "map_tile_iterator::advance_until_visible()",
+   "ir": 7532310
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_pushinteger",
+   "ir": 7311766
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x0000000000022310",
+   "ir": 7210882
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_pathfind.h",
+   "funcion": "pathfinder::pop_from_open_heap()",
+   "ir": 6930738
+  },
+  {
+   "objeto": "libc.so.6",
+   "fichero": "malloc.c",
+   "funcion": "malloc",
+   "ir": 6619051
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x00000000000127d0",
+   "ir": 6440418
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_pushlstring",
+   "ir": 6338506
+  },
+  {
+   "objeto": "corsix-th",
+   "fichero": "th_map.cpp",
+   "funcion": "level_map::get_tile(int, int)",
+   "ir": 6280980
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_pushcclosure",
+   "ir": 6253560
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_pushstring",
+   "ir": 6113750
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "lua_pushvalue",
+   "ir": 5157373
+  },
+  {
+   "objeto": "liblua5.4.so.0.0.0",
+   "fichero": "???",
+   "funcion": "0x000000000002aea0",
+   "ir": 5089062
+  }
+ ]
+}

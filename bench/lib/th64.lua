@@ -23,7 +23,10 @@ local opts, out_dir, log_fh
 local script_co, req
 local hours_done = 0
 local sampler = nil
+local profiler, profiler_on = nil, false
 M.autorun_speed = nil
+M.phase = nil -- "timer" o "frame": qué manejador de eventos está corriendo
+M.skip_frames = false -- true: no se dibuja (para perfilar solo la simulación)
 M.zone_suffix = "" -- p. ej. "_calentamiento" para separar fases en la traza
 
 function M.init(o, bench_dir)
@@ -66,6 +69,23 @@ function M.set_sampler(fn)
   sampler = fn
 end
 
+--! Instala p = {hook = función, count = n} como hook de conteo de instrucciones
+--! (debug.sethook) en el hilo que ejecuta los eventos del juego, no en el del
+--! guion; nil lo quita. Se aplica en el siguiente evento.
+function M.set_profiler(p)
+  profiler = p
+end
+
+local function sync_profiler()
+  if profiler and not profiler_on then
+    debug.sethook(profiler.hook, "", profiler.count)
+    profiler_on = true
+  elseif not profiler and profiler_on then
+    debug.sethook()
+    profiler_on = false
+  end
+end
+
 function M.quit(code)
   M.log("fin (código %d)", code or 0)
   log_fh:close()
@@ -91,9 +111,12 @@ end
 local function timed_timer(app, orig, ...)
   local hour = sim_hour_pending(app)
   local hours = hour and app.world.hours_per_tick or 0
+  sync_profiler()
+  M.phase = "timer"
   tracy.ZoneBeginN((hour and "th64_hora" or "th64_tick") .. M.zone_suffix)
   local r = orig(app, ...)
   tracy.ZoneEnd()
+  M.phase = nil
   if hour then
     hours_done = hours_done + hours
     if sampler then sampler(app) end
@@ -209,9 +232,13 @@ function M.start()
 
   local orig_frame = app.eventHandlers.frame
   app.eventHandlers.frame = function(self, ...)
+    if M.skip_frames then return end
+    sync_profiler()
+    M.phase = "frame"
     tracy.ZoneBeginN("th64_frame" .. M.zone_suffix)
     local r = orig_frame(self, ...)
     tracy.ZoneEnd()
+    M.phase = nil
     return r
   end
   M.log("arnés listo: %s (%s)", opts.script, _VERSION)

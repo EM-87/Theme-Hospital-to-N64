@@ -8,6 +8,7 @@ Este repositorio **no contiene datos del juego**. Cada usuario aporta los suyos,
 - Fase 0, entorno: [`docs/00_entorno.md`](docs/00_entorno.md)
 - Fase 1, mediciones de CorsixTH: [`docs/01_mediciones.md`](docs/01_mediciones.md)
 - Fase 2, inventario de datos y presupuesto de cartucho: [`docs/02_datos.md`](docs/02_datos.md)
+- Fase 3, arquitectura de CorsixTH y reutilización: [`docs/03_arquitectura.md`](docs/03_arquitectura.md)
 
 ```bash
 tools/setup.sh          # instala todo (Ubuntu 24.04); necesita TH_DATA_URL o TH_DATA_ZIP para los datos
@@ -22,6 +23,6 @@ Estructura:
 | Ruta | Contenido |
 |---|---|
 | `docs/` | plan y documento de hallazgos de cada fase |
-| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones) y análisis de los datos (`tools/datos/`) |
+| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`) y del código (`tools/arquitectura/`) |
 | `bench/` | arnés de medición dentro de CorsixTH, partidas de referencia y resultados resumidos |
 | `n64/` | ROMs: hola mundo y benchmarks de CPU |
