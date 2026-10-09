@@ -1,0 +1,32 @@
+# Datos originales de Theme Hospital: nunca entran en el repositorio.
+# Viven fuera, en $TH_DATA_DIR (ver tools/setup.sh y docs/00_entorno.md).
+# Estas reglas son una red de seguridad por si alguien los copia aquí dentro.
+/data/
+/th-data/
+*.iso
+*.ISO
+*.cue
+*.CUE
+*.SMK
+*.SM2
+*.SM4
+*.ANI
+*.DAT
+*.TAB
+*.XMI
+LEVEL.L*
+
+# Variables locales (por ejemplo TH_DATA_URL)
+.env
+
+# Salidas de compilación de N64
+n64/**/build/
+*.z64
+*.v64
+*.n64
+
+# Trazas y perfiles (se publican resumidos en docs/, no en crudo)
+*.tracy
+heaptrack.*.zst
+heaptrack.*.gz
+massif.out.*
