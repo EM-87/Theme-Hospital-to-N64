@@ -238,3 +238,8 @@ Además, CorsixTH se compila ahora en cuatro variantes:
 Dos correcciones respecto a lo descrito arriba:
 - La clave de configuración del directorio de partidas es `savegames`, no `savegame`.
 - Con `tracy-capture` conectado, CorsixTH no termina solo al salir: el destructor de Tracy espera a su hilo de red. `tools/bench_run.sh` lo cierra 3 s después de que el guion escriba `fin`.
+
+## Añadido en la fase 2
+
+- `tools/setup.sh` instala además `fluidsynth` y `timgm6mb-soundfont`, para medir la música sintetizada (`docs/02_datos.md`).
+- Las mediciones de datos (`tools/datos/fase2.sh`) usan también `ffmpeg`, `audioconv64`, `videoconv64` y `mkasset` de libdragon, y el `rnc_decode` del build `notracy` de CorsixTH.

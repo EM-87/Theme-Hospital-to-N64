@@ -1,0 +1,204 @@
+{
+ "blobs": {
+  "pantallas_320_ci8.bin": {
+   "bytes": 1676800,
+   "c1": 794762,
+   "c2": 640982,
+   "c3": 634234
+  },
+  "sprites_M_ci4q.bin": {
+   "bytes": 954104,
+   "c1": 396548,
+   "c2": 343016,
+   "c3": 320877
+  },
+  "sprites_M_ci8.bin": {
+   "bytes": 1367880,
+   "c1": 483449,
+   "c2": 369926,
+   "c3": 344675
+  },
+  "sprites_M_mixto.bin": {
+   "bytes": 1223576,
+   "c1": 477169,
+   "c2": 371239,
+   "c3": 349810
+  },
+  "sprites_QDATAM_ci8.bin": {
+   "bytes": 59296,
+   "c1": 3745,
+   "c2": 2638,
+   "c3": 1981
+  },
+  "sprites_QDATAM_mixto.bin": {
+   "bytes": 59296,
+   "c1": 3745,
+   "c2": 2638,
+   "c3": 1981
+  },
+  "sprites_QDATA_FONT_ci8.bin": {
+   "bytes": 2312440,
+   "c1": 303621,
+   "c2": 243692,
+   "c3": 218993
+  },
+  "sprites_QDATA_FONT_mixto.bin": {
+   "bytes": 2053264,
+   "c1": 304070,
+   "c2": 245783,
+   "c3": 222817
+  },
+  "sprites_QDATA_UI_ci8.bin": {
+   "bytes": 2038008,
+   "c1": 333917,
+   "c2": 248378,
+   "c3": 221711
+  },
+  "sprites_QDATA_UI_mitad_ci8.bin": {
+   "bytes": 545728,
+   "c1": 109155,
+   "c2": 82241,
+   "c3": 74382
+  },
+  "sprites_QDATA_UI_mixto.bin": {
+   "bytes": 1973544,
+   "c1": 333512,
+   "c2": 248605,
+   "c3": 222436
+  },
+  "sprites_UI_DATAM_ci8.bin": {
+   "bytes": 305856,
+   "c1": 38736,
+   "c2": 27502,
+   "c3": 22875
+  },
+  "sprites_UI_DATAM_mixto.bin": {
+   "bytes": 289128,
+   "c1": 39530,
+   "c2": 28298,
+   "c3": 23876
+  },
+  "sprites_UI_DATA_ci8.bin": {
+   "bytes": 186944,
+   "c1": 25577,
+   "c2": 17904,
+   "c3": 14756
+  },
+  "sprites_UI_DATA_mixto.bin": {
+   "bytes": 168568,
+   "c1": 25935,
+   "c2": 18254,
+   "c3": 15289
+  },
+  "sprites_V_ci8.bin": {
+   "bytes": 4949096,
+   "c1": 1234859,
+   "c2": 894743,
+   "c3": 853893
+  },
+  "sprites_V_mixto.bin": {
+   "bytes": 4476760,
+   "c1": 1236382,
+   "c2": 907199,
+   "c3": 876277
+  }
+ },
+ "bruto": {
+  "Mapas y niveles / Configuración de campaña (.SAM)": {
+   "ficheros": 39,
+   "disco": 418056,
+   "bruto": 418056,
+   "c1": 149684,
+   "c2": 112976,
+   "c3": 100360
+  },
+  "Mapas y niveles / Mapas de campaña (LEVEL.L1-L12)": {
+   "ficheros": 12,
+   "disco": 41900,
+   "bruto": 1967376,
+   "c1": 53032,
+   "c2": 39637,
+   "c3": 29590
+  },
+  "Interfaz baja resolución (QDATAM) / Fuentes y caras": {
+   "ficheros": 11,
+   "disco": 46215,
+   "bruto": 46215,
+   "c1": 16626,
+   "c2": 11078,
+   "c3": 8856
+  },
+  "Gráficos juego, baja resolución (DATAM) / Sprites y bloques": {
+   "ficheros": 16,
+   "disco": 994428,
+   "bruto": 994428,
+   "c1": 593531,
+   "c2": 436706,
+   "c3": 415612
+  },
+  "Gráficos juego, baja resolución (DATAM) / Animaciones": {
+   "ficheros": 4,
+   "disco": 504284,
+   "bruto": 504284,
+   "c1": 302381,
+   "c2": 218629,
+   "c3": 160672
+  },
+  "Interfaz (QDATA) / Pantallas completas (bitmap + paleta)": {
+   "ficheros": 45,
+   "disco": 2129673,
+   "bruto": 6413287,
+   "c1": 2349841,
+   "c2": 1935734,
+   "c3": 1752424
+  },
+  "Interfaz (QDATA) / Hojas de interfaz y cursores": {
+   "ficheros": 63,
+   "disco": 472576,
+   "bruto": 1081341,
+   "c1": 569172,
+   "c2": 446534,
+   "c3": 409131
+  },
+  "Interfaz (QDATA) / Fuentes": {
+   "ficheros": 94,
+   "disco": 307963,
+   "bruto": 846097,
+   "c1": 372650,
+   "c2": 283096,
+   "c3": 252512
+  },
+  "Textos / Idiomas (LANG-x.DAT)": {
+   "ficheros": 6,
+   "disco": 596946,
+   "bruto": 596946,
+   "c1": 258098,
+   "c2": 219170,
+   "c3": 202274
+  },
+  "Gráficos juego, alta resolución (DATA) / Sprites y bloques": {
+   "ficheros": 17,
+   "disco": 1051116,
+   "bruto": 2591781,
+   "c1": 1286103,
+   "c2": 939752,
+   "c3": 920043
+  },
+  "Textos / Léxicos (nombres)": {
+   "ficheros": 2,
+   "disco": 983,
+   "bruto": 4000,
+   "c1": 1178,
+   "c2": 953,
+   "c3": 866
+  },
+  "Gráficos juego, alta resolución (DATA) / Animaciones": {
+   "ficheros": 5,
+   "disco": 255687,
+   "bruto": 517120,
+   "c1": 319783,
+   "c2": 231327,
+   "c3": 170148
+  }
+ }
+}

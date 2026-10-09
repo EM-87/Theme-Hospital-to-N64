@@ -8,8 +8,10 @@ Convierte con audioconv64 dos conjuntos por separado, porque en la N64 se
 tratarían distinto:
   - efectos: los sonidos idénticos en todos los idiomas (se guardan una vez);
   - locutor: los propios de cada idioma (uno por idioma incluido).
-Variantes: VADPCM (--wav-compress 1, la que decodifica el RSP sin coste de
-CPU apreciable), VADPCM remuestreado a 11025 Hz y Opus (--wav-compress 3).
+Variantes: VADPCM (--wav-compress 1, la de por defecto), VADPCM remuestreado
+a 11025 Hz, ULC (--wav-compress 2) y Opus (--wav-compress 3). Según la ayuda
+de audioconv64, los tres códecs están optimizados para el RSP; ULC es «simple
+y rápido» y Opus «más lento en ejecución, más pequeño en disco».
 Idiomas de SOUND-x.DAT según languages/*.lua de CorsixTH: 0 inglés, 1 francés,
 2 alemán, 3 italiano, 4 español, 5 sueco.
 """
@@ -26,6 +28,7 @@ LANGS = {"0": "inglés", "1": "francés", "2": "alemán", "3": "italiano", "4": 
 VARIANTS = {
     "vadpcm": ["--wav-compress", "1"],
     "vadpcm_11025": ["--wav-compress", "1", "--wav-resample", "11025"],
+    "ulc": ["--wav-compress", "2"],
     "opus": ["--wav-compress", "3"],
 }
 
