@@ -1,0 +1,70 @@
+{
+  "balance": 327894,
+  "cheats": {
+    "max_reputation": true,
+    "roujin": false
+  },
+  "date": "3-09-08T19",
+  "decisions": {
+    "UIAnnualReport: cerrar": 2
+  },
+  "entities": {
+    "by_class": {
+      "Bench": 8,
+      "Doctor": 9,
+      "Door": 8,
+      "EntranceDoor": 18,
+      "Handyman": 4,
+      "Litter": 377,
+      "Machine": 1,
+      "Nurse": 2,
+      "Object": 23,
+      "Patient": 50,
+      "Plant": 10,
+      "Rathole": 10,
+      "ReceptionDesk": 1,
+      "Receptionist": 1,
+      "SideObject": 15,
+      "SwingDoor": 2
+    },
+    "doctors": 9,
+    "handymen": 4,
+    "nurses": 2,
+    "objects": 96,
+    "other": 377,
+    "other_humanoids": 0,
+    "patients": 50,
+    "receptionists": 1,
+    "rooms": 9,
+    "staff": 16,
+    "total": 539
+  },
+  "hours_simulated": 49000,
+  "level": 5,
+  "lua": "Lua 5.4",
+  "name": "mediano",
+  "num_cured": 119,
+  "reputation": 1000,
+  "rooms_built": [
+    "gp",
+    "gp",
+    "general_diag",
+    "pharmacy",
+    "psych",
+    "ward",
+    "inflation",
+    "staff_room",
+    "toilets"
+  ],
+  "rooms_failed": [
+
+  ],
+  "rooms_unavailable": [
+
+  ],
+  "windows_open": [
+    "UIMenuBar",
+    "Subtitles",
+    "UIBottomPanel"
+  ]
+}

@@ -6,6 +6,8 @@
 #   Por defecto:  <dir_salida>/corsixth.tracy (tracy-capture)
 #   --heaptrack:  <dir_salida>/heaptrack.corsixth.gz (sin Tracy conectado)
 #   Siempre:      <dir_salida>/corsixth.log, captura.png, config.txt
+# Variables: CORSIXTH_LUA=5.4|5.5 (build contra Lua del sistema o Lua 5.5.0),
+#            CORSIXTH_SAVES (directorio de partidas)
 # Ejemplo: tools/run_corsixth.sh out/menu 20
 #          tools/run_corsixth.sh out/partida 60 --load=mediano.sav
 set -euo pipefail
@@ -24,7 +26,7 @@ mkdir -p "$savedir"
 # (app.lua: fixConfig llama a :match sobre nil).
 cat > "$out/config.txt" <<EOF
 theme_hospital_install = [[$TH_DATA_DIR]]
-savegame = [[$savedir]]
+savegames = [[$savedir]]
 fullscreen = false
 width = 640
 height = 480
@@ -41,7 +43,12 @@ trap 'kill $xvfb_pid 2>/dev/null || true' EXIT
 for _ in $(seq 50); do xdpyinfo -display "$display" > /dev/null 2>&1 && break; sleep 0.1; done
 export DISPLAY=$display SDL_AUDIODRIVER=dummy
 
-cmd=("$CORSIXTH_DIR/build/tracy/CorsixTH/corsix-th" --config-file="$out/config.txt" "$@")
+case ${CORSIXTH_LUA:-5.4} in
+  5.4) build=tracy ;;
+  5.5) build=tracy-lua55; export LUA_CPATH_5_5="$LUA55_PREFIX/lib/lua/5.5/?.so;;" ;;
+  *) echo "CORSIXTH_LUA debe ser 5.4 o 5.5" >&2; exit 2 ;;
+esac
+cmd=("$CORSIXTH_DIR/build/$build/CorsixTH/corsix-th" --config-file="$out/config.txt" "$@")
 if [ $mode = heaptrack ]; then
   cmd=(heaptrack -o "$out/heaptrack.corsixth" "${cmd[@]}")
 else

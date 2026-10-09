@@ -41,6 +41,9 @@ La CPU importa para la fase 1: el factor de conversión a la VR4300 se calcular�
 | innoextract | 1.9 | Ubuntu `1.9-0.1build1` (para el instalador de GOG; no se ha necesitado) |
 | 7-Zip | 23.01 | Ubuntu `p7zip-full 16.02+transitional.1`; extrae la ISO |
 | Compilador del host | GCC 13.3.0, CMake 3.28.3, Ninja 1.11.1 | Ubuntu |
+| Lua 5.5 (añadido en la fase 1) | 5.5.0, luafilesystem 1.9.0, LPeg 1.1.0 | tarballs de lua.org e inf.puc-rio.br con el mismo SHA-512 que los ports de vcpkg; luafilesystem por git (`v1_9_0`); en `/opt/lua55` |
+| Lua 5.4.6 para `tools/luabench.sh` (fase 1) | 5.4.6 | tarball de lua.org, SHA-256 `7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88` |
+| `tracy-csvexport` (fase 1) | v0.13.1 | mismo commit que el resto de Tracy |
 
 La release `toolchain-continuous-prerelease` de libdragon se regenera con cada cambio de la toolchain. `tools/setup.sh` comprueba el SHA-256 y avisa si ha cambiado, pero no aborta; en ese caso hay que anotar aquí la nueva versión.
 
@@ -215,8 +218,23 @@ Se puede ejecutar un solo paso (`tools/setup.sh data`, `tools/setup.sh ares`…)
 
 Con los datos del instalador de GOG en lugar del CD: `innoextract -d gog setup_theme_hospital_*.exe`, comprimir la carpeta resultante en un zip y pasarlo con `TH_DATA_ZIP`. El paso `data` busca la carpeta que contiene `DATA/VBLK-0.TAB`.
 
-## Pendiente para la fase 1
+## Añadido en la fase 1
 
-1. **Partidas de referencia.** Aquí no hay pantalla para jugar. Hay que crearlas con CorsixTH **v0.70.1** (<https://github.com/CorsixTH/CorsixTH/releases/tag/v0.70.1>) y guardarlas en `bench/saves/`. Se cargan sin pantalla con `CORSIXTH_SAVES=$PWD/bench/saves tools/run_corsixth.sh out/x 60 --load=<fichero>`; CorsixTH resuelve `--load` respecto a su directorio de partidas.
-2. **Versión de Lua.** Decidir si se mide con 5.4.6 (la de Ubuntu, ya compilada) o con 5.5.0 (la de la release oficial), o con las dos. Compilar con 5.5.0 aquí obliga a compilar Lua, luafilesystem y LPeg desde `git clone`.
-3. **Factor de CPU.** Documentar el factor frente a la VR4300 sobre esta CPU (Xeon virtualizada a 2,10 GHz) y repetir las mediciones varias veces para ver la variación entre ejecuciones.
+Lo que estaba pendiente al cerrar esta fase quedó resuelto en `docs/01_mediciones.md`:
+
+1. **Partidas de referencia.** Las crea el propio arnés (`bench/scenarios/crear_*.lua`) y están en `bench/saves/`.
+2. **Versión de Lua.** Se mide con las dos. `tools/setup.sh lua55` compila Lua 5.5.0 y un segundo CorsixTH contra ella. El `FindLua` de CMake 3.28 no conoce Lua 5.5; se le inyecta uno mínimo con `CMAKE_PROJECT_INCLUDE` (`tools/cmake/lua55/`) sin tocar CorsixTH.
+3. **Factor de CPU.** Se mide en lugar de suponerlo (`tools/luabench.sh`).
+
+Además, CorsixTH se compila ahora en cuatro variantes:
+
+| Variante | Tracy | Lua | Para qué |
+|---|---|---|---|
+| `build/tracy` | sí | 5.4 | tiempos |
+| `build/tracy-lua55` | sí | 5.5 | tiempos |
+| `build/notracy` | no | 5.4 | heaptrack y ejecuciones normales |
+| `build/notracy-lua55` | no | 5.5 | heaptrack y ejecuciones normales |
+
+Dos correcciones respecto a lo descrito arriba:
+- La clave de configuración del directorio de partidas es `savegames`, no `savegame`.
+- Con `tracy-capture` conectado, CorsixTH no termina solo al salir: el destructor de Tracy espera a su hilo de red. `tools/bench_run.sh` lo cierra 3 s después de que el guion escriba `fin`.

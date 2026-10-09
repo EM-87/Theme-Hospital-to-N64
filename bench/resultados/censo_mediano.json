@@ -1,0 +1,74 @@
+{
+  "estimado_total_kb": 7140.29,
+  "live_kb": 14786.7,
+  "lua": "Lua 5.4",
+  "raices": [
+    {
+      "cadenas": 2194,
+      "cadenas_kb": 85.7207,
+      "clausuras": 1376,
+      "clausuras_kb": 54.3438,
+      "estimado_kb": 5432.17,
+      "hilos": 0,
+      "nombre": "mundo",
+      "prototipos_distintos": 1258,
+      "tablas": 55384,
+      "tablas_kb": 5292.11,
+      "userdata": 1734
+    },
+    {
+      "cadenas": 343,
+      "cadenas_kb": 12.1787,
+      "clausuras": 247,
+      "clausuras_kb": 10.1641,
+      "estimado_kb": 100.593,
+      "hilos": 0,
+      "nombre": "interfaz",
+      "prototipos_distintos": 202,
+      "tablas": 499,
+      "tablas_kb": 78.25,
+      "userdata": 68
+    },
+    {
+      "cadenas": 41,
+      "cadenas_kb": 1.54004,
+      "clausuras": 40,
+      "clausuras_kb": 1.48438,
+      "estimado_kb": 6.38379,
+      "hilos": 0,
+      "nombre": "mapa (Lua)",
+      "prototipos_distintos": 40,
+      "tablas": 15,
+      "tablas_kb": 3.35938,
+      "userdata": 5
+    },
+    {
+      "cadenas": 0,
+      "cadenas_kb": 0,
+      "clausuras": 0,
+      "clausuras_kb": 0,
+      "estimado_kb": 0,
+      "hilos": 0,
+      "nombre": "textos (_S)",
+      "prototipos_distintos": 0,
+      "tablas": 0,
+      "tablas_kb": 0,
+      "userdata": 0
+    },
+    {
+      "cadenas": 8093,
+      "cadenas_kb": 543.987,
+      "clausuras": 1633,
+      "clausuras_kb": 69.5,
+      "estimado_kb": 1601.14,
+      "hilos": 2,
+      "nombre": "resto (clases, configuración, datos)",
+      "prototipos_distintos": 1296,
+      "tablas": 5629,
+      "tablas_kb": 987.648,
+      "userdata": 332
+    }
+  ],
+  "save": "mediano",
+  "sin_asignar_kb": 7646.43
+}

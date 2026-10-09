@@ -1,0 +1,22 @@
+{
+  "date": "1-01-01T01",
+  "entities": {
+    "by_class": {
+      "EntranceDoor": 2
+    },
+    "doctors": 0,
+    "handymen": 0,
+    "nurses": 0,
+    "objects": 2,
+    "other": 0,
+    "other_humanoids": 0,
+    "patients": 0,
+    "receptionists": 0,
+    "rooms": 0,
+    "staff": 0,
+    "total": 2
+  },
+  "level": 1,
+  "lua": "Lua 5.4",
+  "name": "inicio"
+}

@@ -1,0 +1,131 @@
+{
+  "estimado_total_kb": 10263.4,
+  "live_kb": 18076.5,
+  "lua": "Lua 5.4",
+  "mundo_por_campo": [
+    {
+      "campo": "entity_map",
+      "kb": 8188.11,
+      "tablas": 61656
+    },
+    {
+      "campo": "hospitals",
+      "kb": 4589.45,
+      "tablas": 12938
+    },
+    {
+      "campo": "objects",
+      "kb": 4515.97,
+      "tablas": 12901
+    },
+    {
+      "campo": "available_staff",
+      "kb": 4481.18,
+      "tablas": 12514
+    },
+    {
+      "campo": "entities",
+      "kb": 4470.8,
+      "tablas": 12371
+    },
+    {
+      "campo": "dispatcher",
+      "kb": 4459.12,
+      "tablas": 12417
+    },
+    {
+      "campo": "available_diseases",
+      "kb": 4457.3,
+      "tablas": 12371
+    },
+    {
+      "campo": "rooms",
+      "kb": 4455.8,
+      "tablas": 12371
+    },
+    {
+      "campo": "objects_notify_occupants",
+      "kb": 4455.55,
+      "tablas": 12371
+    },
+    {
+      "campo": "floating_dollars",
+      "kb": 4455.18,
+      "tablas": 12371
+    },
+    {
+      "campo": "pathfinder",
+      "kb": 4454.82,
+      "tablas": 12371
+    }
+  ],
+  "raices": [
+    {
+      "cadenas": 2067,
+      "cadenas_kb": 76.2422,
+      "clausuras": 1415,
+      "clausuras_kb": 57.4844,
+      "estimado_kb": 8493.55,
+      "hilos": 0,
+      "nombre": "mundo",
+      "prototipos_distintos": 1228,
+      "tablas": 63094,
+      "tablas_kb": 8359.83,
+      "userdata": 3380
+    },
+    {
+      "cadenas": 598,
+      "cadenas_kb": 21.5605,
+      "clausuras": 463,
+      "clausuras_kb": 18.3516,
+      "estimado_kb": 180.146,
+      "hilos": 0,
+      "nombre": "interfaz",
+      "prototipos_distintos": 404,
+      "tablas": 787,
+      "tablas_kb": 140.234,
+      "userdata": 131
+    },
+    {
+      "cadenas": 41,
+      "cadenas_kb": 1.54004,
+      "clausuras": 40,
+      "clausuras_kb": 1.48438,
+      "estimado_kb": 6.50879,
+      "hilos": 0,
+      "nombre": "mapa (Lua)",
+      "prototipos_distintos": 40,
+      "tablas": 15,
+      "tablas_kb": 3.48438,
+      "userdata": 5
+    },
+    {
+      "cadenas": 0,
+      "cadenas_kb": 0,
+      "clausuras": 0,
+      "clausuras_kb": 0,
+      "estimado_kb": 0,
+      "hilos": 0,
+      "nombre": "textos (_S)",
+      "prototipos_distintos": 0,
+      "tablas": 0,
+      "tablas_kb": 0,
+      "userdata": 0
+    },
+    {
+      "cadenas": 8093,
+      "cadenas_kb": 545.827,
+      "clausuras": 1436,
+      "clausuras_kb": 61.3438,
+      "estimado_kb": 1583.19,
+      "hilos": 2,
+      "nombre": "resto (clases, configuración, datos)",
+      "prototipos_distintos": 1146,
+      "tablas": 5378,
+      "tablas_kb": 976.023,
+      "userdata": 213
+    }
+  ],
+  "save": "lleno",
+  "sin_asignar_kb": 7813.09
+}

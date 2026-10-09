@@ -1,0 +1,130 @@
+{
+ "fichero": "/root/th64-work/resultados/fase1/mediano/lua5.5/heaptrack/heaptrack.gz",
+ "pico_total_bytes": 120685882,
+ "categorias_bytes": {
+  "Vídeo: presentación y contexto (driver)": 81369115,
+  "Lua (intérprete)": 20941676,
+  "Gráficos: sprites, animaciones y fuentes": 7623364,
+  "Gráficos: texturas (SDL/driver)": 5915975,
+  "Mapa y pathfinding": 4721528,
+  "Otros (sistema: SDL, libc, cargador...)": 109573,
+  "Otros (CorsixTH)": 3712,
+  "Ficheros y descompresión": 939
+ },
+ "principales_pilas": {
+  "Otros (sistema: SDL, libc, cargador...)": [
+   {
+    "bytes": 73728,
+    "pila": "_dl_init::call_init > _dl_init > call_init > "
+   },
+   {
+    "bytes": 16384,
+    "pila": "_dl_init > call_init > g_malloc > "
+   },
+   {
+    "bytes": 4096,
+    "pila": "call_init > g_value_register_transform_func > g_realloc > "
+   }
+  ],
+  "Otros (CorsixTH)": [
+   {
+    "bytes": 1224,
+    "pila": "std::enable_if<>::type std::_Rb_tree<>::_M_insert_range_unique<>(std::pair<> const*, std::pair<> const*) > std::map<>::map(std::initializer_list<>, std::less<> const&, std::allocator<> const&) > __static_initialization_and_destruction_0 > "
+   },
+   {
+    "bytes": 1008,
+    "pila": "std::_Rb_tree<>::_M_insert_range_unique<> > std::map<>::map > __static_initialization_and_destruction_0 > "
+   },
+   {
+    "bytes": 272,
+    "pila": "main > mainloop(lua_State*) > "
+   }
+  ],
+  "Lua (intérprete)": [
+   {
+    "bytes": 1776672,
+    "pila": "luaH_new > luaC_newobj > luaM_malloc_ > "
+   },
+   {
+    "bytes": 1572960,
+    "pila": "luaH_new > luaC_newobj > luaM_malloc_ > "
+   },
+   {
+    "bytes": 1375488,
+    "pila": "luaV_execute > luaH_resize > luaM_malloc_ > "
+   }
+  ],
+  "Vídeo: presentación y contexto (driver)": [
+   {
+    "bytes": 10488320,
+    "pila": "luaD_precall > l_surface_end_frame > render_target::end_frame() > "
+   },
+   {
+    "bytes": 9701696,
+    "pila": "luaD_precall > l_surface_end_frame > render_target::end_frame() > "
+   },
+   {
+    "bytes": 5637472,
+    "pila": "luaD_precall > l_surface_end_frame > render_target::end_frame() > "
+   }
+  ],
+  "Ficheros y descompresión": [
+   {
+    "bytes": 792,
+    "pila": "_dl_load_cache_lookup > __strdup::malloc > __strdup > "
+   },
+   {
+    "bytes": 75,
+    "pila": "_dl_load_cache_lookup > __strdup::malloc > __strdup > "
+   },
+   {
+    "bytes": 39,
+    "pila": "_dl_load_cache_lookup > __strdup::malloc > __strdup > "
+   }
+  ],
+  "Gráficos: texturas (SDL/driver)": [
+   {
+    "bytes": 2457600,
+    "pila": "raw_bitmap::load_from_th_file(unsigned char const*, unsigned long, int, render_target*, unsigned int) > render_target::create_palettized_texture(int, int, unsigned char const*, palette const*, unsigned int) const > render_target::create_texture(int, int, unsigned int const*) const > "
+   },
+   {
+    "bytes": 1072384,
+    "pila": "sprite_sheet::draw_sprite(render_target*, unsigned long, int, int, unsigned int, unsigned long, animation_effect, int) > render_target::create_palettized_texture(int, int, unsigned char const*, palette const*, unsigned int) const > render_target::create_texture(int, int, unsigned int const*) const > "
+   },
+   {
+    "bytes": 418816,
+    "pila": "sprite_sheet::draw_sprite(render_target*, unsigned long, int, int, unsigned int, unsigned long, animation_effect, int) > render_target::create_palettized_texture(int, int, unsigned char const*, palette const*, unsigned int) const > render_target::create_texture(int, int, unsigned int const*) const > "
+   }
+  ],
+  "Gráficos: sprites, animaciones y fuentes": [
+   {
+    "bytes": 4233988,
+    "pila": "l_spritesheet_load > sprite_sheet::load_from_th_file(unsigned char const*, unsigned long, unsigned char const*, unsigned long, bool, render_target*) > convertLegacySprite > "
+   },
+   {
+    "bytes": 853568,
+    "pila": "std::_Vector_base<>::_M_allocate(unsigned long) > std::_Vector_base<>::_M_allocate(unsigned long) > std::vector<>::reserve(unsigned long) > "
+   },
+   {
+    "bytes": 763621,
+    "pila": "l_spritesheet_load > sprite_sheet::load_from_th_file(unsigned char const*, unsigned long, unsigned char const*, unsigned long, bool, render_target*) > convertLegacySprite > "
+   }
+  ],
+  "Mapa y pathfinding": [
+   {
+    "bytes": 1966088,
+    "pila": "level_map::depersist(lua_persist_reader*) > level_map::set_size(int, int) > operator new[](unsigned long, std::nothrow_t const&) > "
+   },
+   {
+    "bytes": 1966088,
+    "pila": "level_map::depersist(lua_persist_reader*) > level_map::set_size(int, int) > operator new[](unsigned long, std::nothrow_t const&) > "
+   },
+   {
+    "bytes": 655360,
+    "pila": "std::_Vector_base<>::_Vector_base(unsigned long, std::allocator<> const&) > std::vector<>::vector(unsigned long, std::allocator<> const&) > pathfinder::allocate_node_cache(int, int) > "
+   }
+  ]
+ },
+ "heaptrack_pico": "120.69M",
+ "heaptrack_rss": "221.07M"
+}

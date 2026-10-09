@@ -1,0 +1,116 @@
+{
+  "estimado_total_kb": 5926.77,
+  "live_kb": 13468.4,
+  "lua": "Lua 5.4",
+  "mundo_por_campo": [
+    {
+      "campo": "entity_map",
+      "kb": 3830.83,
+      "tablas": 49627
+    },
+    {
+      "campo": "hospitals",
+      "kb": 170.386,
+      "tablas": 643
+    },
+    {
+      "campo": "available_staff",
+      "kb": 147.405,
+      "tablas": 578
+    },
+    {
+      "campo": "available_diseases",
+      "kb": 108.154,
+      "tablas": 342
+    },
+    {
+      "campo": "objects",
+      "kb": 108.029,
+      "tablas": 344
+    },
+    {
+      "campo": "objects_notify_occupants",
+      "kb": 107.889,
+      "tablas": 342
+    },
+    {
+      "campo": "entities",
+      "kb": 107.873,
+      "tablas": 342
+    },
+    {
+      "campo": "pathfinder",
+      "kb": 107.865,
+      "tablas": 342
+    }
+  ],
+  "raices": [
+    {
+      "cadenas": 1158,
+      "cadenas_kb": 42.416,
+      "clausuras": 547,
+      "clausuras_kb": 20.8828,
+      "estimado_kb": 3987.35,
+      "hilos": 0,
+      "nombre": "mundo",
+      "prototipos_distintos": 533,
+      "tablas": 50309,
+      "tablas_kb": 3924.05,
+      "userdata": 277
+    },
+    {
+      "cadenas": 579,
+      "cadenas_kb": 20.6826,
+      "clausuras": 468,
+      "clausuras_kb": 18.625,
+      "estimado_kb": 236.534,
+      "hilos": 0,
+      "nombre": "interfaz",
+      "prototipos_distintos": 410,
+      "tablas": 949,
+      "tablas_kb": 197.227,
+      "userdata": 107
+    },
+    {
+      "cadenas": 41,
+      "cadenas_kb": 1.54004,
+      "clausuras": 40,
+      "clausuras_kb": 1.48438,
+      "estimado_kb": 6.27441,
+      "hilos": 0,
+      "nombre": "mapa (Lua)",
+      "prototipos_distintos": 40,
+      "tablas": 15,
+      "tablas_kb": 3.25,
+      "userdata": 5
+    },
+    {
+      "cadenas": 0,
+      "cadenas_kb": 0,
+      "clausuras": 0,
+      "clausuras_kb": 0,
+      "estimado_kb": 0,
+      "hilos": 0,
+      "nombre": "textos (_S)",
+      "prototipos_distintos": 0,
+      "tablas": 0,
+      "tablas_kb": 0,
+      "userdata": 0
+    },
+    {
+      "cadenas": 8530,
+      "cadenas_kb": 559.584,
+      "clausuras": 2176,
+      "clausuras_kb": 91.0391,
+      "estimado_kb": 1696.62,
+      "hilos": 2,
+      "nombre": "resto (clases, configuración, datos)",
+      "prototipos_distintos": 1796,
+      "tablas": 5970,
+      "tablas_kb": 1045.99,
+      "userdata": 391
+    }
+  ],
+  "save": "inicio",
+  "sin_asignar_kb": 7541.67
+}

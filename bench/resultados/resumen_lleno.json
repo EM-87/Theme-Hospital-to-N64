@@ -1,0 +1,102 @@
+{
+  "balance": 277138,
+  "cheats": {
+    "max_reputation": true,
+    "roujin": true
+  },
+  "date": "1-09-24T02",
+  "decisions": [
+
+  ],
+  "entities": {
+    "by_class": {
+      "Bench": 30,
+      "Doctor": 33,
+      "Door": 32,
+      "EntranceDoor": 18,
+      "Handyman": 10,
+      "Litter": 195,
+      "Machine": 13,
+      "Nurse": 10,
+      "Object": 80,
+      "OperatingSink": 4,
+      "OperatingTable": 2,
+      "Patient": 305,
+      "Plant": 41,
+      "RadiationShield": 2,
+      "Rathole": 2,
+      "ReceptionDesk": 4,
+      "Receptionist": 4,
+      "SideObject": 66,
+      "SurgeonScreen": 1,
+      "SwingDoor": 8,
+      "Vip": 1
+    },
+    "doctors": 33,
+    "handymen": 10,
+    "nurses": 10,
+    "objects": 303,
+    "other": 195,
+    "other_humanoids": 1,
+    "patients": 305,
+    "receptionists": 4,
+    "rooms": 36,
+    "staff": 57,
+    "total": 861
+  },
+  "hours_simulated": 13250,
+  "level": 12,
+  "lua": "Lua 5.4",
+  "name": "lleno",
+  "num_cured": 52,
+  "reputation": 954,
+  "rooms_built": [
+    "gp",
+    "gp",
+    "gp",
+    "gp",
+    "gp",
+    "gp",
+    "general_diag",
+    "general_diag",
+    "cardiogram",
+    "scanner",
+    "ultrascan",
+    "blood_machine",
+    "x_ray",
+    "psych",
+    "psych",
+    "ward",
+    "ward",
+    "pharmacy",
+    "pharmacy",
+    "pharmacy",
+    "operating_theatre",
+    "inflation",
+    "fracture_clinic",
+    "hair_restoration",
+    "slack_tongue",
+    "electrolysis",
+    "jelly_vat",
+    "dna_fixer",
+    "decontamination",
+    "research",
+    "training",
+    "staff_room",
+    "staff_room",
+    "toilets",
+    "toilets",
+    "toilets"
+  ],
+  "rooms_failed": [
+
+  ],
+  "rooms_unavailable": [
+
+  ],
+  "windows_open": [
+    "UIMenuBar",
+    "Subtitles",
+    "UIBottomPanel"
+  ]
+}

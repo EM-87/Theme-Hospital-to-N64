@@ -3,6 +3,7 @@
 # (debugf) y una captura de la ventana.
 #
 # Uso: tools/run_ares.sh <rom.z64> <dir_salida> [segundos=12] [--no-expansion]
+#   ARES_UNTIL="texto": terminar cuando la ROM escriba ese texto (máx. segundos)
 #   <dir_salida>/isviewer.log   salida de la ROM por ISViewer
 #   <dir_salida>/ares.log       resto de la salida de ares
 #   <dir_salida>/captura.png    ventana de ares unos segundos antes de cerrarla
@@ -34,7 +35,16 @@ export DISPLAY=$display
   > "$out/isviewer.log" 2> "$out/ares.log" &
 ares_pid=$!
 
-sleep "$((secs > 2 ? secs - 2 : 1))"
+# Con ARES_UNTIL="texto", se espera a que la ROM lo escriba por ISViewer
+# (como máximo los segundos indicados) en lugar de un tiempo fijo.
+if [ -n "${ARES_UNTIL:-}" ]; then
+  for _ in $(seq "$secs"); do
+    grep -q "$ARES_UNTIL" "$out/isviewer.log" 2>/dev/null && break
+    sleep 1
+  done
+else
+  sleep "$((secs > 2 ? secs - 2 : 1))"
+fi
 win=$(xdotool search --pid "$ares_pid" 2>/dev/null | tail -1 || true)
 if [ -n "$win" ]; then
   import -window "$win" "$out/captura.png"

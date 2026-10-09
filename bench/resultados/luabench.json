@@ -1,0 +1,122 @@
+{
+ "benchmarks": {
+  "Lua 5.4.6": {
+   "pruebas": {
+    "clases": {
+     "host_us_mediana": 27404,
+     "n64_us": 9367756,
+     "cociente": 341.839001605605,
+     "misma_suma_control": true
+    },
+    "tablas": {
+     "host_us_mediana": 8666,
+     "n64_us": 2736025,
+     "cociente": 315.719478421417,
+     "misma_suma_control": true
+    },
+    "cadenas": {
+     "host_us_mediana": 19802,
+     "n64_us": 7546996,
+     "cociente": 381.1229168770831,
+     "misma_suma_control": true
+    },
+    "camino": {
+     "host_us_mediana": 7318,
+     "n64_us": 2157152,
+     "cociente": 294.7734353648538,
+     "misma_suma_control": true
+    },
+    "gc": {
+     "host_us_mediana": 8156,
+     "n64_us": 4648922,
+     "cociente": 570.0002452182442,
+     "misma_suma_control": true
+    },
+    "numerico": {
+     "host_us_mediana": 9377,
+     "n64_us": 3987419,
+     "cociente": 425.2339767516263,
+     "misma_suma_control": true
+    },
+    "bfs_c": {
+     "host_us_mediana": 3305,
+     "n64_us": 750736,
+     "cociente": 227.15158850226928,
+     "misma_suma_control": true
+    }
+   },
+   "cociente_media_geometrica_lua": 378.4686396319429,
+   "cociente_min_lua": 294.7734353648538,
+   "cociente_max_lua": 570.0002452182442
+  },
+  "Lua 5.5.0": {
+   "pruebas": {
+    "clases": {
+     "host_us_mediana": 27097,
+     "n64_us": 10414479,
+     "cociente": 384.3406650182677,
+     "misma_suma_control": true
+    },
+    "tablas": {
+     "host_us_mediana": 7842,
+     "n64_us": 2765266,
+     "cociente": 352.622545269064,
+     "misma_suma_control": true
+    },
+    "cadenas": {
+     "host_us_mediana": 19338,
+     "n64_us": 8150833,
+     "cociente": 421.4930706381218,
+     "misma_suma_control": true
+    },
+    "camino": {
+     "host_us_mediana": 5578,
+     "n64_us": 2025486,
+     "cociente": 363.1204732879168,
+     "misma_suma_control": true
+    },
+    "gc": {
+     "host_us_mediana": 6842,
+     "n64_us": 4438973,
+     "cociente": 648.7829581993569,
+     "misma_suma_control": true
+    },
+    "numerico": {
+     "host_us_mediana": 9114,
+     "n64_us": 3091544,
+     "cociente": 339.2082510423524,
+     "misma_suma_control": true
+    }
+   },
+   "cociente_media_geometrica_lua": 407.29171094359646,
+   "cociente_min_lua": 339.2082510423524,
+   "cociente_max_lua": 648.7829581993569
+  }
+ },
+ "calibrado_n64": {
+  "5.4.6": {
+   "bucle": {
+    "us": "321009",
+    "mhz_efectivos": "93.46"
+   },
+   "memoria": {
+    "us": "200143",
+    "lineas": "262144",
+    "ns_por_linea": "763.5",
+    "chk": "4294443008"
+   }
+  },
+  "5.5.0": {
+   "bucle": {
+    "us": "321047",
+    "mhz_efectivos": "93.44"
+   },
+   "memoria": {
+    "us": "200101",
+    "lineas": "262144",
+    "ns_por_linea": "763.3",
+    "chk": "4294443008"
+   }
+  }
+ }
+}

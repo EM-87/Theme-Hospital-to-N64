@@ -1,0 +1,2166 @@
+{
+ "ritmo": {
+  "horas_por_s": 18.51851851851852,
+  "ticks_vacios_por_s": 37.03703703703704
+ },
+ "factor_cpu": 400.0,
+ "partidas": {
+  "inicio": {
+   "Lua 5.4": {
+    "repeticiones": 3,
+    "hora_media_ms": {
+     "media": 0.7370042053333333,
+     "min": 0.7096018119999999,
+     "max": 0.756420736
+    },
+    "hora_p95_ms": {
+     "media": 0.9672649999999999,
+     "min": 0.928244,
+     "max": 1.021727
+    },
+    "hora_p99_ms": {
+     "media": 1.4606716666666666,
+     "min": 1.2906,
+     "max": 1.697607
+    },
+    "hora_max_ms": {
+     "media": 3.527490666666667,
+     "min": 1.405155,
+     "max": 5.509342
+    },
+    "tick_media_ms": {
+     "media": 0.07992701066666667,
+     "min": 0.07808312499999999,
+     "max": 0.081971358
+    },
+    "frame_media_ms": {
+     "media": 12.413809662003109,
+     "min": 12.33770623051299,
+     "max": 12.49868926982012
+    },
+    "sim_ms_por_s_normal": {
+     "media": 16.608485679012347,
+     "min": 16.093609444444446,
+     "max": 17.04376762962963
+    },
+    "lua_heap_max_kb": {
+     "media": 26415.399999999998,
+     "min": 26414.6,
+     "max": 26416.1
+    },
+    "lua_heap_media_kb": {
+     "media": 19941.166666666668,
+     "min": 19940.4,
+     "max": 19942.1
+    },
+    "lua_heap_p95_kb": {
+     "media": 25726.86666666667,
+     "min": 25726.5,
+     "max": 25727.1
+    },
+    "lua_vivo_kb": {
+     "media": 13499.9,
+     "min": 13499.9,
+     "max": 13499.9
+    },
+    "pacientes_medios": {
+     "media": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "entidades_fin": {
+     "doctors": 0,
+     "handymen": 0,
+     "nurses": 0,
+     "objects": 2,
+     "other": 0,
+     "other_humanoids": 0,
+     "patients": 0,
+     "receptionists": 0,
+     "rooms": 0,
+     "staff": 0,
+     "total": 2
+    },
+    "clases_fin": {
+     "EntranceDoor": 2
+    },
+    "por_repeticion": [
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 0.756420736,
+       "p50_ms": 0.721608,
+       "p95_ms": 1.021727,
+       "p99_ms": 1.393808,
+       "max_ms": 3.667975
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.081971358,
+       "p50_ms": 0.077772,
+       "p95_ms": 0.11381,
+       "p99_ms": 0.143503,
+       "max_ms": 0.401016
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 12.49868926982012,
+       "p50_ms": 12.019761,
+       "p95_ms": 15.401237,
+       "p99_ms": 21.826235,
+       "max_ms": 64.479524
+      },
+      "sim_ms_por_s_normal": 17.04376762962963,
+      "lua_heap_kb": {
+       "max": 26415.5,
+       "mean": 19942.1,
+       "min": 13558.7,
+       "p50": 19943.8,
+       "p95": 25727,
+       "p99": 26243.2
+      },
+      "lua_vivo_kb": [
+       13487.3,
+       13499.9
+      ],
+      "entidades_inicio": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "entidades_fin": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "clases_fin": {
+       "EntranceDoor": 2
+      },
+      "pacientes_medios": 0,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 0.7096018119999999,
+       "p50_ms": 0.685937,
+       "p95_ms": 0.928244,
+       "p99_ms": 1.2906,
+       "max_ms": 1.405155
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.07972654900000001,
+       "p50_ms": 0.071954,
+       "p95_ms": 0.109419,
+       "p99_ms": 0.145641,
+       "max_ms": 2.546568
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 12.33770623051299,
+       "p50_ms": 11.868216,
+       "p95_ms": 15.36709,
+       "p99_ms": 21.375712,
+       "max_ms": 59.343267
+      },
+      "sim_ms_por_s_normal": 16.093609444444446,
+      "lua_heap_kb": {
+       "max": 26416.1,
+       "mean": 19941,
+       "min": 13558.7,
+       "p50": 19944,
+       "p95": 25727.1,
+       "p99": 26243.3
+      },
+      "lua_vivo_kb": [
+       13487.3,
+       13499.9
+      ],
+      "entidades_inicio": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "entidades_fin": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "clases_fin": {
+       "EntranceDoor": 2
+      },
+      "pacientes_medios": 0,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 0.744990068,
+       "p50_ms": 0.704832,
+       "p95_ms": 0.951824,
+       "p99_ms": 1.697607,
+       "max_ms": 5.509342
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.07808312499999999,
+       "p50_ms": 0.072831,
+       "p95_ms": 0.11104,
+       "p99_ms": 0.179467,
+       "max_ms": 0.809638
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 12.405033485676215,
+       "p50_ms": 11.979913,
+       "p95_ms": 15.837384,
+       "p99_ms": 19.157277,
+       "max_ms": 38.719353
+      },
+      "sim_ms_por_s_normal": 16.688079962962963,
+      "lua_heap_kb": {
+       "max": 26414.6,
+       "mean": 19940.4,
+       "min": 13558.7,
+       "p50": 19943.4,
+       "p95": 25726.5,
+       "p99": 26242.7
+      },
+      "lua_vivo_kb": [
+       13487.3,
+       13499.9
+      ],
+      "entidades_inicio": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "entidades_fin": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "clases_fin": {
+       "EntranceDoor": 2
+      },
+      "pacientes_medios": 0,
+      "horas": 500
+     }
+    ],
+    "heap_cpp": {
+     "pico_total_bytes": 146112093,
+     "categorias_bytes": {
+      "Vídeo: presentación y contexto (driver)": 102858380,
+      "Lua (intérprete)": 25816739,
+      "Gráficos: sprites, animaciones y fuentes": 7795863,
+      "Mapa y pathfinding": 4718768,
+      "Gráficos: texturas (SDL/driver)": 3595815,
+      "Carga de partida (persistencia)": 1212200,
+      "Otros (sistema: SDL, libc, cargador...)": 109573,
+      "Otros (CorsixTH)": 3712,
+      "Ficheros y descompresión": 1043
+     },
+     "heaptrack_pico": "146.11M"
+    },
+    "n64_estimado": {
+     "hora_media_ms": 294.8016821333333,
+     "hora_p95_ms": 386.90599999999995,
+     "cpu_simulacion_normal": 6.643394271604938
+    }
+   },
+   "Lua 5.5": {
+    "repeticiones": 3,
+    "hora_media_ms": {
+     "media": 0.7639329720000001,
+     "min": 0.7274532380000001,
+     "max": 0.789552494
+    },
+    "hora_p95_ms": {
+     "media": 0.9956043333333334,
+     "min": 0.93259,
+     "max": 1.054167
+    },
+    "hora_p99_ms": {
+     "media": 1.6249243333333334,
+     "min": 1.35474,
+     "max": 1.901708
+    },
+    "hora_max_ms": {
+     "media": 3.1836860000000002,
+     "min": 1.985891,
+     "max": 4.533012
+    },
+    "tick_media_ms": {
+     "media": 0.07885443666666667,
+     "min": 0.07320681000000001,
+     "max": 0.085584682
+    },
+    "frame_media_ms": {
+     "media": 12.19814032445037,
+     "min": 12.103763483011326,
+     "max": 12.25693147834777
+    },
+    "sim_ms_por_s_normal": {
+     "media": 17.067441580246914,
+     "min": 16.182719592592594,
+     "max": 17.517824962962962
+    },
+    "lua_heap_max_kb": {
+     "media": 32845.26666666666,
+     "min": 32842.1,
+     "max": 32851.5
+    },
+    "lua_heap_media_kb": {
+     "media": 22268.033333333336,
+     "min": 22264.7,
+     "max": 22269.8
+    },
+    "lua_heap_p95_kb": {
+     "media": 31653.3,
+     "min": 31653.3,
+     "max": 31653.3
+    },
+    "lua_vivo_kb": {
+     "media": 13029.5,
+     "min": 13029.5,
+     "max": 13029.5
+    },
+    "pacientes_medios": {
+     "media": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "entidades_fin": {
+     "doctors": 0,
+     "handymen": 0,
+     "nurses": 0,
+     "objects": 2,
+     "other": 0,
+     "other_humanoids": 0,
+     "patients": 0,
+     "receptionists": 0,
+     "rooms": 0,
+     "staff": 0,
+     "total": 2
+    },
+    "clases_fin": {
+     "EntranceDoor": 2
+    },
+    "por_repeticion": [
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 0.789552494,
+       "p50_ms": 0.751394,
+       "p95_ms": 1.000056,
+       "p99_ms": 1.901708,
+       "max_ms": 3.032155
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.07777181799999999,
+       "p50_ms": 0.0742,
+       "p95_ms": 0.108518,
+       "p99_ms": 0.135827,
+       "max_ms": 0.195622
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 12.103763483011326,
+       "p50_ms": 11.686938,
+       "p95_ms": 14.904694,
+       "p99_ms": 19.797189,
+       "max_ms": 43.465168
+      },
+      "sim_ms_por_s_normal": 17.501780185185186,
+      "lua_heap_kb": {
+       "max": 32851.5,
+       "mean": 22264.7,
+       "min": 13038.6,
+       "p50": 21314.3,
+       "p95": 31653.3,
+       "p99": 32513.5
+      },
+      "lua_vivo_kb": [
+       12972.6,
+       13029.5
+      ],
+      "entidades_inicio": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "entidades_fin": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "clases_fin": {
+       "EntranceDoor": 2
+      },
+      "pacientes_medios": 0,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 0.7274532380000001,
+       "p50_ms": 0.694392,
+       "p95_ms": 0.93259,
+       "p99_ms": 1.35474,
+       "max_ms": 1.985891
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.07320681000000001,
+       "p50_ms": 0.067023,
+       "p95_ms": 0.100166,
+       "p99_ms": 0.137703,
+       "max_ms": 2.415803
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 12.233726011992006,
+       "p50_ms": 11.632739,
+       "p95_ms": 15.445194,
+       "p99_ms": 21.212819,
+       "max_ms": 69.292092
+      },
+      "sim_ms_por_s_normal": 16.182719592592594,
+      "lua_heap_kb": {
+       "max": 32842.2,
+       "mean": 22269.8,
+       "min": 13038.6,
+       "p50": 21343.3,
+       "p95": 31653.3,
+       "p99": 32513.5
+      },
+      "lua_vivo_kb": [
+       12972.6,
+       13029.5
+      ],
+      "entidades_inicio": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "entidades_fin": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "clases_fin": {
+       "EntranceDoor": 2
+      },
+      "pacientes_medios": 0,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 0.774793184,
+       "p50_ms": 0.708648,
+       "p95_ms": 1.054167,
+       "p99_ms": 1.618325,
+       "max_ms": 4.533012
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.085584682,
+       "p50_ms": 0.079082,
+       "p95_ms": 0.120248,
+       "p99_ms": 0.170456,
+       "max_ms": 1.330412
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 12.25693147834777,
+       "p50_ms": 11.766364,
+       "p95_ms": 15.211258,
+       "p99_ms": 19.959546,
+       "max_ms": 55.601931
+      },
+      "sim_ms_por_s_normal": 17.517824962962962,
+      "lua_heap_kb": {
+       "max": 32842.1,
+       "mean": 22269.6,
+       "min": 13038.6,
+       "p50": 21343.3,
+       "p95": 31653.3,
+       "p99": 32513.5
+      },
+      "lua_vivo_kb": [
+       12972.5,
+       13029.5
+      ],
+      "entidades_inicio": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "entidades_fin": {
+       "doctors": 0,
+       "handymen": 0,
+       "nurses": 0,
+       "objects": 2,
+       "other": 0,
+       "other_humanoids": 0,
+       "patients": 0,
+       "receptionists": 0,
+       "rooms": 0,
+       "staff": 0,
+       "total": 2
+      },
+      "clases_fin": {
+       "EntranceDoor": 2
+      },
+      "pacientes_medios": 0,
+      "horas": 500
+     }
+    ],
+    "heap_cpp": {
+     "pico_total_bytes": 152046089,
+     "categorias_bytes": {
+      "Vídeo: presentación y contexto (driver)": 102859516,
+      "Lua (intérprete)": 32955759,
+      "Gráficos: sprites, animaciones y fuentes": 7795863,
+      "Mapa y pathfinding": 4718768,
+      "Gráficos: texturas (SDL/driver)": 3601959,
+      "Otros (sistema: SDL, libc, cargador...)": 109573,
+      "Otros (CorsixTH)": 3712,
+      "Ficheros y descompresión": 939
+     },
+     "heaptrack_pico": "152.05M"
+    },
+    "n64_estimado": {
+     "hora_media_ms": 305.5731888,
+     "hora_p95_ms": 398.24173333333334,
+     "cpu_simulacion_normal": 6.8269766320987655
+    }
+   }
+  },
+  "lleno": {
+   "Lua 5.4": {
+    "repeticiones": 3,
+    "hora_media_ms": {
+     "media": 5.067710682,
+     "min": 4.937311626,
+     "max": 5.161320668
+    },
+    "hora_p95_ms": {
+     "media": 10.026046,
+     "min": 9.878606,
+     "max": 10.172963
+    },
+    "hora_p99_ms": {
+     "media": 23.887346999999995,
+     "min": 23.100246,
+     "max": 24.819998
+    },
+    "hora_max_ms": {
+     "media": 28.354606,
+     "min": 25.634749,
+     "max": 33.011294
+    },
+    "tick_media_ms": {
+     "media": 0.109378672,
+     "min": 0.10420376899999999,
+     "max": 0.113443719
+    },
+    "frame_media_ms": {
+     "media": 11.45480135554075,
+     "min": 11.378063016655563,
+     "max": 11.502423538974016
+    },
+    "sim_ms_por_s_normal": {
+     "media": 97.89755603703703,
+     "min": 95.29109562962962,
+     "max": 99.67218007407408
+    },
+    "lua_heap_max_kb": {
+     "media": 35630.5,
+     "min": 35629.6,
+     "max": 35631.4
+    },
+    "lua_heap_media_kb": {
+     "media": 25955.899999999998,
+     "min": 25955.6,
+     "max": 25956.1
+    },
+    "lua_heap_p95_kb": {
+     "media": 34429.23333333333,
+     "min": 34428.4,
+     "max": 34430.1
+    },
+    "lua_vivo_kb": {
+     "media": 18078.0,
+     "min": 18078,
+     "max": 18078
+    },
+    "pacientes_medios": {
+     "media": 307.8,
+     "min": 307.8,
+     "max": 307.8
+    },
+    "entidades_fin": {
+     "doctors": 33,
+     "handymen": 10,
+     "nurses": 10,
+     "objects": 305,
+     "other": 208,
+     "other_humanoids": 3,
+     "patients": 314,
+     "receptionists": 4,
+     "rooms": 36,
+     "staff": 57,
+     "total": 887
+    },
+    "clases_fin": {
+     "Bench": 30,
+     "Doctor": 33,
+     "Door": 32,
+     "EntranceDoor": 18,
+     "GrimReaper": 2,
+     "Handyman": 10,
+     "Litter": 208,
+     "Machine": 13,
+     "Nurse": 10,
+     "Object": 82,
+     "OperatingSink": 4,
+     "OperatingTable": 2,
+     "Patient": 314,
+     "Plant": 41,
+     "RadiationShield": 2,
+     "Rathole": 2,
+     "ReceptionDesk": 4,
+     "Receptionist": 4,
+     "SideObject": 66,
+     "SurgeonScreen": 1,
+     "SwingDoor": 8,
+     "Vip": 1
+    },
+    "por_repeticion": [
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 5.161320668,
+       "p50_ms": 4.194771,
+       "p95_ms": 9.878606,
+       "p99_ms": 23.741797,
+       "max_ms": 33.011294
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.110488528,
+       "p50_ms": 0.105888,
+       "p95_ms": 0.146912,
+       "p99_ms": 0.199195,
+       "max_ms": 0.64427
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 11.483917510992672,
+       "p50_ms": 11.044198,
+       "p95_ms": 14.743135,
+       "p99_ms": 17.670312,
+       "max_ms": 54.28408
+      },
+      "sim_ms_por_s_normal": 99.67218007407408,
+      "lua_heap_kb": {
+       "max": 35629.6,
+       "mean": 25955.6,
+       "min": 18106.7,
+       "p50": 25288.5,
+       "p95": 34428.4,
+       "p99": 35328.4
+      },
+      "lua_vivo_kb": [
+       18040.7,
+       18078
+      ],
+      "entidades_inicio": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 303,
+       "other": 196,
+       "other_humanoids": 1,
+       "patients": 305,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 862
+      },
+      "entidades_fin": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 305,
+       "other": 208,
+       "other_humanoids": 3,
+       "patients": 314,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 887
+      },
+      "clases_fin": {
+       "Bench": 30,
+       "Doctor": 33,
+       "Door": 32,
+       "EntranceDoor": 18,
+       "GrimReaper": 2,
+       "Handyman": 10,
+       "Litter": 208,
+       "Machine": 13,
+       "Nurse": 10,
+       "Object": 82,
+       "OperatingSink": 4,
+       "OperatingTable": 2,
+       "Patient": 314,
+       "Plant": 41,
+       "RadiationShield": 2,
+       "Rathole": 2,
+       "ReceptionDesk": 4,
+       "Receptionist": 4,
+       "SideObject": 66,
+       "SurgeonScreen": 1,
+       "SwingDoor": 8,
+       "Vip": 1
+      },
+      "pacientes_medios": 307.8,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 5.104499752,
+       "p50_ms": 4.292778,
+       "p95_ms": 10.172963,
+       "p99_ms": 24.819998,
+       "max_ms": 26.417775
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.113443719,
+       "p50_ms": 0.105187,
+       "p95_ms": 0.149209,
+       "p99_ms": 0.22299,
+       "max_ms": 2.119255
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 11.502423538974016,
+       "p50_ms": 11.045817,
+       "p95_ms": 14.129256,
+       "p99_ms": 18.72053,
+       "max_ms": 69.647726
+      },
+      "sim_ms_por_s_normal": 98.7293924074074,
+      "lua_heap_kb": {
+       "max": 35631.4,
+       "mean": 25956,
+       "min": 18106.7,
+       "p50": 25290.2,
+       "p95": 34430.1,
+       "p99": 35327.6
+      },
+      "lua_vivo_kb": [
+       18040.8,
+       18078
+      ],
+      "entidades_inicio": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 303,
+       "other": 196,
+       "other_humanoids": 1,
+       "patients": 305,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 862
+      },
+      "entidades_fin": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 305,
+       "other": 208,
+       "other_humanoids": 3,
+       "patients": 314,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 887
+      },
+      "clases_fin": {
+       "Bench": 30,
+       "Doctor": 33,
+       "Door": 32,
+       "EntranceDoor": 18,
+       "GrimReaper": 2,
+       "Handyman": 10,
+       "Litter": 208,
+       "Machine": 13,
+       "Nurse": 10,
+       "Object": 82,
+       "OperatingSink": 4,
+       "OperatingTable": 2,
+       "Patient": 314,
+       "Plant": 41,
+       "RadiationShield": 2,
+       "Rathole": 2,
+       "ReceptionDesk": 4,
+       "Receptionist": 4,
+       "SideObject": 66,
+       "SurgeonScreen": 1,
+       "SwingDoor": 8,
+       "Vip": 1
+      },
+      "pacientes_medios": 307.8,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 4.937311626,
+       "p50_ms": 4.044191,
+       "p95_ms": 10.026569,
+       "p99_ms": 23.100246,
+       "max_ms": 25.634749
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.10420376899999999,
+       "p50_ms": 0.100378,
+       "p95_ms": 0.138708,
+       "p99_ms": 0.178402,
+       "max_ms": 0.30648
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 11.378063016655563,
+       "p50_ms": 10.915939,
+       "p95_ms": 14.717865,
+       "p99_ms": 19.158949,
+       "max_ms": 56.32224
+      },
+      "sim_ms_por_s_normal": 95.29109562962962,
+      "lua_heap_kb": {
+       "max": 35630.5,
+       "mean": 25956.1,
+       "min": 18106.7,
+       "p50": 25289.3,
+       "p95": 34429.2,
+       "p99": 35328.4
+      },
+      "lua_vivo_kb": [
+       18040.7,
+       18078
+      ],
+      "entidades_inicio": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 303,
+       "other": 196,
+       "other_humanoids": 1,
+       "patients": 305,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 862
+      },
+      "entidades_fin": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 305,
+       "other": 208,
+       "other_humanoids": 3,
+       "patients": 314,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 887
+      },
+      "clases_fin": {
+       "Bench": 30,
+       "Doctor": 33,
+       "Door": 32,
+       "EntranceDoor": 18,
+       "GrimReaper": 2,
+       "Handyman": 10,
+       "Litter": 208,
+       "Machine": 13,
+       "Nurse": 10,
+       "Object": 82,
+       "OperatingSink": 4,
+       "OperatingTable": 2,
+       "Patient": 314,
+       "Plant": 41,
+       "RadiationShield": 2,
+       "Rathole": 2,
+       "ReceptionDesk": 4,
+       "Receptionist": 4,
+       "SideObject": 66,
+       "SurgeonScreen": 1,
+       "SwingDoor": 8,
+       "Vip": 1
+      },
+      "pacientes_medios": 307.8,
+      "horas": 500
+     }
+    ],
+    "heap_cpp": {
+     "pico_total_bytes": 141190914,
+     "categorias_bytes": {
+      "Vídeo: presentación y contexto (driver)": 86097507,
+      "Lua (intérprete)": 31328132,
+      "Gráficos: sprites, animaciones y fuentes": 7629652,
+      "Gráficos: texturas (SDL/driver)": 6611591,
+      "Mapa y pathfinding": 4721400,
+      "Carga de partida (persistencia)": 4688304,
+      "Otros (sistema: SDL, libc, cargador...)": 109573,
+      "Otros (CorsixTH)": 3712,
+      "Ficheros y descompresión": 1043
+     },
+     "heaptrack_pico": "141.19M"
+    },
+    "n64_estimado": {
+     "hora_media_ms": 2027.0842728000002,
+     "hora_p95_ms": 4010.4183999999996,
+     "cpu_simulacion_normal": 39.159022414814814
+    }
+   },
+   "Lua 5.5": {
+    "repeticiones": 3,
+    "hora_media_ms": {
+     "media": 5.173312777333334,
+     "min": 5.083841250000001,
+     "max": 5.24152039
+    },
+    "hora_p95_ms": {
+     "media": 9.841668666666665,
+     "min": 9.122027,
+     "max": 10.460383
+    },
+    "hora_p99_ms": {
+     "media": 21.794865,
+     "min": 20.971035,
+     "max": 22.87775
+    },
+    "hora_max_ms": {
+     "media": 28.290492,
+     "min": 25.589298,
+     "max": 30.789927
+    },
+    "tick_media_ms": {
+     "media": 0.10364745566666667,
+     "min": 0.098787541,
+     "max": 0.10962244800000001
+    },
+    "frame_media_ms": {
+     "media": 11.556514590495226,
+     "min": 11.444821284477017,
+     "max": 11.730206528314458
+    },
+    "sim_ms_por_s_normal": {
+     "media": 99.64088312345679,
+     "min": 98.20529900000001,
+     "max": 100.86268788888889
+    },
+    "lua_heap_max_kb": {
+     "media": 44026.03333333333,
+     "min": 44025.4,
+     "max": 44027
+    },
+    "lua_heap_media_kb": {
+     "media": 29582.166666666668,
+     "min": 29578.5,
+     "max": 29584.7
+    },
+    "lua_heap_p95_kb": {
+     "media": 42524.36666666667,
+     "min": 42505.5,
+     "max": 42537.3
+    },
+    "lua_vivo_kb": {
+     "media": 16946.133333333335,
+     "min": 16943.8,
+     "max": 16950.7
+    },
+    "pacientes_medios": {
+     "media": 307.8,
+     "min": 307.8,
+     "max": 307.8
+    },
+    "entidades_fin": {
+     "doctors": 33,
+     "handymen": 10,
+     "nurses": 10,
+     "objects": 305,
+     "other": 208,
+     "other_humanoids": 3,
+     "patients": 314,
+     "receptionists": 4,
+     "rooms": 36,
+     "staff": 57,
+     "total": 887
+    },
+    "clases_fin": {
+     "Bench": 30,
+     "Doctor": 33,
+     "Door": 32,
+     "EntranceDoor": 18,
+     "GrimReaper": 2,
+     "Handyman": 10,
+     "Litter": 208,
+     "Machine": 13,
+     "Nurse": 10,
+     "Object": 82,
+     "OperatingSink": 4,
+     "OperatingTable": 2,
+     "Patient": 314,
+     "Plant": 41,
+     "RadiationShield": 2,
+     "Rathole": 2,
+     "ReceptionDesk": 4,
+     "Receptionist": 4,
+     "SideObject": 66,
+     "SurgeonScreen": 1,
+     "SwingDoor": 8,
+     "Vip": 1
+    },
+    "por_repeticion": [
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 5.194576692,
+       "p50_ms": 4.467053,
+       "p95_ms": 9.122027,
+       "p99_ms": 20.971035,
+       "max_ms": 30.789927
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.098787541,
+       "p50_ms": 0.094349,
+       "p95_ms": 0.136084,
+       "p99_ms": 0.187351,
+       "max_ms": 0.381929
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 11.494515958694205,
+       "p50_ms": 11.038778,
+       "p95_ms": 14.543325,
+       "p99_ms": 17.307306,
+       "max_ms": 59.302507
+      },
+      "sim_ms_por_s_normal": 99.85466248148148,
+      "lua_heap_kb": {
+       "max": 44025.4,
+       "mean": 29578.5,
+       "min": 16851.5,
+       "p50": 29012.9,
+       "p95": 42505.5,
+       "p99": 43777.6
+      },
+      "lua_vivo_kb": [
+       16788.9,
+       16943.9
+      ],
+      "entidades_inicio": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 303,
+       "other": 196,
+       "other_humanoids": 1,
+       "patients": 305,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 862
+      },
+      "entidades_fin": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 305,
+       "other": 208,
+       "other_humanoids": 3,
+       "patients": 314,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 887
+      },
+      "clases_fin": {
+       "Bench": 30,
+       "Doctor": 33,
+       "Door": 32,
+       "EntranceDoor": 18,
+       "GrimReaper": 2,
+       "Handyman": 10,
+       "Litter": 208,
+       "Machine": 13,
+       "Nurse": 10,
+       "Object": 82,
+       "OperatingSink": 4,
+       "OperatingTable": 2,
+       "Patient": 314,
+       "Plant": 41,
+       "RadiationShield": 2,
+       "Rathole": 2,
+       "ReceptionDesk": 4,
+       "Receptionist": 4,
+       "SideObject": 66,
+       "SurgeonScreen": 1,
+       "SwingDoor": 8,
+       "Vip": 1
+      },
+      "pacientes_medios": 307.8,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 5.083841250000001,
+       "p50_ms": 4.353303,
+       "p95_ms": 9.942596,
+       "p99_ms": 22.87775,
+       "max_ms": 25.589298
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.10962244800000001,
+       "p50_ms": 0.097648,
+       "p95_ms": 0.143687,
+       "p99_ms": 0.270384,
+       "max_ms": 4.068829
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 11.444821284477017,
+       "p50_ms": 10.980199,
+       "p95_ms": 15.046395,
+       "p99_ms": 17.099652,
+       "max_ms": 52.577162
+      },
+      "sim_ms_por_s_normal": 98.20529900000001,
+      "lua_heap_kb": {
+       "max": 44027,
+       "mean": 29583.3,
+       "min": 16851.6,
+       "p50": 29036.2,
+       "p95": 42530.3,
+       "p99": 43802
+      },
+      "lua_vivo_kb": [
+       16788.9,
+       16943.8
+      ],
+      "entidades_inicio": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 303,
+       "other": 196,
+       "other_humanoids": 1,
+       "patients": 305,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 862
+      },
+      "entidades_fin": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 305,
+       "other": 208,
+       "other_humanoids": 3,
+       "patients": 314,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 887
+      },
+      "clases_fin": {
+       "Bench": 30,
+       "Doctor": 33,
+       "Door": 32,
+       "EntranceDoor": 18,
+       "GrimReaper": 2,
+       "Handyman": 10,
+       "Litter": 208,
+       "Machine": 13,
+       "Nurse": 10,
+       "Object": 82,
+       "OperatingSink": 4,
+       "OperatingTable": 2,
+       "Patient": 314,
+       "Plant": 41,
+       "RadiationShield": 2,
+       "Rathole": 2,
+       "ReceptionDesk": 4,
+       "Receptionist": 4,
+       "SideObject": 66,
+       "SurgeonScreen": 1,
+       "SwingDoor": 8,
+       "Vip": 1
+      },
+      "pacientes_medios": 307.8,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 5.24152039,
+       "p50_ms": 4.27116,
+       "p95_ms": 10.460383,
+       "p99_ms": 21.53581,
+       "max_ms": 28.492251
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.102532378,
+       "p50_ms": 0.095858,
+       "p95_ms": 0.144923,
+       "p99_ms": 0.241267,
+       "max_ms": 0.699199
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 11.730206528314458,
+       "p50_ms": 11.167014,
+       "p95_ms": 15.632292,
+       "p99_ms": 21.496784,
+       "max_ms": 71.557528
+      },
+      "sim_ms_por_s_normal": 100.86268788888889,
+      "lua_heap_kb": {
+       "max": 44025.7,
+       "mean": 29584.7,
+       "min": 16851.7,
+       "p50": 29043.7,
+       "p95": 42537.3,
+       "p99": 43809
+      },
+      "lua_vivo_kb": [
+       16789.1,
+       16950.7
+      ],
+      "entidades_inicio": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 303,
+       "other": 196,
+       "other_humanoids": 1,
+       "patients": 305,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 862
+      },
+      "entidades_fin": {
+       "doctors": 33,
+       "handymen": 10,
+       "nurses": 10,
+       "objects": 305,
+       "other": 208,
+       "other_humanoids": 3,
+       "patients": 314,
+       "receptionists": 4,
+       "rooms": 36,
+       "staff": 57,
+       "total": 887
+      },
+      "clases_fin": {
+       "Bench": 30,
+       "Doctor": 33,
+       "Door": 32,
+       "EntranceDoor": 18,
+       "GrimReaper": 2,
+       "Handyman": 10,
+       "Litter": 208,
+       "Machine": 13,
+       "Nurse": 10,
+       "Object": 82,
+       "OperatingSink": 4,
+       "OperatingTable": 2,
+       "Patient": 314,
+       "Plant": 41,
+       "RadiationShield": 2,
+       "Rathole": 2,
+       "ReceptionDesk": 4,
+       "Receptionist": 4,
+       "SideObject": 66,
+       "SurgeonScreen": 1,
+       "SwingDoor": 8,
+       "Vip": 1
+      },
+      "pacientes_medios": 307.8,
+      "horas": 500
+     }
+    ],
+    "heap_cpp": {
+     "pico_total_bytes": 139825185,
+     "categorias_bytes": {
+      "Vídeo: presentación y contexto (driver)": 86228691,
+      "Lua (intérprete)": 34511435,
+      "Gráficos: sprites, animaciones y fuentes": 7629652,
+      "Gráficos: texturas (SDL/driver)": 6619783,
+      "Mapa y pathfinding": 4721400,
+      "Otros (sistema: SDL, libc, cargador...)": 109573,
+      "Otros (CorsixTH)": 3712,
+      "Ficheros y descompresión": 939
+     },
+     "heaptrack_pico": "139.83M"
+    },
+    "n64_estimado": {
+     "hora_media_ms": 2069.3251109333337,
+     "hora_p95_ms": 3936.6674666666663,
+     "cpu_simulacion_normal": 39.856353249382714
+    }
+   }
+  },
+  "mediano": {
+   "Lua 5.4": {
+    "repeticiones": 3,
+    "hora_media_ms": {
+     "media": 1.980803384,
+     "min": 1.872173088,
+     "max": 2.109184758
+    },
+    "hora_p95_ms": {
+     "media": 2.874864,
+     "min": 2.707248,
+     "max": 3.157873
+    },
+    "hora_p99_ms": {
+     "media": 5.9719109999999995,
+     "min": 5.594971,
+     "max": 6.275421
+    },
+    "hora_max_ms": {
+     "media": 37.96794066666667,
+     "min": 33.026969,
+     "max": 42.545518
+    },
+    "tick_media_ms": {
+     "media": 0.10645889366666667,
+     "min": 0.10227370100000001,
+     "max": 0.109486137
+    },
+    "frame_media_ms": {
+     "media": 10.182872341772152,
+     "min": 10.116523714856761,
+     "max": 10.277909073284478
+    },
+    "sim_ms_por_s_normal": {
+     "media": 40.62446613580247,
+     "min": 38.45778685185186,
+     "max": 43.044786
+    },
+    "lua_heap_max_kb": {
+     "media": 27390.099999999995,
+     "min": 27390.1,
+     "max": 27390.1
+    },
+    "lua_heap_media_kb": {
+     "media": 20124.3,
+     "min": 20124.3,
+     "max": 20124.3
+    },
+    "lua_heap_p95_kb": {
+     "media": 26527.8,
+     "min": 26527.8,
+     "max": 26527.8
+    },
+    "lua_vivo_kb": {
+     "media": 14902.299999999997,
+     "min": 14902.3,
+     "max": 14902.3
+    },
+    "pacientes_medios": {
+     "media": 53.1,
+     "min": 53.1,
+     "max": 53.1
+    },
+    "entidades_fin": {
+     "doctors": 9,
+     "handymen": 4,
+     "nurses": 2,
+     "objects": 96,
+     "other": 403,
+     "other_humanoids": 0,
+     "patients": 54,
+     "receptionists": 1,
+     "rooms": 9,
+     "staff": 16,
+     "total": 569
+    },
+    "clases_fin": {
+     "Bench": 8,
+     "Doctor": 9,
+     "Door": 8,
+     "EntranceDoor": 18,
+     "Handyman": 4,
+     "Litter": 403,
+     "Machine": 1,
+     "Nurse": 2,
+     "Object": 23,
+     "Patient": 54,
+     "Plant": 10,
+     "Rathole": 10,
+     "ReceptionDesk": 1,
+     "Receptionist": 1,
+     "SideObject": 15,
+     "SwingDoor": 2
+    },
+    "por_repeticion": [
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 2.109184758,
+       "p50_ms": 1.845522,
+       "p95_ms": 3.157873,
+       "p99_ms": 6.275421,
+       "max_ms": 33.026969
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.107616843,
+       "p50_ms": 0.101347,
+       "p95_ms": 0.14432,
+       "p99_ms": 0.205334,
+       "max_ms": 1.038628
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 10.154184237175215,
+       "p50_ms": 9.720643,
+       "p95_ms": 13.023093,
+       "p99_ms": 16.93077,
+       "max_ms": 79.254937
+      },
+      "sim_ms_por_s_normal": 43.044786,
+      "lua_heap_kb": {
+       "max": 27390.1,
+       "mean": 20124.3,
+       "min": 14808.4,
+       "p50": 19214.2,
+       "p95": 26527.8,
+       "p99": 27228.9
+      },
+      "lua_vivo_kb": [
+       14781.7,
+       14902.3
+      ],
+      "entidades_inicio": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 381,
+       "other_humanoids": 0,
+       "patients": 50,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 543
+      },
+      "entidades_fin": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 403,
+       "other_humanoids": 0,
+       "patients": 54,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 569
+      },
+      "clases_fin": {
+       "Bench": 8,
+       "Doctor": 9,
+       "Door": 8,
+       "EntranceDoor": 18,
+       "Handyman": 4,
+       "Litter": 403,
+       "Machine": 1,
+       "Nurse": 2,
+       "Object": 23,
+       "Patient": 54,
+       "Plant": 10,
+       "Rathole": 10,
+       "ReceptionDesk": 1,
+       "Receptionist": 1,
+       "SideObject": 15,
+       "SwingDoor": 2
+      },
+      "pacientes_medios": 53.1,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 1.961052306,
+       "p50_ms": 1.68028,
+       "p95_ms": 2.707248,
+       "p99_ms": 6.045341,
+       "max_ms": 42.545518
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.109486137,
+       "p50_ms": 0.10201,
+       "p95_ms": 0.144419,
+       "p99_ms": 0.192094,
+       "max_ms": 2.207787
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 10.277909073284478,
+       "p50_ms": 9.751345,
+       "p95_ms": 13.634574,
+       "p99_ms": 16.688756,
+       "max_ms": 62.126485
+      },
+      "sim_ms_por_s_normal": 40.37082555555556,
+      "lua_heap_kb": {
+       "max": 27390.1,
+       "mean": 20124.3,
+       "min": 14808.4,
+       "p50": 19214.2,
+       "p95": 26527.8,
+       "p99": 27228.9
+      },
+      "lua_vivo_kb": [
+       14781.7,
+       14902.3
+      ],
+      "entidades_inicio": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 381,
+       "other_humanoids": 0,
+       "patients": 50,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 543
+      },
+      "entidades_fin": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 403,
+       "other_humanoids": 0,
+       "patients": 54,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 569
+      },
+      "clases_fin": {
+       "Bench": 8,
+       "Doctor": 9,
+       "Door": 8,
+       "EntranceDoor": 18,
+       "Handyman": 4,
+       "Litter": 403,
+       "Machine": 1,
+       "Nurse": 2,
+       "Object": 23,
+       "Patient": 54,
+       "Plant": 10,
+       "Rathole": 10,
+       "ReceptionDesk": 1,
+       "Receptionist": 1,
+       "SideObject": 15,
+       "SwingDoor": 2
+      },
+      "pacientes_medios": 53.1,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 1.872173088,
+       "p50_ms": 1.61408,
+       "p95_ms": 2.759471,
+       "p99_ms": 5.594971,
+       "max_ms": 38.331335
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.10227370100000001,
+       "p50_ms": 0.097332,
+       "p95_ms": 0.14209,
+       "p99_ms": 0.202579,
+       "max_ms": 0.372599
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 10.116523714856761,
+       "p50_ms": 9.702277,
+       "p95_ms": 12.366322,
+       "p99_ms": 16.103647,
+       "max_ms": 64.016495
+      },
+      "sim_ms_por_s_normal": 38.45778685185186,
+      "lua_heap_kb": {
+       "max": 27390.1,
+       "mean": 20124.3,
+       "min": 14808.4,
+       "p50": 19214.2,
+       "p95": 26527.8,
+       "p99": 27228.9
+      },
+      "lua_vivo_kb": [
+       14781.7,
+       14902.3
+      ],
+      "entidades_inicio": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 381,
+       "other_humanoids": 0,
+       "patients": 50,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 543
+      },
+      "entidades_fin": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 403,
+       "other_humanoids": 0,
+       "patients": 54,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 569
+      },
+      "clases_fin": {
+       "Bench": 8,
+       "Doctor": 9,
+       "Door": 8,
+       "EntranceDoor": 18,
+       "Handyman": 4,
+       "Litter": 403,
+       "Machine": 1,
+       "Nurse": 2,
+       "Object": 23,
+       "Patient": 54,
+       "Plant": 10,
+       "Rathole": 10,
+       "ReceptionDesk": 1,
+       "Receptionist": 1,
+       "SideObject": 15,
+       "SwingDoor": 2
+      },
+      "pacientes_medios": 53.1,
+      "horas": 500
+     }
+    ],
+    "heap_cpp": {
+     "pico_total_bytes": 121869720,
+     "categorias_bytes": {
+      "Vídeo: presentación y contexto (driver)": 81369115,
+      "Lua (intérprete)": 19961194,
+      "Gráficos: sprites, animaciones y fuentes": 7623364,
+      "Gráficos: texturas (SDL/driver)": 5915975,
+      "Mapa y pathfinding": 4721528,
+      "Carga de partida (persistencia)": 2164216,
+      "Otros (sistema: SDL, libc, cargador...)": 109573,
+      "Otros (CorsixTH)": 3712,
+      "Ficheros y descompresión": 1043
+     },
+     "heaptrack_pico": "121.87M"
+    },
+    "n64_estimado": {
+     "hora_media_ms": 792.3213536,
+     "hora_p95_ms": 1149.9456,
+     "cpu_simulacion_normal": 16.24978645432099
+    }
+   },
+   "Lua 5.5": {
+    "repeticiones": 3,
+    "hora_media_ms": {
+     "media": 2.0288004186666666,
+     "min": 1.9076093140000001,
+     "max": 2.092496854
+    },
+    "hora_p95_ms": {
+     "media": 2.8851403333333336,
+     "min": 2.646208,
+     "max": 3.049058
+    },
+    "hora_p99_ms": {
+     "media": 5.85275,
+     "min": 4.67788,
+     "max": 6.748649
+    },
+    "hora_max_ms": {
+     "media": 34.68601533333333,
+     "min": 31.133871,
+     "max": 36.567879
+    },
+    "tick_media_ms": {
+     "media": 0.10290340499999999,
+     "min": 0.101408396,
+     "max": 0.10373157899999999
+    },
+    "frame_media_ms": {
+     "media": 10.204137125471908,
+     "min": 10.03542817721519,
+     "max": 10.45506556095936
+    },
+    "sim_ms_por_s_normal": {
+     "media": 41.381615345679016,
+     "min": 39.081964925925924,
+     "max": 42.591852074074076
+    },
+    "lua_heap_max_kb": {
+     "media": 29830.466666666664,
+     "min": 29828.5,
+     "max": 29831.5
+    },
+    "lua_heap_media_kb": {
+     "media": 21967.266666666666,
+     "min": 21958.1,
+     "max": 21972.4
+    },
+    "lua_heap_p95_kb": {
+     "media": 29028.966666666664,
+     "min": 29027,
+     "max": 29030
+    },
+    "lua_vivo_kb": {
+     "media": 14224.700000000003,
+     "min": 14224.7,
+     "max": 14224.7
+    },
+    "pacientes_medios": {
+     "media": 53.1,
+     "min": 53.1,
+     "max": 53.1
+    },
+    "entidades_fin": {
+     "doctors": 9,
+     "handymen": 4,
+     "nurses": 2,
+     "objects": 96,
+     "other": 403,
+     "other_humanoids": 0,
+     "patients": 54,
+     "receptionists": 1,
+     "rooms": 9,
+     "staff": 16,
+     "total": 569
+    },
+    "clases_fin": {
+     "Bench": 8,
+     "Doctor": 9,
+     "Door": 8,
+     "EntranceDoor": 18,
+     "Handyman": 4,
+     "Litter": 403,
+     "Machine": 1,
+     "Nurse": 2,
+     "Object": 23,
+     "Patient": 54,
+     "Plant": 10,
+     "Rathole": 10,
+     "ReceptionDesk": 1,
+     "Receptionist": 1,
+     "SideObject": 15,
+     "SwingDoor": 2
+    },
+    "por_repeticion": [
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 1.9076093140000001,
+       "p50_ms": 1.677235,
+       "p95_ms": 2.646208,
+       "p99_ms": 4.67788,
+       "max_ms": 36.567879
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.101408396,
+       "p50_ms": 0.094457,
+       "p95_ms": 0.139706,
+       "p99_ms": 0.172102,
+       "max_ms": 1.446684
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 10.03542817721519,
+       "p50_ms": 9.611209,
+       "p95_ms": 12.456493,
+       "p99_ms": 16.747537,
+       "max_ms": 52.408068
+      },
+      "sim_ms_por_s_normal": 39.081964925925924,
+      "lua_heap_kb": {
+       "max": 29828.5,
+       "mean": 21958.1,
+       "min": 14143.3,
+       "p50": 21896.4,
+       "p95": 29027,
+       "p99": 29675
+      },
+      "lua_vivo_kb": [
+       14118.1,
+       14224.7
+      ],
+      "entidades_inicio": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 381,
+       "other_humanoids": 0,
+       "patients": 50,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 543
+      },
+      "entidades_fin": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 403,
+       "other_humanoids": 0,
+       "patients": 54,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 569
+      },
+      "clases_fin": {
+       "Bench": 8,
+       "Doctor": 9,
+       "Door": 8,
+       "EntranceDoor": 18,
+       "Handyman": 4,
+       "Litter": 403,
+       "Machine": 1,
+       "Nurse": 2,
+       "Object": 23,
+       "Patient": 54,
+       "Plant": 10,
+       "Rathole": 10,
+       "ReceptionDesk": 1,
+       "Receptionist": 1,
+       "SideObject": 15,
+       "SwingDoor": 2
+      },
+      "pacientes_medios": 53.1,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 2.092496854,
+       "p50_ms": 1.814798,
+       "p95_ms": 3.049058,
+       "p99_ms": 6.748649,
+       "max_ms": 36.356296
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.10373157899999999,
+       "p50_ms": 0.097837,
+       "p95_ms": 0.13911,
+       "p99_ms": 0.18203,
+       "max_ms": 1.074406
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 10.45506556095936,
+       "p50_ms": 9.999842,
+       "p95_ms": 13.093578,
+       "p99_ms": 17.532032,
+       "max_ms": 92.12568
+      },
+      "sim_ms_por_s_normal": 42.591852074074076,
+      "lua_heap_kb": {
+       "max": 29831.5,
+       "mean": 21972.4,
+       "min": 14143.3,
+       "p50": 21947.1,
+       "p95": 29030,
+       "p99": 29678
+      },
+      "lua_vivo_kb": [
+       14118.1,
+       14224.7
+      ],
+      "entidades_inicio": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 381,
+       "other_humanoids": 0,
+       "patients": 50,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 543
+      },
+      "entidades_fin": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 403,
+       "other_humanoids": 0,
+       "patients": 54,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 569
+      },
+      "clases_fin": {
+       "Bench": 8,
+       "Doctor": 9,
+       "Door": 8,
+       "EntranceDoor": 18,
+       "Handyman": 4,
+       "Litter": 403,
+       "Machine": 1,
+       "Nurse": 2,
+       "Object": 23,
+       "Patient": 54,
+       "Plant": 10,
+       "Rathole": 10,
+       "ReceptionDesk": 1,
+       "Receptionist": 1,
+       "SideObject": 15,
+       "SwingDoor": 2
+      },
+      "pacientes_medios": 53.1,
+      "horas": 500
+     },
+     {
+      "hora": {
+       "n": 500,
+       "media_ms": 2.086295088,
+       "p50_ms": 1.805806,
+       "p95_ms": 2.960155,
+       "p99_ms": 6.131721,
+       "max_ms": 31.133871
+      },
+      "tick": {
+       "n": 1000,
+       "media_ms": 0.10357024,
+       "p50_ms": 0.098007,
+       "p95_ms": 0.142286,
+       "p99_ms": 0.176559,
+       "max_ms": 1.040338
+      },
+      "frame": {
+       "n": 1501,
+       "media_ms": 10.121917638241172,
+       "p50_ms": 9.787654,
+       "p95_ms": 12.419205,
+       "p99_ms": 16.395148,
+       "max_ms": 43.994318
+      },
+      "sim_ms_por_s_normal": 42.471029037037034,
+      "lua_heap_kb": {
+       "max": 29831.4,
+       "mean": 21971.3,
+       "min": 14143.3,
+       "p50": 21947,
+       "p95": 29029.9,
+       "p99": 29677.9
+      },
+      "lua_vivo_kb": [
+       14118.1,
+       14224.7
+      ],
+      "entidades_inicio": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 381,
+       "other_humanoids": 0,
+       "patients": 50,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 543
+      },
+      "entidades_fin": {
+       "doctors": 9,
+       "handymen": 4,
+       "nurses": 2,
+       "objects": 96,
+       "other": 403,
+       "other_humanoids": 0,
+       "patients": 54,
+       "receptionists": 1,
+       "rooms": 9,
+       "staff": 16,
+       "total": 569
+      },
+      "clases_fin": {
+       "Bench": 8,
+       "Doctor": 9,
+       "Door": 8,
+       "EntranceDoor": 18,
+       "Handyman": 4,
+       "Litter": 403,
+       "Machine": 1,
+       "Nurse": 2,
+       "Object": 23,
+       "Patient": 54,
+       "Plant": 10,
+       "Rathole": 10,
+       "ReceptionDesk": 1,
+       "Receptionist": 1,
+       "SideObject": 15,
+       "SwingDoor": 2
+      },
+      "pacientes_medios": 53.1,
+      "horas": 500
+     }
+    ],
+    "heap_cpp": {
+     "pico_total_bytes": 120685882,
+     "categorias_bytes": {
+      "Vídeo: presentación y contexto (driver)": 81369115,
+      "Lua (intérprete)": 20941676,
+      "Gráficos: sprites, animaciones y fuentes": 7623364,
+      "Gráficos: texturas (SDL/driver)": 5915975,
+      "Mapa y pathfinding": 4721528,
+      "Otros (sistema: SDL, libc, cargador...)": 109573,
+      "Otros (CorsixTH)": 3712,
+      "Ficheros y descompresión": 939
+     },
+     "heaptrack_pico": "120.69M"
+    },
+    "n64_estimado": {
+     "hora_media_ms": 811.5201674666666,
+     "hora_p95_ms": 1154.0561333333335,
+     "cpu_simulacion_normal": 16.55264613827161
+    }
+   }
+  }
+ }
+}

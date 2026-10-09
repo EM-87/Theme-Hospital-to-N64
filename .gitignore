@@ -30,3 +30,9 @@ n64/**/build/
 heaptrack.*.zst
 heaptrack.*.gz
 massif.out.*
+
+# Autoguardados de CorsixTH al generar partidas
+bench/saves/Autosaves/
+
+# Python
+__pycache__/

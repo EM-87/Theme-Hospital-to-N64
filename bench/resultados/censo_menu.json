@@ -1,0 +1,48 @@
+{
+  "estimado_total_kb": 1874.82,
+  "live_kb": 9023.04,
+  "lua": "Lua 5.4",
+  "raices": [
+    {
+      "cadenas": 574,
+      "cadenas_kb": 19.9268,
+      "clausuras": 235,
+      "clausuras_kb": 8.99219,
+      "estimado_kb": 84.8955,
+      "hilos": 0,
+      "nombre": "interfaz",
+      "prototipos_distintos": 222,
+      "tablas": 270,
+      "tablas_kb": 55.9766,
+      "userdata": 47
+    },
+    {
+      "cadenas": 0,
+      "cadenas_kb": 0,
+      "clausuras": 0,
+      "clausuras_kb": 0,
+      "estimado_kb": 0,
+      "hilos": 0,
+      "nombre": "textos (_S)",
+      "prototipos_distintos": 0,
+      "tablas": 0,
+      "tablas_kb": 0,
+      "userdata": 0
+    },
+    {
+      "cadenas": 9391,
+      "cadenas_kb": 590.682,
+      "clausuras": 2912,
+      "clausuras_kb": 118.961,
+      "estimado_kb": 1789.92,
+      "hilos": 2,
+      "nombre": "resto (clases, configuración, datos)",
+      "prototipos_distintos": 2517,
+      "tablas": 6229,
+      "tablas_kb": 1080.28,
+      "userdata": 450
+    }
+  ],
+  "save": "menu",
+  "sin_asignar_kb": 7148.22
+}
