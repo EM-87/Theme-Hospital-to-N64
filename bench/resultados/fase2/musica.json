@@ -1,0 +1,237 @@
+{
+ "canciones": {
+  "ATLANTIS": {
+   "xmi": 24784,
+   "mid": 47788,
+   "segundos": 205.5,
+   "programas": [
+    1,
+    25,
+    34,
+    66,
+    108
+   ],
+   "percusion": [
+    36,
+    38,
+    42,
+    60,
+    61
+   ],
+   "polifonia_max": 13
+  },
+  "CANDY": {
+   "xmi": 8094,
+   "mid": 14867,
+   "segundos": 89.2,
+   "programas": [
+    18,
+    38,
+    59,
+    80,
+    81,
+    108
+   ],
+   "percusion": [
+    36,
+    40,
+    45,
+    46,
+    48,
+    57,
+    59
+   ],
+   "polifonia_max": 13
+  },
+  "DOCTOR": {
+   "xmi": 3066,
+   "mid": 5349,
+   "segundos": 96.9,
+   "programas": [
+    0,
+    17,
+    35,
+    49
+   ],
+   "percusion": [
+    54,
+    58
+   ],
+   "polifonia_max": 7
+  },
+  "FORTUNE": {
+   "xmi": 7728,
+   "mid": 14325,
+   "segundos": 144.3,
+   "programas": [
+    0,
+    12,
+    17,
+    37,
+    48,
+    61
+   ],
+   "percusion": [
+    55,
+    73
+   ],
+   "polifonia_max": 15
+  },
+  "MEND": {
+   "xmi": 11936,
+   "mid": 22207,
+   "segundos": 154.8,
+   "programas": [
+    0,
+    33,
+    114
+   ],
+   "percusion": [
+    36,
+    38,
+    42,
+    44,
+    46,
+    57
+   ],
+   "polifonia_max": 10
+  },
+  "NIGHTSH": {
+   "xmi": 14402,
+   "mid": 27181,
+   "segundos": 195.0,
+   "programas": [
+    0,
+    12,
+    37,
+    38,
+    50,
+    56,
+    67,
+    75
+   ],
+   "percusion": [
+    36,
+    40,
+    42,
+    45,
+    46,
+    47,
+    49,
+    51,
+    55,
+    58,
+    75
+   ],
+   "polifonia_max": 13
+  },
+  "SIXSEVEN": {
+   "xmi": 22156,
+   "mid": 40709,
+   "segundos": 215.2,
+   "programas": [
+    0,
+    33,
+    37,
+    50,
+    56,
+    62
+   ],
+   "percusion": [
+    36,
+    40,
+    42,
+    46,
+    49,
+    52,
+    55,
+    61,
+    63
+   ],
+   "polifonia_max": 11
+  },
+  "STEADY": {
+   "xmi": 12490,
+   "mid": 24343,
+   "segundos": 211.9,
+   "programas": [
+    1,
+    24,
+    37,
+    46,
+    48,
+    61
+   ],
+   "percusion": [
+    44
+   ],
+   "polifonia_max": 11
+  }
+ },
+ "programas_usados": [
+  0,
+  1,
+  12,
+  17,
+  18,
+  24,
+  25,
+  33,
+  34,
+  35,
+  37,
+  38,
+  46,
+  48,
+  49,
+  50,
+  56,
+  59,
+  61,
+  62,
+  66,
+  67,
+  75,
+  80,
+  81,
+  108,
+  114
+ ],
+ "notas_percusion_usadas": [
+  36,
+  38,
+  40,
+  42,
+  44,
+  45,
+  46,
+  47,
+  48,
+  49,
+  51,
+  52,
+  54,
+  55,
+  57,
+  58,
+  59,
+  60,
+  61,
+  63,
+  73,
+  75
+ ],
+ "segundos_total": 1312.8,
+ "mid64": 78482,
+ "soundfont": {
+  "sf2": "TimGM6mb.sf2",
+  "bytes": 5969788,
+  "sf64": 1817501
+ },
+ "renderizado": {
+  "wav_32k_estereo": 173579104,
+  "vadpcm_estereo_32k": 44235136,
+  "vadpcm_mono_22k": 15206163,
+  "opus_estereo_32k": 11926218
+ }
+}

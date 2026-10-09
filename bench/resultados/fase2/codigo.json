@@ -1,0 +1,177 @@
+{
+ "motor": {
+  "ficheros": 274,
+  "fuente": 2608627,
+  "bytecode": 1272853,
+  "c1": 819613,
+  "c3": 565586
+ },
+ "idioma brazilian_portuguese": {
+  "ficheros": 1,
+  "fuente": 205377,
+  "bytecode": 192338,
+  "c1": 85597,
+  "c3": 60922
+ },
+ "idioma czech": {
+  "ficheros": 1,
+  "fuente": 204518,
+  "bytecode": 200608,
+  "c1": 100508,
+  "c3": 72172
+ },
+ "idioma danish": {
+  "ficheros": 1,
+  "fuente": 137673,
+  "bytecode": 116747,
+  "c1": 57561,
+  "c3": 41661
+ },
+ "idioma developer": {
+  "ficheros": 1,
+  "fuente": 1645,
+  "bytecode": 306,
+  "c1": 304,
+  "c3": 230
+ },
+ "idioma dutch": {
+  "ficheros": 1,
+  "fuente": 179564,
+  "bytecode": 173543,
+  "c1": 85600,
+  "c3": 60823
+ },
+ "idioma english": {
+  "ficheros": 1,
+  "fuente": 70778,
+  "bytecode": 69247,
+  "c1": 34863,
+  "c3": 24151
+ },
+ "idioma finnish": {
+  "ficheros": 1,
+  "fuente": 152537,
+  "bytecode": 130846,
+  "c1": 65640,
+  "c3": 47641
+ },
+ "idioma french": {
+  "ficheros": 1,
+  "fuente": 89052,
+  "bytecode": 86574,
+  "c1": 42284,
+  "c3": 30648
+ },
+ "idioma german": {
+  "ficheros": 1,
+  "fuente": 56906,
+  "bytecode": 52376,
+  "c1": 27100,
+  "c3": 19031
+ },
+ "idioma greek": {
+  "ficheros": 1,
+  "fuente": 286807,
+  "bytecode": 283292,
+  "c1": 99497,
+  "c3": 70456
+ },
+ "idioma hungarian": {
+  "ficheros": 1,
+  "fuente": 78079,
+  "bytecode": 64213,
+  "c1": 36475,
+  "c3": 25315
+ },
+ "idioma iberic_portuguese": {
+  "ficheros": 1,
+  "fuente": 35868,
+  "bytecode": 30243,
+  "c1": 18024,
+  "c3": 12743
+ },
+ "idioma italian": {
+  "ficheros": 1,
+  "fuente": 49141,
+  "bytecode": 47404,
+  "c1": 24923,
+  "c3": 17596
+ },
+ "idioma japanese": {
+  "ficheros": 1,
+  "fuente": 167106,
+  "bytecode": 160432,
+  "c1": 66055,
+  "c3": 48655
+ },
+ "idioma korean": {
+  "ficheros": 1,
+  "fuente": 163582,
+  "bytecode": 160274,
+  "c1": 68993,
+  "c3": 51013
+ },
+ "idioma norwegian": {
+  "ficheros": 1,
+  "fuente": 179846,
+  "bytecode": 156601,
+  "c1": 77692,
+  "c3": 55490
+ },
+ "idioma original_strings": {
+  "ficheros": 1,
+  "fuente": 66228,
+  "bytecode": 37804,
+  "c1": 20796,
+  "c3": 12252
+ },
+ "idioma polish": {
+  "ficheros": 1,
+  "fuente": 163153,
+  "bytecode": 155275,
+  "c1": 79880,
+  "c3": 58096
+ },
+ "idioma russian": {
+  "ficheros": 1,
+  "fuente": 293016,
+  "bytecode": 285901,
+  "c1": 104634,
+  "c3": 74060
+ },
+ "idioma simplified_chinese": {
+  "ficheros": 1,
+  "fuente": 166846,
+  "bytecode": 146044,
+  "c1": 76469,
+  "c3": 54210
+ },
+ "idioma spanish": {
+  "ficheros": 1,
+  "fuente": 90249,
+  "bytecode": 87466,
+  "c1": 42552,
+  "c3": 31035
+ },
+ "idioma swedish": {
+  "ficheros": 1,
+  "fuente": 35892,
+  "bytecode": 34012,
+  "c1": 19189,
+  "c3": 13596
+ },
+ "idioma traditional_chinese": {
+  "ficheros": 1,
+  "fuente": 155624,
+  "bytecode": 148824,
+  "c1": 77137,
+  "c3": 54653
+ },
+ "idioma ukrainian": {
+  "ficheros": 1,
+  "fuente": 273174,
+  "bytecode": 267092,
+  "c1": 99491,
+  "c3": 70815
+ }
+}

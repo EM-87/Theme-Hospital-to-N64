@@ -1,0 +1,51 @@
+{
+ "efectos": {
+  "sonidos": 190,
+  "wav": 5745344,
+  "vadpcm": 1500527,
+  "vadpcm_11025": 777562,
+  "opus": 579182
+ },
+ "locutor_inglés": {
+  "sonidos": 185,
+  "wav": 10865248,
+  "vadpcm": 5117609,
+  "vadpcm_11025": 2587631,
+  "opus": 2433724
+ },
+ "locutor_francés": {
+  "sonidos": 197,
+  "wav": 7435904,
+  "vadpcm": 3087792,
+  "vadpcm_11025": 2716840,
+  "opus": 869908
+ },
+ "locutor_alemán": {
+  "sonidos": 197,
+  "wav": 7831760,
+  "vadpcm": 3213849,
+  "vadpcm_11025": 2842897,
+  "opus": 934952
+ },
+ "locutor_italiano": {
+  "sonidos": 197,
+  "wav": 7896384,
+  "vadpcm": 3305012,
+  "vadpcm_11025": 2934060,
+  "opus": 947916
+ },
+ "locutor_español": {
+  "sonidos": 197,
+  "wav": 8683792,
+  "vadpcm": 3632151,
+  "vadpcm_11025": 3261199,
+  "opus": 1089524
+ },
+ "locutor_sueco": {
+  "sonidos": 197,
+  "wav": 8028048,
+  "vadpcm": 3286880,
+  "vadpcm_11025": 2915928,
+  "opus": 1055354
+ }
+}

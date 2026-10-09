@@ -1,0 +1,7117 @@
+{
+ "idiomas": {
+  "0": {
+   "sonidos": 376,
+   "bytes": 16610720,
+   "segundos": 576.8799092970521
+  },
+  "1": {
+   "sonidos": 388,
+   "bytes": 13181376,
+   "segundos": 599.5564172335601
+  },
+  "2": {
+   "sonidos": 388,
+   "bytes": 13577232,
+   "segundos": 635.3921541950114
+  },
+  "3": {
+   "sonidos": 388,
+   "bytes": 13641856,
+   "segundos": 641.2619954648526
+  },
+  "4": {
+   "sonidos": 388,
+   "bytes": 14429264,
+   "segundos": 712.6826757369614
+  },
+  "5": {
+   "sonidos": 388,
+   "bytes": 13773520,
+   "segundos": 653.1968707482994
+  }
+ },
+ "reparto": {
+  "compartidos": {
+   "sonidos": 191,
+   "bytes": 5745472,
+   "segundos": 127.08126984126984
+  },
+  "por_idioma_ingles": {
+   "sonidos": 185,
+   "bytes": 10865248,
+   "segundos": 449.79863945578234
+  }
+ },
+ "formatos": {
+  "22050 Hz 16 bit 1 can.": 229,
+  "22050 Hz 8 bit 1 can.": 146,
+  "22050 Hz 16 bit 2 can.": 1
+ },
+ "sonidos": [
+  {
+   "nombre": "ADDITEMJ.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6162,
+   "segundos": 0.13972789115646259,
+   "bytes": 6384
+  },
+  {
+   "nombre": "ALIEN001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 47992,
+   "segundos": 2.1765079365079365,
+   "bytes": 48160
+  },
+  {
+   "nombre": "ALIEN002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 46904,
+   "segundos": 2.1271655328798187,
+   "bytes": 47072
+  },
+  {
+   "nombre": "ALIEN003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 81912,
+   "segundos": 3.714829931972789,
+   "bytes": 82080
+  },
+  {
+   "nombre": "ALIEN004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 74912,
+   "segundos": 3.3973696145124714,
+   "bytes": 75072
+  },
+  {
+   "nombre": "ALIEN005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54328,
+   "segundos": 2.4638548752834466,
+   "bytes": 54496
+  },
+  {
+   "nombre": "ALIENSHP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 50526,
+   "segundos": 1.1457142857142857,
+   "bytes": 50752
+  },
+  {
+   "nombre": "ANGEL.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 30910,
+   "segundos": 0.7009070294784581,
+   "bytes": 31136
+  },
+  {
+   "nombre": "APPEAR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 78466,
+   "segundos": 1.7792743764172336,
+   "bytes": 78656
+  },
+  {
+   "nombre": "ATMOS.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 117758,
+   "segundos": 2.670249433106576,
+   "bytes": 117920
+  },
+  {
+   "nombre": "AUCTION.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 14640,
+   "segundos": 0.33197278911564626,
+   "bytes": 15024
+  },
+  {
+   "nombre": "AUT_KLNK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16706,
+   "segundos": 0.37882086167800455,
+   "bytes": 16912
+  },
+  {
+   "nombre": "AUT_OPEN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 48578,
+   "segundos": 1.1015419501133787,
+   "bytes": 48800
+  },
+  {
+   "nombre": "AUT_OUT.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 81026,
+   "segundos": 1.8373242630385487,
+   "bytes": 81232
+  },
+  {
+   "nombre": "AUT_ROCK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10784,
+   "segundos": 0.24453514739229024,
+   "bytes": 11024
+  },
+  {
+   "nombre": "BALLCUS2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9888,
+   "segundos": 0.22421768707482992,
+   "bytes": 10208
+  },
+  {
+   "nombre": "BALLCUSH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10974,
+   "segundos": 0.24884353741496598,
+   "bytes": 11312
+  },
+  {
+   "nombre": "BALLHIT.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 11728,
+   "segundos": 0.2659410430839002,
+   "bytes": 11936
+  },
+  {
+   "nombre": "BALLHIT2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 12736,
+   "segundos": 0.28879818594104306,
+   "bytes": 12944
+  },
+  {
+   "nombre": "BELL.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 52094,
+   "segundos": 1.1812698412698412,
+   "bytes": 52512
+  },
+  {
+   "nombre": "BM_CHAIR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 72064,
+   "segundos": 1.6341043083900226,
+   "bytes": 72272
+  },
+  {
+   "nombre": "BM_LEVER.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5432,
+   "segundos": 0.12317460317460317,
+   "bytes": 5632
+  },
+  {
+   "nombre": "BM_OPEN2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 24896,
+   "segundos": 0.5645351473922903,
+   "bytes": 25104
+  },
+  {
+   "nombre": "BM_PUMP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 17248,
+   "segundos": 0.39111111111111113,
+   "bytes": 17456
+  },
+  {
+   "nombre": "BM_SQSH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 17824,
+   "segundos": 0.40417233560090704,
+   "bytes": 18080
+  },
+  {
+   "nombre": "BM_TV.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 30976,
+   "segundos": 0.7024036281179138,
+   "bytes": 31200
+  },
+  {
+   "nombre": "BOMB.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 19646,
+   "segundos": 0.4454875283446712,
+   "bytes": 19792
+  },
+  {
+   "nombre": "BONESUP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 38146,
+   "segundos": 0.8649886621315193,
+   "bytes": 38352
+  },
+  {
+   "nombre": "BONUS2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 29184,
+   "segundos": 0.6617687074829932,
+   "bytes": 29408
+  },
+  {
+   "nombre": "BONUSAL2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 45826,
+   "segundos": 1.0391383219954649,
+   "bytes": 46112
+  },
+  {
+   "nombre": "BOO.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 63194,
+   "segundos": 1.4329705215419501,
+   "bytes": 63472
+  },
+  {
+   "nombre": "BOOKBACK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10718,
+   "segundos": 0.24303854875283445,
+   "bytes": 10928
+  },
+  {
+   "nombre": "BOOKPAGE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 21140,
+   "segundos": 0.4793650793650794,
+   "bytes": 21328
+  },
+  {
+   "nombre": "BRE_IN.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 8886,
+   "segundos": 0.2014965986394558,
+   "bytes": 9104
+  },
+  {
+   "nombre": "BRE_OUT.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10676,
+   "segundos": 0.24208616780045353,
+   "bytes": 10896
+  },
+  {
+   "nombre": "BUCKET.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 21104,
+   "segundos": 0.47854875283446713,
+   "bytes": 21312
+  },
+  {
+   "nombre": "BUCKUP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 27968,
+   "segundos": 0.6341950113378685,
+   "bytes": 28192
+  },
+  {
+   "nombre": "BUILDCLK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6646,
+   "segundos": 0.15070294784580499,
+   "bytes": 6864
+  },
+  {
+   "nombre": "CAMCLICK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 4310,
+   "segundos": 0.09773242630385487,
+   "bytes": 4576
+  },
+  {
+   "nombre": "CANDROP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 35968,
+   "segundos": 0.8156009070294784,
+   "bytes": 36208
+  },
+  {
+   "nombre": "CARDIO1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 14880,
+   "segundos": 0.33741496598639453,
+   "bytes": 15088
+  },
+  {
+   "nombre": "CARDIO2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 11568,
+   "segundos": 0.26231292517006805,
+   "bytes": 11776
+  },
+  {
+   "nombre": "CASHREG.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 35840,
+   "segundos": 0.8126984126984127,
+   "bytes": 36032
+  },
+  {
+   "nombre": "CCABSHRT.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 14306,
+   "segundos": 0.32439909297052155,
+   "bytes": 14496
+  },
+  {
+   "nombre": "CHALKCUE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5530,
+   "segundos": 0.1253968253968254,
+   "bytes": 5712
+  },
+  {
+   "nombre": "CHEAT001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 59256,
+   "segundos": 2.68734693877551,
+   "bytes": 59424
+  },
+  {
+   "nombre": "CHEAT002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54584,
+   "segundos": 2.47546485260771,
+   "bytes": 54752
+  },
+  {
+   "nombre": "CHEAT003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 44280,
+   "segundos": 2.0081632653061225,
+   "bytes": 44448
+  },
+  {
+   "nombre": "CHEER.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 79358,
+   "segundos": 1.799501133786848,
+   "bytes": 79568
+  },
+  {
+   "nombre": "CHOPPER2.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 58368,
+   "segundos": 1.3235374149659864,
+   "bytes": 58576
+  },
+  {
+   "nombre": "CLOTHES.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9356,
+   "segundos": 0.21215419501133786,
+   "bytes": 9584
+  },
+  {
+   "nombre": "CNTDOWN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10000,
+   "segundos": 0.22675736961451248,
+   "bytes": 10176
+  },
+  {
+   "nombre": "COINSLT2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 32448,
+   "segundos": 0.73578231292517,
+   "bytes": 32656
+  },
+  {
+   "nombre": "DEADRAT2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 14048,
+   "segundos": 0.3185487528344671,
+   "bytes": 14192
+  },
+  {
+   "nombre": "DECONTAM.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 140032,
+   "segundos": 3.175328798185941,
+   "bytes": 140256
+  },
+  {
+   "nombre": "DELANAME.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6416,
+   "segundos": 0.1454875283446712,
+   "bytes": 6656
+  },
+  {
+   "nombre": "DELITEMJ.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 1544,
+   "segundos": 0.03501133786848073,
+   "bytes": 1776
+  },
+  {
+   "nombre": "DEVACCIN.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7440,
+   "segundos": 0.16870748299319727,
+   "bytes": 7616
+  },
+  {
+   "nombre": "DE_BUILD.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5824,
+   "segundos": 0.13206349206349208,
+   "bytes": 6240
+  },
+  {
+   "nombre": "DICE122M.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 170752,
+   "segundos": 3.871927437641723,
+   "bytes": 171072
+  },
+  {
+   "nombre": "DICEYFIN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 157928,
+   "segundos": 3.5811337868480724,
+   "bytes": 158304
+  },
+  {
+   "nombre": "DNA.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 12930,
+   "segundos": 0.2931972789115646,
+   "bytes": 13232
+  },
+  {
+   "nombre": "DOORCLO2.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 14912,
+   "segundos": 0.338140589569161,
+   "bytes": 15072
+  },
+  {
+   "nombre": "DOOROPE3.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 25472,
+   "segundos": 0.5775963718820861,
+   "bytes": 25664
+  },
+  {
+   "nombre": "ELEDOOR2.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 47170,
+   "segundos": 1.0696145124716554,
+   "bytes": 47376
+  },
+  {
+   "nombre": "EMERG001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 85112,
+   "segundos": 3.859954648526077,
+   "bytes": 85280
+  },
+  {
+   "nombre": "EMERG002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 75490,
+   "segundos": 3.4235827664399094,
+   "bytes": 75728
+  },
+  {
+   "nombre": "EMERG003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 95096,
+   "segundos": 4.312743764172335,
+   "bytes": 95264
+  },
+  {
+   "nombre": "EMERG004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 81400,
+   "segundos": 3.691609977324263,
+   "bytes": 81568
+  },
+  {
+   "nombre": "EMERG005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 85080,
+   "segundos": 3.858503401360544,
+   "bytes": 85248
+  },
+  {
+   "nombre": "EMERG006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 82080,
+   "segundos": 3.7224489795918365,
+   "bytes": 82240
+  },
+  {
+   "nombre": "EMERG007.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 75256,
+   "segundos": 3.41297052154195,
+   "bytes": 75424
+  },
+  {
+   "nombre": "EMERG008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 78280,
+   "segundos": 3.550113378684807,
+   "bytes": 78448
+  },
+  {
+   "nombre": "EMERG009.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 80632,
+   "segundos": 3.656780045351474,
+   "bytes": 80800
+  },
+  {
+   "nombre": "EMERG010.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 88056,
+   "segundos": 3.993469387755102,
+   "bytes": 88224
+  },
+  {
+   "nombre": "EMERG011.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 78328,
+   "segundos": 3.552290249433107,
+   "bytes": 78496
+  },
+  {
+   "nombre": "EMERG012.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 79864,
+   "segundos": 3.6219501133786847,
+   "bytes": 80032
+  },
+  {
+   "nombre": "EMERG013.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 83192,
+   "segundos": 3.772879818594104,
+   "bytes": 83360
+  },
+  {
+   "nombre": "EMERG014.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 77048,
+   "segundos": 3.4942403628117913,
+   "bytes": 77216
+  },
+  {
+   "nombre": "EMERG015.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 85880,
+   "segundos": 3.8947845804988663,
+   "bytes": 86048
+  },
+  {
+   "nombre": "EMERG016.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 73912,
+   "segundos": 3.352018140589569,
+   "bytes": 74080
+  },
+  {
+   "nombre": "EMERG017.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 75512,
+   "segundos": 3.424580498866213,
+   "bytes": 75680
+  },
+  {
+   "nombre": "EMERG018.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 86670,
+   "segundos": 3.9306122448979592,
+   "bytes": 86832
+  },
+  {
+   "nombre": "EMERG019.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 75896,
+   "segundos": 3.441995464852608,
+   "bytes": 76064
+  },
+  {
+   "nombre": "EMERG020.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 86432,
+   "segundos": 3.919818594104308,
+   "bytes": 86592
+  },
+  {
+   "nombre": "EMERG021.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 73768,
+   "segundos": 3.345487528344671,
+   "bytes": 73936
+  },
+  {
+   "nombre": "EMERG022.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 89592,
+   "segundos": 4.06312925170068,
+   "bytes": 89760
+  },
+  {
+   "nombre": "EMERG023.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 85752,
+   "segundos": 3.8889795918367347,
+   "bytes": 85920
+  },
+  {
+   "nombre": "EMERG024.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 89188,
+   "segundos": 4.044807256235828,
+   "bytes": 89360
+  },
+  {
+   "nombre": "EMERG025.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 86904,
+   "segundos": 3.9412244897959186,
+   "bytes": 87072
+  },
+  {
+   "nombre": "EMERG026.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 101368,
+   "segundos": 4.59718820861678,
+   "bytes": 101536
+  },
+  {
+   "nombre": "EMERG027.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 83064,
+   "segundos": 3.767074829931973,
+   "bytes": 83232
+  },
+  {
+   "nombre": "EMERG028.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 86264,
+   "segundos": 3.912199546485261,
+   "bytes": 86432
+  },
+  {
+   "nombre": "EMERG029.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 91512,
+   "segundos": 4.150204081632653,
+   "bytes": 91680
+  },
+  {
+   "nombre": "EMERG030.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 93688,
+   "segundos": 4.248888888888889,
+   "bytes": 93856
+  },
+  {
+   "nombre": "EMERG031.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 87032,
+   "segundos": 3.9470294784580497,
+   "bytes": 87200
+  },
+  {
+   "nombre": "EMERG032.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 94456,
+   "segundos": 4.283718820861678,
+   "bytes": 94624
+  },
+  {
+   "nombre": "EMERG033.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 80120,
+   "segundos": 3.633560090702948,
+   "bytes": 80288
+  },
+  {
+   "nombre": "EMERG034.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 84472,
+   "segundos": 3.8309297052154196,
+   "bytes": 84640
+  },
+  {
+   "nombre": "ENTANAME.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7104,
+   "segundos": 0.16108843537414966,
+   "bytes": 7328
+  },
+  {
+   "nombre": "EPID001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 47224,
+   "segundos": 2.1416780045351476,
+   "bytes": 47392
+  },
+  {
+   "nombre": "EPID002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 66936,
+   "segundos": 3.035646258503401,
+   "bytes": 67104
+  },
+  {
+   "nombre": "EPID003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 51000,
+   "segundos": 2.312925170068027,
+   "bytes": 51168
+  },
+  {
+   "nombre": "EPID004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 19000,
+   "segundos": 0.8616780045351474,
+   "bytes": 19168
+  },
+  {
+   "nombre": "EPID005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 53752,
+   "segundos": 2.437732426303855,
+   "bytes": 53920
+  },
+  {
+   "nombre": "EPID006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 37112,
+   "segundos": 1.6830839002267575,
+   "bytes": 37280
+  },
+  {
+   "nombre": "EPID007.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 34680,
+   "segundos": 1.5727891156462586,
+   "bytes": 34848
+  },
+  {
+   "nombre": "EPID008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 43448,
+   "segundos": 1.9704308390022676,
+   "bytes": 43616
+  },
+  {
+   "nombre": "EXPLODE.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 72320,
+   "segundos": 1.6399092970521543,
+   "bytes": 72736
+  },
+  {
+   "nombre": "FALLOVER.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 23294,
+   "segundos": 0.5282086167800454,
+   "bytes": 23472
+  },
+  {
+   "nombre": "FANFARE.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 91776,
+   "segundos": 2.0810884353741494,
+   "bytes": 92160
+  },
+  {
+   "nombre": "FARTFIVE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 90368,
+   "segundos": 2.049160997732426,
+   "bytes": 90528
+  },
+  {
+   "nombre": "FARTFOUR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 39680,
+   "segundos": 0.8997732426303855,
+   "bytes": 39840
+  },
+  {
+   "nombre": "FARTONE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 23648,
+   "segundos": 0.5362358276643991,
+   "bytes": 23808
+  },
+  {
+   "nombre": "FARTTHRE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 42112,
+   "segundos": 0.954920634920635,
+   "bytes": 42272
+  },
+  {
+   "nombre": "FARTTWO.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 24960,
+   "segundos": 0.5659863945578232,
+   "bytes": 25120
+  },
+  {
+   "nombre": "FAX_0.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5118,
+   "segundos": 0.11605442176870748,
+   "bytes": 5296
+  },
+  {
+   "nombre": "FAX_1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6486,
+   "segundos": 0.1470748299319728,
+   "bytes": 6672
+  },
+  {
+   "nombre": "FAX_2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6494,
+   "segundos": 0.1472562358276644,
+   "bytes": 6672
+  },
+  {
+   "nombre": "FAX_3.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6654,
+   "segundos": 0.15088435374149659,
+   "bytes": 6832
+  },
+  {
+   "nombre": "FAX_4.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5214,
+   "segundos": 0.1182312925170068,
+   "bytes": 5392
+  },
+  {
+   "nombre": "FAX_5.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5182,
+   "segundos": 0.11750566893424036,
+   "bytes": 5360
+  },
+  {
+   "nombre": "FAX_6.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5150,
+   "segundos": 0.11678004535147392,
+   "bytes": 5328
+  },
+  {
+   "nombre": "FAX_7.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5214,
+   "segundos": 0.1182312925170068,
+   "bytes": 5392
+  },
+  {
+   "nombre": "FAX_8.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5214,
+   "segundos": 0.1182312925170068,
+   "bytes": 5392
+  },
+  {
+   "nombre": "FAX_9.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5086,
+   "segundos": 0.11532879818594104,
+   "bytes": 5264
+  },
+  {
+   "nombre": "FAX_IN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 55358,
+   "segundos": 1.2552834467120182,
+   "bytes": 55584
+  },
+  {
+   "nombre": "FAX_NO.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 138118,
+   "segundos": 3.1319274376417234,
+   "bytes": 138320
+  },
+  {
+   "nombre": "FAX_YES.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 126546,
+   "segundos": 2.8695238095238094,
+   "bytes": 126752
+  },
+  {
+   "nombre": "FLAP_1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 26462,
+   "segundos": 0.6000453514739229,
+   "bytes": 26640
+  },
+  {
+   "nombre": "FLAP_2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 24354,
+   "segundos": 0.5522448979591836,
+   "bytes": 24544
+  },
+  {
+   "nombre": "FLAP_3.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 15520,
+   "segundos": 0.35192743764172335,
+   "bytes": 15696
+  },
+  {
+   "nombre": "FOOTTAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 4184,
+   "segundos": 0.09487528344671202,
+   "bytes": 4416
+  },
+  {
+   "nombre": "FRACSLAM.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16256,
+   "segundos": 0.3686167800453515,
+   "bytes": 16464
+  },
+  {
+   "nombre": "FRACTAP2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 44032,
+   "segundos": 0.9984580498866213,
+   "bytes": 44240
+  },
+  {
+   "nombre": "FRAC_MTR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 22302,
+   "segundos": 0.5057142857142857,
+   "bytes": 22512
+  },
+  {
+   "nombre": "FUSE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 11070,
+   "segundos": 0.2510204081632653,
+   "bytes": 11296
+  },
+  {
+   "nombre": "GETHEAD.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 13712,
+   "segundos": 0.3109297052154195,
+   "bytes": 13888
+  },
+  {
+   "nombre": "GETUP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7200,
+   "segundos": 0.16326530612244897,
+   "bytes": 7344
+  },
+  {
+   "nombre": "GLASSTAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 1242,
+   "segundos": 0.02816326530612245,
+   "bytes": 1456
+  },
+  {
+   "nombre": "HAIRMTR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 29766,
+   "segundos": 0.6749659863945578,
+   "bytes": 30000
+  },
+  {
+   "nombre": "HAMMER.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 15842,
+   "segundos": 0.35922902494331066,
+   "bytes": 16032
+  },
+  {
+   "nombre": "HEADFILL.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 39296,
+   "segundos": 0.8910657596371883,
+   "bytes": 39440
+  },
+  {
+   "nombre": "HLIGHT5.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 35008,
+   "segundos": 0.7938321995464852,
+   "bytes": 35216
+  },
+  {
+   "nombre": "HLIGHTP2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 35008,
+   "segundos": 0.7938321995464852,
+   "bytes": 35232
+  },
+  {
+   "nombre": "IGNITE2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36608,
+   "segundos": 0.8301133786848073,
+   "bytes": 36832
+  },
+  {
+   "nombre": "INUSE006.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 72182,
+   "segundos": 1.636780045351474,
+   "bytes": 72512
+  },
+  {
+   "nombre": "ISPOT001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 82690,
+   "segundos": 1.8750566893424037,
+   "bytes": 82992
+  },
+  {
+   "nombre": "ISPOT002.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 63488,
+   "segundos": 1.4396371882086167,
+   "bytes": 63696
+  },
+  {
+   "nombre": "ISPOT003.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 34112,
+   "segundos": 0.7735147392290249,
+   "bytes": 34320
+  },
+  {
+   "nombre": "ISPOT004.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 89602,
+   "segundos": 2.0317913832199546,
+   "bytes": 89808
+  },
+  {
+   "nombre": "ISPOT005.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 75902,
+   "segundos": 1.7211337868480725,
+   "bytes": 76096
+  },
+  {
+   "nombre": "ISPOT006.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 54938,
+   "segundos": 1.2457596371882087,
+   "bytes": 55136
+  },
+  {
+   "nombre": "ISPOT007.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 72448,
+   "segundos": 1.6428117913832199,
+   "bytes": 72656
+  },
+  {
+   "nombre": "ISPOT008.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 70910,
+   "segundos": 1.607936507936508,
+   "bytes": 71104
+  },
+  {
+   "nombre": "ISPOT009.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 67710,
+   "segundos": 1.5353741496598639,
+   "bytes": 68016
+  },
+  {
+   "nombre": "ISPOT010.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 39018,
+   "segundos": 0.8847619047619047,
+   "bytes": 39328
+  },
+  {
+   "nombre": "ISPOT011.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36350,
+   "segundos": 0.8242630385487528,
+   "bytes": 36560
+  },
+  {
+   "nombre": "ISPOT012.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 32638,
+   "segundos": 0.7400907029478458,
+   "bytes": 32848
+  },
+  {
+   "nombre": "ISPOT013.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 61952,
+   "segundos": 1.4048072562358276,
+   "bytes": 62272
+  },
+  {
+   "nombre": "ISPOT014.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 88448,
+   "segundos": 2.00562358276644,
+   "bytes": 88672
+  },
+  {
+   "nombre": "ISPOT015.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 91454,
+   "segundos": 2.0737868480725625,
+   "bytes": 91664
+  },
+  {
+   "nombre": "ISPOT016.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 31680,
+   "segundos": 0.7183673469387755,
+   "bytes": 31856
+  },
+  {
+   "nombre": "ISPOT017.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 86316,
+   "segundos": 1.9572789115646259,
+   "bytes": 86544
+  },
+  {
+   "nombre": "ISPOT018.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 88772,
+   "segundos": 2.01297052154195,
+   "bytes": 89008
+  },
+  {
+   "nombre": "ISPOT019.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 34304,
+   "segundos": 0.7778684807256235,
+   "bytes": 34640
+  },
+  {
+   "nombre": "ISPOT020.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 28158,
+   "segundos": 0.6385034013605442,
+   "bytes": 28368
+  },
+  {
+   "nombre": "ISPOT021.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 22206,
+   "segundos": 0.5035374149659864,
+   "bytes": 22416
+  },
+  {
+   "nombre": "ISPOT022.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 33150,
+   "segundos": 0.7517006802721088,
+   "bytes": 33360
+  },
+  {
+   "nombre": "ISPOT023.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 58816,
+   "segundos": 1.3336961451247165,
+   "bytes": 59136
+  },
+  {
+   "nombre": "ISPOT024.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 157184,
+   "segundos": 3.564263038548753,
+   "bytes": 157392
+  },
+  {
+   "nombre": "ISPOT025.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 58750,
+   "segundos": 1.3321995464852607,
+   "bytes": 58960
+  },
+  {
+   "nombre": "ISPOT026.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 33344,
+   "segundos": 0.7560997732426303,
+   "bytes": 33520
+  },
+  {
+   "nombre": "ISPOT027.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 31680,
+   "segundos": 0.7183673469387755,
+   "bytes": 31856
+  },
+  {
+   "nombre": "JELFLOOR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 47042,
+   "segundos": 1.0667120181405896,
+   "bytes": 47200
+  },
+  {
+   "nombre": "JELLBUZZ.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 18304,
+   "segundos": 0.41505668934240364,
+   "bytes": 18496
+  },
+  {
+   "nombre": "JELLCLOS.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16162,
+   "segundos": 0.36648526077097504,
+   "bytes": 16304
+  },
+  {
+   "nombre": "JELLOPEN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 32254,
+   "segundos": 0.7313832199546485,
+   "bytes": 32400
+  },
+  {
+   "nombre": "JELLPOUR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 48898,
+   "segundos": 1.1087981859410432,
+   "bytes": 49040
+  },
+  {
+   "nombre": "KNOCK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5298,
+   "segundos": 0.12013605442176871,
+   "bytes": 5472
+  },
+  {
+   "nombre": "LAVA001.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7134,
+   "segundos": 0.16176870748299318,
+   "bytes": 7328
+  },
+  {
+   "nombre": "LAVA002.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 11004,
+   "segundos": 0.24952380952380954,
+   "bytes": 11200
+  },
+  {
+   "nombre": "LAVA003.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6650,
+   "segundos": 0.15079365079365079,
+   "bytes": 6832
+  },
+  {
+   "nombre": "LAVA004.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9662,
+   "segundos": 0.21909297052154195,
+   "bytes": 9856
+  },
+  {
+   "nombre": "LAVA005.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 3438,
+   "segundos": 0.07795918367346939,
+   "bytes": 3632
+  },
+  {
+   "nombre": "LAVAFALL.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16350,
+   "segundos": 0.3707482993197279,
+   "bytes": 16608
+  },
+  {
+   "nombre": "MACHWARN.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 119808,
+   "segundos": 2.716734693877551,
+   "bytes": 120016
+  },
+  {
+   "nombre": "MAINT004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 62200,
+   "segundos": 2.820861678004535,
+   "bytes": 62368
+  },
+  {
+   "nombre": "MAINT005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 61512,
+   "segundos": 2.789659863945578,
+   "bytes": 61680
+  },
+  {
+   "nombre": "MAINT006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 63352,
+   "segundos": 2.873106575963719,
+   "bytes": 63520
+  },
+  {
+   "nombre": "MAINT007.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 53816,
+   "segundos": 2.4406349206349205,
+   "bytes": 53984
+  },
+  {
+   "nombre": "MAINT008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 78584,
+   "segundos": 3.5639002267573696,
+   "bytes": 78752
+  },
+  {
+   "nombre": "MAINT009.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54968,
+   "segundos": 2.4928798185941043,
+   "bytes": 55136
+  },
+  {
+   "nombre": "MAINT010.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 60664,
+   "segundos": 2.7512018140589567,
+   "bytes": 60832
+  },
+  {
+   "nombre": "MAINT011.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 72392,
+   "segundos": 3.2830839002267576,
+   "bytes": 72560
+  },
+  {
+   "nombre": "MAINT012.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 67960,
+   "segundos": 3.0820861678004534,
+   "bytes": 68128
+  },
+  {
+   "nombre": "MAINT013.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 69112,
+   "segundos": 3.1343310657596373,
+   "bytes": 69280
+  },
+  {
+   "nombre": "MAINT014.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 60344,
+   "segundos": 2.7366893424036283,
+   "bytes": 60512
+  },
+  {
+   "nombre": "MAINT015.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 46776,
+   "segundos": 2.121360544217687,
+   "bytes": 46944
+  },
+  {
+   "nombre": "MAINT016.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 56760,
+   "segundos": 2.5741496598639455,
+   "bytes": 56928
+  },
+  {
+   "nombre": "MORPH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 80564,
+   "segundos": 1.8268480725623584,
+   "bytes": 80976
+  },
+  {
+   "nombre": "NEWFAX.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10628,
+   "segundos": 0.24099773242630385,
+   "bytes": 10896
+  },
+  {
+   "nombre": "NEWSFOLD.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 21090,
+   "segundos": 0.4782312925170068,
+   "bytes": 21248
+  },
+  {
+   "nombre": "NEWSTURN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36738,
+   "segundos": 0.8330612244897959,
+   "bytes": 36944
+  },
+  {
+   "nombre": "NO4.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5520,
+   "segundos": 0.1251700680272109,
+   "bytes": 5744
+  },
+  {
+   "nombre": "NULL.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 4,
+   "segundos": 9.070294784580499e-05,
+   "bytes": 128
+  },
+  {
+   "nombre": "OCABSHRT.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 15968,
+   "segundos": 0.3620861678004535,
+   "bytes": 16144
+  },
+  {
+   "nombre": "OPARM.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 26036,
+   "segundos": 0.5903854875283446,
+   "bytes": 26272
+  },
+  {
+   "nombre": "OPENFLAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16000,
+   "segundos": 0.36281179138321995,
+   "bytes": 16208
+  },
+  {
+   "nombre": "PAGETUR2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7764,
+   "segundos": 0.17605442176870748,
+   "bytes": 8032
+  },
+  {
+   "nombre": "PHCABCL.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10818,
+   "segundos": 0.2453061224489796,
+   "bytes": 10992
+  },
+  {
+   "nombre": "PHCABO.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 19138,
+   "segundos": 0.43396825396825395,
+   "bytes": 19312
+  },
+  {
+   "nombre": "PHTAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5986,
+   "segundos": 0.13573696145124717,
+   "bytes": 6160
+  },
+  {
+   "nombre": "PICKUP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6816,
+   "segundos": 0.1545578231292517,
+   "bytes": 7040
+  },
+  {
+   "nombre": "PICKUPSM.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5744,
+   "segundos": 0.13024943310657597,
+   "bytes": 5952
+  },
+  {
+   "nombre": "PLACE_R.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6622,
+   "segundos": 0.15015873015873016,
+   "bytes": 6960
+  },
+  {
+   "nombre": "PLAC_ST2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9696,
+   "segundos": 0.2198639455782313,
+   "bytes": 10064
+  },
+  {
+   "nombre": "POOLSHT2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9508,
+   "segundos": 0.21560090702947846,
+   "bytes": 9696
+  },
+  {
+   "nombre": "POOPLOP3.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 88576,
+   "segundos": 2.0085260770975055,
+   "bytes": 88816
+  },
+  {
+   "nombre": "POOTHUD.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 19198,
+   "segundos": 0.43532879818594106,
+   "bytes": 19536
+  },
+  {
+   "nombre": "POP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 23682,
+   "segundos": 0.5370068027210885,
+   "bytes": 23888
+  },
+  {
+   "nombre": "POUR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 41730,
+   "segundos": 0.9462585034013605,
+   "bytes": 41904
+  },
+  {
+   "nombre": "PROJDOWN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36738,
+   "segundos": 0.8330612244897959,
+   "bytes": 36944
+  },
+  {
+   "nombre": "PROJON.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 2796,
+   "segundos": 0.06340136054421769,
+   "bytes": 3008
+  },
+  {
+   "nombre": "PROJPILE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5096,
+   "segundos": 0.11555555555555555,
+   "bytes": 5312
+  },
+  {
+   "nombre": "PROJSLID.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10598,
+   "segundos": 0.24031746031746032,
+   "bytes": 10816
+  },
+  {
+   "nombre": "PROJTAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 4928,
+   "segundos": 0.11174603174603175,
+   "bytes": 5216
+  },
+  {
+   "nombre": "PROJUP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36434,
+   "segundos": 0.8261678004535148,
+   "bytes": 36640
+  },
+  {
+   "nombre": "PUKE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 41024,
+   "segundos": 0.9302494331065759,
+   "bytes": 41232
+  },
+  {
+   "nombre": "PUKE2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 55360,
+   "segundos": 1.2553287981859411,
+   "bytes": 55584
+  },
+  {
+   "nombre": "QUAKE001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 52728,
+   "segundos": 2.3912925170068027,
+   "bytes": 52896
+  },
+  {
+   "nombre": "QUAKE002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 46648,
+   "segundos": 2.1155555555555554,
+   "bytes": 46816
+  },
+  {
+   "nombre": "QUAKE003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 43320,
+   "segundos": 1.9646258503401361,
+   "bytes": 43488
+  },
+  {
+   "nombre": "QUAKE004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 47352,
+   "segundos": 2.1474829931972788,
+   "bytes": 47520
+  },
+  {
+   "nombre": "QUAKE2.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 52442,
+   "segundos": 1.1891609977324262,
+   "bytes": 52736
+  },
+  {
+   "nombre": "RAND001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 45880,
+   "segundos": 2.0807256235827665,
+   "bytes": 46048
+  },
+  {
+   "nombre": "RAND002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54136,
+   "segundos": 2.4551473922902494,
+   "bytes": 54304
+  },
+  {
+   "nombre": "RAND003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 48696,
+   "segundos": 2.20843537414966,
+   "bytes": 48864
+  },
+  {
+   "nombre": "RAND005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 64760,
+   "segundos": 2.9369614512471656,
+   "bytes": 64928
+  },
+  {
+   "nombre": "RAND006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 63024,
+   "segundos": 2.8582312925170066,
+   "bytes": 63184
+  },
+  {
+   "nombre": "RAND008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 55992,
+   "segundos": 2.5393197278911566,
+   "bytes": 56160
+  },
+  {
+   "nombre": "RAND009.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 59512,
+   "segundos": 2.6989569160997733,
+   "bytes": 59680
+  },
+  {
+   "nombre": "RAND010.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 60024,
+   "segundos": 2.7221768707482994,
+   "bytes": 60192
+  },
+  {
+   "nombre": "RAND012.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 59576,
+   "segundos": 2.701859410430839,
+   "bytes": 59744
+  },
+  {
+   "nombre": "RAND013.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 52792,
+   "segundos": 2.3941950113378683,
+   "bytes": 52960
+  },
+  {
+   "nombre": "RAND016.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 51448,
+   "segundos": 2.3332426303854876,
+   "bytes": 51616
+  },
+  {
+   "nombre": "RAND017.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 65144,
+   "segundos": 2.95437641723356,
+   "bytes": 65312
+  },
+  {
+   "nombre": "RAND018.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54840,
+   "segundos": 2.4870748299319727,
+   "bytes": 55008
+  },
+  {
+   "nombre": "RAND019.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 56504,
+   "segundos": 2.5625396825396827,
+   "bytes": 56672
+  },
+  {
+   "nombre": "RAND021.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 48568,
+   "segundos": 2.202630385487528,
+   "bytes": 48736
+  },
+  {
+   "nombre": "RAND022.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 51512,
+   "segundos": 2.3361451247165532,
+   "bytes": 51680
+  },
+  {
+   "nombre": "RAND024.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 67704,
+   "segundos": 3.0704761904761906,
+   "bytes": 67872
+  },
+  {
+   "nombre": "RAND025.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 53496,
+   "segundos": 2.4261224489795916,
+   "bytes": 53664
+  },
+  {
+   "nombre": "RAND026.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 59640,
+   "segundos": 2.704761904761905,
+   "bytes": 59808
+  },
+  {
+   "nombre": "RAND027.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 58360,
+   "segundos": 2.6467120181405894,
+   "bytes": 58528
+  },
+  {
+   "nombre": "RAND028.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 55288,
+   "segundos": 2.507392290249433,
+   "bytes": 55456
+  },
+  {
+   "nombre": "RAND029.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 62136,
+   "segundos": 2.8179591836734694,
+   "bytes": 62304
+  },
+  {
+   "nombre": "RAND030.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 33720,
+   "segundos": 1.5292517006802722,
+   "bytes": 33888
+  },
+  {
+   "nombre": "RAND031.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 23160,
+   "segundos": 1.0503401360544218,
+   "bytes": 23328
+  },
+  {
+   "nombre": "RAND032.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 28856,
+   "segundos": 1.3086621315192744,
+   "bytes": 29024
+  },
+  {
+   "nombre": "RAND033.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 67704,
+   "segundos": 3.0704761904761906,
+   "bytes": 67872
+  },
+  {
+   "nombre": "RAND034.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 80760,
+   "segundos": 3.6625850340136052,
+   "bytes": 80928
+  },
+  {
+   "nombre": "RAND035.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 74872,
+   "segundos": 3.3955555555555557,
+   "bytes": 75040
+  },
+  {
+   "nombre": "RAND036.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 64632,
+   "segundos": 2.931156462585034,
+   "bytes": 64800
+  },
+  {
+   "nombre": "RAND037.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 85112,
+   "segundos": 3.859954648526077,
+   "bytes": 85280
+  },
+  {
+   "nombre": "RAND040.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 28920,
+   "segundos": 1.3115646258503402,
+   "bytes": 29088
+  },
+  {
+   "nombre": "RAND041.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 69880,
+   "segundos": 3.169160997732426,
+   "bytes": 70048
+  },
+  {
+   "nombre": "RAND044.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 79096,
+   "segundos": 3.5871201814058957,
+   "bytes": 79264
+  },
+  {
+   "nombre": "RAND045.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 92536,
+   "segundos": 4.196643990929705,
+   "bytes": 92704
+  },
+  {
+   "nombre": "RAND046.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 49528,
+   "segundos": 2.246167800453515,
+   "bytes": 49696
+  },
+  {
+   "nombre": "REAPCOME.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 42688,
+   "segundos": 0.9679818594104308,
+   "bytes": 43008
+  },
+  {
+   "nombre": "REAPERGO.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 38848,
+   "segundos": 0.880907029478458,
+   "bytes": 39104
+  },
+  {
+   "nombre": "REAPSWIP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 25696,
+   "segundos": 0.5826757369614513,
+   "bytes": 25904
+  },
+  {
+   "nombre": "REQD001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 66680,
+   "segundos": 3.0240362811791384,
+   "bytes": 66848
+  },
+  {
+   "nombre": "REQD002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 61560,
+   "segundos": 2.7918367346938777,
+   "bytes": 61728
+  },
+  {
+   "nombre": "REQD003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 68600,
+   "segundos": 3.111111111111111,
+   "bytes": 68768
+  },
+  {
+   "nombre": "REQD004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 52856,
+   "segundos": 2.3970975056689343,
+   "bytes": 53024
+  },
+  {
+   "nombre": "REQD005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 53112,
+   "segundos": 2.408707482993197,
+   "bytes": 53280
+  },
+  {
+   "nombre": "REQD006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 53432,
+   "segundos": 2.423219954648526,
+   "bytes": 53600
+  },
+  {
+   "nombre": "REQD007.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 48120,
+   "segundos": 2.182312925170068,
+   "bytes": 48288
+  },
+  {
+   "nombre": "REQD008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 52152,
+   "segundos": 2.365170068027211,
+   "bytes": 52320
+  },
+  {
+   "nombre": "REQD009.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 37240,
+   "segundos": 1.6888888888888889,
+   "bytes": 37408
+  },
+  {
+   "nombre": "REQD010.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 62840,
+   "segundos": 2.8498866213151928,
+   "bytes": 63008
+  },
+  {
+   "nombre": "REQD011.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 64322,
+   "segundos": 2.9170975056689343,
+   "bytes": 64480
+  },
+  {
+   "nombre": "REQD012.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 50936,
+   "segundos": 2.3100226757369615,
+   "bytes": 51104
+  },
+  {
+   "nombre": "REQD013.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 47864,
+   "segundos": 2.170702947845805,
+   "bytes": 48032
+  },
+  {
+   "nombre": "REQD014.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54008,
+   "segundos": 2.4493424036281177,
+   "bytes": 54176
+  },
+  {
+   "nombre": "REQD015.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 53176,
+   "segundos": 2.411609977324263,
+   "bytes": 53344
+  },
+  {
+   "nombre": "REQD016.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 48412,
+   "segundos": 2.1955555555555555,
+   "bytes": 48576
+  },
+  {
+   "nombre": "REQD017.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 46568,
+   "segundos": 2.1119274376417234,
+   "bytes": 46736
+  },
+  {
+   "nombre": "REQD019.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 52792,
+   "segundos": 2.3941950113378683,
+   "bytes": 52960
+  },
+  {
+   "nombre": "REQD020.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 39231,
+   "segundos": 1.7791836734693878,
+   "bytes": 39392
+  },
+  {
+   "nombre": "REQD021.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 62584,
+   "segundos": 2.8382766439909295,
+   "bytes": 62752
+  },
+  {
+   "nombre": "REQD023.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 64504,
+   "segundos": 2.9253514739229023,
+   "bytes": 64672
+  },
+  {
+   "nombre": "REQD024.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 66168,
+   "segundos": 3.0008163265306123,
+   "bytes": 66336
+  },
+  {
+   "nombre": "RESEARCH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 2,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 200452,
+   "segundos": 2.272698412698413,
+   "bytes": 200736
+  },
+  {
+   "nombre": "ROCKET.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 31992,
+   "segundos": 0.7254421768707483,
+   "bytes": 32464
+  },
+  {
+   "nombre": "SACK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 15264,
+   "segundos": 0.3461224489795918,
+   "bytes": 15488
+  },
+  {
+   "nombre": "SACK001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 30840,
+   "segundos": 1.398639455782313,
+   "bytes": 31008
+  },
+  {
+   "nombre": "SACK002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 39032,
+   "segundos": 1.7701587301587303,
+   "bytes": 39200
+  },
+  {
+   "nombre": "SACK003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 34744,
+   "segundos": 1.5756916099773242,
+   "bytes": 34912
+  },
+  {
+   "nombre": "SACK004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 33656,
+   "segundos": 1.5263492063492063,
+   "bytes": 33824
+  },
+  {
+   "nombre": "SACK005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 33912,
+   "segundos": 1.5379591836734694,
+   "bytes": 34080
+  },
+  {
+   "nombre": "SACK006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54712,
+   "segundos": 2.481269841269841,
+   "bytes": 54880
+  },
+  {
+   "nombre": "SACK007.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 56824,
+   "segundos": 2.5770521541950115,
+   "bytes": 56992
+  },
+  {
+   "nombre": "SACK008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 42488,
+   "segundos": 1.9268934240362812,
+   "bytes": 42656
+  },
+  {
+   "nombre": "SACK009.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 50889,
+   "segundos": 2.3078911564625852,
+   "bytes": 51056
+  },
+  {
+   "nombre": "SACK010.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 45196,
+   "segundos": 2.0497052154195012,
+   "bytes": 45360
+  },
+  {
+   "nombre": "SCANDOWN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9730,
+   "segundos": 0.22063492063492063,
+   "bytes": 9904
+  },
+  {
+   "nombre": "SCANHUM.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 20674,
+   "segundos": 0.4687981859410431,
+   "bytes": 20816
+  },
+  {
+   "nombre": "SCANLVR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 17254,
+   "segundos": 0.3912471655328798,
+   "bytes": 17392
+  },
+  {
+   "nombre": "SCANMTR.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 37122,
+   "segundos": 0.8417687074829932,
+   "bytes": 37296
+  },
+  {
+   "nombre": "SCANMTR2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 76802,
+   "segundos": 1.7415419501133786,
+   "bytes": 77024
+  },
+  {
+   "nombre": "SCLICK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 9184,
+   "segundos": 0.20825396825396825,
+   "bytes": 9424
+  },
+  {
+   "nombre": "SCNBEEP1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6808,
+   "segundos": 0.1543764172335601,
+   "bytes": 6976
+  },
+  {
+   "nombre": "SCNBEEP2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6972,
+   "segundos": 0.1580952380952381,
+   "bytes": 7136
+  },
+  {
+   "nombre": "SCNBEEP3.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6890,
+   "segundos": 0.15623582766439909,
+   "bytes": 7056
+  },
+  {
+   "nombre": "SCRATCH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5610,
+   "segundos": 0.1272108843537415,
+   "bytes": 5776
+  },
+  {
+   "nombre": "SELECTX.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 1822,
+   "segundos": 0.04131519274376417,
+   "bytes": 2032
+  },
+  {
+   "nombre": "SHAKHNDS.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 3872,
+   "segundos": 0.08780045351473922,
+   "bytes": 4096
+  },
+  {
+   "nombre": "SHOTGUN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 42306,
+   "segundos": 0.9593197278911565,
+   "bytes": 42448
+  },
+  {
+   "nombre": "SHUTFLAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 10560,
+   "segundos": 0.23945578231292516,
+   "bytes": 10768
+  },
+  {
+   "nombre": "SIT.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5824,
+   "segundos": 0.13206349206349208,
+   "bytes": 6080
+  },
+  {
+   "nombre": "SLICESQ1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 13568,
+   "segundos": 0.3076643990929705,
+   "bytes": 13776
+  },
+  {
+   "nombre": "SLICESQ2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 21184,
+   "segundos": 0.48036281179138324,
+   "bytes": 21376
+  },
+  {
+   "nombre": "SMFLAP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 11776,
+   "segundos": 0.26702947845804986,
+   "bytes": 12016
+  },
+  {
+   "nombre": "SM_OBJ.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7838,
+   "segundos": 0.17773242630385488,
+   "bytes": 8064
+  },
+  {
+   "nombre": "SNAPSHOT.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 24960,
+   "segundos": 0.5659863945578232,
+   "bytes": 25184
+  },
+  {
+   "nombre": "SORRY001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 43640,
+   "segundos": 1.9791383219954648,
+   "bytes": 43808
+  },
+  {
+   "nombre": "SORRY002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 48760,
+   "segundos": 2.2113378684807254,
+   "bytes": 48928
+  },
+  {
+   "nombre": "SORRY003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 48632,
+   "segundos": 2.2055328798185942,
+   "bytes": 48800
+  },
+  {
+   "nombre": "SORRY004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 68662,
+   "segundos": 3.113922902494331,
+   "bytes": 68832
+  },
+  {
+   "nombre": "SORRY005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 54456,
+   "segundos": 2.4696598639455782,
+   "bytes": 54624
+  },
+  {
+   "nombre": "SORRY006.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 69624,
+   "segundos": 3.1575510204081634,
+   "bytes": 69792
+  },
+  {
+   "nombre": "SPARK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 18688,
+   "segundos": 0.42376417233560093,
+   "bytes": 18864
+  },
+  {
+   "nombre": "SQUEAK1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5408,
+   "segundos": 0.12263038548752835,
+   "bytes": 5600
+  },
+  {
+   "nombre": "SSPARK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 13582,
+   "segundos": 0.3079818594104308,
+   "bytes": 13824
+  },
+  {
+   "nombre": "SWALLOW.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 18370,
+   "segundos": 0.4165532879818594,
+   "bytes": 18528
+  },
+  {
+   "nombre": "SWEEP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 8034,
+   "segundos": 0.18217687074829933,
+   "bytes": 8192
+  },
+  {
+   "nombre": "SWOOSH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5560,
+   "segundos": 0.12607709750566892,
+   "bytes": 5696
+  },
+  {
+   "nombre": "TAPTURN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6912,
+   "segundos": 0.156734693877551,
+   "bytes": 7136
+  },
+  {
+   "nombre": "TFLUSH.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 88960,
+   "segundos": 2.0172335600907028,
+   "bytes": 89104
+  },
+  {
+   "nombre": "THERM_IN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 11726,
+   "segundos": 0.26589569160997734,
+   "bytes": 11936
+  },
+  {
+   "nombre": "TICKTOCK.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 35074,
+   "segundos": 0.795328798185941,
+   "bytes": 35328
+  },
+  {
+   "nombre": "TOILETC.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 18688,
+   "segundos": 0.42376417233560093,
+   "bytes": 18912
+  },
+  {
+   "nombre": "TOILETO.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16192,
+   "segundos": 0.36716553287981857,
+   "bytes": 16416
+  },
+  {
+   "nombre": "TONGCHOP.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 16962,
+   "segundos": 0.3846258503401361,
+   "bytes": 17184
+  },
+  {
+   "nombre": "TONGUE1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 32642,
+   "segundos": 0.7401814058956916,
+   "bytes": 32800
+  },
+  {
+   "nombre": "TORCH2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 19968,
+   "segundos": 0.4527891156462585,
+   "bytes": 20192
+  },
+  {
+   "nombre": "TROLLEY.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36414,
+   "segundos": 0.8257142857142857,
+   "bytes": 36624
+  },
+  {
+   "nombre": "TYPING.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 5876,
+   "segundos": 0.13324263038548753,
+   "bytes": 6064
+  },
+  {
+   "nombre": "ULTRAHUM.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7638,
+   "segundos": 0.17319727891156464,
+   "bytes": 7840
+  },
+  {
+   "nombre": "UPDOWN.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 43330,
+   "segundos": 0.9825396825396825,
+   "bytes": 43536
+  },
+  {
+   "nombre": "UZIBRST.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 39764,
+   "segundos": 0.9016780045351473,
+   "bytes": 40112
+  },
+  {
+   "nombre": "VACCIN.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 7440,
+   "segundos": 0.16870748299319727,
+   "bytes": 7616
+  },
+  {
+   "nombre": "VGM001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 20614,
+   "segundos": 0.467437641723356,
+   "bytes": 20736
+  },
+  {
+   "nombre": "VGM002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 48640,
+   "segundos": 1.1029478458049886,
+   "bytes": 48768
+  },
+  {
+   "nombre": "VGM003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 26240,
+   "segundos": 0.5950113378684807,
+   "bytes": 26368
+  },
+  {
+   "nombre": "VGM004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 17046,
+   "segundos": 0.386530612244898,
+   "bytes": 17168
+  },
+  {
+   "nombre": "VGM005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 36272,
+   "segundos": 0.8224943310657596,
+   "bytes": 36400
+  },
+  {
+   "nombre": "VGMEND.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 49862,
+   "segundos": 1.1306575963718821,
+   "bytes": 49984
+  },
+  {
+   "nombre": "VIP001.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 69112,
+   "segundos": 3.1343310657596373,
+   "bytes": 69280
+  },
+  {
+   "nombre": "VIP002.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 59320,
+   "segundos": 2.690249433106576,
+   "bytes": 59488
+  },
+  {
+   "nombre": "VIP003.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 56440,
+   "segundos": 2.5596371882086166,
+   "bytes": 56608
+  },
+  {
+   "nombre": "VIP004.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 55992,
+   "segundos": 2.5393197278911566,
+   "bytes": 56160
+  },
+  {
+   "nombre": "VIP005.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 45176,
+   "segundos": 2.048798185941043,
+   "bytes": 45344
+  },
+  {
+   "nombre": "VIP008.WAV",
+   "compartido": false,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 8,
+   "datos": 55082,
+   "segundos": 2.498049886621315,
+   "bytes": 55248
+  },
+  {
+   "nombre": "VOMSPLAT.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 20960,
+   "segundos": 0.47528344671201816,
+   "bytes": 21424
+  },
+  {
+   "nombre": "WATER.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 53442,
+   "segundos": 1.2118367346938776,
+   "bytes": 53584
+  },
+  {
+   "nombre": "WATER4.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 30336,
+   "segundos": 0.687891156462585,
+   "bytes": 30544
+  },
+  {
+   "nombre": "WEE.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 80390,
+   "segundos": 1.8229024943310657,
+   "bytes": 80608
+  },
+  {
+   "nombre": "WETTING3.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 40780,
+   "segundos": 0.9247165532879819,
+   "bytes": 41024
+  },
+  {
+   "nombre": "WRONG2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 3700,
+   "segundos": 0.08390022675736962,
+   "bytes": 4000
+  },
+  {
+   "nombre": "XRAY2.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6408,
+   "segundos": 0.14530612244897959,
+   "bytes": 6576
+  },
+  {
+   "nombre": "YAWN1.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 73986,
+   "segundos": 1.677687074829932,
+   "bytes": 74192
+  },
+  {
+   "nombre": "YESX.WAV",
+   "compartido": true,
+   "idiomas": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "formato": 1,
+   "canales": 1,
+   "hz": 22050,
+   "bits": 16,
+   "datos": 6958,
+   "segundos": 0.15777777777777777,
+   "bytes": 7152
+  }
+ ]
+}

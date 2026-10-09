@@ -1,0 +1,3946 @@
+{
+ "origen": "/root/th64-work/data/HOSP",
+ "grupos": {
+  "Ejecutables y controladores DOS": {
+   "ficheros": 46,
+   "disco": 4303958,
+   "bruto": 4303958,
+   "rnc": 0,
+   "subgrupos": {
+    "Ejecutables": {
+     "ficheros": 9,
+     "disco": 3355668,
+     "bruto": 3355668
+    },
+    "Controladores de sonido": {
+     "ficheros": 33,
+     "disco": 848091,
+     "bruto": 848091
+    },
+    "Utilidades de música": {
+     "ficheros": 4,
+     "disco": 100199,
+     "bruto": 100199
+    }
+   }
+  },
+  "Vídeo": {
+   "ficheros": 35,
+   "disco": 89623532,
+   "bruto": 89623532,
+   "rnc": 0,
+   "subgrupos": {
+    "Intro y demo": {
+     "ficheros": 3,
+     "disco": 56273336,
+     "bruto": 56273336
+    },
+    "Escenas (ANIMS)": {
+     "ficheros": 32,
+     "disco": 33350196,
+     "bruto": 33350196
+    }
+   }
+  },
+  "Mapas y niveles": {
+   "ficheros": 104,
+   "disco": 854846,
+   "bruto": 5491730,
+   "rnc": 29,
+   "subgrupos": {
+    "Multijugador y extra (fuera de alcance)": {
+     "ficheros": 53,
+     "disco": 394890,
+     "bruto": 3106298
+    },
+    "Configuración de campaña (.SAM)": {
+     "ficheros": 39,
+     "disco": 418056,
+     "bruto": 418056
+    },
+    "Mapas de campaña (LEVEL.L1-L12)": {
+     "ficheros": 12,
+     "disco": 41900,
+     "bruto": 1967376
+    }
+   }
+  },
+  "Interfaz baja resolución (QDATAM)": {
+   "ficheros": 11,
+   "disco": 46215,
+   "bruto": 46215,
+   "rnc": 0,
+   "subgrupos": {
+    "Fuentes y caras": {
+     "ficheros": 11,
+     "disco": 46215,
+     "bruto": 46215
+    }
+   }
+  },
+  "Música": {
+   "ficheros": 8,
+   "disco": 104656,
+   "bruto": 104656,
+   "rnc": 0,
+   "subgrupos": {
+    "Partituras XMI": {
+     "ficheros": 8,
+     "disco": 104656,
+     "bruto": 104656
+    }
+   }
+  },
+  "Sonido": {
+   "ficheros": 7,
+   "disco": 85359266,
+   "bruto": 85359266,
+   "rnc": 0,
+   "subgrupos": {
+    "Otros datos de sonido": {
+     "ficheros": 1,
+     "disco": 446,
+     "bruto": 446
+    },
+    "Efectos y voces (SOUND-x.DAT, uno por idioma)": {
+     "ficheros": 6,
+     "disco": 85358820,
+     "bruto": 85358820
+    }
+   }
+  },
+  "Gráficos juego, baja resolución (DATAM)": {
+   "ficheros": 20,
+   "disco": 1498712,
+   "bruto": 1498712,
+   "rnc": 0,
+   "subgrupos": {
+    "Sprites y bloques": {
+     "ficheros": 16,
+     "disco": 994428,
+     "bruto": 994428
+    },
+    "Animaciones": {
+     "ficheros": 4,
+     "disco": 504284,
+     "bruto": 504284
+    }
+   }
+  },
+  "Interfaz (QDATA)": {
+   "ficheros": 205,
+   "disco": 3001312,
+   "bruto": 8537333,
+   "rnc": 188,
+   "subgrupos": {
+    "Pantallas completas (bitmap + paleta)": {
+     "ficheros": 45,
+     "disco": 2129673,
+     "bruto": 6413287
+    },
+    "Hojas de interfaz y cursores": {
+     "ficheros": 63,
+     "disco": 472576,
+     "bruto": 1081341
+    },
+    "Fuentes": {
+     "ficheros": 94,
+     "disco": 307963,
+     "bruto": 846097
+    },
+    "Paletas alternativas (GHOST)": {
+     "ficheros": 3,
+     "disco": 91100,
+     "bruto": 196608
+    }
+   }
+  },
+  "Otros": {
+   "ficheros": 1,
+   "disco": 720,
+   "bruto": 720,
+   "rnc": 0,
+   "subgrupos": {
+    "Tabla de récords (SAVE/HISCORE.DAT)": {
+     "ficheros": 1,
+     "disco": 720,
+     "bruto": 720
+    }
+   }
+  },
+  "Textos": {
+   "ficheros": 8,
+   "disco": 597929,
+   "bruto": 600946,
+   "rnc": 2,
+   "subgrupos": {
+    "Idiomas (LANG-x.DAT)": {
+     "ficheros": 6,
+     "disco": 596946,
+     "bruto": 596946
+    },
+    "Léxicos (nombres)": {
+     "ficheros": 2,
+     "disco": 983,
+     "bruto": 4000
+    }
+   }
+  },
+  "Gráficos juego, alta resolución (DATA)": {
+   "ficheros": 22,
+   "disco": 1306803,
+   "bruto": 3108901,
+   "rnc": 22,
+   "subgrupos": {
+    "Sprites y bloques": {
+     "ficheros": 17,
+     "disco": 1051116,
+     "bruto": 2591781
+    },
+    "Animaciones": {
+     "ficheros": 5,
+     "disco": 255687,
+     "bruto": 517120
+    }
+   }
+  }
+ },
+ "ficheros": [
+  {
+   "ruta": "AWEMAN32.DLL",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 35328,
+   "bruto": 35328,
+   "rnc": false
+  },
+  {
+   "ruta": "DOS4GW.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 265396,
+   "bruto": 265396,
+   "rnc": false
+  },
+  {
+   "ruta": "HOSPITAL.CFG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 24,
+   "bruto": 24,
+   "rnc": false
+  },
+  {
+   "ruta": "HOSPITAL.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 1655539,
+   "bruto": 1655539,
+   "rnc": false
+  },
+  {
+   "ruta": "MODEM.INI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 85,
+   "bruto": 85,
+   "rnc": false
+  },
+  {
+   "ruta": "MSS32.DLL",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 144384,
+   "bruto": 144384,
+   "rnc": false
+  },
+  {
+   "ruta": "SMACKW32.DLL",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 71168,
+   "bruto": 71168,
+   "rnc": false
+  },
+  {
+   "ruta": "WINMAIN.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 1074688,
+   "bruto": 1074688,
+   "rnc": false
+  },
+  {
+   "ruta": "WSND7R.DLL",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Ejecutables",
+   "disco": 109056,
+   "bruto": 109056,
+   "rnc": false
+  },
+  {
+   "ruta": "INTRO/ATTRACT.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Intro y demo",
+   "disco": 6301936,
+   "bruto": 6301936,
+   "rnc": false
+  },
+  {
+   "ruta": "INTRO/INTRO.SM2",
+   "grupo": "Vídeo",
+   "subgrupo": "Intro y demo",
+   "disco": 16354880,
+   "bruto": 16354880,
+   "rnc": false
+  },
+  {
+   "ruta": "INTRO/INTRO.SM4",
+   "grupo": "Vídeo",
+   "subgrupo": "Intro y demo",
+   "disco": 33616520,
+   "bruto": 33616520,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/320X2401.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 872896,
+   "bruto": 872896,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/320X2402.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1122228,
+   "bruto": 1122228,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/320X2403.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1447988,
+   "bruto": 1447988,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/320X2404.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1652564,
+   "bruto": 1652564,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/320X2405.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 2370144,
+   "bruto": 2370144,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/320X2406.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 2118136,
+   "bruto": 2118136,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA01V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 251572,
+   "bruto": 251572,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA02V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 250832,
+   "bruto": 250832,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA03V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 254060,
+   "bruto": 254060,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA04V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 242564,
+   "bruto": 242564,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA05V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 252496,
+   "bruto": 252496,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA06V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 240456,
+   "bruto": 240456,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA07V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 242760,
+   "bruto": 242760,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA08V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 249620,
+   "bruto": 249620,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA09V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 244604,
+   "bruto": 244604,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA10V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 248996,
+   "bruto": 248996,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA11V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 243736,
+   "bruto": 243736,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA12V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 284220,
+   "bruto": 284220,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA13V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 327336,
+   "bruto": 327336,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/AREA14V.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 368080,
+   "bruto": 368080,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/ATTRACT.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 5046768,
+   "bruto": 5046768,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOPAPER.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 150344,
+   "bruto": 150344,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOSE1.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1009728,
+   "bruto": 1009728,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOSE2.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1165724,
+   "bruto": 1165724,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOSE3.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1674096,
+   "bruto": 1674096,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOSE4.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1411008,
+   "bruto": 1411008,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOSE5.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 2429792,
+   "bruto": 2429792,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/LOSE6.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 2093180,
+   "bruto": 2093180,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/MMENU1-0.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 1784340,
+   "bruto": 1784340,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/MMENU2-0.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 898052,
+   "bruto": 898052,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/WINGAME.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 2066656,
+   "bruto": 2066656,
+   "rnc": false
+  },
+  {
+   "ruta": "ANIMS/WINLEVEL.SMK",
+   "grupo": "Vídeo",
+   "subgrupo": "Escenas (ANIMS)",
+   "disco": 335220,
+   "bruto": 335220,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY00.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 31797,
+   "bruto": 31797,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY00.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 31804,
+   "bruto": 31804,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY01.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 3517,
+   "bruto": 3517,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY02.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 5025,
+   "bruto": 5025,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY03.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 7294,
+   "bruto": 7294,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY04.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 7538,
+   "bruto": 7538,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY05.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 8050,
+   "bruto": 8050,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY06.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 8827,
+   "bruto": 8827,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY07.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 9191,
+   "bruto": 9191,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY08.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 10456,
+   "bruto": 10456,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY09.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 11124,
+   "bruto": 11124,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY10.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 11235,
+   "bruto": 11235,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY11.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 12415,
+   "bruto": 12415,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/EASY12.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 12726,
+   "bruto": 12726,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL00.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 31802,
+   "bruto": 31802,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL01.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 3517,
+   "bruto": 3517,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL02.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 5024,
+   "bruto": 5024,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL03.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 7296,
+   "bruto": 7296,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL04.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 7539,
+   "bruto": 7539,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL05.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 8283,
+   "bruto": 8283,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL06.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 8826,
+   "bruto": 8826,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL07.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 9191,
+   "bruto": 9191,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL08.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 10452,
+   "bruto": 10452,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL09.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 11122,
+   "bruto": 11122,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL10.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 11228,
+   "bruto": 11228,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL11.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 12407,
+   "bruto": 12407,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/FULL12.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 12722,
+   "bruto": 12722,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD00.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 31807,
+   "bruto": 31807,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD00.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 31836,
+   "bruto": 31836,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD01.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 3517,
+   "bruto": 3517,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD02.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 5025,
+   "bruto": 5025,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD03.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 7296,
+   "bruto": 7296,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD04.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 7540,
+   "bruto": 7540,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD05.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 8283,
+   "bruto": 8283,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD06.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 8826,
+   "bruto": 8826,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD07.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 9191,
+   "bruto": 9191,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD08.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 10452,
+   "bruto": 10452,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD09.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 11122,
+   "bruto": 11122,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD10.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 11228,
+   "bruto": 11228,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD11.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 12407,
+   "bruto": 12407,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/HARD12.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Configuración de campaña (.SAM)",
+   "disco": 12722,
+   "bruto": 12722,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L1",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 2875,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L10",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3606,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L11",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3906,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L12",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 5045,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L13",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 2321,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L14",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 2425,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L2",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 2487,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L20",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4371,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L21",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3619,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L22",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3046,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L23",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3349,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L24",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3460,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L3",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3055,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L30",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4141,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L31",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 5402,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L32",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4525,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L33",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4429,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L34",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3735,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L4",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3375,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L40",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 5473,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L41",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 5924,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L42",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 5635,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L43",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 8027,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L44",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 5826,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L5",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3436,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L6",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3426,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L7",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3681,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L8",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3068,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/LEVEL.L9",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Mapas de campaña (LEVEL.L1-L12)",
+   "disco": 3940,
+   "bruto": 163948,
+   "rnc": true
+  },
+  {
+   "ruta": "LEVELS/NET00.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 33979,
+   "bruto": 33979,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET2.DAT",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 617,
+   "bruto": 617,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET20.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 11152,
+   "bruto": 11152,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET20.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 11210,
+   "bruto": 11210,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET21.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6592,
+   "bruto": 6592,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET21.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6658,
+   "bruto": 6658,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET22.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7435,
+   "bruto": 7435,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET22.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7492,
+   "bruto": 7492,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET23.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6214,
+   "bruto": 6214,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET23.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6281,
+   "bruto": 6281,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET24.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3854,
+   "bruto": 3854,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET24.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 3922,
+   "bruto": 3922,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET3.DAT",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 617,
+   "bruto": 617,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET30.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 11493,
+   "bruto": 11493,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET30.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 11551,
+   "bruto": 11551,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET31.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6653,
+   "bruto": 6653,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET31.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6719,
+   "bruto": 6719,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET32.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7515,
+   "bruto": 7515,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET32.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7572,
+   "bruto": 7572,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET33.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6728,
+   "bruto": 6728,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET33.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6795,
+   "bruto": 6795,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET34.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4380,
+   "bruto": 4380,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET34.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4448,
+   "bruto": 4448,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET4.DAT",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 619,
+   "bruto": 619,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET40.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 11473,
+   "bruto": 11473,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET40.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 11531,
+   "bruto": 11531,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET41.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6648,
+   "bruto": 6648,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET41.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 6714,
+   "bruto": 6714,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET42.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7515,
+   "bruto": 7515,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET42.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7572,
+   "bruto": 7572,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET43.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7178,
+   "bruto": 7178,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET43.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 7245,
+   "bruto": 7245,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET44.BAK",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4569,
+   "bruto": 4569,
+   "rnc": false
+  },
+  {
+   "ruta": "LEVELS/NET44.SAM",
+   "grupo": "Mapas y niveles",
+   "subgrupo": "Multijugador y extra (fuera de alcance)",
+   "disco": 4637,
+   "bruto": 4637,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FACE01M.DAT",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 21280,
+   "bruto": 21280,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT100M.DAT",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 2134,
+   "bruto": 2134,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT100M.TAB",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 162,
+   "bruto": 162,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT101M.DAT",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 4324,
+   "bruto": 4324,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT101M.TAB",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 1170,
+   "bruto": 1170,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT130M.DAT",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 4545,
+   "bruto": 4545,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT130M.TAB",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 1170,
+   "bruto": 1170,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT131M.DAT",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 4545,
+   "bruto": 4545,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT131M.TAB",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 1170,
+   "bruto": 1170,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT132M.DAT",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 4545,
+   "bruto": 4545,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATAM/FONT132M.TAB",
+   "grupo": "Interfaz baja resolución (QDATAM)",
+   "subgrupo": "Fuentes y caras",
+   "disco": 1170,
+   "bruto": 1170,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/ADLIB.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 15073,
+   "bruto": 15073,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/ADLIBG.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 16464,
+   "bruto": 16464,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/AUDIODRV.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 11372,
+   "bruto": 11372,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DOS4GW.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 265396,
+   "bruto": 265396,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/ESFM.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 15896,
+   "bruto": 15896,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/IWAV.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2585,
+   "bruto": 2585,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/IWAV.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2149,
+   "bruto": 2149,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/JAMMER.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 3219,
+   "bruto": 3219,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MPU401.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2002,
+   "bruto": 2002,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MSSDRVR.LST",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 20408,
+   "bruto": 20408,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MSSW95.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 8030,
+   "bruto": 8030,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/NVDIG.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 1877,
+   "bruto": 1877,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/NVMPU.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2044,
+   "bruto": 2044,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/OPL3.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 16474,
+   "bruto": 16474,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/PAS.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 15512,
+   "bruto": 15512,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/PASPLUS.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 16545,
+   "bruto": 16545,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/PROAUDIO.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2214,
+   "bruto": 2214,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/RAP10.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2936,
+   "bruto": 2936,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SAMPLE.AD",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 3802,
+   "bruto": 3802,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SAMPLE.OPL",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 3802,
+   "bruto": 3802,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SB16.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2923,
+   "bruto": 2923,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SBAWE32.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 31396,
+   "bruto": 31396,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SBLASTER.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 3212,
+   "bruto": 3212,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SBLASTER.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 15205,
+   "bruto": 15205,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SBPRO.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2871,
+   "bruto": 2871,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SBPRO1.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 15558,
+   "bruto": 15558,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SBPRO2.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 16628,
+   "bruto": 16628,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SETSOUND.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 262787,
+   "bruto": 262787,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SNDSCAPE.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 4171,
+   "bruto": 4171,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SNDSCAPE.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 2971,
+   "bruto": 2971,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/SNDSYS.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 3419,
+   "bruto": 3419,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/ULTRA.DIG",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 9478,
+   "bruto": 9478,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/ULTRA.MDI",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Controladores de sonido",
+   "disco": 49672,
+   "bruto": 49672,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/ATLANTIS.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 24784,
+   "bruto": 24784,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/CANDY.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 8094,
+   "bruto": 8094,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/DOCTOR.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 3066,
+   "bruto": 3066,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/FORTUNE.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 7728,
+   "bruto": 7728,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/HOSPMIDI.BAT",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Utilidades de música",
+   "disco": 385,
+   "bruto": 385,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/MEND.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 11936,
+   "bruto": 11936,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/MIDI.TXT",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Utilidades de música",
+   "disco": 204,
+   "bruto": 204,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/MIDIFORM.EXE",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Utilidades de música",
+   "disco": 99149,
+   "bruto": 99149,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/NIGHTSH.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 14402,
+   "bruto": 14402,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/README.TXT",
+   "grupo": "Ejecutables y controladores DOS",
+   "subgrupo": "Utilidades de música",
+   "disco": 461,
+   "bruto": 461,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/SIXSEVEN.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 22156,
+   "bruto": 22156,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/MIDI/STEADY.XMI",
+   "grupo": "Música",
+   "subgrupo": "Partituras XMI",
+   "disco": 12490,
+   "bruto": 12490,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/MINHEAP.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Otros datos de sonido",
+   "disco": 446,
+   "bruto": 446,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/SOUND-0.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Efectos y voces (SOUND-x.DAT, uno por idioma)",
+   "disco": 16634862,
+   "bruto": 16634862,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/SOUND-1.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Efectos y voces (SOUND-x.DAT, uno por idioma)",
+   "disco": 13205518,
+   "bruto": 13205518,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/SOUND-2.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Efectos y voces (SOUND-x.DAT, uno por idioma)",
+   "disco": 13601374,
+   "bruto": 13601374,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/SOUND-3.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Efectos y voces (SOUND-x.DAT, uno por idioma)",
+   "disco": 13665998,
+   "bruto": 13665998,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/SOUND-4.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Efectos y voces (SOUND-x.DAT, uno por idioma)",
+   "disco": 14453406,
+   "bruto": 14453406,
+   "rnc": false
+  },
+  {
+   "ruta": "SOUND/DATA/SOUND-5.DAT",
+   "grupo": "Sonido",
+   "subgrupo": "Efectos y voces (SOUND-x.DAT, uno por idioma)",
+   "disco": 13797662,
+   "bruto": 13797662,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MBLK-0.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 79261,
+   "bruto": 79261,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MBLK-0.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 1356,
+   "bruto": 1356,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MELE-1.ANI",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Animaciones",
+   "disco": 149898,
+   "bruto": 149898,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MFRA-1.ANI",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Animaciones",
+   "disco": 116430,
+   "bruto": 116430,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MLIST-1.ANI",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Animaciones",
+   "disco": 217212,
+   "bruto": 217212,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MONEY01M.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 298,
+   "bruto": 298,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MONEY01M.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 72,
+   "bruto": 72,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MPOINTER.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 1753,
+   "bruto": 1753,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MPOINTER.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 120,
+   "bruto": 120,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MSPR-0.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 763663,
+   "bruto": 763663,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MSPR-0.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 26382,
+   "bruto": 26382,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MSTART-1.ANI",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Animaciones",
+   "disco": 20744,
+   "bruto": 20744,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MUTTON01.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 102724,
+   "bruto": 102724,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/MUTTON01.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 2472,
+   "bruto": 2472,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/PANEL02M.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 12518,
+   "bruto": 12518,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/PANEL02M.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 378,
+   "bruto": 378,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/PULLDM.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 478,
+   "bruto": 478,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/PULLDM.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 126,
+   "bruto": 126,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/WATCH01M.DAT",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 2719,
+   "bruto": 2719,
+   "rnc": false
+  },
+  {
+   "ruta": "DATAM/WATCH01M.TAB",
+   "grupo": "Gráficos juego, baja resolución (DATAM)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 108,
+   "bruto": 108,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/AREA01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 132344,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AREA01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 749,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AWARD01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 158527,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AWARD01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 745,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AWARD02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 147659,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AWARD02V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 745,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AWARD03V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 85036,
+   "bruto": 156293,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/AWARD03V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 140,
+   "bruto": 150,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BANK01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 125482,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BANK01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 760,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BANK02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 13573,
+   "bruto": 26966,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BANK02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 84,
+   "bruto": 90,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BID01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 120623,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BID01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 634,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BID02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 11195,
+   "bruto": 16882,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BID02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 66,
+   "bruto": 66,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/BRIEF01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 143819,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/BRIEF01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 749,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/CRED01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 71540,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/CRED01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 724,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/DRUGN01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 110836,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/DRUGN01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 673,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/DRUGN02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 6055,
+   "bruto": 9949,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/DRUGN02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 74,
+   "bruto": 78,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FACE01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 87750,
+   "bruto": 87750,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/FAME01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 158477,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FAME01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 745,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FAME02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 206,
+   "bruto": 724,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FAME02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 18,
+   "bruto": 18,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/FAX01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 64285,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FAX01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 659,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FAX02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 8213,
+   "bruto": 12457,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FAX02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 110,
+   "bruto": 126,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT00V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1024,
+   "bruto": 6776,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT00V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 531,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1331,
+   "bruto": 7830,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT01V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 524,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1331,
+   "bruto": 7830,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 524,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT04V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1489,
+   "bruto": 9732,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT04V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 540,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT05V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 596,
+   "bruto": 2559,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT05V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 289,
+   "bruto": 582,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT09V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1094,
+   "bruto": 7286,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT09V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 481,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT100V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3429,
+   "bruto": 11071,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT100V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 547,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT101V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3214,
+   "bruto": 11062,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT101V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 551,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT102V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3597,
+   "bruto": 3597,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/FONT102V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1170,
+   "bruto": 1170,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/FONT105V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4546,
+   "bruto": 14313,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT105V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 539,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT106V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 392,
+   "bruto": 3021,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT106V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 415,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT110V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 323,
+   "bruto": 3393,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT110V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 111,
+   "bruto": 204,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT111V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 191,
+   "bruto": 2475,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT111V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 106,
+   "bruto": 204,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT112V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 6510,
+   "bruto": 21044,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT112V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 600,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT113V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 6730,
+   "bruto": 21048,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT113V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 600,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT115V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 5658,
+   "bruto": 18194,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT115V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 586,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT120V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4565,
+   "bruto": 14183,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT120V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 569,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT121V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 12177,
+   "bruto": 40205,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT121V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 614,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT122V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 21475,
+   "bruto": 84664,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT122V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 653,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT124V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3473,
+   "bruto": 11777,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT124V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 552,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT16V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3322,
+   "bruto": 11202,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT16V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 529,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT18V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4119,
+   "bruto": 13556,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT18V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 568,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT19V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4073,
+   "bruto": 13484,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT19V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 576,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT24V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 121,
+   "bruto": 1524,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT24V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 272,
+   "bruto": 582,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT250V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4917,
+   "bruto": 20860,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT250V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 591,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT25V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4200,
+   "bruto": 11776,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT25V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 537,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT26V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3657,
+   "bruto": 11466,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT26V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 541,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT31V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 2543,
+   "bruto": 8081,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT31V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 540,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT34V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 763,
+   "bruto": 2676,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT34V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 292,
+   "bruto": 582,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT35V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 2771,
+   "bruto": 7896,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT35V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 514,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT36V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3134,
+   "bruto": 9105,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT36V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 554,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT37V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3067,
+   "bruto": 8101,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT37V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 515,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT38V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 597,
+   "bruto": 2559,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT38V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 289,
+   "bruto": 582,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT39V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 32385,
+   "bruto": 70391,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT39V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 638,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT40V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 30780,
+   "bruto": 64366,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT40V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 639,
+   "bruto": 1164,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT43V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 5901,
+   "bruto": 15539,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT43V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 577,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT44V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 820,
+   "bruto": 5731,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT44V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 494,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT45V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3553,
+   "bruto": 8277,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT45V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 514,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT46V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 6279,
+   "bruto": 16105,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT46V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 586,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT47V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4821,
+   "bruto": 12983,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT47V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 565,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT500V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 32384,
+   "bruto": 70391,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT500V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 638,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT501V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 30782,
+   "bruto": 64366,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT501V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 639,
+   "bruto": 1164,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT502V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 217,
+   "bruto": 4279,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT502V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 487,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT50V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1138,
+   "bruto": 7663,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT50V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 518,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT51V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 4273,
+   "bruto": 9835,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT51V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 510,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT60V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 5476,
+   "bruto": 17799,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT60V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 598,
+   "bruto": 1170,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/FONT74V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 3332,
+   "bruto": 3332,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/FONT74V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Fuentes",
+   "disco": 1170,
+   "bruto": 1170,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/GHOST1.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Paletas alternativas (GHOST)",
+   "disco": 27047,
+   "bruto": 65536,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/GHOST2.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Paletas alternativas (GHOST)",
+   "disco": 26873,
+   "bruto": 65536,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/GHOST66.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Paletas alternativas (GHOST)",
+   "disco": 37180,
+   "bruto": 65536,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/GRAPH01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 31930,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/GRAPH01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 750,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/GRAPH02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 1138,
+   "bruto": 2182,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/GRAPH02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 24,
+   "bruto": 24,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/LETTR02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 1602,
+   "bruto": 3476,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/LETTR02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 30,
+   "bruto": 30,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/LOAD01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 38228,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/LOAD01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 768,
+   "bruto": 768,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/LOAD02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 113,
+   "bruto": 448,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/LOAD02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 36,
+   "bruto": 36,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/MAIN01M.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 24415,
+   "bruto": 64000,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/MAIN01M.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 711,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/MAIN02M.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 30711,
+   "bruto": 49294,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/MAIN02M.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 67,
+   "bruto": 72,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/POL01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 168222,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/POL01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 653,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/POL02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 1870,
+   "bruto": 4223,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/POL02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 42,
+   "bruto": 42,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/PREF01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 114939,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/PREF01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 759,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/PREF02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 304,
+   "bruto": 918,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/PREF02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 18,
+   "bruto": 18,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/REP01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 100447,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REP01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 686,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REP02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 2438,
+   "bruto": 4323,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REP02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 81,
+   "bruto": 96,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ00V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 8088,
+   "bruto": 26382,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ00V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 828,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 10765,
+   "bruto": 35873,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ01V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 846,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 9348,
+   "bruto": 36215,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 821,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ03V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 3972,
+   "bruto": 15483,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ03V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 800,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ04V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 2086,
+   "bruto": 7893,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ04V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 792,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ05V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 4632,
+   "bruto": 20878,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ05V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 820,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ06V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 6719,
+   "bruto": 26837,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ06V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 820,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ09V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 3528,
+   "bruto": 19997,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ09V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 808,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ10V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 4486,
+   "bruto": 18765,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ10V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 822,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ11V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 9657,
+   "bruto": 42321,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ11V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 854,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ12V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 6124,
+   "bruto": 28229,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ12V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 819,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ13V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 2602,
+   "bruto": 14287,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/REQ13V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 831,
+   "bruto": 2490,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/RES01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 76929,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/RES01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 737,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/RES02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 74434,
+   "bruto": 157600,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/RES02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 98,
+   "bruto": 126,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/SCORE01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 30015,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/SCORE01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 768,
+   "bruto": 768,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/SPOINTER.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 2506,
+   "bruto": 6599,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/SPOINTER.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 152,
+   "bruto": 216,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAFF01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 9559,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAFF01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 746,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAFF02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 4952,
+   "bruto": 18289,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAFF02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 111,
+   "bruto": 138,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAT01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 85877,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAT01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 747,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAT02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 163,
+   "bruto": 457,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/STAT02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 12,
+   "bruto": 12,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/TITLE01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 72988,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/TITLE01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 724,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/TOWN.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 48552,
+   "bruto": 65536,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/TOWN01V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 127878,
+   "bruto": 307200,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/TOWN01V.PAL",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Pantallas completas (bitmap + paleta)",
+   "disco": 759,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/TOWN02V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 6504,
+   "bruto": 12885,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/TOWN02V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 110,
+   "bruto": 120,
+   "rnc": true
+  },
+  {
+   "ruta": "QDATA/VER00V.DAT",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 771,
+   "bruto": 771,
+   "rnc": false
+  },
+  {
+   "ruta": "QDATA/VER00V.TAB",
+   "grupo": "Interfaz (QDATA)",
+   "subgrupo": "Hojas de interfaz y cursores",
+   "disco": 12,
+   "bruto": 12,
+   "rnc": false
+  },
+  {
+   "ruta": "SAVE/HISCORE.DAT",
+   "grupo": "Otros",
+   "subgrupo": "Tabla de récords (SAVE/HISCORE.DAT)",
+   "disco": 720,
+   "bruto": 720,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/LANG-0.DAT",
+   "grupo": "Textos",
+   "subgrupo": "Idiomas (LANG-x.DAT)",
+   "disco": 95149,
+   "bruto": 95149,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/LANG-1.DAT",
+   "grupo": "Textos",
+   "subgrupo": "Idiomas (LANG-x.DAT)",
+   "disco": 95576,
+   "bruto": 95576,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/LANG-2.DAT",
+   "grupo": "Textos",
+   "subgrupo": "Idiomas (LANG-x.DAT)",
+   "disco": 111690,
+   "bruto": 111690,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/LANG-3.DAT",
+   "grupo": "Textos",
+   "subgrupo": "Idiomas (LANG-x.DAT)",
+   "disco": 98933,
+   "bruto": 98933,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/LANG-4.DAT",
+   "grupo": "Textos",
+   "subgrupo": "Idiomas (LANG-x.DAT)",
+   "disco": 100080,
+   "bruto": 100080,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/LANG-5.DAT",
+   "grupo": "Textos",
+   "subgrupo": "Idiomas (LANG-x.DAT)",
+   "disco": 95518,
+   "bruto": 95518,
+   "rnc": false
+  },
+  {
+   "ruta": "DATA/MONEY01V.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 212,
+   "bruto": 974,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/MONEY01V.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 57,
+   "bruto": 72,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/MPALETTE.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 746,
+   "bruto": 768,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/MPOINTER.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 1886,
+   "bruto": 4748,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/MPOINTER.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 113,
+   "bruto": 132,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/PANEL02V.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 11268,
+   "bruto": 39862,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/PANEL02V.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 234,
+   "bruto": 366,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/PANEL04V.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 5327,
+   "bruto": 14941,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/PANEL04V.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 131,
+   "bruto": 168,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/PULLDV.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 462,
+   "bruto": 976,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/PULLDV.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 78,
+   "bruto": 126,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/P_COMP.LEX",
+   "grupo": "Textos",
+   "subgrupo": "Léxicos (nombres)",
+   "disco": 311,
+   "bruto": 2000,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/S_COMP.LEX",
+   "grupo": "Textos",
+   "subgrupo": "Léxicos (nombres)",
+   "disco": 672,
+   "bruto": 2000,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VBLK-0.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 68214,
+   "bruto": 266978,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VBLK-0.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 696,
+   "bruto": 1356,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VELE-1.ANI",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Animaciones",
+   "disco": 104696,
+   "bruto": 160044,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VFRA-1.ANI",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Animaciones",
+   "disco": 51849,
+   "bruto": 116430,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VLIST-1.ANI",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Animaciones",
+   "disco": 90850,
+   "bruto": 217616,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VSPR-0.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 941398,
+   "bruto": 2228540,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VSPR-0.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 17897,
+   "bruto": 26382,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VSTA-0.ANI",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Animaciones",
+   "disco": 2243,
+   "bruto": 2286,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/VSTART-1.ANI",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Animaciones",
+   "disco": 6049,
+   "bruto": 20744,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/WATCH01V.DAT",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 2316,
+   "bruto": 5284,
+   "rnc": true
+  },
+  {
+   "ruta": "DATA/WATCH01V.TAB",
+   "grupo": "Gráficos juego, alta resolución (DATA)",
+   "subgrupo": "Sprites y bloques",
+   "disco": 81,
+   "bruto": 108,
+   "rnc": true
+  }
+ ]
+}

@@ -74,7 +74,9 @@ step_apt() {
     libgl1-mesa-dev libegl1-mesa-dev libdbus-1-dev \
     mesa-vulkan-drivers libvulkan1 libgl1-mesa-dri \
     `# Medición, datos y ejecución sin pantalla` \
-    heaptrack valgrind p7zip-full innoextract xvfb x11-utils xdotool imagemagick
+    heaptrack valgrind p7zip-full innoextract xvfb x11-utils xdotool imagemagick \
+    `# Fase 2: renderizar la música MIDI para medir su tamaño como audio` \
+    fluidsynth timgm6mb-soundfont
 }
 
 step_data() {
