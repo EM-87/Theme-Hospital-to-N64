@@ -1,0 +1,28 @@
+# n64/rambase en ares v148 (tools/run_ares.sh), 2026-10-10
+# Con Expansion Pak
+TH64 ram: RDRAM 8192 KiB, Expansion Pak si
+TH64 ram: arranque                                 usado     1 KiB  libre  7780 KiB  total  7781 KiB
+TH64 ram: display 320x240 16 bpp, 3 buffers        usado   451 KiB  libre  7330 KiB  total  7781 KiB
+TH64 ram: rdpq                                     usado   587 KiB  libre  7194 KiB  total  7781 KiB
+TH64 ram: joypad                                   usado   587 KiB  libre  7194 KiB  total  7781 KiB
+TH64 ram: dfs                                      usado   587 KiB  libre  7194 KiB  total  7781 KiB
+TH64 ram: descompresores aPLib y Shrinkler         usado   587 KiB  libre  7194 KiB  total  7781 KiB
+TH64 ram: audio 32 kHz                             usado   607 KiB  libre  7173 KiB  total  7781 KiB
+TH64 ram: mixer 16 canales                         usado   607 KiB  libre  7173 KiB  total  7781 KiB
+TH64 ram: decodificador Opus                       usado   607 KiB  libre  7173 KiB  total  7781 KiB
+TH64 ram: fin
+# Sin Expansion Pak (--no-expansion)
+TH64 ram: RDRAM 4096 KiB, Expansion Pak no
+TH64 ram: arranque                                 usado     1 KiB  libre  3684 KiB  total  3685 KiB
+TH64 ram: display 320x240 16 bpp, 3 buffers        usado   451 KiB  libre  3234 KiB  total  3685 KiB
+TH64 ram: rdpq                                     usado   587 KiB  libre  3098 KiB  total  3685 KiB
+TH64 ram: joypad                                   usado   587 KiB  libre  3098 KiB  total  3685 KiB
+TH64 ram: dfs                                      usado   587 KiB  libre  3098 KiB  total  3685 KiB
+TH64 ram: descompresores aPLib y Shrinkler         usado   587 KiB  libre  3098 KiB  total  3685 KiB
+TH64 ram: audio 32 kHz                             usado   607 KiB  libre  3077 KiB  total  3685 KiB
+TH64 ram: mixer 16 canales                         usado   607 KiB  libre  3077 KiB  total  3685 KiB
+TH64 ram: decodificador Opus                       usado   607 KiB  libre  3077 KiB  total  3685 KiB
+TH64 ram: fin
+# Tamaño del ELF (mips64-elf-size)
+   text	   data	    bss	    dec	    hex	filename
+ 305564	  27600	  21136	 354300	  567fc	n64/rambase/build/th64rambase.elf

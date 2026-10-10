@@ -9,6 +9,7 @@ Este repositorio **no contiene datos del juego**. Cada usuario aporta los suyos,
 - Fase 1, mediciones de CorsixTH: [`docs/01_mediciones.md`](docs/01_mediciones.md)
 - Fase 2, inventario de datos y presupuesto de cartucho: [`docs/02_datos.md`](docs/02_datos.md)
 - Fase 3, arquitectura de CorsixTH y reutilización: [`docs/03_arquitectura.md`](docs/03_arquitectura.md)
+- Fase 4, decisión (camino, RAM, recortes, controles, riesgos): [`docs/04_decision.md`](docs/04_decision.md) — **pendiente de aprobación**
 
 ```bash
 tools/setup.sh          # instala todo (Ubuntu 24.04); necesita TH_DATA_URL o TH_DATA_ZIP para los datos
@@ -16,6 +17,7 @@ source tools/env.sh
 make -C n64/hello && tools/run_ares.sh n64/hello/th64hello.z64 out/hello
 tools/bench_medir.sh "$TH64_WORK/resultados/fase1" 3   # campaña de medición de la fase 1
 tools/datos/fase2.sh                                    # inventario y tamaños de los datos (fase 2)
+make -C n64/rambase && ARES_UNTIL="TH64 ram: fin" tools/run_ares.sh n64/rambase/th64rambase.z64 out/rambase 30   # RAM libre (fase 4)
 ```
 
 Estructura:
@@ -25,4 +27,4 @@ Estructura:
 | `docs/` | plan y documento de hallazgos de cada fase |
 | `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`) y del código (`tools/arquitectura/`) |
 | `bench/` | arnés de medición dentro de CorsixTH, partidas de referencia y resultados resumidos |
-| `n64/` | ROMs: hola mundo y benchmarks de CPU |
+| `n64/` | ROMs: hola mundo, benchmarks de CPU (`luabench`) y medida de RAM libre (`rambase`) |
