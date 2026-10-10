@@ -1,6 +1,6 @@
 # Fase 3 — Arquitectura de CorsixTH y qué se puede reutilizar
 
-Fecha: 2026-10-09. Estado: **cerrada, salvo el port de Wii** (código no accesible desde el entorno; ver [abajo](#port-de-wii)). Versión leída: CorsixTH v0.70.1 (`56bd5d0`). Las medidas de CPU usan la partida `lleno` de la fase 1 (304 pacientes, 57 empleados, 303 objetos).
+Fecha: 2026-10-09. Estado: **cerrada**. Versión leída: CorsixTH v0.70.1 (`56bd5d0`). Las medidas de CPU usan la partida `lleno` de la fase 1 (304 pacientes, 57 empleados, 303 objetos).
 
 ## Conclusión
 
@@ -21,6 +21,13 @@ Fecha: 2026-10-09. Estado: **cerrada, salvo el port de Wii** (código no accesib
 - **El C++ tiene una frontera limpia con SDL**: todo el dibujo pasa por `render_target`, `sprite_sheet` y `palette` (`th_gfx_sdl.{h,cpp}`, 1.609 líneas y 196 referencias a SDL). El mapa (3.000 líneas), el pathfinding (703) y las animaciones (4.092) no llaman a SDL.
 - **Lo que no cabe tal cual en la N64 es la memoria del C++:** cada casilla del mapa ocupa 84 B en la N64 y CorsixTH guarda dos copias del mapa (2,63 MiB), más 0,44 MiB de nodos de pathfinding. Y una partida guardada son 0,53–1,20 MiB (33–296 KiB comprimida), frente a 32–128 KiB de memoria de guardado en un cartucho.
 - **Con los factores de CPU de la fase 1, ni un híbrido ni el C++ actual caben en la N64.** El hospital lleno necesitaría 34 veces la CPU a velocidad Normal. La fase 1 daba 39 porque aplicaba el factor de Lua a todo; aquí la parte de C++ lleva el suyo. Aunque las partes calientes de Lua pasaran a C a coste cero, seguirían haciendo falta 11. La difusión de temperatura del C++, sola, pide 2,6. Hace falta un motor con algoritmos pensados para la consola, que use la lógica de CorsixTH como especificación ([implicaciones](#implicaciones-para-la-fase-4)).
+- **El port de Wii** (tueidj, 2013) no tocó la lógica. Cambió 26 ficheros (+522 −391 líneas) para que cupieran el sonido y los gráficos:
+  - memoria virtual por hardware para el archivo de sonido (16 MiB virtuales con 512 KiB reales);
+  - efectos decodificados al primer uso, con un máximo de 32;
+  - una caché de variantes de sprites cuya implementación falta en el ZIP publicado;
+  - lectores de datos independientes del endianness.
+
+  Siguió componiendo el frame por CPU y manejó los mandos como un ratón ([detalles](#port-de-wii)).
 - CorsixTH v0.70.1 usa **SDL2**, no SDL3 como suponía el plan.
 
 ## Diagrama de módulos
@@ -190,18 +197,73 @@ Los porcentajes de Lua del apartado anterior se reparten dentro de ese 76,5 %.
 
 ## Port de Wii
 
-**Estado: el código existe pero no se ha podido leer desde este entorno.**
+**Fuente:** el ZIP del código fuente (`CorsixTH-wii-src.zip`, v1.02 de tueidj, 10,3 MiB y 5.012 entradas), recuperado por Eduardo de la copia de la Wayback Machine que enlaza [WiiBrew](https://wiibrew.org/wiki/CorsixTH). Se ha leído fuera del repositorio y no se ha compilado ni ejecutado nada de él.
 
-- **Dónde está.** La página de WiiBrew ([wiibrew.org/wiki/CorsixTH](https://wiibrew.org/wiki/CorsixTH)) enlaza el código del port (autor: tueidj, versión 1.02, licencia MIT) en `http://www.tueidj.net/CorsixTH-wii-src.zip`. El dominio está hoy aparcado. La única copia localizada está en la Wayback Machine (`web.archive.org/web/20190122061740/http://www.tueidj.net/CorsixTH-wii-src.zip`), y `web.archive.org` corta la conexión tanto desde el contenedor como desde la herramienta de descarga web. No hay copia en GitHub ni en los elementos de archive.org.
-- **Lo que documenta su autor en WiiBrew:**
-  - parte del CorsixTH de cuando el proyecto estaba en Google Code (SVN) e incluye SDL (el port de Tantric, modificado) y Lua listos para compilar;
-  - «arreglos de endianness y una caché LRU para los gráficos y los efectos de sonido, para que quepan en la memoria disponible de la Wii»;
-  - en la 1.02, «memoria virtual sobre la NAND para la librería de audio actual, que reduce el conjunto de trabajo de ~16 MB a ~512 KB», y caché LRU para los efectos;
-  - la música MIDI se sintetiza con TiMidity, y recomienda un juego de instrumentos pequeño «porque no hay mucha memoria»;
-  - reescribió el render de vídeo y el de audio (libaesnd) y la entrada (mandos de GameCube, ratón y teclado USB);
-  - lo dejó abandonado porque CorsixTH se alejaba del original y fallaba a menudo.
-- **Lo que enseña, aun sin el código:** la Wii tiene 88 MiB de RAM (24 + 64), 22 veces la de una N64 sin Expansion Pak. Aun así, el port necesitó cachés LRU para gráficos y sonido y memoria virtual para el archivo de sonido (`SOUND-x.DAT`, 13–16 MiB por idioma, fase 2). Coincide con lo medido aquí y en la fase 1: lo que no cabe son los gráficos decodificados, el sonido y el estado de Lua, no la lógica.
-- **Pendiente:** con el ZIP se completa este apartado leyendo la caché LRU (tamaño, política de expulsión, qué guarda), los cambios de endianness (qué ficheros y estructuras) y qué recortó. La Wii es big-endian como la N64, así que esos cambios serían aplicables tal cual a un lector de datos en la consola.
+**Base.** Se ha comparado con el historial oficial de CorsixTH, normalizando los finales de línea (el ZIP usa CRLF). La base es el commit `47d7b005` del 27-12-2012, una 0.20 en desarrollo: coinciden 587 de los 641 ficheros del árbol de CorsixTH. Los cambios del port:
+- **26 ficheros** de CorsixTH modificados: **522 líneas añadidas y 391 quitadas**, sin contar espacios;
+- dos ficheros nuevos, `wii_vm.c` (519 líneas) y `wii_vm.h`;
+- `main.cpp` renombrado a `th_main.cpp`;
+- además trae SDL 1.2 para Wii (el port de Tantric) y Lua 5.1.3 con 7 ficheros cambiados.
+
+Dos avisos antes de los detalles:
+- **El ZIP está incompleto.** `th_gfx_sdl.cpp` incluye `th_gfx_sdl_cache.h`, con las clases `THBitmapCache`, `THCachedBitmap`, `THScaledCachedBitmap` y `THSpriteCachedBitmap`, y no está en el archivo. Tampoco está el stub en ensamblador `dsi_handler` que usa la memoria virtual. Tal cual no compila, y **la implementación de la caché LRU de gráficos no se puede leer**: solo se ve cómo se usa.
+- **`wii_vm.c` y `wii_vm.h` no son reutilizables.** Llevan la cabecera «Copyright 2013 tueidj All Rights Reserved. This code may not be used in any project without explicit permission from the author», distinta de la MIT que indica WiiBrew para el port. Aquí solo se describe la técnica.
+
+### Memoria virtual para el sonido (`wii_vm.c`)
+
+- **Paginación por hardware con la MMU del Broadway.** Reserva una región virtual de hasta 256 MiB justo por debajo de `0x80000000`, con su propia tabla de páginas hash (64 KiB) y páginas de 4 KiB. El respaldo es un fichero de paginación en la NAND (`/tmp/pagefile.sys`), que se rellena entero al arrancar.
+- **Fallo de página.** Lo atiende la excepción DSI. La víctima se elige con el **algoritmo del reloj (segunda oportunidad)**, usando los bits de referencia (R) y de cambio (C) del hardware. Si la página está sucia se escribe en la NAND, agrupando hasta 4 páginas consecutivas; la nueva se lee si ya existía y, si no, se pone a cero.
+- **Único uso: el archivo de sonido.** `THSoundArchive` pide 16 MiB virtuales con 512 KiB de memoria real (`VM_Init(16<<20, 512<<10)`) y copia ahí el `SOUND-x.DAT` entero, que ocupa 13–16 MiB según el idioma (fase 2). De ahí la cifra de WiiBrew: «de ~16 MB a ~512 KB».
+
+### Efectos de sonido bajo demanda (`th_sound.cpp`)
+
+- CorsixTH decodificaba **todos** los efectos a `Mix_Chunk` al cargar el archivo. El port los decodifica la primera vez que suenan.
+- **No es una LRU con presupuesto, sino un límite natural.** Cada efecto lleva la cuenta de los canales que lo usan. Los 32 canales se asignan en rueda, prefiriendo uno libre que ya tuviera ese mismo efecto. Cuando un canal pasa a otro efecto y la cuenta del anterior llega a cero, se libera. Por tanto, nunca hay más de 32 efectos decodificados a la vez.
+
+### Caché de gráficos (`th_gfx_sdl.cpp`: 58 líneas añadidas y 282 quitadas)
+
+- **Qué se cachea.** Cada superficie SDL de sprites y bitmaps pasa a ser un `THCachedBitmap`, y el destino de render crea una `THBitmapCache(1500)`. Las variantes de cada sprite (volteado, transparencias al 50 y 75 %, paleta alternativa: hasta 32 por sprite) ya no se construyen como superficies SDL. Ahora son `THSpriteCachedBitmap` que se generan al pedirlas.
+- **Qué desaparece.** El escalado de bitmaps con AGG (filtro bilineal, unas 120 líneas) se sustituye por `THScaledCachedBitmap`.
+- **Qué no cambia:** cada hoja se sigue decodificando entera a 8 bpp en RAM al cargarla. Lo que se cachea son las versiones derivadas, listas para dibujar.
+- **Qué no se puede comprobar:** si el 1500 son entradas o KiB, y la política de expulsión. Esa clase no está en el ZIP.
+
+### Render, audio y entrada
+
+- **Render por software.** CorsixTH sigue componiendo cada frame en una superficie de 8 bpp con blits de la CPU (SDL). El SDL de la Wii sube el frame entero como textura CI8 (`GX_TF_CI8`, con la paleta en dos TLUT) y lo dibuja como un solo rectángulo con la GPU. Resolución de 640 × 480, o 848 × 480 en televisores 16:9, siempre a pantalla completa y con ajuste de overscan.
+- **Audio.** SDL_mixer mezcla todo en la CPU (TiMidity para el MIDI), y SDL saca el resultado por una sola voz del DSP con libaesnd.
+- **Mandos tratados como ratón** (`sdl_core.cpp`, 153 líneas nuevas):
+  - el stick izquierdo mueve el puntero, desplazándolo el valor del eje dividido por 3.072 en cada vuelta del bucle;
+  - los botones 0 y 1 son los clics izquierdo y derecho;
+  - 2 y 9 hacen de Intro, 3 y 10 de Escape, y 5 de P (pausa);
+  - la cruceta y el segundo stick hacen de flechas (scroll del mapa);
+  - el scroll por los bordes de la pantalla se desactiva.
+
+  La interfaz de CorsixTH no se toca: se sigue manejando como con ratón.
+
+### Endianness
+
+- **Cómo lo resuelve.** Una plantilla nueva en `th.h`, `LittleEndian<T>(puntero, índice)`, lee byte a byte sin depender del procesador. Se aplica en estos sitios:
+  - la tabla de sprites (`.TAB`: posición u32);
+  - las animaciones: `START` (u16), `FRA` (`list_index` u32 y `next` u16), `LIST` (u16) y `ELE` (`table_position` u16);
+  - la cabecera y la tabla de `SOUND-x.DAT`;
+  - las parcelas del mapa (u16);
+  - los contadores de `LANG-x.DAT` (u16);
+  - la cabecera MIDI que genera `xmi2mid`, que ahora solo invierte bytes si la máquina es little-endian.
+- **Error aparente.** `THMap::_readTileIndex`, que lee la casilla inicial de la cámara y la del helipuerto, usa `LittleEndian<unsigned int>(pData, 1)`. Eso lee 4 bytes a partir de `pData + 4`, y no el byte `pData[1]` que leía el original, así que esas dos posiciones saldrían mal en la Wii. CorsixTH actual resolvió el endianness de otra forma: con `bytes_to_uint16_le` y `bytes_to_uint32_le` en todos los lectores.
+
+### Lua y lógica del juego
+
+- **Lua 5.1.3 modificado.** El asignador obliga a llenar los 24 MiB de MEM1 antes de pasar a MEM2, reservando y liberando un bloque grande. `io.read(n)` lee el fichero de una vez en lugar de por bloques, y se quita `os.execute`. Los números siguen siendo `double`, y no hay límite de heap ni cambios en el recolector.
+- **Ningún cambio en la simulación.** Lo que cambia en Lua es configuración (640 × 480 a pantalla completa, sin scroll por bordes), una línea en las ventanas a pantalla completa (`on_top`) y añadir `joystick` a `SDL.init`. No cambia ni un `.level` ni un fichero de lógica.
+
+### Lo que enseña para la N64
+
+1. **El mismo problema de memoria, a otra escala.** Con 88 MiB, lo que no cabía era el sonido (el archivo de 16 MiB y los efectos decodificados) y las superficies de gráficos. La lógica no hubo que tocarla. En la N64 el archivo de sonido no necesita memoria virtual: se convierte a WAV64 y se queda en el cartucho, que la consola lee por DMA (fase 2).
+2. **Cargar al primer uso con un límite natural** (los canales del mezclador) vale tal cual para los efectos en la N64. `wav64` ya lee del cartucho mientras suena.
+3. **Las variantes de sprite no hacen falta en la N64.** El RDP voltea y aplica transparencia al dibujar, y la paleta alternativa es otra TLUT, así que no hay que guardar copias.
+4. **Componer el frame por CPU, como hace el port, no es viable en la VR4300.** Ya a 320 × 240 son 76.800 píxeles por frame. El RDP tiene que dibujar cada sprite como textura, que es lo previsto en la fase 3.
+5. **El orden de bytes conviene resolverlo en el conversor**, no en la consola. Y con lectores explícitos y probados: el error de `_readTileIndex` muestra lo fácil que es equivocarse al convertir a mano.
+6. **Controles.** El esquema «stick como puntero, botones como clics, cruceta para el scroll» bastó para jugar en la Wii sin tocar la interfaz. Es un buen punto de partida para la fase 4, junto con el ratón de N64, que libdragon admite (`JOYPAD_STYLE_MOUSE`).
 
 ## Tabla de reutilización
 
@@ -257,7 +319,7 @@ Estas cifras son estimaciones (instrucciones de x86 convertidas con factores de 
 - **El hook de muestreo** se ejecuta dentro de la VM y su propio coste no se cuenta, pero cambia algo el comportamiento de la caché. Sirve para el reparto, no para tiempos absolutos.
 - **Clasificación por expresiones regulares.** Las líneas «que tocan la UI, el sonido o los gráficos» se detectan por patrones (`tools/arquitectura/lua_modulos.py`). Se han revisado a mano en varios ficheros, pero es una medida aproximada.
 - **Las cifras de C++ por subsistema** dependen de cómo se asignan los ficheros a cada subsistema, que se ha hecho a mano leyendo cada uno.
-- **Port de Wii sin leer:** lo que se dice de él sale solo de la página de WiiBrew.
+- **Port de Wii incompleto:** el ZIP publicado no trae la implementación de la caché de gráficos (`th_gfx_sdl_cache.h`) ni el stub `dsi_handler`; lo dicho sobre esa caché se deduce de cómo se usa.
 
 ## Cómo reproducirlo
 
@@ -276,6 +338,8 @@ python3 -I tools/arquitectura/callgrind_resumen.py "$(ls -S out/cg-lleno/callgri
 # Mapa de módulos Lua, con el perfil
 python3 -I tools/arquitectura/lua_modulos.py "$CORSIXTH_DIR/CorsixTH/Lua" bench/resultados/fase3/lua_modulos.json \
   out/perfil-lleno/perfil.json
+# Port de Wii frente a su base oficial (el ZIP no está en el repo)
+tools/arquitectura/wii_diff.sh CorsixTH-wii-src.zip "$TH64_WORK/wii"
 ```
 
 Resultados en `bench/resultados/fase3/`: `cpp.json`, `tamanos.json`, `lua_modulos.json`, `perfil_lleno.json`, `perfil_mediano.json` y `callgrind_lleno.json`. El fichero de callgrind en bruto se queda fuera del repo.
