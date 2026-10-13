@@ -1,0 +1,37 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64core_ubsan
+Vulkan Enabled: using paraLLEl-RDP
+TH64 test: inicio (N64, 16.2.0)
+TH64 test: huella golden_sim(1, 10000) = d38fbaef
+TH64 test: pruebas: 60045 comprobaciones, 0 fallos
+TH64 test: huella golden_sim_float(1, 10000) = c4758e40
+TH64 test: resultado OK
+TH64 test: provocando desbordamiento con signo...
+
+
+******* CPU EXCEPTION *******
+Trap exception at PC:8001085C
+GPR:
+zr: ---- ---- 0000 0000   at: ---- ---- 0000 0001   v0: ---- ---- 0001 5f90   v1: ---- ---- 0000 0000
+a0: ---- ---- 8001 fca0   a1: ---- ---- 0000 0000   a2: ---- ---- 0000 0032   a3: ---- ---- 8002 8d80
+t0: ---- ---- 8002 4898   t1: ---- ---- 8001 fc68   t2: ---- ---- 7461 646f   t3: ---- ---- 8001 fc98
+t4: ---- ---- 0000 0002   t5: ---- ---- 0000 0000   t6: ---- ---- 0000 0015   t7: ---- ---- 0000 0000
+s0: 0001 5f90 0000 0000   s1: ---- ---- 807f f580   s2: ---- ---- 0000 0003   s3: ---- ---- 1000 1e00
+s4: ---- ---- 8002 4f50   s5: ---- ---- 8000 0400   s6: ---- ---- 0001 8207   s7: ---- ---- 0000 0018
+t8: ---- ---- 0000 0008   t9: ---- ---- 8001 2900   k0: fefe fefe fefe fefe   k1: fefe fefe fefe fefe
+gp: ---- ---- 8002 cdf8   sp: ---- ---- 807f ff78   s8: ---- ---- 807f f7a8   ra: ---- ---- 8001 0824
+lo: ---- ---- 0001 5f90   hi: ---- ---- 0000 0000   
+
+Backtrace:
+    main+0xdc (n64/main.c:110) [0x8001085c]
+    __text_start+0x6c (??:0) [0x8000046c]
+Backtrace:
+    inspector_page_exception+0x160 (libdragon/src/inspector.c:445) [0x80015b40]
+    inspector+0x30c (libdragon/src/inspector.c:769) [0x8001480c]
+    __inspector_exception+0x8 (libdragon/src/inspector.c:847) [0x80015d28]
+    exception_default_handler+0x108 (libdragon/src/exception.c:236) [0x80017b08]
+    __onCriticalException+0x58 (libdragon/src/exception.c:507) [0x80017bb8]
+    <EXCEPTION HANDLER>+0x0 (inthandler.o:0) [0x80000544]
+    main+0xdc (n64/main.c:110) [0x8001085c]
+    __text_start+0x6c (??:0) [0x8000046c]

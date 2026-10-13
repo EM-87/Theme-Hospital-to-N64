@@ -1,0 +1,8 @@
+nivel 1                          animaciones   402  fotogramas   3741  sprites  2046  CI8   489216 B (0.47 MiB)
+todo lo que referencia CorsixTH  animaciones   952  fotogramas   9705  sprites  3487  CI8   963920 B (0.92 MiB)
+las 5.186 animaciones            animaciones  5186  fotogramas  11643  sprites  3661  CI8  1010384 B (0.96 MiB)
+hoja MSPR-0 entera               sprites  4397  CI8  1177344 B (1.12 MiB)
+hoja MBLK-0 (suelos y paredes)   bloques   226  CI8   190536 B (0.18 MiB)
+objetos del nivel 1: bed bench bin bookcase cabinet chair comfortable_chair couch crash_trolley desk door drinks_machine entrance_left_door entrance_right_door extinguisher gates_to_hell inflator litter loo pharmacy_cabinet plant pool_table radiator rathole reception_desk screen sink skeleton sofa tv video_game
+tablas de animación del nivel 1 (formato original): fotogramas 3741 x 10 B + listas 57528 x 2 B + elementos 9778 x 6 B = 211134 B
+tablas enteras: 504284 B

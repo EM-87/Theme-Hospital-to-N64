@@ -1,0 +1,249 @@
+{
+ "n": 10,
+ "horas": {
+  "500": {
+   "Δnum_cured": {
+    "media": 3.4,
+    "sd": 0.8433,
+    "min": 2,
+    "max": 4,
+    "cv": 0.248,
+    "dif_detectable_N": 1.0559
+   },
+   "Δnum_deaths": {
+    "media": 3.6,
+    "sd": 0.8433,
+    "min": 3,
+    "max": 5,
+    "cv": 0.2342,
+    "dif_detectable_N": 1.0559
+   },
+   "Δnum_visitors": {
+    "media": 13.4,
+    "sd": 2.5033,
+    "min": 11,
+    "max": 19,
+    "cv": 0.1868,
+    "dif_detectable_N": 3.1347
+   },
+   "Δnot_cured": {
+    "media": 3.9,
+    "sd": 1.7288,
+    "min": 1,
+    "max": 7,
+    "cv": 0.4433,
+    "dif_detectable_N": 2.1649
+   },
+   "Δbalance": {
+    "media": 4486.4,
+    "sd": 335.1206,
+    "min": 3758,
+    "max": 4961,
+    "cv": 0.0747,
+    "dif_detectable_N": 419.6374
+   },
+   "Δsodas_sold": {
+    "media": 17.6,
+    "sd": 2.0656,
+    "min": 14,
+    "max": 21,
+    "cv": 0.1174,
+    "dif_detectable_N": 2.5865
+   },
+   "reputation": {
+    "media": 928.5,
+    "sd": 5.2967,
+    "min": 918,
+    "max": 934,
+    "cv": 0.0057,
+    "dif_detectable_N": 6.6326
+   },
+   "patients": {
+    "media": 310.8,
+    "sd": 2.6998,
+    "min": 308,
+    "max": 317,
+    "cv": 0.0087,
+    "dif_detectable_N": 3.3807
+   },
+   "queue_total": {
+    "media": 166,
+    "sd": 3.9441,
+    "min": 161,
+    "max": 172,
+    "cv": 0.0238,
+    "dif_detectable_N": 4.9387
+   },
+   "ent_litter": {
+    "media": 202.4,
+    "sd": 5.3166,
+    "min": 195,
+    "max": 211,
+    "cv": 0.0263,
+    "dif_detectable_N": 6.6575
+   },
+   "happiness_mean": {
+    "media": 0.9897,
+    "sd": 0.0002,
+    "min": 0.989321,
+    "max": 0.989944,
+    "cv": 0.0002,
+    "dif_detectable_N": 0.0003
+   },
+   "thirst_mean": {
+    "media": 0.6097,
+    "sd": 0.0073,
+    "min": 0.598114,
+    "max": 0.624531,
+    "cv": 0.012,
+    "dif_detectable_N": 0.0092
+   },
+   "warmth_mean": {
+    "media": 0.2701,
+    "sd": 0.0004,
+    "min": 0.269552,
+    "max": 0.270869,
+    "cv": 0.0016,
+    "dif_detectable_N": 0.0005
+   },
+   "value": {
+    "media": 303825,
+    "sd": 0.0,
+    "min": 303825,
+    "max": 303825,
+    "cv": 0.0,
+    "dif_detectable_N": 0.0
+   },
+   "staff": {
+    "media": 57,
+    "sd": 0.0,
+    "min": 57,
+    "max": 57,
+    "cv": 0.0,
+    "dif_detectable_N": 0.0
+   }
+  },
+  "1500": {
+   "Δnum_cured": {
+    "media": 9.1,
+    "sd": 1.5239,
+    "min": 6,
+    "max": 11,
+    "cv": 0.1675,
+    "dif_detectable_N": 1.9082
+   },
+   "Δnum_deaths": {
+    "media": 11.9,
+    "sd": 1.1005,
+    "min": 10,
+    "max": 14,
+    "cv": 0.0925,
+    "dif_detectable_N": 1.3781
+   },
+   "Δnum_visitors": {
+    "media": 51.4,
+    "sd": 10.1784,
+    "min": 36,
+    "max": 64,
+    "cv": 0.198,
+    "dif_detectable_N": 12.7454
+   },
+   "Δnot_cured": {
+    "media": 11.8,
+    "sd": 3.1552,
+    "min": 8,
+    "max": 16,
+    "cv": 0.2674,
+    "dif_detectable_N": 3.951
+   },
+   "Δbalance": {
+    "media": 16639.2,
+    "sd": 1409.6464,
+    "min": 13770,
+    "max": 17990,
+    "cv": 0.0847,
+    "dif_detectable_N": 1765.1564
+   },
+   "Δsodas_sold": {
+    "media": 52.5,
+    "sd": 5.5628,
+    "min": 44,
+    "max": 63,
+    "cv": 0.106,
+    "dif_detectable_N": 6.9657
+   },
+   "reputation": {
+    "media": 873.5,
+    "sd": 8.0863,
+    "min": 860,
+    "max": 886,
+    "cv": 0.0093,
+    "dif_detectable_N": 10.1257
+   },
+   "patients": {
+    "media": 331.8,
+    "sd": 10.7992,
+    "min": 315,
+    "max": 346,
+    "cv": 0.0325,
+    "dif_detectable_N": 13.5227
+   },
+   "queue_total": {
+    "media": 178.7,
+    "sd": 4.1647,
+    "min": 172,
+    "max": 188,
+    "cv": 0.0233,
+    "dif_detectable_N": 5.215
+   },
+   "ent_litter": {
+    "media": 237.5,
+    "sd": 7.8634,
+    "min": 227,
+    "max": 249,
+    "cv": 0.0331,
+    "dif_detectable_N": 9.8466
+   },
+   "happiness_mean": {
+    "media": 0.9845,
+    "sd": 0.001,
+    "min": 0.982962,
+    "max": 0.985634,
+    "cv": 0.001,
+    "dif_detectable_N": 0.0012
+   },
+   "thirst_mean": {
+    "media": 0.6019,
+    "sd": 0.0172,
+    "min": 0.581494,
+    "max": 0.629609,
+    "cv": 0.0286,
+    "dif_detectable_N": 0.0215
+   },
+   "warmth_mean": {
+    "media": 0.2467,
+    "sd": 0.0015,
+    "min": 0.244711,
+    "max": 0.248751,
+    "cv": 0.0061,
+    "dif_detectable_N": 0.0019
+   },
+   "value": {
+    "media": 303825,
+    "sd": 0.0,
+    "min": 303825,
+    "max": 303825,
+    "cv": 0.0,
+    "dif_detectable_N": 0.0
+   },
+   "staff": {
+    "media": 57,
+    "sd": 0.0,
+    "min": 57,
+    "max": 57,
+    "cv": 0.0,
+    "dif_detectable_N": 0.0
+   }
+  }
+ }
+}

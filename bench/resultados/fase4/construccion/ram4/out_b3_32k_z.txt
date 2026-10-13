@@ -1,0 +1,26 @@
+ROM: <pruebas>/ram4/ram4_b3_32k_z.z64
+Expansion Pak: false
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded ram4_b3_32k_z
+Vulkan Enabled: using paraLLEl-RDP
+TH64 ram4: config NBUF=3 ZBUF=1 AFREQ=32000 MIXCH=16 MUS=1 MUSV=12 SFXN=4
+TH64 ram4: RDRAM 4096 KiB, Expansion Pak no
+TH64 ram4: arranque                                     usado    1064 B (    1 KiB)  libre 3788208 B ( 3699 KiB)
+TH64 ram4: display                                      usado  461944 B (  451 KiB)  libre 3327328 B ( 3249 KiB)
+TH64 ram4: z-buffer                                     usado  615544 B (  601 KiB)  libre 3173728 B ( 3099 KiB)
+TH64 ram4: rdpq                                         usado  754904 B (  737 KiB)  libre 3034368 B ( 2963 KiB)
+TH64 ram4: joypad, dfs, aPLib                           usado  755088 B (  737 KiB)  libre 3034184 B ( 2963 KiB)
+TH64 ram4: frecuencia real 31995 Hz
+TH64 ram4: audio                                        usado  775856 B (  757 KiB)  libre 3013416 B ( 2942 KiB)
+TH64 ram4: mixer                                        usado  776144 B (  757 KiB)  libre 3013128 B ( 2942 KiB)
+TH64 ram4: sf64_load(TimGM6mb) 361840 B
+TH64 ram4: synth + mid64 cargados 8416 B
+TH64 ram4: musica 4 s: max 5 voces a la vez, bufers de voz 26280 B
+TH64 ram4: musica MIDI sonando                          usado 1172680 B ( 1145 KiB)  libre 2616592 B ( 2555 KiB)
+TH64 ram4: 4 efectos 20800 B (5200 B por canal)
+TH64 ram4: efectos sonando                              usado 1193480 B ( 1165 KiB)  libre 2595792 B ( 2534 KiB)
+TH64 ram4: audio en total (tras mixer_init) 417336 B (407 KiB)
+TH64 ram4: malloc mayor bloque 2580416 B (2519 KiB), suma 2580416 B (2519 KiB) en 1 bloques
+TH64 ram4: fin

@@ -1,17 +1,19 @@
 # Fase 4 — Decisión
 
-Fecha: 2026-10-10. Estado: **propuesta, pendiente de revisión con Eduardo**. Según el plan, aquí se para: la fase 5 no empieza hasta que esto se apruebe.
+Fecha: 2026-10-10, actualizado el 2026-10-12. Estado: **camino 2 aceptado por Eduardo; respuestas incorporadas ([abajo](#respuestas-de-eduardo)); pendiente de su visto bueno final**, junto con [`04_construccion.md`](04_construccion.md), que explica cómo se construye el motor. Según el plan, la fase 5 no empieza hasta ese visto bueno.
 
 Este documento solo usa cifras ya medidas en las fases 1–3 y una medida nueva (la RAM que deja libre libdragon, más abajo). Cuando una cifra es una estimación, se dice. 1 MiB = 1.048.576 bytes.
 
 ## La decisión, en breve
 
 1. **Camino 2: motor propio en C sobre libdragon.** La lógica de CorsixTH se usa como especificación (reglas, fórmulas, tiempos), no como código que ejecutar. Ni CorsixTH tal cual ni un híbrido con Lua caben en la N64 (tabla siguiente).
-2. **Expansion Pak obligatorio (8 MiB).** Con 4 MiB el presupuesto no cierra, ni con la caché de sprites más pequeña razonable. Esto es lo primero que tiene que confirmar Eduardo.
+2. **Expansion Pak obligatorio (8 MiB) para el juego completo.** Con 4 MiB el juego completo no cierra, ni con la caché de sprites más pequeña razonable. Eduardo pide, si es posible, un modo demo sin Expansion Pak, como Perfect Dark. Con el nivel 1 parece caber, con poco margen. Se decide con la medida del hito 5 ([`04_construccion.md`](04_construccion.md#modo-demo-sin-expansion-pak)).
 3. **320 × 240 a 16 bits, con los gráficos de `DATAM`.** Las ventanas de gestión se reducen a la mitad en el conversor del PC. El RDP dibuja cada sprite como textura CI8; nada de componer el frame por CPU como el port de Wii.
 4. **Simulación con algoritmos propios.** CorsixTH gasta el 47 % de su Lua en buscar objetos cercanos y el 12 % de la CPU en recalcular la temperatura de todo el mapa. El motor nuevo lleva contadores incrementales y reparte el trabajo entre ticks. Objetivo de partida: el hospital `lleno` de la fase 1 (304 pacientes, 57 empleados) a velocidad Normal. Si no llega, se recorta en este orden: velocidades altas, luego el máximo de pacientes.
-5. **Mandos de N64 como puntero (stick) más botones, y ratón de N64.** Es el esquema del port de Wii, que funcionó sin tocar la interfaz; libdragon admite el ratón de N64.
-6. **Los datos los pone cada usuario.** Un conversor en el PC genera los assets de la ROM a partir de su copia de Theme Hospital. No se distribuye ninguna ROM con datos del juego.
+5. **Mandos de N64 como puntero (stick) más botones, y ratón de N64.** Es el esquema del port de Wii, que funcionó sin tocar la interfaz; libdragon admite el ratón de N64. Eduardo da por bueno el esquema.
+6. **Inglés y español con voz, y vídeos.** Cartucho de 32 MiB (escenario B de la fase 2: 22,8 MiB).
+7. **Reglas: CorsixTH v0.70.1, con 6 excepciones** ([`04_construccion.md`](04_construccion.md#fidelidad-corsixth-frente-al-original)).
+8. **Los datos los pone cada usuario.** Un conversor en el PC genera los assets de la ROM a partir de su copia de Theme Hospital. No se distribuye ninguna ROM con datos del juego.
 
 ## Los números que deciden
 
@@ -61,8 +63,8 @@ Los dos primeros caminos fallan por memoria antes de llegar a la CPU. El tercero
 - **La simulación se reescribe** a partir de la lógica Lua de CorsixTH:
   - pacientes, personal, habitaciones, enfermedades, economía y eventos;
   - con las tablas de animación originales para los tiempos (fase 3: `getAnimLength`);
-  - con números en coma fija o `float`, nunca `double`.
-- **Se reutilizan algoritmos de CorsixTH** donde valen (fase 3): la carga del mapa, el A* del pathfinding con nodos compactos, la difusión de temperatura (con otra frecuencia) y el Mersenne Twister.
+  - con enteros y coma fija en la simulación, `float` solo en el dibujo y el audio, y nunca `double` ([`04_construccion.md`](04_construccion.md#detalles-que-conviene-saber)).
+- **Se reutilizan algoritmos de CorsixTH** donde valen (fase 3): la carga del mapa y el A* del pathfinding con nodos compactos. La temperatura se recalcula con un modelo propio y barato (por sala o repartido entre ticks). El Mersenne Twister no se reutiliza: ocupa 2.498 B de estado y en CorsixTH lo comparten la simulación, el sonido y el dibujo. El motor usa dos generadores pequeños, uno para la simulación y otro para lo estético.
 - **Los datos se convierten en el PC** (fase 2): sprites de `DATAM` a CI8, sonido a WAV64 VADPCM, música a MID64 + SF64, textos y mapas a formatos binarios propios, ya en big-endian. La consola no decodifica RLE ni convierte bytes.
 
 ## Presupuesto de RAM
@@ -74,7 +76,7 @@ Con Expansion Pak. Lo «medido» viene de la tabla anterior o de las fases 2 y 3
 | Código, datos y pila de la ROM base (fuera del heap) | 0,40 | Medido |
 | Vídeo (3 framebuffers), RDP y audio | 0,59 | Medido |
 | Código del juego, además del de la ROM base | 1,00 | Estimado (la ROM `luabench`, con un intérprete Lua entero, ocupa 0,31 MiB) |
-| Búferes del mezclador, sintetizador MIDI | 0,20 | Estimado |
+| Música y efectos: banco de sonidos, sintetizador, MID64, 16 voces y 8 efectos sonando | 0,23 | En parte medido (fase 4: 0,47 con el banco TimGM6mb entero, de los que 0,34 son el banco; recortado a los 28 instrumentos del juego, ~0,10 estimado) |
 | Tablas de animación de `DATAM` | 0,48 | Medido (fase 2; la PS1 lo dejó en 0,29) |
 | Sprites y bloques de `DATAM` en CI8, todos residentes | 1,30 | Medido (fase 2) |
 | Interfaz: panel, reloj, menús, fuentes y una ventana de gestión abierta | 0,50 | Medido en parte (fase 2: 0,29 de panel, reloj, menús y punteros de `DATAM`; 0,06 de fuentes de `QDATAM`; 0,10 la mayor ventana reducida; el resto, fuentes de `QDATA`) |
@@ -83,20 +85,25 @@ Con Expansion Pak. Lo «medido» viene de la tabla anterior o de las fases 2 y 3
 | Entidades: 384 humanoides × 256 B, 512 objetos × 64 B, basura, colas | 0,15 | Diseño |
 | Textos de un idioma | 0,10 | Medido (fase 2: 93–109 KiB) |
 | Estado de la partida (hospital, economía, investigación, eventos) | 0,10 | Estimado |
-| **Total** | **5,20** | |
-| **Margen sobre 8 MiB** | **2,80** | Fragmentación, picos, cachés de sonido |
+| **Total** | **5,23** | |
+| **Margen sobre 8 MiB** | **2,77** | Fragmentación, picos, cachés de sonido. Con el banco de sonidos entero: 5,47 y 2,53 |
 
-**Con 4 MiB no cierra.** Los 5,20 MiB habría que bajarlos así:
+**Con 4 MiB el juego completo no cierra.** Los 5,23 MiB habría que bajarlos así:
 - doble buffer en vez de triple (−0,15);
 - una caché de sprites de 0,5 MiB en vez de todos residentes (−0,80);
 - las tablas de animación recompactadas como en la PS1 (−0,19);
 - la interfaz en 0,35 MiB, con las ventanas de gestión dentro de la caché de sprites (−0,15).
 
-Aun así quedarían 3,91 MiB de 4: unos 90 KiB de margen, y con el código sin medir. Además, la caché de sprites leería del cartucho mientras se juega. Cualquier desvío rompe un presupuesto así: no se recomienda como objetivo.
+Aun así quedarían 3,94 MiB de 4: unos 60 KiB de margen, y con el código sin medir. Además, la caché de sprites leería del cartucho mientras se juega. Cualquier desvío rompe un presupuesto así: no se recomienda como objetivo.
 
 ## Presupuesto de CPU
 
 - **Cuánta hay.** La VR4300 corre a 93,75 MHz. A velocidad Normal el juego simula 18,5 horas por segundo, así que **cada hora de juego dispone de 5,07 millones de ciclos** para todo: simulación, preparar el dibujo, audio y mandos. Si la simulación se queda con la mitad, son unos 2,5 M ciclos por hora: unos 7.000 por humanoide en el hospital lleno.
+- **Qué se lleva el resto** (medido en ares en la fase 4):
+  - **dibujo:** 400 elementos por fotograma a 30 fps gastan un 21 % de la CPU con una rutina de dibujo propia, y un 49 % con `rdpq_tex_blit`;
+  - **audio:** un 8–9 %.
+
+  A la simulación le quedan entonces unos 3 M ciclos por hora de juego a velocidad Normal, algo más que los 2,5 M supuestos arriba ([detalles](04_construccion.md#lo-que-cambia-en-el-presupuesto-de-la-fase-4)).
 - **Cuánto gasta CorsixTH.** 24,6 millones de instrucciones x86 por hora en ese hospital (fase 3), unas 68.000 por humanoide. Frente a 2,5 M ciclos son 10 veces más, y la VR4300 no ejecuta una instrucción por ciclo cuando falla la caché (unos 70 ciclos por fallo, fase 1). El motor nuevo tiene que hacer el mismo trabajo con **unas 10–20 veces menos instrucciones**.
 - **Por qué parece alcanzable:**
   - se pierde el intérprete: el 76,5 % del tiempo de CorsixTH es la VM de Lua;
@@ -115,9 +122,10 @@ Aun así quedarían 3,91 MiB de 4: unos 90 KiB de margen, y con el código sin m
 | Pacientes y personal simultáneos | Capacidad fija de 384 humanoides y 512 objetos; objetivo de rendimiento, el hospital `lleno` (361 humanoides) | El límite real lo pone la CPU; se ajusta con la medida del hito 5 |
 | Velocidades del juego | Se mantienen las cinco; «Max speed» y «And then some more» se limitan si la CPU no llega | A velocidad Normal hay 5,07 M ciclos por hora; con «Max speed» (27,8 h/s), 3,4 M; con «And then some more» (55,6 h/s), 1,7 M |
 | Partidas guardadas | Formato binario propio, objetivo ≤ 32 KiB (SRAM o Controller Pak) y como mucho 128 KiB (FlashRAM) | Las de CorsixTH ocupan 0,53–1,20 MiB |
-| Idiomas | Inglés y español, con voz | 9,8 MiB de sonido (fase 2); cada idioma más suma unos 3,5 MiB |
-| Vídeos | Opcionales, en H.264 (8 MiB); se deciden al final, según el sitio y el rendimiento | Fase 2 |
-| Fuera | Multijugador, hospitales rivales con IA, editor de mapas, niveles extra | Ya fuera de alcance en el plan |
+| Idiomas | Inglés y español, con voz (confirmado por Eduardo) | 9,8 MiB de sonido (fase 2); cada idioma más suma unos 3,5 MiB. Cartucho de 32 MiB |
+| Vídeos | Sí (confirmado por Eduardo), en H.264 (8 MiB), solo fuera de la partida | Mientras suenan piden entre 1,6 y 2,3 MiB más de RAM (medido en ares con vídeos sintéticos) |
+| Modo demo sin Expansion Pak | En estudio: el nivel 1 completo con 4 MiB; se decide en el hito 5 | Margen estimado de 0,34 MiB, que depende del tamaño del código ([`04_construccion.md`](04_construccion.md#modo-demo-sin-expansion-pak)) |
+| Fuera | Multijugador, hospitales rivales con IA, editor de mapas, niveles extra; de CorsixTH, la velocidad «Speed Up» y tirar pacientes al suelo con el clic derecho | Ya fuera de alcance en el plan; los dos añadidos de CorsixTH, por CPU y por el botón B |
 
 ## Controles
 
@@ -137,37 +145,75 @@ Propuesta para el mando de N64, a validar en el prototipo. La interfaz de Theme 
 
 **Ratón de N64: sí.** libdragon lo lee como un mando más (`JOYPAD_STYLE_MOUSE`), y con una interfaz de ratón el coste es pequeño: un movimiento relativo para el puntero y dos botones. Es la forma más cercana al original.
 
+**Respuesta de Eduardo:** el esquema le encaja. No tiene ratón; lo compraría si el proyecto sale adelante. Mientras tanto, se prueba en ares, que emula el ratón de N64 y en el que libdragon ya lo detecta. Es un accesorio raro: el único anuncio encontrado pedía 401 $. Como B es el clic derecho, no se implementa el añadido de CorsixTH que tira al suelo a un paciente al hacerle clic derecho.
+
 ## Riesgos abiertos
 
 | Riesgo | Gravedad | Cómo se reduce | Cuándo se sabe |
 |---|---|---|---|
 | **La simulación no llega a velocidad Normal en el hospital lleno** | Alta | Algoritmos incrementales; repartir el trabajo entre ticks; recortes del apartado anterior | Hitos 4 y 5 de la fase 5 |
 | **Esfuerzo.** Hay que reescribir 24.749 líneas de lógica y rehacer 19.512 de interfaz | Alta | Bucle mínimo primero (hito 4); avanzar por sistemas, no por pantallas | A lo largo de la fase 5 |
-| Fidelidad de las reglas: CorsixTH no es idéntico al original (el autor del port de Wii lo abandonó por eso) | Media | Tomar CorsixTH como referencia y anotar las diferencias conocidas | Al implementar cada sistema |
+| **CPU del dibujo.** `rdpq_tex_blit` gasta 3.425–4.248 ciclos por sprite; con 400 elementos a 30 fps sería la mitad de la CPU | Alta | Rutina de dibujo propia (~1.630 ciclos), bloques `rspq` para el suelo y las paredes, 20 fps si hace falta | Hitos 2 y 3 |
+| Fidelidad de las reglas: CorsixTH no es idéntico al original (el autor del port de Wii lo abandonó por eso) | Media, ya acotada | 71 diferencias clasificadas; CorsixTH como referencia con 6 excepciones; lista de control en la fase 5 | Al implementar cada sistema |
+| Escenarios de comparación: las partidas de referencia de la fase 1 no curan a nadie (0 curas en 2.000 h en `mediano`) | Media | Escenarios propios validados por hito | Antes del hito 4 |
 | Relleno del RDP con muchos sprites solapados a 320 × 240 | Media | Texturas CI8 o CI4, recortes por casilla, medir en el hito 2 | Hitos 2 y 3 |
 | Legibilidad de las ventanas de gestión a 320 × 240 | Media | Retocar en el conversor o rehacer la maquetación, como la PS1 | Al convertir la interfaz |
 | Formato de guardado en 32–128 KiB | Media | Guardar solo el estado, sin animaciones ni cachés | Al implementar el guardado |
-| ares frente a la consola real (sin SummerCart todavía) | Media | Las ROM escriben sus medidas en pantalla para leerlas en la consola | Cuando haya flashcart |
+| ares frente a la consola real (sin SummerCart todavía). ares cobra 40 ciclos por fallo de caché de datos y no modela los bloqueos del pipeline ni la competencia por la RDRAM | Media | Las ROM escriben sus medidas en pantalla para leerlas en la consola; confirmar los ciclos con un SummerCart64 | Cuando haya flashcart |
 | Licencias: datos del juego, SoundFont (TimGM6mb es GPL-2) y `wii_vm.c` (todos los derechos reservados) | Media | Conversor para que cada uno use sus datos; SoundFont compatible; no se usa nada de `wii_vm` | Antes de publicar nada |
-| Cambios en la rama `preview` de libdragon | Baja | Commit fijado en la fase 0; actualizar solo a propósito | Continuo |
-| Rendimiento de H.264 para los vídeos | Baja | Los vídeos son opcionales | Al final |
+| Cambios en la rama `preview` de libdragon: el mezclador, `wav64`, `mid64`, `sf64` y el vídeo son APIs preview | Media | Commit fijado en la fase 0; `LIBDRAGON_PREVIEW = 1` para que avise de cada una; actualizar solo a propósito | Continuo |
+| Rendimiento de H.264 para los vídeos | Baja | En ares, vídeos sintéticos de 320 × 240 a 15 y 25 fps se ven sin saltar fotogramas; falta probar los reales | Al convertir los vídeos |
 
 ## Cambios al plan de la fase 5
 
-- **Hito 0 nuevo: el conversor.** Antes del hito 1, un conversor en el PC (Python, a partir de `tools/datos/`) genera en big-endian:
-  - las hojas de `DATAM` en CI8 con su paleta;
-  - las tablas de animación;
+El detalle está en [`04_construccion.md`](04_construccion.md#orden-de-trabajo).
+
+- **Antes del hito 1, el entorno del motor:**
+  - un `Makefile` con `LIBDRAGON_PREVIEW = 1`;
+  - `tools/run_ares.sh` en modo Homebrew, para tener `debugf` con cualquier tamaño de ROM, perfiles con fallos de caché y salida automática;
+  - el núcleo compilando también en el PC, con pruebas y sanitizers.
+- **Hito 0 nuevo: el conversor.** Un conversor en el PC (Python, a partir de `tools/datos/`, más Lua para leer las definiciones de CorsixTH) genera en big-endian:
+  - las hojas de `DATAM` en CI8, en un formato propio por hoja, con su paleta y las paletas fantasma;
+  - las tablas de animación, agrupadas por nivel;
+  - las tablas de reglas: definiciones de objetos, habitaciones, enfermedades y diagnósticos, `base_config` y el aspecto de los pacientes;
+  - los niveles, con las correcciones de CorsixTH aplicadas;
+  - los textos en UTF-8;
+  - las fuentes;
+  - el banco de sonidos recortado;
   - un mapa de prueba.
 
-  El hito 1 («la ROM carga los datos y muestra un sprite con su paleta») carga esos assets y no los originales.
-- **Hito 5:** además de RAM libre, tiempo por tick y fps con 50 pacientes, medir los ciclos por humanoide y por hora de juego, para extrapolar al hospital lleno con el presupuesto de 5,07 M ciclos por hora.
+  Se comprueba con oráculos exactos; por ejemplo, la duración de las 5.186 animaciones. El hito 1 («la ROM carga los datos y muestra un sprite con su paleta») carga esos assets y no los originales.
+- **Antes del hito 4:** escenarios de comparación propios y validados. Las partidas de la fase 1 sirven para medir carga, no para comparar reglas.
+- **Hito 5:** además de RAM libre, tiempo por tick y fps con 50 pacientes, medir:
+  - los ciclos por humanoide y por hora de juego, para extrapolar al hospital lleno con el presupuesto de 5,07 M ciclos por hora;
+  - el tamaño real del código, que decide si el modo demo cabe en 4 MiB.
 
-## Preguntas para Eduardo
+## Respuestas de Eduardo
 
-1. ¿**Expansion Pak obligatorio**? Es la recomendación. ¿Tienes uno para probar en tu N64?
-2. **Idiomas:** ¿inglés y español con voz, o solo uno?
-3. **Vídeos:** ¿se intentan (8 MiB y algo de riesgo) o se dejan fuera desde el principio?
-4. **Referencia de reglas:** ¿CorsixTH tal como está, o corregir hacia el original cuando se sepa que difieren?
-5. **Controles:** ¿te encaja el esquema propuesto? ¿Tienes un ratón de N64 para probarlo?
+El 2026-10-10:
 
-Con las respuestas, y si apruebas el camino 2, empieza la fase 5 por el hito 0.
+| Pregunta | Respuesta | Qué cambia |
+|---|---|---|
+| 1. ¿Expansion Pak obligatorio? | «Si es posible como el Perfect Dark, un modo demo sin Expansion Pak» | El juego completo exige el Pak. El modo demo (nivel 1 con 4 MiB) se estudia en [`04_construccion.md`](04_construccion.md#modo-demo-sin-expansion-pak) y se decide en el hito 5 |
+| 2. Idiomas | Inglés y español | Con voz los dos; cartucho de 32 MiB |
+| 3. Vídeos | «En principio sí» | H.264, solo fuera de la partida |
+| 4. Referencia de reglas | «Supongo que Corsix habrá mejorado, evalúa» | Evaluado: CorsixTH v0.70.1 con 6 excepciones ([fidelidad](04_construccion.md#fidelidad-corsixth-frente-al-original)) |
+| 5. Controles y ratón | «En principio ok»; no tiene ratón | Esquema aceptado; el ratón se prueba en ares |
+| — | «La única alternativa sensata es un motor propio. ¿Has evaluado ya cómo construirlo? ¿Herramientas y eso?» | Camino 2 aceptado. Herramientas, APIs, método y pruebas en [`04_construccion.md`](04_construccion.md) |
+
+## Preguntas que quedan
+
+1. **¿Tienes un Expansion Pak?** No lo dijiste. Para la demo haría falta además una consola sin él, con el Jumper Pak.
+2. **¿Compramos un SummerCart64** (unos 70–99 $)? Sin flashcart no se puede probar nada en tu N64, y los ciclos de ares hay que confirmarlos en consola.
+3. **Umbral de la comparación estadística con CorsixTH.** Propuesta:
+   - 20 semillas por escenario;
+   - aceptar si las medias de curados, muertes, saldo y reputación están dentro de la diferencia que se puede detectar con esa N.
+
+   Con 10 semillas eso es ±21 % en curados y ±11 % en saldo; con 20, ±15 % y ±7,5 %.
+4. **¿Te parecen bien las opciones de la N64?**
+   - **4 de reglas:** acciones en pausa, subidas de sueldo automáticas, retirar salas destruidas, recordar el contenido de las salas.
+   - **5 de interfaz.**
+   - El resto, fijo.
+5. **¿Te parece bien decidir la demo en el hito 5**, y no antes?
+
+Con tu visto bueno, la fase 5 empieza por el entorno del motor y el hito 0.

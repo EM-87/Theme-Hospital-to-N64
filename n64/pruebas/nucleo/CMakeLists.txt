@@ -1,0 +1,20 @@
+# Compilación del núcleo en el PC (pruebas, sanitizers, herramientas).
+# La ROM se compila aparte con Makefile.n64 (n64.mk de libdragon).
+cmake_minimum_required(VERSION 3.20)
+project(th64_core C)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_EXTENSIONS ON)          # gnu17, como n64.mk
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(TH_SANITIZE "ASan + UBSan" OFF)
+add_compile_options(-Wall -Wextra -Werror)
+if(TH_SANITIZE)
+  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined)
+  add_link_options(-fsanitize=address,undefined)
+endif()
+add_library(th_core STATIC core/src/pool.c)
+target_include_directories(th_core PUBLIC core/include)
+add_executable(test_core tests/test_core.c tests/main_host.c)
+target_include_directories(test_core PRIVATE tests)
+target_link_libraries(test_core th_core)
+enable_testing()
+add_test(NAME core COMMAND test_core)

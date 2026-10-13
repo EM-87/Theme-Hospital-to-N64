@@ -1,0 +1,291 @@
+ROM: <pruebas>/gfxrom/th64gfx.z64
+Expansion Pak: true
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64gfx
+Vulkan Enabled: using paraLLEl-RDP
+VI WARNING: __vblank_interrupt outside of vblank period: 18
+VI WARNING: __vblank_interrupt outside of vblank period: 22
+TH64 gfx: heap tras display+rdpq            usado   587 KiB libre  7268 KiB
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6d80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6d90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6da0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6db0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6dc0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6dd0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6de0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6df0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e40 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e50 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e60 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e70 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6e90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6ea0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6eb0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6ec0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6ed0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6ee0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6ef0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f40 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f50 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f60 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f70 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6f90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6fa0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6fb0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6fc0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6fd0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6fe0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d6ff0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7000 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7010 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7020 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7030 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7040 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7050 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7060 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7070 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7080 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7090 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d70a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d70b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d70c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d70d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d70e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d70f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7100 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7110 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7120 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7130 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7140 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7150 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7160 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7170 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7180 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7190 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d71a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d71b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d71c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d71d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d71e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d71f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7200 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7240 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7250 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7260 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7270 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7280 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7290 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d72a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d72b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d72c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d72d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d72e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d72f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7300 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7310 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7320 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7330 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7340 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7350 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7360 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7370 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7380 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7390 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d73a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d73b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d73c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d73d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d73e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d73f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7400 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7410 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7420 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7430 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7440 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7450 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7460 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7470 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7480 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7490 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d74a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d74b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d74c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d74d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d74e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d74f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7500 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7510 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7520 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7530 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7540 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7550 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7560 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7570 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7580 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7590 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d75a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d75b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d75c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d75d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d75e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d75f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7600 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7610 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7620 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7630 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7640 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7650 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7660 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7670 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7680 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7690 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d76a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d76b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d76c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d76d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d76e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d76f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7700 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7710 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7720 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7730 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7740 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7750 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7760 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7770 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7780 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7790 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d77a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d77b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d77c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d77d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d77e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d77f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7800 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7810 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7820 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7830 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7840 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7850 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7860 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7870 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7880 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7890 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d78a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d78b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d78c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d78d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d78e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d78f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7900 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7910 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7920 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7930 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7940 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7950 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7960 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7970 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7980 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7990 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d79a0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d79b0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d79c0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d79d0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d79e0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d79f0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a10 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a20 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a30 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a40 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a50 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a60 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a70 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7a90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7aa0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ab0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ac0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ad0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ae0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7af0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b10 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b20 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b30 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b40 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b50 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b60 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b70 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7b90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ba0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7bb0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7bc0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7bd0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7be0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7bf0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c10 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c20 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c30 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c40 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c50 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c60 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c70 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7c90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ca0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7cb0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7cc0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7cd0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7ce0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7cf0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d10 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d20 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d30 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d40 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d50 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d60 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d70 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d80 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7d90 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7da0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7db0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7dc0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7dd0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7de0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7df0 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7e00 at PC ffffffff80013258
+[96m[unusual] [0m[CPU] CACHE access to non-cacheable address a00d7e10 at PC ffffffff80013258
+TH64 gfx: heap tras surfaces y sprite       usado   594 KiB libre  7261 KiB
+TH64 gfx: heap tras cargar font01v.font64   usado   601 KiB libre  7254 KiB
+TH64 gfx: 11x13 stride11 (LOAD_TILE)     CPU   3928 ciclos/blit (41906 us/1000) | hasta fin RSP+RDP  42173 us/1000
+TH64 gfx: 16x13 stride16 (LOAD_BLOCK)    CPU   3497 ciclos/blit (37307 us/1000) | hasta fin RSP+RDP  37473 us/1000
+TH64 gfx: 16x13 flip_x                   CPU   3613 ciclos/blit (38545 us/1000) | hasta fin RSP+RDP  38680 us/1000
+TH64 gfx: 24x30                          CPU   3584 ciclos/blit (38234 us/1000) | hasta fin RSP+RDP  38444 us/1000
+TH64 gfx: 80x74 (3 tiras)                CPU   8451 ciclos/blit (90147 us/1000) | hasta fin RSP+RDP  90262 us/1000
+TH64 gfx: 16x13 + TLUT 256 cada blit     CPU   4073 ciclos/blit (43451 us/1000) | hasta fin RSP+RDP  43903 us/1000
+TH64 gfx: 16x13 + TLUT 16 cada blit      CPU   3945 ciclos/blit (42081 us/1000) | hasta fin RSP+RDP  42478 us/1000
+TH64 gfx: bloque 11x13 stride11 (LOAD_TILE) CPU   4264 ciclos/blit | RSP+RDP 1a   2764 us/1000, 2a   2747 us/1000
+TH64 gfx: bloque 16x13 stride16 (LOAD_BLOCK) CPU   3642 ciclos/blit | RSP+RDP 1a   2766 us/1000, 2a   2742 us/1000
+TH64 gfx: bloque 16x13 flip_x             CPU   3746 ciclos/blit | RSP+RDP 1a   2765 us/1000, 2a   2746 us/1000
+TH64 gfx: bloque 24x30                    CPU   3721 ciclos/blit | RSP+RDP 1a   2765 us/1000, 2a   2743 us/1000
+TH64 gfx: bloque 80x74 (3 tiras)          CPU   9182 ciclos/blit | RSP+RDP 1a   8133 us/1000, 2a   8111 us/1000
+TH64 gfx: bloque 16x13 + TLUT 256 cada blit CPU   4327 ciclos/blit | RSP+RDP 1a   5449 us/1000, 2a   5432 us/1000
+TH64 gfx: bloque 16x13 + TLUT 16 cada blit CPU   4183 ciclos/blit | RSP+RDP 1a   5449 us/1000, 2a   5427 us/1000
+TH64 gfx: solo rdpq_texture_rectangle    CPU    173 ciclos/rect | hasta fin RSP+RDP   2157 us/1000
+TH64 gfx: rdpq_tex_upload + rect 16x13   CPU   2114 ciclos/blit | hasta fin RSP+RDP  22828 us/1000
+TH64 gfx: a mano LOAD_BLOCK 16x13        CPU   1626 ciclos/blit | hasta fin RSP+RDP  17889 us/1000
+TH64 gfx: a mano 16x13 flip              CPU   1634 ciclos/blit | hasta fin RSP+RDP  17929 us/1000
+TH64 gfx: rdpq_sprite_blit 13x7 (+TLUT)  CPU   4862 ciclos/blit (51867 us/1000) | hasta fin RSP+RDP  52275 us/1000
+TH64 gfx: texto 44 car. (rdpq_text_print)  CPU    290 us por línea
+TH64 gfx: texto 44 car.: rdpq_paragraph_build 219 us una vez; rdpq_paragraph_render 167 us por línea
+TH64 gfx: fin

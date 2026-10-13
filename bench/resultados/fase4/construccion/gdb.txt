@@ -1,0 +1,25 @@
+puerto abierto tras 4x0.5 s
+0xa4001168 in ?? ()
+pc: 0xffffffffa4001168
+Breakpoint 1 at 0x8000fb80: file src/main.c, line 15.
+
+Breakpoint 1, gdb_objetivo (v=2176234217) at src/main.c:15
+warning: 15	src/main.c: No such file or directory
+$1 = 0
+$2 = 0x0
+$3 = 0xffffffff81b6b2e9
+#0  gdb_objetivo (v=2176234217) at src/main.c:15
+#1  0x80010120 in main () at src/main.c:87
+
+Breakpoint 1, gdb_objetivo (v=2176234218) at src/main.c:15
+15	in src/main.c
+$4 = 1
+$5 = 0x81b6b2ea
+$6 = {497, 35, 150, 0, 0, 0, 0, 0}
+$7 = {x = 28, y = 11, tx = 28, ty = 11, state = 3 '\003', kind = 0 '\000', room = 2 '\002', anim_frame = 8 '\b', path_off = 0, path_len = 70 'F', path_pos = 0 '\000', timer = 7, health = 1000, happiness = 785, thirst = 400, warmth = 720, next_free = 0, money = 0, pad = '\000' <repeats 29 times>}
+$8 = 1451862
+Num     Type           Disp Enb Address    What
+1       breakpoint     keep y   0x8000fb80 in gdb_objetivo at src/main.c:15
+	breakpoint already hit 2 times
+[Inferior 1 (Remote target) detached]
+gdb rc=0 en 10 s

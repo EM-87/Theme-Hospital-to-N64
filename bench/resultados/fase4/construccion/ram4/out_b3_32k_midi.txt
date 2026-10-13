@@ -1,0 +1,27 @@
+ROM: <pruebas>/ram4/ram4_b3_32k_midi.z64
+Expansion Pak: false
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded ram4_b3_32k_midi
+Vulkan Enabled: using paraLLEl-RDP
+TH64 ram4: config NBUF=3 ZBUF=0 AFREQ=32000 MIXCH=16 MUS=1 MUSV=12 SFXN=4
+TH64 ram4: RDRAM 4096 KiB, Expansion Pak no
+TH64 ram4: arranque                                     usado    1064 B (    1 KiB)  libre 3787568 B ( 3698 KiB)
+TH64 ram4: display                                      usado  461944 B (  451 KiB)  libre 3326688 B ( 3248 KiB)
+TH64 ram4: rdpq                                         usado  601304 B (  587 KiB)  libre 3187328 B ( 3112 KiB)
+TH64 ram4: joypad, dfs, aPLib                           usado  601488 B (  587 KiB)  libre 3187144 B ( 3112 KiB)
+TH64 ram4: frecuencia real 31995 Hz
+TH64 ram4: audio                                        usado  622256 B (  607 KiB)  libre 3166376 B ( 3092 KiB)
+TH64 ram4: mixer                                        usado  622544 B (  607 KiB)  libre 3166088 B ( 3091 KiB)
+TH64 ram4: sf64_load(TimGM6mb) 361840 B
+TH64 ram4: synth + mid64 cargados 8416 B
+TH64 ram4: musica 4 s: max 5 voces a la vez, bufers de voz 26280 B
+TH64 ram4: musica MIDI sonando                          usado 1019080 B (  995 KiB)  libre 2769552 B ( 2704 KiB)
+TH64 ram4: 4 efectos 20800 B (5200 B por canal)
+TH64 ram4: efectos sonando                              usado 1039880 B ( 1015 KiB)  libre 2748752 B ( 2684 KiB)
+TH64 ram4: audio en total (tras mixer_init) 417336 B (407 KiB)
+TH64 ram4: malloc mayor bloque 2731968 B (2667 KiB), suma 2735872 B (2671 KiB) en 2 bloques
+TH64 ram4: sf64_load(rom:/gm.sf64) 361840 B, 136 presets
+TH64 ram4: sf64_load(rom:/florestan-full.sf64) 279648 B, 235 presets
+TH64 ram4: fin

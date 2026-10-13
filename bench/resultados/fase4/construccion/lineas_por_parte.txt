@@ -1,0 +1,37 @@
+habitaciones: total 2233, las 8 del nivel 1 842
+enfermedades: total 1301, las 6 del nivel 1 225
+objects                       41 ficheros   2870 líneas
+objects/machines              15 ficheros   1336 líneas
+objects/doors                  4 ficheros    293 líneas
+humanoid_actions              32 ficheros   3005 líneas
+entities                       3 ficheros   2098 líneas
+entities/humanoids             5 ficheros   1913 líneas
+entities/humanoids/staff       4 ficheros    506 líneas
+dialogs                       23 ficheros   7475 líneas
+dialogs/resizables            19 ficheros   4639 líneas
+dialogs/fullscreen            10 ficheros   3137 líneas
+hospitals                      2 ficheros    659 líneas
+research_department.lua         514 líneas
+epidemic.lua                    461 líneas
+earthquake.lua                  150 líneas
+endconditions.lua               158 líneas
+world.lua                      2113 líneas
+hospital.lua                   1666 líneas
+map.lua                         753 líneas
+room.lua                        877 líneas
+staff_profile.lua               219 líneas
+calls_dispatcher.lua            398 líneas
+game_ui.lua                    1032 líneas
+ui.lua                          896 líneas
+window.lua                     1620 líneas
+graphics.lua                    695 líneas
+  fullscreen/annual_report.lua        447
+  fullscreen/bank_manager.lua         344
+  fullscreen/drug_casebook.lua        325
+  fullscreen/fax.lua                  240
+  fullscreen/graphs.lua               351
+  fullscreen/hospital_policy.lua      185
+  fullscreen/progress_report.lua      187
+  fullscreen/research_policy.lua      202
+  fullscreen/staff_management.lua     573
+  fullscreen/town_map.lua             283

@@ -66,7 +66,14 @@ La release `toolchain-continuous-prerelease` de libdragon se regenera con cada c
 
 Se elige `preview` por tres razones:
 
-1. **Es un superconjunto con las mismas garantías para lo estable.** En `preview` hay una sola libdragon. Cada API está marcada como estable o preview, y las preview están **bloqueadas por defecto**: usarlas es un error de compilación salvo que el proyecto ponga `LIBDRAGON_PREVIEW = 1` en su Makefile. El código que solo usa APIs estables se comporta igual en las dos ramas.
+1. **Es un superconjunto con las mismas garantías para lo estable.** En `preview` hay una sola libdragon. Cada API está marcada como estable o preview. El código que solo usa APIs estables se comporta igual en las dos ramas.
+
+   *Corrección (fase 4).* Aquí se decía que las APIs preview están bloqueadas por defecto. No es así en el commit fijado: `n64.mk` pone `LIBDRAGON_PREVIEW ?= 2`, que las desbloquea todas sin ningún aviso (commit `ea505c352` de libdragon, 2026-08-21). El comentario de `n64.mk` que dice que el valor por defecto es 0 está desfasado. Los valores son:
+   - 0: usar una API preview es un error de compilación;
+   - 1: compila con un aviso;
+   - 2: compila sin avisar.
+
+   El motor pondrá `LIBDRAGON_PREVIEW = 1` para ver cada API preview que use ([`04_construccion.md`](04_construccion.md#detalles-que-conviene-saber)).
 2. **Música.** Theme Hospital guarda la música en XMI (variante de MIDI). `preview` trae un reproductor de secuencias (`mid64`) y un sintetizador de SoundFont (`sf64`). `trunk` no trae nada parecido.
 3. **Medición.** `preview` incluye `profile.h` y `rspq_profile.h`, útiles para el hito 5 de la fase 5.
 

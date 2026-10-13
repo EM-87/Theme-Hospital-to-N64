@@ -1,0 +1,170 @@
+{
+ "por_grupo": {
+  "Interfaz": {
+   "math.random": 25,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 74,
+   "ficheros_con_random": 5
+  },
+  "Textos de idioma": {
+   "math.random": 0,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 2,
+   "ficheros_con_random": 0
+  },
+  "Plataforma y servicios": {
+   "math.random": 11,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 38,
+   "ficheros_con_random": 4
+  },
+  "Utilidades del lenguaje": {
+   "math.random": 1,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 6,
+   "ficheros_con_random": 1
+  },
+  "Mapa y entidades en el mapa": {
+   "math.random": 0,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 1,
+   "ficheros_con_random": 0
+  },
+  "Entidades: humanoides": {
+   "math.random": 41,
+   "math.t_random": 1,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 18,
+   "ficheros_con_random": 6
+  },
+  "Acciones de humanoides": {
+   "math.random": 19,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 8,
+   "ficheros_con_random": 13
+  },
+  "Entidades: objetos y máquinas": {
+   "math.random": 2,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 11,
+   "ficheros_con_random": 1
+  },
+  "Habitaciones": {
+   "math.random": 36,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 37,
+   "ficheros_con_random": 13
+  },
+  "Enfermedades y diagnóstico": {
+   "math.random": 155,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 0,
+   "ficheros_con_random": 34
+  },
+  "Mundo, hospital y economía": {
+   "math.random": 69,
+   "math.t_random": 2,
+   "math.n_random": 1,
+   "math.p_random": 1,
+   "pairs(": 91,
+   "ficheros_con_random": 5
+  },
+  "Eventos": {
+   "math.random": 10,
+   "math.t_random": 0,
+   "math.n_random": 0,
+   "math.p_random": 0,
+   "pairs(": 9,
+   "ficheros_con_random": 4
+  }
+ },
+ "logica": {
+  "math.random": 332,
+  "math.t_random": 3,
+  "math.n_random": 1,
+  "math.p_random": 1,
+  "pairs(": 175,
+  "ficheros_con_random": 76
+ },
+ "top_ficheros": [
+  [
+   "entities/humanoids/patient.lua",
+   29
+  ],
+  [
+   "hospital.lua",
+   26
+  ],
+  [
+   "staff_profile.lua",
+   22
+  ],
+  [
+   "dialogs/fullscreen/annual_report.lua",
+   15
+  ],
+  [
+   "world.lua",
+   14
+  ],
+  [
+   "diseases/fractured_bones.lua",
+   9
+  ],
+  [
+   "hospitals/player_hospital.lua",
+   5
+  ],
+  [
+   "diseases/gut_rot.lua",
+   5
+  ],
+  [
+   "diseases/golf_stones.lua",
+   5
+  ],
+  [
+   "diseases/broken_wind.lua",
+   5
+  ],
+  [
+   "diseases/discrete_itching.lua",
+   5
+  ],
+  [
+   "diseases/tv_personalities.lua",
+   5
+  ],
+  [
+   "diseases/sleeping_illness.lua",
+   5
+  ],
+  [
+   "diseases/heaped_piles.lua",
+   5
+  ],
+  [
+   "diseases/third_degree_sideburns.lua",
+   5
+  ]
+ ]
+}

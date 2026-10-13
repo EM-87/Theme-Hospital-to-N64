@@ -1,0 +1,72 @@
+id	clase	diferencia	evidencia	opcion	impacto_n64
+A1	a	Nivel 7: emergencia 9 con Pilosis (no disponible hasta nivel 8) -> Elvis	CorsixTH/Levels/original07.level	no	conversor de niveles; 0 RAM/CPU
+A2	a	Nivel 8: CorsixTH cambia dos valores del .SAM (curados para ganar 400->500; aviso de reputación para perder 500->400) porque los cree intercambiados	CorsixTH/Levels/original08.level:20-29; FULL08.SAM:94,97; 6036e5cd	no	conversor; 0 RAM/CPU
+A3	a	Niveles 11 y 12: ADN alienígena marcado no disponible	CorsixTH/Levels/original11.level, original12.level	no	conversor; 0 RAM/CPU
+A4	a	Flags erróneos en casillas exteriores de la campaña y en 2 casillas del nivel 6	CorsixTH/Lua/map.lua:797-852; 7ce9f65f; 43f80b37	no	conversor (flags precalculados); 0 RAM/CPU
+A5	a	Nivel 3: falta emergency_control[5] en el .SAM	CorsixTH/Lua/world.lua:1210-1214	no	conversor o 3 líneas de lógica
+A6	a	Mapa de la ciudad: contador de pacientes con uno de más	CorsixTH/Lua/dialogs/fullscreen/town_map.lua:181-182	no	trivial
+A7	a	Mapa de la ciudad: clic derecho en el saldo cerraba la ventana	CorsixTH/Lua/dialogs/fullscreen/town_map.lua:63-64	no	trivial
+A8	a	Animación 4086 (autopsia) con repetición incorporada	CorsixTH/Lua/objects/autopsy.lua:114-116	no	conversor de animaciones
+A9	a	Cadenas originales erróneas (aumentar/disminuir intercambiados, francés, alemán)	c9bfca69; 4734a092; 8792b3d8; 01440ced	no	conversor de textos
+B1	b	Hospitales rivales con IA: solo nombres; reparto fijo 25 % x factor de reputación	hospitals/ai_hospital.lua:38-40; world.lua:108-125,1107-1112,1186-1195; hospital.lua:135-137	no	seguir CorsixTH: 0 CPU; IA real fuera de alcance
+B2	b	Lo que depende de los rivales: derivar pacientes, robo de personal, Hall of Fame/Shame, tarta del informe, premios regionales	S[32][188-190], S[11][90] (LANG-0.DAT); annual_report.lua:75-78,143; wiki Game-Guide.md:743,978,1224-1228	no	omitir esos botones/pantallas
+B3	b	Multijugador (parche original, hasta 4)	world.lua:124-125 TODO; Wikipedia	no	fuera de alcance
+B4	b	Ratas que se disparan con el cursor y nivel extra de ratas	hospital.lua:696-735 (solo agujeros); objects/rathole.lua:39-51; S[62][6], S[54][85-86], S[27][17-22]	no	esfuerzo medio; anims ya en DATAM; opcional tardío
+B5	b	Ola de vómitos (desastre)	hospital.lua:103,768-775; S[21][14-15]; gbv.VomitLimit sin usar	no	barato: reutiliza la acción de vomitar
+B6	b	Abducciones alienígenas	S[11][111]; gbv.AbductionsPerYear/MinimumAbductTime sin usar	no	bajo valor; no hacer
+B7	b	Salón de trofeos: 12 de 22 categorías sin implementar más 2 menciones regionales (14 marcas); 40 de 68 campos de premios del .SAM sin leer	languages/original_strings.lua:1165-1351 (14 «not implemented»); annual_report.lua:172-298; sam_keys.py	no	contadores anuales (<100 B); textos y gráficos ya existen
+B8	b	Inflación mostrada (4,5 %) pero nunca aplicada	hospital.lua:83; bank_manager.lua:309-310	no	seguir CorsixTH (fórmula desconocida)
+B9	b	Aseguradoras: solo nombres, todas pagan a 2 meses; sin gráficos	hospital.lua:202-222; bank_manager.lua:108	no	seguir CorsixTH
+B10	b	Carta de oferta animada sustituida por fax	world.lua:1288-1395 (carta por fax); movie_player.lua:252 playWinLevelMovie sin llamadas; wiki planning/Programming-Ideas.md:77-84	no	fax: menos RAM que el vídeo
+B11	b	Menú principal animado	wiki planning/Programming-Ideas.md	no	no hacer
+B12	b	37 de 71 parámetros gbv del .SAM sin leer (aseo, bebida, basura, descanso, salarios, dimisiones, ascensos...)	experimento sam_keys.py	no	usar las constantes de CorsixTH
+B13	b	Calefacción: modelo propio por casilla, 'slightly different to the original'	wiki playing/Heating.md:10; fase 3: 12 % de CPU	no	libertad para un modelo más barato
+B14	b	Diagnóstico con fórmula genérica (dificultad del .SAM, habilidad, atención al detalle); el original tenía un efecto por sala y enfermedad (tabla observada, con valores negativos)	entities/humanoids/patient.lua:197-226; wiki playing/Diseases.md:77-110	no	seguir CorsixTH
+B15	b	Formación: fórmula propia escalada (g_scale, s_scale)	entities/humanoids/staff/doctor.lua:216-256; wiki Training-Room.md	no	seguir CorsixTH
+B16	b	Plantas: 64 días entre estados frente a ~50	objects/plant.lua:83-85	no	trivial
+B17	b	Fracturas en mujeres desactivadas por defecto	diseases/fractured_bones.lua:34	disable_fractured_bones_females=true	fijo, sin opción
+B18	b	ADN alienígena solo por emergencia por defecto (en el original llegaban normales y cambiaban de aspecto)	diseases/alien_dna.lua:33-34; config_finder.lua:483-489	alien_dna_only_by_emergency=true, alien_dna_must_stand=true, alien_dna_can_knock_on_doors=false	fijo, sin opción
+B19	b	Epidemias de Radiación grave retiradas	38bebbee; changelog 0.69	no	seguir CorsixTH
+B20	b	Recepcionistas cercanas no comparten cola; no se mueven pacientes entre recepciones	wiki playing/Game-Guide.md:974-975	no	confianza baja
+C1	c	Modo construcción libre	config_finder.lua:131; world.lua:55,80	free_build_mode=false	barato; solo mapas propios
+C2	c	Zonas de conserjes por parcela	dialogs/staff_dialog.lua:34-46; wiki FAQ	no	barato; más interfaz
+C3	c	Empujar pacientes con clic derecho (50 %)	entities/humanoids/patient.lua:100-106,414-431; languages/english.lua:278-283; 03c061f5; 4c5768fa	no (siempre activo desde 0.70)	conflicto: B = clic derecho en N64; no hacer
+C4	c	Bloquear zonas: 3 modos (1 prohíbe todo, 2 como el original, 3 libre)	config_finder.lua:177,696-723; place_objects.lua:880-1011	blocking_off_areas=2	BFS de 19 ms al colocar; fijar modo 2
+C5	c	Conceder subidas salariales al caducar la petición	hospital.lua:199; dialogs/menu.lua:768-773	grant_wage_increase=false	barato
+C6	c	Retirar salas destruidas pagando	game_ui.lua:702	remove_destroyed_rooms=false	barato
+C7	c	Recordar el contenido medio de cada sala	dialogs/edit_room.lua:989	enable_avg_contents=false	barato
+C8	c	Pacientes cerca de la muerte pierden felicidad (a propósito distinto del original)	entities/humanoids/patient.lua:654-659; 81571dc3	no	seguir CorsixTH
+C9	c	Parámetros de nivel nuevos: SodaPrice 20, MaxSalary 2000, EpidemicConcurrentLimit 1, town.*, criterios 7-8	base_config.lua:25-46,108-110,148-149; endconditions.lua:30-33	no	seguir CorsixTH
+C10	c	Temperatura: efecto suavizado sin periodo de gracia; calefacción cobrada por día	changelog 0.60 y Beta 7; hospital.lua:778-781	no	seguir CorsixTH
+C11	c	Averías de caldera con ±10 días al azar	hospital.lua:638-643	no	trivial
+C12	c	Fuerza mínima 2 tras reparar	changelog 0.69	no	trivial
+C13	c	Varias mesas en el pabellón; aseos sin cola artificial	changelog 0.30	no	seguir CorsixTH
+C14	c	Emergencias solo con enfermedades ya conocidas	changelog 0.65	no	confianza baja sobre el original
+C15	c	Menú de trucos propio y trucos nuevos	dialogs/fullscreen/fax.lua:268-286; cheats.lua	no	opcional; barato
+C16	c	Velocidad 'Speed Up' (Z): 8 h por tick de 18 ms = 444 h/s	world.lua:719-727	no	24 veces Normal: imposible en N64
+C17	c	Interfaz: menú de máquinas, historial del consejero, zoom, escala, subtítulos, atajos, paredes transparentes, cámaras guardadas, guardado ilimitado	changelog 0.63-0.70; config_finder.lua:124-180	varias	elegir caso a caso por coste de interfaz
+C18	c	Niveles y campañas personalizados, editor de mapas	changelog 0.30, 0.60	no	fuera de alcance
+D1	d	Sin años bisiestos; 50 horas por día	date.lua:36,49	no	copiar
+D2	d	Velocidades de juego alineadas con el original (Normal: 1 h cada 54 ms)	world.lua:719-727; changelog.txt:295 (0.68.0); 940659fd y 2ff72581 (PR #2494)	no	copiar (Normal 18,5 h/s)
+D3	d	Terremotos solo programados, daño sin azar, temblor de aviso	767f4aa1; c1461fc1; earthquake.lua:42-44	no	copiar
+D4	d	VIP: no bloquea puertas, camina despacio, viene aunque se le rechace a menudo o se ignore el fax	bb56a42c (cita el manual de TH); da5d4cc6; c173ff5c; b2c9bfea (#3257); changelog.txt:189	no	copiar
+D5	d	No se gana con préstamos pendientes	d15d62c5; issue #2027	no	copiar
+D6	d	Cansancio solo dentro de salas (salvo conserjes); umbrales y ascensos del .SAM	a57e7e86; 2b61dacf; 2b4c3f20	no	copiar
+D7	d	Muertes de personal no cuentan para la reputación	8f24c88d	no	copiar
+D8	d	Pérdida de fuerza tras reparar ajustada al original	5c5adfca; daad5d7d	no	copiar
+D9	d	Extintores reducen el riesgo de explosión (fórmula propia)	08a0493e; S[40][44] LANG-0.DAT	no	copiar
+D10	d	Probabilidad de pagar con sobreprecio ajustada al original	entities/humanoids/patient.lua:329-332	no	copiar (math.exp: usar tabla o float)
+D11	d	Un objeto por casilla; objetos de borde en un lado de la casilla	dialogs/place_objects.lua:826; changelog 0.20	no	copiar
+D12	d	Colocación de puertas y puertas batientes como el original	dialogs/edit_room.lua:781,836,1061; 5602a171	no	copiar
+D13	d	En pausa solo se usa el menú superior	config_finder.lua:149,463-467; world.lua:816	allow_user_actions_while_paused=false	exponer opción
+D14	d	Ventanas y tamaño de sala afectan al personal	changelog 0.65; S[11][108-110]	no	copiar
+D15	d	Nivel 5 empieza con tres consultores	CorsixTH/Levels/original05.level	no	conversor
+D16	d	Código de trucos 24328 en el fax	dialogs/fullscreen/fax.lua:268-271	no	copiar si hay trucos
+D17	d	Barra de habilidad con el gráfico de atención al detalle	dialogs/staff_rise.lua:133-136	no	copiar
+D18	d	Lagos ocultos en el mapa de la ciudad; cifras originales del dinero	changelog 0.69	no	copiar
+D19	d	Tiempo en pabellón, subidas no inmediatas, +0,5 de felicidad por prima, salas de diagnóstico, sin pacientes sin recepcionista	a4c267ee; 88925d08; ceb7127a; changelog Beta 8	no	copiar
+D20	d	Temporizador del fax de emergencia como el original	c5ee84c2	no	copiar
+D21	d	Vídeo de demostración en el menú inactivo	changelog 0.67; app.lua:1287-1300	play_demo=true	solo si hay vídeos
+D22	d	Epidemias con encubrimiento e inspector (aproximadas)	changelog 0.40; epidemic.lua; wiki How-Epidemics-Work.md	no	copiar
+D23	d	Sprite de rayos X del conserje ausente en los datos originales (fallo del original que no se puede corregir sin gráficos nuevos)	objects/machines/x_ray.lua:73	no	ninguno
+D24	d	Detalles ajustados al original: gelatinitis intermitente, conserjes a velocidad normal en la sala de formación, cursor de redimensionar, funciones ocultas de la ventana de personal, línea de progreso de investigación	5df9e9cd; 008d0f19; 7e2585a6; 30a3ace5; 69be6227	no	copiar; coste nulo

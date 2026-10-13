@@ -1,0 +1,23 @@
+ROM: <pruebas>/ram4/ram4_b2_22k_opus.z64
+Expansion Pak: false
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded ram4_b2_22k_opus
+Vulkan Enabled: using paraLLEl-RDP
+TH64 ram4: config NBUF=2 ZBUF=0 AFREQ=22050 MIXCH=16 MUS=2 MUSV=12 SFXN=4
+TH64 ram4: RDRAM 4096 KiB, Expansion Pak no
+TH64 ram4: arranque                                     usado    1064 B (    1 KiB)  libre 3733264 B ( 3645 KiB)
+TH64 ram4: display                                      usado  308328 B (  301 KiB)  libre 3426000 B ( 3345 KiB)
+TH64 ram4: rdpq                                         usado  447688 B (  437 KiB)  libre 3286640 B ( 3209 KiB)
+TH64 ram4: joypad, dfs, aPLib                           usado  447880 B (  437 KiB)  libre 3286448 B ( 3209 KiB)
+TH64 ram4: frecuencia real 22047 Hz
+TH64 ram4: audio                                        usado  462504 B (  451 KiB)  libre 3271824 B ( 3195 KiB)
+TH64 ram4: mixer                                        usado  462792 B (  451 KiB)  libre 3271536 B ( 3194 KiB)
+TH64 ram4: musica en streaming 51808 B
+TH64 ram4: musica Opus sonando                          usado  514600 B (  502 KiB)  libre 3219728 B ( 3144 KiB)
+TH64 ram4: 4 efectos 20800 B (5200 B por canal)
+TH64 ram4: efectos sonando                              usado  535400 B (  522 KiB)  libre 3198928 B ( 3123 KiB)
+TH64 ram4: audio en total (tras mixer_init) 72608 B (70 KiB)
+TH64 ram4: malloc mayor bloque 3194816 B (3119 KiB), suma 3198656 B (3123 KiB) en 2 bloques
+TH64 ram4: fin

@@ -1,0 +1,51 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64dbg
+Vulkan Enabled: using paraLLEl-RDP
+
+**************************************************
+RDPQ debug engine started (slowdowns are expected)
+**************************************************
+
+[0xa0086258] e42600a8001e0028    TEX_RECT         tile=0 xy=(120.00,10.00)-(152.00,42.00)
+[0xa0086260] 0000000004000400                     st=(0.00,0.00) dst=(1.00000,1.00000)
+[RDPQ_VALIDATION] ERROR: tile 0 was not configured
+TH64 dbg: frame 0 dibujado
+[0xa00961e8] ed000000004ff3c0    SET_SCISSOR      xy=(0.00,0.00)-(319.75,240.00)
+[0xa00961f0] ef30000000000000    SET_OTHER_MODES  fill
+[0xa00961f8] f700000004010401    SET_FILL_COLOR   rgba16=(0,16,0,1) rgba32=(4,1,4,1)
+[0xa0096200] f618c18c00028028    FILL_RECT        xy=(10.00,10.00)-(99.00,99.00)
+[0xa0096208] e700000000000000    SYNC_PIPE
+[0xa0096210] ed000000005003c0    SET_SCISSOR      xy=(0.00,0.00)-(320.00,240.00)
+[0xa0096218] fc887f1088fcf279    SET_COMBINE_MODE cyc0=[(0-0)*0+tex0, (0-0)*0+tex0], cyc1=[(0-0)*0+tex1, (0-0)*0+tex1]
+[0xa0096220] ef000cf000000200    SET_OTHER_MODES  1cyc cvg=[zap]
+[0xa0096228] fc887f1088fcf279    SET_COMBINE_MODE cyc0=[(0-0)*0+tex0, (0-0)*0+tex0], cyc1=[(0-0)*0+tex1, (0-0)*0+tex1]
+[0xa0096230] ef000cf000000200    SET_OTHER_MODES  1cyc cvg=[zap]
+[0xa0096238] fc887f1088fcf279    SET_COMBINE_MODE cyc0=[(0-0)*0+tex0, (0-0)*0+tex0], cyc1=[(0-0)*0+tex1, (0-0)*0+tex1]
+[0xa0096240] ef000cf000000200    SET_OTHER_MODES  1cyc cvg=[zap]
+[0xa0096248] e42600a8001e0028    TEX_RECT         tile=0 xy=(120.00,10.00)-(152.00,42.00)
+[0xa0096250] 0000000004000400                     st=(0.00,0.00) dst=(1.00000,1.00000)
+[RDPQ_VALIDATION] ERROR: tile 0 was not configured
+[0xa0096258] f101000000000000    RDPQ_SHOWLOG     show=0
+TH64 dbg: frame 1 dibujado
+[0xa0086220] e42600a8001e0028    TEX_RECT         tile=0 xy=(120.00,10.00)-(152.00,42.00)
+[0xa0086228] 0000000004000400                     st=(0.00,0.00) dst=(1.00000,1.00000)
+[RDPQ_VALIDATION] ERROR: tile 0 was not configured
+TH64 dbg: frame 2 dibujado
+TH64 dbg: ahora falla un assert
+ASSERTION FAILED: salud >= 0
+file "src/main.c", line 6, function: comprueba_paciente
+paciente 42 con salud negativa (-5)
+
+Backtrace:
+    inspector_page_exception+0x160 (libdragon/src/inspector.c:445) [0x80014620]
+    inspector+0x30c (libdragon/src/inspector.c:769) [0x800132ec]
+    handler+0x24 (libdragon/src/inspector.c:879) [0x800135e4] (inline)
+    handler+0x24 (libdragon/src/inspector.c:877) [0x800135e4]
+    __onSyscallException+0xb8 (libdragon/src/exception.c:565) [0x80016918]
+    <EXCEPTION HANDLER>+0x0 (inthandler.o:0) [0x80000554]
+    __inspector_assertion+0xc (libdragon/src/inspector.c:852) [0x8001482c]
+    debug_assert_func_f+0x98 (libdragon/src/debug.c:419) [0x8000f878]
+    comprueba_paciente+0x3c (src/main.c:6) [0x8000eefc]
+    main+0x1f8 (src/main.c:31) [0x8000f118]
+    __text_start+0x6c (??:0) [0x8000046c]

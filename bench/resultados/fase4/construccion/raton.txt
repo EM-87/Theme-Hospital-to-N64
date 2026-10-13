@@ -1,0 +1,38 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64joy
+Vulkan Enabled: using paraLLEl-RDP
+TH64 joy: t=0 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=0 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=1 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=1 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=2 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=2 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=3 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=3 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=4 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=4 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=5 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=5 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=6 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=6 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=7 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=7 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=8 puerto 1: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=8 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=9 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=9 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=10 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=10 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=11 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=11 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=12 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=12 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=13 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=13 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=14 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=14 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=15 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=15 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0
+TH64 joy: t=16 puerto 1: RATON N64 (id 0x0200) dx=0 dy=0 A=0 B=0
+TH64 joy: t=16 puerto 2: mando N64 (id 0x0500) dx=0 dy=0 A=0 B=0

@@ -1,0 +1,3 @@
+# n64/pruebas/audio_init en ares v148, 2026-10-13 (sin rdpq_init antes: mixer_init inicia rspq)
+AUDIORAM canales=16 audio_init 20760 B, mixer_init 139624 B, tras mixer_try_play 0 B, total 160384 B
+AUDIORAM canales=32 audio_init 20760 B, mixer_init 139880 B, tras mixer_try_play 0 B, total 160640 B

@@ -1,0 +1,11 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded save_cpak
+Vulkan Enabled: using paraLLEl-RDP
+TH64 save: mando 1 accesorio=2 (cpak=2)
+TH64 save: CPak      capacidad  31488 B, leido, arranques=1
+TH64 save: CPak paginas usadas 1 de 123, notas 1
+TH64 save: medios encontrados 1
+TH64 save: fin
+[emux] Ares exit requested by application
+Unloaded save_cpak

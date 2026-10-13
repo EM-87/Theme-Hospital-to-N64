@@ -87,6 +87,12 @@ Con los datos de las fases 1 a 3, redactar `docs/04_decision.md`:
 
 ## Fase 5 — Prototipos en N64 (solo tras aprobar la fase 4)
 
+*Ajustado en la fase 4* ([`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5), [`04_construccion.md`](04_construccion.md#orden-de-trabajo)):
+- antes del hito 1, el entorno del motor (núcleo también en el PC, ares en modo Homebrew);
+- un hito 0 con el conversor de assets y tablas de reglas;
+- escenarios de comparación validados antes del hito 4;
+- el hito 5 mide además los ciclos por humanoide y el tamaño del código, que decide el modo demo sin Expansion Pak.
+
 Hitos pequeños y verificables en ares, en este orden:
 
 1. **Lectura de datos**: la ROM carga los datos originales desde el filesystem de libdragon (DFS) y muestra un sprite con su paleta correcta.
@@ -101,4 +107,6 @@ Cada hito se cierra con un commit, una captura de ares y una nota en `docs/05_pr
 
 ## Fuera de alcance por ahora
 
-Multijugador, hospitales rivales con IA (CorsixTH tampoco los tiene completos), vídeos FMV, editor de mapas y localización a otros idiomas.
+Multijugador, hospitales rivales con IA (CorsixTH tampoco los tiene completos), editor de mapas e idiomas distintos del inglés y el español.
+
+*Cambio en la fase 4:* Eduardo pidió inglés y español con voz y, en principio, los vídeos ([`04_decision.md`](04_decision.md#respuestas-de-eduardo)). Los vídeos entran, en H.264 y solo fuera de la partida.

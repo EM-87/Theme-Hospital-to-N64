@@ -4,6 +4,13 @@
 #
 # Uso: tools/run_ares.sh <rom.z64> <dir_salida> [segundos=12] [--no-expansion]
 #   ARES_UNTIL="texto": terminar cuando la ROM escriba ese texto (máx. segundos)
+#   ARES_SETTINGS="Clave/Sub=valor ...": ajustes extra de ares, por ejemplo
+#     General/HomebrewMode=true (debugf por EMUX sin límite de tamaño de ROM,
+#     profile.h con fallos de caché y salida de ares desde la ROM) o
+#     "DebugServer/Enabled=true DebugServer/UseIPv4=true Boot/AwaitGDBClient=true"
+#     para conectar gdb-multiarch al puerto DebugServer/Port (9123 por defecto)
+#   ARES_HOOK="orden": se ejecuta mientras ares corre (p. ej. una sesión de gdb
+#     por lotes); su salida va a <dir_salida>/hook.log
 #   <dir_salida>/isviewer.log   salida de la ROM por ISViewer
 #   <dir_salida>/ares.log       resto de la salida de ares
 #   <dir_salida>/captura.png    ventana de ares unos segundos antes de cerrarla
@@ -26,20 +33,27 @@ export DISPLAY=$display
 
 # Configuración propia en el directorio de salida: no depende de ~/.local.
 # paraLLEl-RDP corre sobre Vulkan por software (lavapipe) y el vídeo sobre GLX (llvmpipe).
+extra=()
+for s in ${ARES_SETTINGS:-}; do extra+=(--setting "$s"); done
 "$ARES_BIN" --settings-file "$out/settings.bml" \
   --setting Video/Driver="OpenGL 3.2" \
   --setting Audio/Driver=None \
   --setting Input/Driver=None \
   --setting Nintendo64/ExpansionPak=$expansion \
+  "${extra[@]}" \
   --system "Nintendo 64" --no-file-prompt "$rom" \
   > "$out/isviewer.log" 2> "$out/ares.log" &
 ares_pid=$!
 
 # Con ARES_UNTIL="texto", se espera a que la ROM lo escriba por ISViewer
 # (como máximo los segundos indicados) en lugar de un tiempo fijo.
-if [ -n "${ARES_UNTIL:-}" ]; then
+# Si la ROM cierra ares (EMUX en modo Homebrew), se deja de esperar.
+if [ -n "${ARES_HOOK:-}" ]; then
+  bash -c "$ARES_HOOK" > "$out/hook.log" 2>&1 || echo "hook rc=$?" >> "$out/hook.log"
+elif [ -n "${ARES_UNTIL:-}" ]; then
   for _ in $(seq "$secs"); do
     grep -q "$ARES_UNTIL" "$out/isviewer.log" 2>/dev/null && break
+    kill -0 "$ares_pid" 2>/dev/null || break
     sleep 1
   done
 else

@@ -9,7 +9,7 @@ Este repositorio **no contiene datos del juego**. Cada usuario aporta los suyos,
 - Fase 1, mediciones de CorsixTH: [`docs/01_mediciones.md`](docs/01_mediciones.md)
 - Fase 2, inventario de datos y presupuesto de cartucho: [`docs/02_datos.md`](docs/02_datos.md)
 - Fase 3, arquitectura de CorsixTH y reutilización: [`docs/03_arquitectura.md`](docs/03_arquitectura.md)
-- Fase 4, decisión (camino, RAM, recortes, controles, riesgos): [`docs/04_decision.md`](docs/04_decision.md) — **pendiente de aprobación**
+- Fase 4, decisión (camino, RAM, recortes, controles, riesgos): [`docs/04_decision.md`](docs/04_decision.md), y cómo se construye el motor (herramientas, APIs, método, fidelidad, modo demo): [`docs/04_construccion.md`](docs/04_construccion.md) — **pendiente del visto bueno final**
 
 ```bash
 tools/setup.sh          # instala todo (Ubuntu 24.04); necesita TH_DATA_URL o TH_DATA_ZIP para los datos
@@ -25,6 +25,6 @@ Estructura:
 | Ruta | Contenido |
 |---|---|
 | `docs/` | plan y documento de hallazgos de cada fase |
-| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`) y del código (`tools/arquitectura/`) |
+| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`), del código (`tools/arquitectura/`) y de cómo construir el motor (`tools/construccion/`) |
 | `bench/` | arnés de medición dentro de CorsixTH, partidas de referencia y resultados resumidos |
-| `n64/` | ROMs: hola mundo, benchmarks de CPU (`luabench`) y medida de RAM libre (`rambase`) |
+| `n64/` | ROMs: hola mundo, benchmarks de CPU (`luabench`), medida de RAM libre (`rambase`) y ROMs de medida de la fase 4 (`pruebas/`) |

@@ -1,0 +1,84 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64tools_Os
+Vulkan Enabled: using paraLLEl-RDP
+TH64 tools: emux=000017a1 (0 = sin modo homebrew)
+TH64 tools: astar 20 busquedas, 4797 pasos, 224483 nodos, 76750706 ticks = 153501412 ciclos CPU, 683 ciclos/nodo, 1637348 us
+TH64 tools: astar EMUX ciclos=153501275 dcache aciertos=19853416 fallos=460410 icache fallos=44
+TH64 tools: tick medio 4765618 ciclos (50833 us), max 184053098 ciclos, vivos 361, caminos 497, fallidos 35
+TH64 tools: ticks EMUX ciclos=0 dcache fallos=0 icache fallos=0
+TH64 tools: checksum 81b6b2e9
+Slot                                 Cnt    Avg             Cache Misses
+------------------------------------------------------------------------
+- sim_astar                           20 1637291 ( 13.9%) 460380 ( 1.33%)
+- sim_tick                           200 10166552 ( 86.0%) 3940054 ( 1.96%)
+------------------------------------------------------------------------
+Profiled frames:         1
+Frames per second:     0.1
+Target frame time:       0 us
+Average frame (wall): 11815719 us
+Average frame (user): 11815719 us (100.0%)
+
+
+******* CPU EXCEPTION *******
+Generic floating point exception at PC:80010CE0
+FPU status: 01020E04 [NOTIMPL]
+GPR:
+zr: ---- ---- 0000 0000   at: ---- ---- 0000 0001   v0: ---- ---- fece d300   v1: 7fff ffff ffff fff6
+a0: ---- ---- 800a bb70   a1: ---- ---- 02cb 4178   a2: ---- ---- 0000 002b   a3: ---- ---- 800a bee0
+t0: ---- ---- 800a bee0   t1: ---- ---- 0000 002b   t2: ---- ---- 807f fd10   t3: ---- ---- 0000 0001
+t4: ---- ---- 0000 0001   t5: ---- ---- 0000 0000   t6: ---- ---- 0000 0000   t7: ---- ---- 0000 0000
+s0: 7fff ffff ffff fff6   s1: ---- ---- 800a b490   s2: ---- ---- 0000 0c00   s3: ---- ---- 8001 fc10
+s4: ---- ---- 2103 42e5   s5: ---- ---- 02cb 0000   s6: ---- ---- 8002 0000   s7: ---- ---- 800a ced0
+t8: ---- ---- 0000 0000   t9: ---- ---- 8001 28a0   k0: 800a d3a3 0000 0001   k1: 800a d3a0 0000 0001
+gp: ---- ---- 8002 cd98   sp: ---- ---- 807f fe38   s8: ---- ---- 0000 0001   ra: ---- ---- 8001 0bf4
+lo: ---- ---- 0000 0000   hi: cccc cccc cccc cccd   
+
+FPR:
+ $f0: 7ffffffffffffff6 (           <NaN> |                  <NaN>)
+ $f1: 4059000040000000 (               2 |     100.00001525878906)
+ $f2: 3d8194000a000000 (6.16297582204e-33 | 1.9984015120879176e-12)
+ $f3: 3fe0000000004650 (      <Denormal> |     0.5000000000019984)
+ $f4: 3ff0000000000000 (               0 |                      1)
+ $f5: 0000000000000000 (               0 |                      0)
+ $f6: 0000000000000000 (               0 |                      0)
+ $f7: 0000000000000000 (               0 |                      0)
+ $f8: 0000000000000000 (               0 |                      0)
+ $f9: 0000000000000000 (               0 |                      0)
+$f10: 0000000000000000 (               0 |                      0)
+$f11: 0000000000000000 (               0 |                      0)
+$f12: 0000000000000000 (               0 |                      0)
+$f13: 0000000000000000 (               0 |                      0)
+$f14: 0000000000000000 (               0 |                      0)
+$f15: 0000000000000000 (               0 |                      0)
+$f16: 0000000000000000 (               0 |                      0)
+$f17: 0000000000000000 (               0 |                      0)
+$f18: 0000000000000000 (               0 |                      0)
+$f19: 0000000000000000 (               0 |                      0)
+$f20: 0000000042c80000 (             100 |             <Denormal>)
+$f21: 0000000030f8258b (1.80550452367e-09 |             <Denormal>)
+$f22: 0000000000000000 (               0 |                      0)
+$f23: 0000000000000000 (               0 |                      0)
+$f24: 0000000000000000 (               0 |                      0)
+$f25: 0000000000000000 (               0 |                      0)
+$f26: 0000000000000000 (               0 |                      0)
+$f27: 0000000000000000 (               0 |                      0)
+$f28: 0000000000000000 (               0 |                      0)
+$f29: 0000000000000000 (               0 |                      0)
+$f30: 0000000000000000 (               0 |                      0)
+$f31: 0000000000000000 (               0 |                      0)
+
+Backtrace:
+    profile_dump+0x8e0 (libdragon/src/profile.c:214) [0x80010ce0]
+    main+0x4d4 (src/main.c:80) [0x8000fdd4]
+    __text_start+0x6c (??:0) [0x8000046c]
+Backtrace:
+    inspector_page_exception+0x160 (libdragon/src/inspector.c:445) [0x80015ae0]
+    inspector+0x30c (libdragon/src/inspector.c:769) [0x800147ac]
+    __inspector_exception+0x8 (libdragon/src/inspector.c:847) [0x80015cc8]
+    exception_default_handler+0x108 (libdragon/src/exception.c:236) [0x80017aa8]
+    __onCriticalException+0x58 (libdragon/src/exception.c:507) [0x80017b58]
+    <EXCEPTION HANDLER>+0x0 (inthandler.o:0) [0x80000544]
+    profile_dump+0x8e0 (libdragon/src/profile.c:214) [0x80010ce0]
+    main+0x4d4 (src/main.c:80) [0x8000fdd4]
+    __text_start+0x6c (??:0) [0x8000046c]

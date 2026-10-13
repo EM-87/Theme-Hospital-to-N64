@@ -1,0 +1,24 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64tools
+Vulkan Enabled: using paraLLEl-RDP
+TH64 tools: emux=000017a1 (0 = sin modo homebrew)
+TH64 tools: astar 20 busquedas, 4797 pasos, 224483 nodos, 78900244 ticks = 157800488 ciclos CPU, 702 ciclos/nodo, 1683205 us
+TH64 tools: astar EMUX ciclos=157800102 dcache aciertos=21811998 fallos=489330 icache fallos=52
+TH64 tools: tick medio 4851264 ciclos (51746 us), max 187733154 ciclos, vivos 361, caminos 497, fallidos 35
+TH64 tools: ticks EMUX ciclos=0 dcache fallos=0 icache fallos=0
+TH64 tools: checksum 81b6b2e9
+Slot                                 Cnt    Avg             Cache Misses
+------------------------------------------------------------------------
+- sim_astar                           20 1683136 ( 14.0%) 489288 ( 1.33%)
+- sim_tick                           200 10349147 ( 85.9%) 4038035 ( 1.93%)
+------------------------------------------------------------------------
+Profiled frames:         1
+Frames per second:     0.1
+Target frame time:       0 us
+Average frame (wall): 12043206 us
+Average frame (user): 12043206 us (100.0%)
+Average frame (sys):     0 us (0.0%)
+TH64 tools: fin
+[emux] Ares exit requested by application
+Unloaded th64tools

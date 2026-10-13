@@ -1,0 +1,218 @@
+{
+ "MSPR-0": {
+  "sprites": 4379,
+  "ancho": {
+   "mediana": 10,
+   "p90": 21.0,
+   "max": 75
+  },
+  "alto": {
+   "mediana": 12,
+   "p90": 29.0,
+   "max": 74
+  },
+  "area": {
+   "mediana": 120,
+   "p90": 527.0,
+   "max": 5402
+  },
+  "max_wxh": [
+   73,
+   74
+  ],
+  "ci8_bytes_tmem": {
+   "mediana": 176,
+   "p90": 624.0,
+   "max": 5920
+  },
+  "ci8_no_caben": 28,
+  "ci8_no_caben_pct": 0.6,
+  "ci8_pixeles_en_no_caben": 74695,
+  "pixeles_total": 972055,
+  "tiras_total": 4409,
+  "tiras_max": 3,
+  "tiras_hist": {
+   "1": 4351,
+   "2": 26,
+   "3": 2
+  },
+  "ci4_posibles": 2576,
+  "ci4_no_caben": 0,
+  "ancho_multiplo_8": 499,
+  "bbox_ci8_no_caben": 28,
+  "ejemplos_no_caben": [
+   [
+    1640,
+    73,
+    74
+   ],
+   [
+    2401,
+    66,
+    58
+   ],
+   [
+    2934,
+    75,
+    50
+   ],
+   [
+    2393,
+    58,
+    61
+   ],
+   [
+    2326,
+    59,
+    57
+   ],
+   [
+    746,
+    56,
+    55
+   ],
+   [
+    1622,
+    59,
+    52
+   ],
+   [
+    1623,
+    59,
+    51
+   ]
+  ]
+ },
+ "MBLK-0": {
+  "sprites": 222,
+  "ancho": {
+   "mediana": 32.0,
+   "p90": 32.0,
+   "max": 33
+  },
+  "alto": {
+   "mediana": 21.5,
+   "p90": 44.0,
+   "max": 69
+  },
+  "area": {
+   "mediana": 688.0,
+   "p90": 1408.0,
+   "max": 2208
+  },
+  "max_wxh": [
+   32,
+   69
+  ],
+  "ci8_bytes_tmem": {
+   "mediana": 688.0,
+   "p90": 1408.0,
+   "max": 2208
+  },
+  "ci8_no_caben": 1,
+  "ci8_no_caben_pct": 0.5,
+  "ci8_pixeles_en_no_caben": 2208,
+  "pixeles_total": 190249,
+  "tiras_total": 223,
+  "tiras_max": 2,
+  "tiras_hist": {
+   "1": 221,
+   "2": 1
+  },
+  "ci4_posibles": 156,
+  "ci4_no_caben": 0,
+  "ancho_multiplo_8": 211,
+  "bbox_ci8_no_caben": 1,
+  "ejemplos_no_caben": [
+   [
+    197,
+    32,
+    69
+   ]
+  ]
+ },
+ "total": {
+  "sprites": 4601,
+  "ancho": {
+   "mediana": 11,
+   "p90": 24.0,
+   "max": 75
+  },
+  "alto": {
+   "mediana": 13,
+   "p90": 30.0,
+   "max": 74
+  },
+  "area": {
+   "mediana": 130,
+   "p90": 558.0,
+   "max": 5402
+  },
+  "max_wxh": [
+   73,
+   74
+  ],
+  "ci8_bytes_tmem": {
+   "mediana": 192,
+   "p90": 672.0,
+   "max": 5920
+  },
+  "ci8_no_caben": 29,
+  "ci8_no_caben_pct": 0.6,
+  "ci8_pixeles_en_no_caben": 76903,
+  "pixeles_total": 1162304,
+  "tiras_total": 4632,
+  "tiras_max": 3,
+  "tiras_hist": {
+   "1": 4572,
+   "2": 27,
+   "3": 2
+  },
+  "ci4_posibles": 2732,
+  "ci4_no_caben": 0,
+  "ancho_multiplo_8": 710,
+  "bbox_ci8_no_caben": 29,
+  "ejemplos_no_caben": [
+   [
+    1640,
+    73,
+    74
+   ],
+   [
+    2401,
+    66,
+    58
+   ],
+   [
+    2934,
+    75,
+    50
+   ],
+   [
+    2393,
+    58,
+    61
+   ],
+   [
+    2326,
+    59,
+    57
+   ],
+   [
+    746,
+    56,
+    55
+   ],
+   [
+    1622,
+    59,
+    52
+   ],
+   [
+    1623,
+    59,
+    51
+   ]
+  ]
+ }
+}

@@ -1,0 +1,23 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64core
+Vulkan Enabled: using paraLLEl-RDP
+TH64 test: inicio (N64, 16.2.0)
+TH64 test: huella golden_sim(1, 10000) = d38fbaef
+TH64 test: pruebas: 60045 comprobaciones, 0 fallos
+TH64 test: huella golden_sim_float(1, 10000) = c4758e40
+TH64 test: resultado OK
+TH64 bench: bucle vacio                   3.00 ciclos/iter
+TH64 bench: int32 suma                    0.00 ciclos/op (neto)
+TH64 bench: int32 mul+suma                6.00 ciclos/op (neto)
+TH64 bench: int32 x*3+1 (constante)       2.00 ciclos/op (neto)
+TH64 bench: int32 div                    40.00 ciclos/op (neto)
+TH64 bench: Q16.16 fx_mul+suma           16.00 ciclos/op (neto)
+TH64 bench: Q16.16 fx_div                72.00 ciclos/op (neto)
+TH64 bench: float mul+suma               11.00 ciclos/op (neto)
+TH64 bench: float div+suma               33.00 ciclos/op (neto)
+TH64 bench: double mul+suma              12.00 ciclos/op (neto)
+TH64 bench: double div+suma              60.00 ciclos/op (neto)
+TH64 bench: float->int32 + suma          17.00 ciclos/op (neto)
+TH64 bench: control 10000063 196599 100002
+TH64 test: fin

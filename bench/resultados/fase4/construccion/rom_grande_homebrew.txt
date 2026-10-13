@@ -1,0 +1,8 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64grande
+Vulkan Enabled: using paraLLEl-RDP
+TH64 grande: debug_init_emulog=1 emux=17a1, relleno.bin 67108864 bytes
+TH64 grande: fin
+[emux] Ares exit requested by application
+Unloaded th64grande

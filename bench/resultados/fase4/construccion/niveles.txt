@@ -1,0 +1,72 @@
+NIVEL	1	caja=40000	parcela1_edificables=767	parcela1_hospital=769	parcelas_compra=0	compra_edificables=0	habitaciones=8	enfermedades=6
+  habitaciones: gp psych ward pharmacy inflation staff_room general_diag toilets
+  enfermedades: bloaty_head(v) invisibility(v) uncommon_cold tv_personalities the_squits heaped_piles
+  pacientes: Invisible Patient, Standard Female Patient, Standard Male Patient
+  ganar: reputacion>=300, saldo>=1000, %curados>=40, curados>=10, valor>=55000
+  perder: reputacion<=200, saldo<=-20000, %muertos>=50
+NIVEL	2	caja=40000	parcela1_edificables=299	parcela1_hospital=303	parcelas_compra=2	compra_edificables=579	habitaciones=11	enfermedades=9
+  habitaciones: gp psych ward pharmacy cardiogram* inflation slack_tongue* staff_room general_diag research toilets
+  enfermedades: bloaty_head(v) invisibility(v) slack_tongue(v) sleeping_illness(v) uncommon_cold tv_personalities the_squits heaped_piles gut_rot
+  pacientes: Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient
+  ganar: reputacion>=300, saldo>=10000, %curados>=40, curados>=40, valor>=60000
+  perder: reputacion<=200, saldo<=-10000, %muertos>=40
+NIVEL	3	caja=40000	parcela1_edificables=349	parcela1_hospital=353	parcelas_compra=3	compra_edificables=649	habitaciones=13	enfermedades=12
+  habitaciones: gp psych ward operating_theatre* pharmacy cardiogram* x_ray* inflation slack_tongue* staff_room general_diag research toilets
+  enfermedades: bloaty_head(v) king_complex(v) invisibility(v) slack_tongue(v) sleeping_illness(v) uncommon_cold spare_ribs kidney_beans tv_personalities the_squits heaped_piles gut_rot
+  pacientes: Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient
+  ganar: saldo>=20000, valor>=80000, curados>=60
+  perder: saldo<=-5000, %muertos>=35
+NIVEL	4	caja=40000	parcela1_edificables=412	parcela1_hospital=418	parcelas_compra=4	compra_edificables=871	habitaciones=16	enfermedades=15
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram* scanner* x_ray* inflation slack_tongue* fracture_clinic* training staff_room general_diag research toilets
+  enfermedades: bloaty_head(v) king_complex(v) invisibility(v) slack_tongue(v) fractured_bones(v) sleeping_illness(v) transparency(v) uncommon_cold spare_ribs kidney_beans tv_personalities corrugated_ankles the_squits heaped_piles gut_rot
+  pacientes: Alternate Male Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: reputacion>=500, saldo>=50000, valor>=100000
+  perder: reputacion<=300, %muertos>=35
+NIVEL	5	caja=40000	parcela1_edificables=474	parcela1_hospital=482	parcelas_compra=5	compra_edificables=892	habitaciones=16	enfermedades=15
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram* scanner* x_ray* inflation slack_tongue* fracture_clinic* training staff_room general_diag research toilets
+  enfermedades: bloaty_head(v) king_complex(v) invisibility(v) slack_tongue(v) fractured_bones(v) sleeping_illness(v) transparency(v) uncommon_cold spare_ribs kidney_beans tv_personalities corrugated_ankles the_squits heaped_piles gut_rot
+  pacientes: Alternate Male Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: reputacion>=400, saldo>=50000, %curados>=45, curados>=200, valor>=120000
+  perder: reputacion<=250, saldo<=-20000, %muertos>=30
+NIVEL	6	caja=40000	parcela1_edificables=648	parcela1_hospital=656	parcelas_compra=4	compra_edificables=1062	habitaciones=17	enfermedades=19
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic* training staff_room general_diag research toilets
+  enfermedades: bloaty_head(v) king_complex(v) invisibility(v) slack_tongue(v) fractured_bones(v) baldness(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans tv_personalities infectious_laughter corrugated_ankles the_squits heaped_piles gut_rot golf_stones
+  pacientes: Alternate Male Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: saldo>=150000, %curados>=50, curados>=300, valor>=140000
+  perder: reputacion<=200, saldo<=-20000, %muertos>=30
+NIVEL	7	caja=40000	parcela1_edificables=551	parcela1_hospital=565	parcelas_compra=5	compra_edificables=1325	habitaciones=19	enfermedades=22
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* blood_machine* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic* training staff_room general_diag research toilets decontamination*
+  enfermedades: bloaty_head(v) king_complex(v) invisibility(v) serious_radiation(v) slack_tongue(v) fractured_bones(v) baldness(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans tv_personalities infectious_laughter corrugated_ankles the_squits sweaty_palms heaped_piles gut_rot golf_stones unexpected_swelling
+  pacientes: Alternate Male Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: reputacion>=600, saldo>=200000, curados>=350, valor>=160000
+  perder: reputacion<=350, saldo<=-1000, %muertos>=25
+NIVEL	8	caja=40000	parcela1_edificables=597	parcela1_hospital=605	parcelas_compra=5	compra_edificables=1706	habitaciones=21	enfermedades=26
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* ultrascan* blood_machine* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic training electrolysis* staff_room general_diag research toilets decontamination*
+  enfermedades: bloaty_head(v) hairyitis(v) king_complex(v) invisibility(v) serious_radiation(v) slack_tongue(v) fractured_bones(v) baldness(v) discrete_itching(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans broken_heart tv_personalities infectious_laughter corrugated_ankles gastric_ejections the_squits sweaty_palms heaped_piles gut_rot golf_stones unexpected_swelling
+  pacientes: Alternate Male Patient, Chewbacca Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: saldo>=300000, %curados>=55, curados>=500, valor>=180000
+  perder: reputacion<=200, saldo<=-1000, %muertos>=25
+NIVEL	9	caja=40000	parcela1_edificables=466	parcela1_hospital=472	parcelas_compra=9	compra_edificables=2233	habitaciones=21	enfermedades=27
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* ultrascan* blood_machine* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic training electrolysis* staff_room general_diag research toilets decontamination*
+  enfermedades: bloaty_head(v) hairyitis(v) king_complex(v) invisibility(v) serious_radiation(v) slack_tongue(v) fractured_bones(v) baldness(v) discrete_itching(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans broken_heart tv_personalities infectious_laughter corrugated_ankles third_degree_sideburns gastric_ejections the_squits sweaty_palms heaped_piles gut_rot golf_stones unexpected_swelling
+  pacientes: Alternate Male Patient, Chewbacca Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: saldo>=400000, %curados>=60, curados>=500, valor>=200000
+  perder: reputacion<=200, saldo<=-500, %muertos>=20
+NIVEL	10	caja=40000	parcela1_edificables=425	parcela1_hospital=431	parcelas_compra=13	compra_edificables=2274	habitaciones=22	enfermedades=30
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* ultrascan* blood_machine* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic training electrolysis* jelly_vat* staff_room general_diag research toilets decontamination*
+  enfermedades: bloaty_head(v) hairyitis(v) king_complex(v) invisibility(v) serious_radiation(v) slack_tongue(v) fractured_bones(v) baldness(v) discrete_itching(v) jellyitis(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans broken_heart ruptured_nodules tv_personalities infectious_laughter corrugated_ankles chronic_nosehair third_degree_sideburns gastric_ejections the_squits sweaty_palms heaped_piles gut_rot golf_stones unexpected_swelling
+  pacientes: Alternate Male Patient, Chewbacca Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: reputacion>=650, saldo>=500000, %curados>=65, curados>=500, valor>=220000
+  perder: reputacion<=400, saldo<=-2000, %muertos>=20
+NIVEL	11	caja=40000	parcela1_edificables=573	parcela1_hospital=577	parcelas_compra=8	compra_edificables=2681	habitaciones=23	enfermedades=33
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* ultrascan* blood_machine* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic training dna_fixer* electrolysis* jelly_vat* staff_room general_diag research toilets decontamination*
+  enfermedades: bloaty_head(v) hairyitis(v) king_complex(v) invisibility(v) serious_radiation(v) slack_tongue(v) alien_dna(v) fractured_bones(v) baldness(v) discrete_itching(v) jellyitis(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans broken_heart ruptured_nodules tv_personalities infectious_laughter corrugated_ankles chronic_nosehair third_degree_sideburns fake_blood gastric_ejections the_squits iron_lungs sweaty_palms heaped_piles gut_rot golf_stones unexpected_swelling
+  pacientes: Alien Female Patient, Alien Male Patient, Alternate Male Patient, Chewbacca Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: reputacion>=700, saldo>=500000, %curados>=70, curados>=600, valor>=240000
+  perder: reputacion<=400, saldo<=-2000, %muertos>=15
+NIVEL	12	caja=40000	parcela1_edificables=301	parcela1_hospital=309	parcelas_compra=13	compra_edificables=3697	habitaciones=23	enfermedades=33
+  habitaciones: gp psych ward operating_theatre pharmacy cardiogram scanner* ultrascan* blood_machine* x_ray* inflation hair_restoration* slack_tongue* fracture_clinic training dna_fixer* electrolysis* jelly_vat* staff_room general_diag research toilets decontamination*
+  enfermedades: bloaty_head(v) hairyitis(v) king_complex(v) invisibility(v) serious_radiation(v) slack_tongue(v) alien_dna(v) fractured_bones(v) baldness(v) discrete_itching(v) jellyitis(v) sleeping_illness(v) transparency(v) uncommon_cold broken_wind spare_ribs kidney_beans broken_heart ruptured_nodules tv_personalities infectious_laughter corrugated_ankles chronic_nosehair third_degree_sideburns fake_blood gastric_ejections the_squits iron_lungs sweaty_palms heaped_piles gut_rot golf_stones unexpected_swelling
+  pacientes: Alien Female Patient, Alien Male Patient, Alternate Male Patient, Chewbacca Patient, Elvis Patient, Invisible Patient, Slack Female Patient, Slack Male Patient, Standard Female Patient, Standard Male Patient, Transparent Female Patient, Transparent Male Patient
+  ganar: reputacion>=800, saldo>=750000, %curados>=70, curados>=750, valor>=250000
+  perder: reputacion<=450, saldo<=-2000, %muertos>=15

@@ -1,0 +1,24 @@
+ROM: <pruebas>/audiorom/th64audio.z64
+Expansion Pak: true
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64audio
+Vulkan Enabled: using paraLLEl-RDP
+TH64 audio: audio_init(32 kHz, 4 búferes) + mixer_init(32): 156 KiB
+TH64 audio: wav64_load (VADPCM 22 kHz, 2 s): 1176 B
+TH64 audio: sf64_load TimGM6mb: 353 KiB (fichero SF64 de 1775 KiB)
+TH64 audio: sf64_synth_create + 16 voces: 2 KiB
+TH64 audio: mid64player_load FORTUNE: 14 KiB; duración 146075 ms
+TH64 audio: mezclador sin canales              trabajo 3505 u (base 3515): el audio consume  0.28 % de la CPU
+TH64 audio: 1 efecto VADPCM 22 kHz             trabajo 3392 u (base 3515): el audio consume  3.50 % de la CPU
+TH64 audio: 8 efectos VADPCM 22 kHz            trabajo 2928 u (base 3515): el audio consume 16.70 % de la CPU
+TH64 audio: heap tras sonar 8 efectos: +32 KiB
+TH64 audio: 8 efectos VADPCM sin Huffman       trabajo 3411 u (base 3515): el audio consume  2.96 % de la CPU
+TH64 audio: MIDI FORTUNE, 16 voces SF64        trabajo 3316 u (base 3515): el audio consume  5.66 % de la CPU
+TH64 audio: heap tras 10 s de MIDI: +82 KiB
+TH64 audio: MIDI 16 voces + 8 efectos          trabajo 2695 u (base 3515): el audio consume 23.33 % de la CPU
+TH64 audio: MIDI 16 voces + 8 efectos sin Huffman trabajo 3195 u (base 3515): el audio consume  9.10 % de la CPU
+TH64 audio: heap tras música + efectos: +0 KiB; total audio 643 KiB
+TH64 audio: canales sonando ahora: 22
+TH64 audio: fin

@@ -1,0 +1,18 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64dso
+Vulkan Enabled: using paraLLEl-RDP
+TH64 dso: inicio                             heap usado    1160 B
+TH64 dso: tras dlopen(sim.dso)               heap usado  554744 B
+TH64 dso: vuelta 0 dlopen 81382 us, camino 239 pasos
+TH64 dso: tras dlclose(sim.dso)              heap usado    1216 B
+TH64 dso: tras dlopen(sim.dso)               heap usado  554744 B
+TH64 dso: vuelta 1 dlopen 81187 us, camino 239 pasos
+TH64 dso: tras dlclose(sim.dso)              heap usado    1216 B
+TH64 dso: dlopen(menu.dso) 1124 us
+TH64 dso: tras dlopen(menu.dso)              heap usado    6408 B
+TH64 dso: menu 681 bytes
+TH64 dso: tras dlclose(menu.dso)             heap usado    1216 B
+TH64 dso: fin
+[emux] Ares exit requested by application
+Unloaded th64dso

@@ -1,0 +1,13 @@
+ROM: <pruebas>/videorom/th64video.z64
+Expansion Pak: false
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64video
+Vulkan Enabled: using paraLLEl-RDP
+TH64 video: RDRAM 4096 KiB; heap tras rdpq+audio+mixer: 157 KiB
+TH64 video: rom:/test15.h264       display propio de fmv ahead=0 | heap antes 157 KiB, pico +2452 KiB, después +4 KiB | mostrados 180 de 180 fotogramas (0 saltados) en 11.90 s = 15.13 fps | total 11.97 s
+TH64 video: rom:/test25.h264       display propio de fmv ahead=0 | heap antes 161 KiB, pico +2448 KiB, después +0 KiB | mostrados 300 de 300 fotogramas (0 saltados) en 11.94 s = 25.13 fps | total 12.00 s
+TH64 video: display del juego 320x240x16, 3 búferes: heap 611 KiB
+TH64 video: rom:/test15.h264       display del juego 16bpp ahead=0 | heap antes 611 KiB, pico +1848 KiB, después +0 KiB | mostrados 180 de 180 fotogramas (0 saltados) en 11.83 s = 15.22 fps | total 11.89 s
+TH64 video: rom:/test25.h264       display del juego 16bpp ahead=0 | heap antes 611 KiB, pico +1848 KiB, después +0 KiB | mostrados 300 de 300 fotogramas (0 saltados) en 11.91 s = 25.19 fps | total 11.97 s

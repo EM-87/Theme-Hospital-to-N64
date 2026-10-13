@@ -21,6 +21,9 @@ LEVEL.L*
 
 # Salidas de compilación de N64
 n64/**/build/
+# Ficheros generados para las ROMs de medida (algunos salen de los datos del juego)
+n64/pruebas/*/filesystem/
+n64/pruebas/*/assets/
 *.z64
 *.v64
 *.n64

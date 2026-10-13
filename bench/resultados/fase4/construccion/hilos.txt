@@ -1,0 +1,9 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64hilos
+Vulkan Enabled: using paraLLEl-RDP
+TH64 hilos: corrutina pila 1024: 1280 B por corrutina; resume+yield 1604 ciclos
+TH64 hilos: kthread pila 1024: 1448 B por hilo; 10000 cambios (yield ida y vuelta) 6763 ciclos por yield, contador 10000
+TH64 hilos: fin
+[emux] Ares exit requested by application
+Unloaded th64hilos

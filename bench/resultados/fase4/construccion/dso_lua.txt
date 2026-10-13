@@ -1,0 +1,23 @@
+ROM: <pruebas>/dso/th64dso.z64
+Expansion Pak: false
+--- ISViewer ---
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64dso
+Vulkan Enabled: using paraLLEl-RDP
+TH64 dso: inicio                                   usado    1160 B  libre 3897664 B (3806 KiB)
+WARNING: Allocations beyond 4 MiB: this ROM requires the expansion pak to work properly.
+WARNING: Call assert_memory_expanded() or is_memory_expanded() in main to disable this warning.
+TH64 dso: mayor bloque al inicio 3895232 B
+TH64 dso: dlopen(ventana.dso) 1.a vez 1062 us, +3848 B
+TH64 dso: ventana 6
+TH64 dso: tras dlclose(ventana.dso) queda +0 B (tabla de simbolos del ejecutable)
+TH64 dso: dlopen(ventana.dso) 2.a vez 949 us, +3848 B
+TH64 dso: dlopen(lua.dso) vuelta 0: 52048 us, +240960 B
+TH64 dso: lua.dso resultado 2686700
+TH64 dso: tras dlclose(lua.dso) +952 B respecto a antes de abrirlo; mayor bloque 3653568 B
+TH64 dso: dlopen(lua.dso) vuelta 1: 51756 us, +240008 B
+TH64 dso: lua.dso resultado 2686700
+TH64 dso: tras dlclose(lua.dso) +0 B respecto a antes de abrirlo; mayor bloque 3653568 B
+TH64 dso: fin                                      usado    2112 B  libre 3896712 B (3805 KiB)
+TH64 dso: fin

@@ -1,0 +1,9 @@
+OpenGL Version: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4, GLSL: 4.50
+OpenGL: Failed to load librashader: shaders will be disabled
+Loaded th64bfs
+Vulkan Enabled: using paraLLEl-RDP
+TH64 bfs: casillas interiores 10000, alcanzadas 10000
+TH64 bfs: min 19013 us (1782526 ciclos CPU), media 19136 us, 20 repeticiones
+TH64 bfs: memoria temporal 16384 B (visitadas) + 32768 B (cola)
+TH64 bfs bits: alcanzadas 10000, min 8967 us (840674 ciclos CPU), media 8969 us; visitadas 2048 B
+TH64 bfs: fin

@@ -1,0 +1,1580 @@
+{
+ "criterio": "Clasifica las líneas de código Lua de CorsixTH en datos, andamiaje y funciones.\n\nCriterio (por línea física con al menos un token que no sea comentario):\n  * \"funcion\": la línea cae dentro del rango [linedefined, lastlinedefined] de\n    algún prototipo de función que no sea el chunk principal, según el\n    compilador de Lua (luac5.4 -p -l). Es código con comportamiento.\n  * \"andamiaje\": línea del chunk principal que solo declara la clase o el\n    módulo: `class \"X\" (Y)`, `local X = _G[\"X\"]`, `local object = {}`,\n    `return object`, `corsixth.require(...)`, `local anim_mgr = TheApp...`.\n  * \"datos\": el resto del chunk principal: asignaciones de campos, tablas\n    constructoras, constantes y llamadas que registran datos (marcadores de\n    animación). Son declaraciones que se ejecutan una vez al cargar.\nAdemás, dentro de \"funcion\" se separan las funciones auxiliares que solo\ngeneran datos al cargar (`copy_north_to_south`, `initPatient` de las\nenfermedades), para no contarlas como lógica de simulación.",
+ "grupos": {
+  "objects": {
+   "datos": 3240,
+   "andamiaje": 181,
+   "funcion": 1078,
+   "funcion_generadora_datos": 132,
+   "total": 4499,
+   "funciones": 122,
+   "lineas_fisicas": 6286,
+   "ficheros": 60
+  },
+  "rooms": {
+   "datos": 509,
+   "andamiaje": 92,
+   "funcion": 1632,
+   "funcion_generadora_datos": 0,
+   "total": 2233,
+   "funciones": 174,
+   "lineas_fisicas": 3245,
+   "ficheros": 23
+  },
+  "diseases": {
+   "datos": 778,
+   "andamiaje": 68,
+   "funcion": 455,
+   "funcion_generadora_datos": 455,
+   "total": 1301,
+   "funciones": 34,
+   "lineas_fisicas": 2224,
+   "ficheros": 34
+  },
+  "diagnosis": {
+   "datos": 50,
+   "andamiaje": 18,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 68,
+   "funciones": 0,
+   "lineas_fisicas": 257,
+   "ficheros": 9
+  },
+  "humanoid_actions": {
+   "datos": 44,
+   "andamiaje": 96,
+   "funcion": 2866,
+   "funcion_generadora_datos": 0,
+   "total": 3006,
+   "funciones": 168,
+   "lineas_fisicas": 4533,
+   "ficheros": 32
+  },
+  "entities/humanoids": {
+   "datos": 22,
+   "andamiaje": 35,
+   "funcion": 2362,
+   "funcion_generadora_datos": 0,
+   "total": 2419,
+   "funciones": 175,
+   "lineas_fisicas": 3577,
+   "ficheros": 9
+  }
+ },
+ "ficheros": {
+  "objects/analyser.lua": {
+   "datos": 31,
+   "andamiaje": 4,
+   "funcion": 10,
+   "funcion_generadora_datos": 4,
+   "total": 45,
+   "funciones": 3,
+   "lineas_fisicas": 72
+  },
+  "objects/autopsy.lua": {
+   "datos": 59,
+   "andamiaje": 3,
+   "funcion": 21,
+   "funcion_generadora_datos": 4,
+   "total": 83,
+   "funciones": 2,
+   "lineas_fisicas": 118
+  },
+  "objects/bed.lua": {
+   "datos": 75,
+   "andamiaje": 3,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 78,
+   "funciones": 0,
+   "lineas_fisicas": 103
+  },
+  "objects/bench.lua": {
+   "datos": 123,
+   "andamiaje": 4,
+   "funcion": 37,
+   "funcion_generadora_datos": 0,
+   "total": 164,
+   "funciones": 4,
+   "lineas_fisicas": 202
+  },
+  "objects/bin.lua": {
+   "datos": 20,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 22,
+   "funciones": 0,
+   "lineas_fisicas": 43
+  },
+  "objects/bookcase.lua": {
+   "datos": 27,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 33,
+   "funciones": 1,
+   "lineas_fisicas": 54
+  },
+  "objects/cabinet.lua": {
+   "datos": 44,
+   "andamiaje": 3,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 47,
+   "funciones": 0,
+   "lineas_fisicas": 69
+  },
+  "objects/chair.lua": {
+   "datos": 119,
+   "andamiaje": 4,
+   "funcion": 20,
+   "funcion_generadora_datos": 0,
+   "total": 143,
+   "funciones": 3,
+   "lineas_fisicas": 173
+  },
+  "objects/comfortable_chair.lua": {
+   "datos": 38,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 45,
+   "funciones": 1,
+   "lineas_fisicas": 68
+  },
+  "objects/computer.lua": {
+   "datos": 31,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 37,
+   "funciones": 1,
+   "lineas_fisicas": 60
+  },
+  "objects/console.lua": {
+   "datos": 41,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 47,
+   "funciones": 1,
+   "lineas_fisicas": 69
+  },
+  "objects/couch.lua": {
+   "datos": 38,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 44,
+   "funciones": 1,
+   "lineas_fisicas": 65
+  },
+  "objects/crash_trolley.lua": {
+   "datos": 110,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 117,
+   "funciones": 1,
+   "lineas_fisicas": 150
+  },
+  "objects/desk.lua": {
+   "datos": 90,
+   "andamiaje": 3,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 93,
+   "funciones": 0,
+   "lineas_fisicas": 117
+  },
+  "objects/door.lua": {
+   "datos": 15,
+   "andamiaje": 5,
+   "funcion": 131,
+   "funcion_generadora_datos": 0,
+   "total": 151,
+   "funciones": 12,
+   "lineas_fisicas": 209
+  },
+  "objects/drinks_machine.lua": {
+   "datos": 86,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 88,
+   "funciones": 0,
+   "lineas_fisicas": 109
+  },
+  "objects/fire_extinguisher.lua": {
+   "datos": 27,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 29,
+   "funciones": 0,
+   "lineas_fisicas": 50
+  },
+  "objects/gates_to_hell.lua": {
+   "datos": 37,
+   "andamiaje": 3,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 40,
+   "funciones": 0,
+   "lineas_fisicas": 67
+  },
+  "objects/helicopter.lua": {
+   "datos": 13,
+   "andamiaje": 6,
+   "funcion": 55,
+   "funcion_generadora_datos": 0,
+   "total": 74,
+   "funciones": 3,
+   "lineas_fisicas": 109
+  },
+  "objects/lecture_chair.lua": {
+   "datos": 35,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 42,
+   "funciones": 1,
+   "lineas_fisicas": 64
+  },
+  "objects/litter.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 97,
+   "funcion_generadora_datos": 0,
+   "total": 123,
+   "funciones": 10,
+   "lineas_fisicas": 173
+  },
+  "objects/loo.lua": {
+   "datos": 104,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 111,
+   "funciones": 1,
+   "lineas_fisicas": 133
+  },
+  "objects/op_sink1.lua": {
+   "datos": 38,
+   "andamiaje": 4,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 46,
+   "funciones": 1,
+   "lineas_fisicas": 73
+  },
+  "objects/op_sink2.lua": {
+   "datos": 18,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 24,
+   "funciones": 1,
+   "lineas_fisicas": 46
+  },
+  "objects/pharmacy_cabinet.lua": {
+   "datos": 43,
+   "andamiaje": 2,
+   "funcion": 20,
+   "funcion_generadora_datos": 4,
+   "total": 65,
+   "funciones": 2,
+   "lineas_fisicas": 86
+  },
+  "objects/plant.lua": {
+   "datos": 48,
+   "andamiaje": 5,
+   "funcion": 184,
+   "funcion_generadora_datos": 0,
+   "total": 237,
+   "funciones": 15,
+   "lineas_fisicas": 330
+  },
+  "objects/pool_table.lua": {
+   "datos": 73,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 75,
+   "funciones": 0,
+   "lineas_fisicas": 110
+  },
+  "objects/projector.lua": {
+   "datos": 38,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 45,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "objects/radiation_shield.lua": {
+   "datos": 40,
+   "andamiaje": 4,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 48,
+   "funciones": 1,
+   "lineas_fisicas": 80
+  },
+  "objects/radiation_shield_b.lua": {
+   "datos": 22,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 0,
+   "total": 28,
+   "funciones": 1,
+   "lineas_fisicas": 53
+  },
+  "objects/radiator.lua": {
+   "datos": 26,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 28,
+   "funciones": 0,
+   "lineas_fisicas": 49
+  },
+  "objects/rathole.lua": {
+   "datos": 15,
+   "andamiaje": 4,
+   "funcion": 6,
+   "funcion_generadora_datos": 0,
+   "total": 25,
+   "funciones": 2,
+   "lineas_fisicas": 66
+  },
+  "objects/reception_desk.lua": {
+   "datos": 47,
+   "andamiaje": 5,
+   "funcion": 139,
+   "funcion_generadora_datos": 0,
+   "total": 191,
+   "funciones": 14,
+   "lineas_fisicas": 263
+  },
+  "objects/screen.lua": {
+   "datos": 47,
+   "andamiaje": 3,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 50,
+   "funciones": 0,
+   "lineas_fisicas": 78
+  },
+  "objects/sink.lua": {
+   "datos": 41,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 48,
+   "funciones": 1,
+   "lineas_fisicas": 70
+  },
+  "objects/skeleton.lua": {
+   "datos": 28,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 34,
+   "funciones": 1,
+   "lineas_fisicas": 55
+  },
+  "objects/sofa.lua": {
+   "datos": 93,
+   "andamiaje": 3,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 96,
+   "funciones": 0,
+   "lineas_fisicas": 118
+  },
+  "objects/surgeon_screen.lua": {
+   "datos": 67,
+   "andamiaje": 5,
+   "funcion": 5,
+   "funcion_generadora_datos": 0,
+   "total": 77,
+   "funciones": 1,
+   "lineas_fisicas": 114
+  },
+  "objects/tv.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 26,
+   "funciones": 0,
+   "lineas_fisicas": 47
+  },
+  "objects/video_game.lua": {
+   "datos": 36,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 38,
+   "funciones": 0,
+   "lineas_fisicas": 66
+  },
+  "objects/x_ray_viewer.lua": {
+   "datos": 27,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 33,
+   "funciones": 1,
+   "lineas_fisicas": 56
+  },
+  "objects/machines/blood_machine.lua": {
+   "datos": 90,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 97,
+   "funciones": 1,
+   "lineas_fisicas": 121
+  },
+  "objects/machines/cardio.lua": {
+   "datos": 131,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 138,
+   "funciones": 1,
+   "lineas_fisicas": 162
+  },
+  "objects/machines/cast_remover.lua": {
+   "datos": 114,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 121,
+   "funciones": 1,
+   "lineas_fisicas": 152
+  },
+  "objects/machines/dna_fixer.lua": {
+   "datos": 50,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 56,
+   "funciones": 1,
+   "lineas_fisicas": 86
+  },
+  "objects/machines/electrolyser.lua": {
+   "datos": 63,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 70,
+   "funciones": 1,
+   "lineas_fisicas": 92
+  },
+  "objects/machines/hair_restorer.lua": {
+   "datos": 54,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 61,
+   "funciones": 1,
+   "lineas_fisicas": 86
+  },
+  "objects/machines/inflator.lua": {
+   "datos": 60,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 67,
+   "funciones": 1,
+   "lineas_fisicas": 90
+  },
+  "objects/machines/jelly_moulder.lua": {
+   "datos": 83,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 89,
+   "funciones": 1,
+   "lineas_fisicas": 135
+  },
+  "objects/machines/operating_table.lua": {
+   "datos": 86,
+   "andamiaje": 5,
+   "funcion": 9,
+   "funcion_generadora_datos": 4,
+   "total": 100,
+   "funciones": 2,
+   "lineas_fisicas": 137
+  },
+  "objects/machines/operating_table_b.lua": {
+   "datos": 35,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 42,
+   "funciones": 1,
+   "lineas_fisicas": 66
+  },
+  "objects/machines/scanner.lua": {
+   "datos": 196,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 203,
+   "funciones": 1,
+   "lineas_fisicas": 229
+  },
+  "objects/machines/shower.lua": {
+   "datos": 54,
+   "andamiaje": 2,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 60,
+   "funciones": 1,
+   "lineas_fisicas": 84
+  },
+  "objects/machines/slicer.lua": {
+   "datos": 57,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 64,
+   "funciones": 1,
+   "lineas_fisicas": 87
+  },
+  "objects/machines/ultrascanner.lua": {
+   "datos": 66,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 73,
+   "funciones": 1,
+   "lineas_fisicas": 98
+  },
+  "objects/machines/x_ray.lua": {
+   "datos": 88,
+   "andamiaje": 3,
+   "funcion": 4,
+   "funcion_generadora_datos": 4,
+   "total": 95,
+   "funciones": 1,
+   "lineas_fisicas": 121
+  },
+  "objects/doors/entrance_left_door.lua": {
+   "datos": 11,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 13,
+   "funciones": 0,
+   "lineas_fisicas": 34
+  },
+  "objects/doors/entrance_right_door.lua": {
+   "datos": 27,
+   "andamiaje": 4,
+   "funcion": 93,
+   "funcion_generadora_datos": 0,
+   "total": 124,
+   "funciones": 5,
+   "lineas_fisicas": 160
+  },
+  "objects/doors/swing_door_left.lua": {
+   "datos": 10,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 12,
+   "funciones": 0,
+   "lineas_fisicas": 33
+  },
+  "objects/doors/swing_door_right.lua": {
+   "datos": 9,
+   "andamiaje": 4,
+   "funcion": 131,
+   "funcion_generadora_datos": 0,
+   "total": 144,
+   "funciones": 14,
+   "lineas_fisicas": 209
+  },
+  "rooms/blood_machine_room.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 25,
+   "funcion_generadora_datos": 0,
+   "total": 51,
+   "funciones": 4,
+   "lineas_fisicas": 82
+  },
+  "rooms/cardiogram.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 66,
+   "funcion_generadora_datos": 0,
+   "total": 92,
+   "funciones": 9,
+   "lineas_fisicas": 127
+  },
+  "rooms/decontamination.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 61,
+   "funcion_generadora_datos": 0,
+   "total": 87,
+   "funciones": 7,
+   "lineas_fisicas": 125
+  },
+  "rooms/dna_fixer.lua": {
+   "datos": 23,
+   "andamiaje": 4,
+   "funcion": 27,
+   "funcion_generadora_datos": 0,
+   "total": 54,
+   "funciones": 4,
+   "lineas_fisicas": 89
+  },
+  "rooms/electrolysis.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 43,
+   "funcion_generadora_datos": 0,
+   "total": 69,
+   "funciones": 5,
+   "lineas_fisicas": 112
+  },
+  "rooms/fracture_clinic.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 24,
+   "funcion_generadora_datos": 0,
+   "total": 50,
+   "funciones": 3,
+   "lineas_fisicas": 81
+  },
+  "rooms/general_diag.lua": {
+   "datos": 21,
+   "andamiaje": 4,
+   "funcion": 66,
+   "funcion_generadora_datos": 0,
+   "total": 91,
+   "funciones": 8,
+   "lineas_fisicas": 140
+  },
+  "rooms/gp.lua": {
+   "datos": 21,
+   "andamiaje": 4,
+   "funcion": 128,
+   "funcion_generadora_datos": 0,
+   "total": 153,
+   "funciones": 10,
+   "lineas_fisicas": 210
+  },
+  "rooms/hair_restoration.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 30,
+   "funcion_generadora_datos": 0,
+   "total": 56,
+   "funciones": 5,
+   "lineas_fisicas": 89
+  },
+  "rooms/inflation.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 22,
+   "funcion_generadora_datos": 0,
+   "total": 48,
+   "funciones": 3,
+   "lineas_fisicas": 80
+  },
+  "rooms/jelly_vat.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 18,
+   "funcion_generadora_datos": 0,
+   "total": 44,
+   "funciones": 3,
+   "lineas_fisicas": 75
+  },
+  "rooms/operating_theatre.lua": {
+   "datos": 26,
+   "andamiaje": 4,
+   "funcion": 230,
+   "funcion_generadora_datos": 0,
+   "total": 260,
+   "funciones": 21,
+   "lineas_fisicas": 379
+  },
+  "rooms/pharmacy.lua": {
+   "datos": 21,
+   "andamiaje": 4,
+   "funcion": 41,
+   "funcion_generadora_datos": 0,
+   "total": 66,
+   "funciones": 4,
+   "lineas_fisicas": 102
+  },
+  "rooms/psych.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 79,
+   "funcion_generadora_datos": 0,
+   "total": 105,
+   "funciones": 7,
+   "lineas_fisicas": 139
+  },
+  "rooms/research.lua": {
+   "datos": 34,
+   "andamiaje": 4,
+   "funcion": 123,
+   "funcion_generadora_datos": 0,
+   "total": 161,
+   "funciones": 15,
+   "lineas_fisicas": 214
+  },
+  "rooms/scanner_room.lua": {
+   "datos": 21,
+   "andamiaje": 4,
+   "funcion": 82,
+   "funcion_generadora_datos": 0,
+   "total": 107,
+   "funciones": 10,
+   "lineas_fisicas": 154
+  },
+  "rooms/slack_tongue.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 26,
+   "funcion_generadora_datos": 0,
+   "total": 52,
+   "funciones": 3,
+   "lineas_fisicas": 83
+  },
+  "rooms/staff_room.lua": {
+   "datos": 17,
+   "andamiaje": 4,
+   "funcion": 21,
+   "funcion_generadora_datos": 0,
+   "total": 42,
+   "funciones": 3,
+   "lineas_fisicas": 73
+  },
+  "rooms/toilets.lua": {
+   "datos": 16,
+   "andamiaje": 4,
+   "funcion": 104,
+   "funcion_generadora_datos": 0,
+   "total": 124,
+   "funciones": 9,
+   "lineas_fisicas": 177
+  },
+  "rooms/training.lua": {
+   "datos": 17,
+   "andamiaje": 4,
+   "funcion": 181,
+   "funcion_generadora_datos": 0,
+   "total": 202,
+   "funciones": 15,
+   "lineas_fisicas": 278
+  },
+  "rooms/ultrascan.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 21,
+   "funcion_generadora_datos": 0,
+   "total": 47,
+   "funciones": 3,
+   "lineas_fisicas": 78
+  },
+  "rooms/ward.lua": {
+   "datos": 28,
+   "andamiaje": 4,
+   "funcion": 181,
+   "funcion_generadora_datos": 0,
+   "total": 213,
+   "funciones": 18,
+   "lineas_fisicas": 266
+  },
+  "rooms/x_ray_room.lua": {
+   "datos": 22,
+   "andamiaje": 4,
+   "funcion": 33,
+   "funcion_generadora_datos": 0,
+   "total": 59,
+   "funciones": 5,
+   "lineas_fisicas": 92
+  },
+  "diseases/alien_dna.lua": {
+   "datos": 19,
+   "andamiaje": 2,
+   "funcion": 16,
+   "funcion_generadora_datos": 16,
+   "total": 37,
+   "funciones": 1,
+   "lineas_fisicas": 65
+  },
+  "diseases/baldness.lua": {
+   "datos": 20,
+   "andamiaje": 2,
+   "funcion": 9,
+   "funcion_generadora_datos": 9,
+   "total": 31,
+   "funciones": 1,
+   "lineas_fisicas": 62
+  },
+  "diseases/bloaty_head.lua": {
+   "datos": 21,
+   "andamiaje": 2,
+   "funcion": 8,
+   "funcion_generadora_datos": 8,
+   "total": 31,
+   "funciones": 1,
+   "lineas_fisicas": 60
+  },
+  "diseases/broken_heart.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/broken_wind.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/chronic_nosehair.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/corrugated_ankles.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/discrete_itching.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/fake_blood.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 66
+  },
+  "diseases/fractured_bones.lua": {
+   "datos": 18,
+   "andamiaje": 2,
+   "funcion": 22,
+   "funcion_generadora_datos": 22,
+   "total": 42,
+   "funciones": 1,
+   "lineas_fisicas": 75
+  },
+  "diseases/gastric_ejections.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/golf_stones.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/gut_rot.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/hairyitis.lua": {
+   "datos": 19,
+   "andamiaje": 2,
+   "funcion": 8,
+   "funcion_generadora_datos": 8,
+   "total": 29,
+   "funciones": 1,
+   "lineas_fisicas": 60
+  },
+  "diseases/heaped_piles.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/infectious_laughter.lua": {
+   "datos": 23,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 39,
+   "funciones": 1,
+   "lineas_fisicas": 65
+  },
+  "diseases/invisibility.lua": {
+   "datos": 18,
+   "andamiaje": 2,
+   "funcion": 13,
+   "funcion_generadora_datos": 13,
+   "total": 33,
+   "funciones": 1,
+   "lineas_fisicas": 59
+  },
+  "diseases/iron_lungs.lua": {
+   "datos": 20,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 36,
+   "funciones": 1,
+   "lineas_fisicas": 62
+  },
+  "diseases/jellyitis.lua": {
+   "datos": 26,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 42,
+   "funciones": 1,
+   "lineas_fisicas": 71
+  },
+  "diseases/kidney_beans.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/king_complex.lua": {
+   "datos": 18,
+   "andamiaje": 2,
+   "funcion": 8,
+   "funcion_generadora_datos": 8,
+   "total": 28,
+   "funciones": 1,
+   "lineas_fisicas": 54
+  },
+  "diseases/pregnant.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 8,
+   "funcion_generadora_datos": 8,
+   "total": 35,
+   "funciones": 1,
+   "lineas_fisicas": 61
+  },
+  "diseases/ruptured_nodules.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/serious_radiation.lua": {
+   "datos": 26,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 42,
+   "funciones": 1,
+   "lineas_fisicas": 71
+  },
+  "diseases/slack_tongue.lua": {
+   "datos": 19,
+   "andamiaje": 2,
+   "funcion": 13,
+   "funcion_generadora_datos": 13,
+   "total": 34,
+   "funciones": 1,
+   "lineas_fisicas": 62
+  },
+  "diseases/sleeping_illness.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 68
+  },
+  "diseases/spare_ribs.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/sweaty_palms.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 66
+  },
+  "diseases/the_squits.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 68
+  },
+  "diseases/third_degree_sideburns.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 66
+  },
+  "diseases/transparency.lua": {
+   "datos": 17,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 33,
+   "funciones": 1,
+   "lineas_fisicas": 59
+  },
+  "diseases/tv_personalities.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 66
+  },
+  "diseases/uncommon_cold.lua": {
+   "datos": 24,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 40,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diseases/unexpected_swelling.lua": {
+   "datos": 25,
+   "andamiaje": 2,
+   "funcion": 14,
+   "funcion_generadora_datos": 14,
+   "total": 41,
+   "funciones": 1,
+   "lineas_fisicas": 67
+  },
+  "diagnosis/diag_blood_machine.lua": {
+   "datos": 6,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 8,
+   "funciones": 0,
+   "lineas_fisicas": 29
+  },
+  "diagnosis/diag_cardiogram.lua": {
+   "datos": 6,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 8,
+   "funciones": 0,
+   "lineas_fisicas": 29
+  },
+  "diagnosis/diag_general_diag.lua": {
+   "datos": 5,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 7,
+   "funciones": 0,
+   "lineas_fisicas": 28
+  },
+  "diagnosis/diag_gp.lua": {
+   "datos": 5,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 7,
+   "funciones": 0,
+   "lineas_fisicas": 28
+  },
+  "diagnosis/diag_psych.lua": {
+   "datos": 5,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 7,
+   "funciones": 0,
+   "lineas_fisicas": 28
+  },
+  "diagnosis/diag_scanner.lua": {
+   "datos": 6,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 8,
+   "funciones": 0,
+   "lineas_fisicas": 29
+  },
+  "diagnosis/diag_ultrascan.lua": {
+   "datos": 6,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 8,
+   "funciones": 0,
+   "lineas_fisicas": 29
+  },
+  "diagnosis/diag_ward.lua": {
+   "datos": 5,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 7,
+   "funciones": 0,
+   "lineas_fisicas": 28
+  },
+  "diagnosis/diag_x_ray.lua": {
+   "datos": 6,
+   "andamiaje": 2,
+   "funcion": 0,
+   "funcion_generadora_datos": 0,
+   "total": 8,
+   "funciones": 0,
+   "lineas_fisicas": 29
+  },
+  "humanoid_actions/answer_call.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 15,
+   "funcion_generadora_datos": 0,
+   "total": 18,
+   "funciones": 2,
+   "lineas_fisicas": 43
+  },
+  "humanoid_actions/call_checkpoint.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 14,
+   "funcion_generadora_datos": 0,
+   "total": 17,
+   "funciones": 2,
+   "lineas_fisicas": 43
+  },
+  "humanoid_actions/check_watch.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 18,
+   "funcion_generadora_datos": 0,
+   "total": 21,
+   "funciones": 3,
+   "lineas_fisicas": 49
+  },
+  "humanoid_actions/die.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 219,
+   "funcion_generadora_datos": 0,
+   "total": 222,
+   "funciones": 11,
+   "lineas_fisicas": 302
+  },
+  "humanoid_actions/falling.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 17,
+   "funcion_generadora_datos": 0,
+   "total": 20,
+   "funciones": 3,
+   "lineas_fisicas": 49
+  },
+  "humanoid_actions/get_up.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 12,
+   "funcion_generadora_datos": 0,
+   "total": 15,
+   "funciones": 3,
+   "lineas_fisicas": 43
+  },
+  "humanoid_actions/idle.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 56,
+   "funcion_generadora_datos": 0,
+   "total": 59,
+   "funciones": 6,
+   "lineas_fisicas": 97
+  },
+  "humanoid_actions/idle_spawn.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 29,
+   "funcion_generadora_datos": 0,
+   "total": 32,
+   "funciones": 3,
+   "lineas_fisicas": 63
+  },
+  "humanoid_actions/knock_door.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 54,
+   "funcion_generadora_datos": 0,
+   "total": 57,
+   "funciones": 5,
+   "lineas_fisicas": 95
+  },
+  "humanoid_actions/meander.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 74,
+   "funcion_generadora_datos": 0,
+   "total": 77,
+   "funciones": 2,
+   "lineas_fisicas": 119
+  },
+  "humanoid_actions/multi_use_object.lua": {
+   "datos": 8,
+   "andamiaje": 3,
+   "funcion": 319,
+   "funcion_generadora_datos": 0,
+   "total": 330,
+   "funciones": 11,
+   "lineas_fisicas": 399
+  },
+  "humanoid_actions/on_ground.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 12,
+   "funcion_generadora_datos": 0,
+   "total": 15,
+   "funciones": 3,
+   "lineas_fisicas": 43
+  },
+  "humanoid_actions/pee.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 20,
+   "funcion_generadora_datos": 0,
+   "total": 23,
+   "funciones": 3,
+   "lineas_fisicas": 51
+  },
+  "humanoid_actions/pickup.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 58,
+   "funcion_generadora_datos": 0,
+   "total": 61,
+   "funciones": 5,
+   "lineas_fisicas": 101
+  },
+  "humanoid_actions/queue.lua": {
+   "datos": 2,
+   "andamiaje": 3,
+   "funcion": 304,
+   "funcion_generadora_datos": 0,
+   "total": 309,
+   "funciones": 16,
+   "lineas_fisicas": 404
+  },
+  "humanoid_actions/seek_reception.lua": {
+   "datos": 1,
+   "andamiaje": 3,
+   "funcion": 79,
+   "funcion_generadora_datos": 0,
+   "total": 83,
+   "funciones": 4,
+   "lineas_fisicas": 144
+  },
+  "humanoid_actions/seek_room.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 251,
+   "funcion_generadora_datos": 0,
+   "total": 254,
+   "funciones": 11,
+   "lineas_fisicas": 372
+  },
+  "humanoid_actions/seek_staffroom.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 23,
+   "funcion_generadora_datos": 0,
+   "total": 26,
+   "funciones": 2,
+   "lineas_fisicas": 55
+  },
+  "humanoid_actions/seek_toilets.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 32,
+   "funcion_generadora_datos": 0,
+   "total": 35,
+   "funciones": 2,
+   "lineas_fisicas": 71
+  },
+  "humanoid_actions/shake_fist.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 18,
+   "funcion_generadora_datos": 0,
+   "total": 21,
+   "funciones": 3,
+   "lineas_fisicas": 49
+  },
+  "humanoid_actions/spawn.lua": {
+   "datos": 6,
+   "andamiaje": 3,
+   "funcion": 66,
+   "funcion_generadora_datos": 0,
+   "total": 75,
+   "funciones": 4,
+   "lineas_fisicas": 121
+  },
+  "humanoid_actions/staff_reception.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 77,
+   "funcion_generadora_datos": 0,
+   "total": 80,
+   "funciones": 6,
+   "lineas_fisicas": 112
+  },
+  "humanoid_actions/sweep_floor.lua": {
+   "datos": 5,
+   "andamiaje": 3,
+   "funcion": 30,
+   "funcion_generadora_datos": 0,
+   "total": 38,
+   "funciones": 5,
+   "lineas_fisicas": 70
+  },
+  "humanoid_actions/tap_foot.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 18,
+   "funcion_generadora_datos": 0,
+   "total": 21,
+   "funciones": 3,
+   "lineas_fisicas": 48
+  },
+  "humanoid_actions/use_object.lua": {
+   "datos": 8,
+   "andamiaje": 3,
+   "funcion": 349,
+   "funcion_generadora_datos": 0,
+   "total": 360,
+   "funciones": 11,
+   "lineas_fisicas": 497
+  },
+  "humanoid_actions/use_screen.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 156,
+   "funcion_generadora_datos": 0,
+   "total": 159,
+   "funciones": 6,
+   "lineas_fisicas": 194
+  },
+  "humanoid_actions/use_staffroom.lua": {
+   "datos": 5,
+   "andamiaje": 3,
+   "funcion": 88,
+   "funcion_generadora_datos": 0,
+   "total": 96,
+   "funciones": 5,
+   "lineas_fisicas": 165
+  },
+  "humanoid_actions/vaccinate.lua": {
+   "datos": 3,
+   "andamiaje": 3,
+   "funcion": 69,
+   "funcion_generadora_datos": 0,
+   "total": 75,
+   "funciones": 6,
+   "lineas_fisicas": 122
+  },
+  "humanoid_actions/vip_go_to_next_room.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 35,
+   "funcion_generadora_datos": 0,
+   "total": 38,
+   "funciones": 5,
+   "lineas_fisicas": 74
+  },
+  "humanoid_actions/vomit.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 20,
+   "funcion_generadora_datos": 0,
+   "total": 23,
+   "funciones": 3,
+   "lineas_fisicas": 51
+  },
+  "humanoid_actions/walk.lua": {
+   "datos": 6,
+   "andamiaje": 3,
+   "funcion": 321,
+   "funcion_generadora_datos": 0,
+   "total": 330,
+   "funciones": 11,
+   "lineas_fisicas": 444
+  },
+  "humanoid_actions/yawn.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 13,
+   "funcion_generadora_datos": 0,
+   "total": 16,
+   "funciones": 3,
+   "lineas_fisicas": 43
+  },
+  "entities/humanoids/grim_reaper.lua": {
+   "datos": 0,
+   "andamiaje": 2,
+   "funcion": 23,
+   "funcion_generadora_datos": 0,
+   "total": 25,
+   "funciones": 4,
+   "lineas_fisicas": 53
+  },
+  "entities/humanoids/inspector.lua": {
+   "datos": 0,
+   "andamiaje": 4,
+   "funcion": 33,
+   "funcion_generadora_datos": 0,
+   "total": 37,
+   "funciones": 7,
+   "lineas_fisicas": 76
+  },
+  "entities/humanoids/patient.lua": {
+   "datos": 15,
+   "andamiaje": 2,
+   "funcion": 926,
+   "funcion_generadora_datos": 0,
+   "total": 943,
+   "funciones": 59,
+   "lineas_fisicas": 1378
+  },
+  "entities/humanoids/staff.lua": {
+   "datos": 0,
+   "andamiaje": 4,
+   "funcion": 535,
+   "funcion_generadora_datos": 0,
+   "total": 539,
+   "funciones": 38,
+   "lineas_fisicas": 775
+  },
+  "entities/humanoids/vip.lua": {
+   "datos": 0,
+   "andamiaje": 3,
+   "funcion": 366,
+   "funcion_generadora_datos": 0,
+   "total": 369,
+   "funciones": 11,
+   "lineas_fisicas": 521
+  },
+  "entities/humanoids/staff/doctor.lua": {
+   "datos": 7,
+   "andamiaje": 5,
+   "funcion": 247,
+   "funcion_generadora_datos": 0,
+   "total": 259,
+   "funciones": 21,
+   "lineas_fisicas": 377
+  },
+  "entities/humanoids/staff/handyman.lua": {
+   "datos": 0,
+   "andamiaje": 5,
+   "funcion": 150,
+   "funcion_generadora_datos": 0,
+   "total": 155,
+   "funciones": 17,
+   "lineas_fisicas": 229
+  },
+  "entities/humanoids/staff/nurse.lua": {
+   "datos": 0,
+   "andamiaje": 5,
+   "funcion": 19,
+   "funcion_generadora_datos": 0,
+   "total": 24,
+   "funciones": 4,
+   "lineas_fisicas": 56
+  },
+  "entities/humanoids/staff/receptionist.lua": {
+   "datos": 0,
+   "andamiaje": 5,
+   "funcion": 63,
+   "funcion_generadora_datos": 0,
+   "total": 68,
+   "funciones": 14,
+   "lineas_fisicas": 112
+  }
+ },
+ "total": {
+  "datos": 4643,
+  "andamiaje": 490,
+  "funcion": 8393,
+  "funcion_generadora_datos": 587,
+  "total": 13526,
+  "funciones": 673,
+  "lineas_fisicas": 20122,
+  "ficheros": 167
+ }
+}
