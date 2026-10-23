@@ -48,6 +48,11 @@ El hito 0 se hace por partes. Primero los gráficos, porque es lo único que nec
 
   Los píxeles de `MSPR-0` y `MBLK-0` (1.177.352 y 190.536 B) coinciden con lo medido en la fase 4.
 
+**Animaciones: hecho.** Las tablas de `DATAM` (5.186 animaciones, 11.643 fotogramas, 108.607 entradas de lista y 24.983 elementos) pasan al formato TAN1: 481.038 B, dentro de los 0,48 MiB del presupuesto. Cada animación lleva su duración en fotogramas, calculada como `getAnimLength` de CorsixTH. Comprobaciones:
+- **El encadenamiento de `DATAM` es idéntico al de `DATA`**, que es el que usa CorsixTH. Las animaciones de baja resolución duran lo mismo.
+- **Las duraciones coinciden con las de CorsixTH en 5.183 de 5.186.** Las 3 distintas son los ajustes que hace su Lua: 2348 y 2938 duran 1 fotograma, y 4086 dura 8. Irán con las tablas de reglas.
+- **Pendiente para el hito 3:** el desplazamiento de los elementos. CorsixTH solo usa las animaciones de alta resolución y les resta (141, 186); el de `DATAM` se ajustará al dibujarlas sobre el mapa.
+
 ## Hito 1 — La ROM carga los assets y dibuja un sprite con su paleta
 
 **Hecho.**
