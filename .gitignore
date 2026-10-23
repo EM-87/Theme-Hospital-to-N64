@@ -21,6 +21,10 @@ LEVEL.L*
 
 # Salidas de compilación de N64
 n64/**/build/
+motor/build/
+# Assets del motor: los genera el conversor a partir de los datos del juego
+motor/filesystem/*
+!motor/filesystem/LEEME.txt
 # Ficheros generados para las ROMs de medida (algunos salen de los datos del juego)
 n64/pruebas/*/filesystem/
 n64/pruebas/*/assets/

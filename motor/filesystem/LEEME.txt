@@ -1,0 +1,2 @@
+Aquí deja el conversor (tools/conv) los assets de la ROM, generados a partir
+de los datos de Theme Hospital de cada usuario. No se suben al repositorio.
