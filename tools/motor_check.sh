@@ -3,7 +3,9 @@
 #   1. núcleo en el PC con gcc: -Wall -Wextra -Werror y pruebas (ctest);
 #   2. lo mismo con ASan y UBSan;
 #   3. ROM de pruebas en ares (modo Homebrew): las mismas pruebas sin fallos
-#      y la misma huella de la simulación de referencia que en el PC;
+#      y la misma huella de la simulación de referencia que en el PC; si hay
+#      assets (tools/conv/conv.py), el RDP dibuja un sprite sin ningún píxel
+#      distinto de lo que dicen la hoja y la paleta;
 #   4. ROM normal: compila y arranca.
 # Uso: tools/motor_check.sh [dir_salida]   (por defecto $TH64_WORK/resultados/motor_check)
 set -euo pipefail
@@ -38,6 +40,12 @@ huella_n64=$(sed -n 's/.*huella golden_sim(1, 10000) = \([0-9a-f]*\).*/\1/p' "$l
 [ "$huella_n64" = "$huella_pc" ] || { echo "   FALLO: huella N64 $huella_n64 frente a PC $huella_pc"; exit 1; }
 grep "comprobaciones" "$log" | sed 's/^/   /'
 echo "   huella igual en el PC y en la N64: $huella_n64"
+if grep -q "assets ok" "$log"; then
+  grep -q "TH64 hito1: .* 0 distintos" "$log" || { echo "   FALLO: el sprite dibujado no coincide"; grep "TH64 hito1" "$log"; exit 1; }
+  grep "TH64 hito1" "$log" | sed 's/^/   /'
+else
+  echo "   (sin assets: no se comprueba el dibujo; ejecuta tools/conv/conv.py)"
+fi
 
 paso "4. ROM normal"
 make -s -C "$M" > "$OUT/make_rom.log"

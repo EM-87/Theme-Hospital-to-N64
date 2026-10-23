@@ -20,7 +20,7 @@ include $(N64_INST)/include/n64.mk
 # El núcleo se compila además con -Wextra; -Werror y -O2 ya los pone n64.mk.
 CFLAGS += -Wextra -Icore/include -Itests
 
-C_FILES := $(wildcard core/src/*.c) platform/n64/main.c
+C_FILES := $(wildcard core/src/*.c) $(wildcard platform/n64/*.c)
 ifdef PRUEBAS
   C_FILES += tests/test_core.c
   CFLAGS += -DTH_PRUEBAS
@@ -30,7 +30,22 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(C_FILES:.c=.o))
 all: $(ROMNAME).z64
 .PHONY: all
 
-$(BUILD_DIR)/$(ROMNAME).dfs: $(wildcard filesystem/*)
+# Assets: tools/conv los deja sin comprimir en assets/; aquí se comprimen
+# (hojas de sprites con aPLib, -c 2) o se copian (paletas) a filesystem/.
+MKASSET := $(N64_INST)/bin/mkasset
+ASSETS := $(shell find assets -type f \( -name '*.tsh' -o -name '*.tpl' \) 2>/dev/null)
+FS_ASSETS := $(patsubst assets/%,filesystem/%,$(ASSETS))
+
+filesystem/%.tsh: assets/%.tsh
+	@mkdir -p $(dir $@)
+	@echo "    [ASSET] $@"
+	@$(MKASSET) -c 2 -o $(dir $@) $<
+
+filesystem/%.tpl: assets/%.tpl
+	@mkdir -p $(dir $@)
+	@cp $< $@
+
+$(BUILD_DIR)/$(ROMNAME).dfs: $(FS_ASSETS) $(wildcard filesystem/*)
 $(BUILD_DIR)/$(ROMNAME).elf: $(OBJS)
 
 $(ROMNAME).z64: N64_ROM_TITLE = "THEME HOSPITAL 64"
