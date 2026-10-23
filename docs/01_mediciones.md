@@ -139,6 +139,12 @@ En lugar de suponer un factor, se ha medido con `tools/luabench.sh`. Los mismos 
 
 **Calibrado del emulador.** Un bucle de 3 instrucciones que cabe en la caché da 93,46–93,75 MHz efectivos: la VR4300 a un ciclo por instrucción, como el hardware real. Leer 1 MiB línea a línea cuesta **763 ns por línea** de 16 B, unos 70 ciclos por fallo de caché.
 
+*Corrección (fase 4).* Esos 763 ns no son solo lecturas: el tiempo incluía también la escritura inicial del búfer, con sus fallos y sus escrituras de vuelta. Medido por separado con `n64/pruebas/calibracion`, en ares un fallo de caché de datos cuesta:
+- unos **45 ciclos** por línea leída si la línea que sale de la caché está limpia (40 del llenado más el bucle);
+- unos **85** si estaba modificada.
+
+Los factores de CPU de esta fase (400× para Lua, 227× para C) se midieron con los benchmarks, no con esta cifra, y no cambian.
+
 El factor es muy superior al cociente de relojes (2,1 GHz / 93,75 MHz = 22×). La diferencia la explican la menor capacidad de ejecución por ciclo de la VR4300 y, sobre todo, los fallos de caché: 8 KiB de datos frente a una RDRAM de alta latencia, justo lo que más castiga a un intérprete y a su recolector. Una primera pasada con otra disposición de la ROM dio 409× y 401×: el factor tiene una incertidumbre de ±20 % por prueba.
 
 **Factor usado para estimar:** 400× para Lua (rango 295–650×) y unas 225× para C.
@@ -168,7 +174,7 @@ Datos medidos que condicionan la decisión:
 - **Camino 1 (Lua de CorsixTH en la N64).** No es viable sin rehacer la representación de datos y el núcleo de la simulación. No cabe en memoria: 12,7–17,7 MiB de heap vivo y 26–43 MiB con la basura del GC, frente a 8 MiB. Tampoco llega en CPU: de 6,6 a 39 veces la VR4300 a velocidad Normal.
 - **Volumen de la simulación.** Un hospital lleno tiene unas 900 entidades (314 pacientes, 57 empleados, 305 objetos y basura) y 36 habitaciones, sobre un mapa de 16.384 casillas. Es la cantidad de estado que tendría que guardar cualquier motor.
 - **Estimación para un motor nativo (camino 2), no medida.** Con 256–512 B por entidad y 16–32 B por casilla, el estado de la simulación ocuparía 0,5–1 MiB. Eso dejaría margen dentro de 4 MiB para gráficos y audio. Hay que validarlo en las fases 3 y 5.
-- **CPU de un motor nativo.** No se puede medir todavía. Como referencia: el juego original corría en PC con DOS y en PlayStation (R3000A a 33,9 MHz). La VR4300 es más rápida que esa CPU, pero aquí cada fallo de caché cuesta ~70 ciclos, así que la disposición de los datos importará tanto como el algoritmo.
+- **CPU de un motor nativo.** No se puede medir todavía. Como referencia: el juego original corría en PC con DOS y en PlayStation (R3000A a 33,9 MHz). La VR4300 es más rápida que esa CPU, pero aquí cada fallo de caché cuesta unos 45 ciclos en ares (85 si hay que escribir una línea modificada; aquí decía ~70, ver la corrección de arriba), así que la disposición de los datos importará tanto como el algoritmo.
 - **Gráficos.** CorsixTH mantiene 7,3 MiB de sprites y animaciones decodificados más 3,4–6,3 MiB de texturas. En la N64 hará falta una caché de gráficos (como la caché LRU del port de Wii) o el formato nativo del RDP en vez de 32 bits. Es trabajo de las fases 2 y 3.
 
 ## Limitaciones

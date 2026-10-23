@@ -73,7 +73,7 @@ Se elige `preview` por tres razones:
    - 1: compila con un aviso;
    - 2: compila sin avisar.
 
-   El motor pondrá `LIBDRAGON_PREVIEW = 1` para ver cada API preview que use ([`04_construccion.md`](04_construccion.md#detalles-que-conviene-saber)).
+   El motor usará muchas APIs preview a propósito. Por eso deja el 2, y una compilación de la integración continua con `LIBDRAGON_PREVIEW=1` listará las que use ([`04_construccion.md`](04_construccion.md#detalles-que-conviene-saber)).
 2. **Música.** Theme Hospital guarda la música en XMI (variante de MIDI). `preview` trae un reproductor de secuencias (`mid64`) y un sintetizador de SoundFont (`sf64`). `trunk` no trae nada parecido.
 3. **Medición.** `preview` incluye `profile.h` y `rspq_profile.h`, útiles para el hito 5 de la fase 5.
 
@@ -250,3 +250,13 @@ Dos correcciones respecto a lo descrito arriba:
 
 - `tools/setup.sh` instala además `fluidsynth` y `timgm6mb-soundfont`, para medir la música sintetizada (`docs/02_datos.md`).
 - Las mediciones de datos (`tools/datos/fase2.sh`) usan también `ffmpeg`, `audioconv64`, `videoconv64` y `mkasset` de libdragon, y el `rnc_decode` del build `notracy` de CorsixTH.
+
+## Añadido en la fase 4
+
+- `tools/setup.sh` instala además `gdb-multiarch` (15.1 en Ubuntu 24.04), para depurar las ROMs contra el servidor GDB de ares. El `mips64-elf-gdb` de la toolchain no arranca aquí: se compiló contra `libpython3.10`, que Ubuntu 24.04 no trae.
+- `tools/run_ares.sh` admite:
+  - `ARES_SETTINGS`, para ajustes extra de ares: el modo Homebrew o el servidor GDB;
+  - `ARES_HOOK`, para ejecutar una orden mientras ares corre.
+
+  Además, deja de esperar si la ROM cierra ares.
+- Ver [`04_construccion.md`](04_construccion.md#herramientas) para el resto de herramientas evaluadas.

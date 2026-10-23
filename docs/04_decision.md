@@ -100,11 +100,11 @@ Aun así quedarían 3,94 MiB de 4: unos 60 KiB de margen, y con el código sin m
 
 - **Cuánta hay.** La VR4300 corre a 93,75 MHz. A velocidad Normal el juego simula 18,5 horas por segundo, así que **cada hora de juego dispone de 5,07 millones de ciclos** para todo: simulación, preparar el dibujo, audio y mandos. Si la simulación se queda con la mitad, son unos 2,5 M ciclos por hora: unos 7.000 por humanoide en el hospital lleno.
 - **Qué se lleva el resto** (medido en ares en la fase 4):
-  - **dibujo:** 400 elementos por fotograma a 30 fps gastan un 21 % de la CPU con una rutina de dibujo propia, y un 49 % con `rdpq_tex_blit`;
+  - **dibujo:** 400 elementos por fotograma a 30 fps gastan un 49 % de la CPU con `rdpq_tex_blit`; con las APIs estables de carga y rectángulo, un 22–33 %, y escrito a mano, un 21 %;
   - **audio:** un 8–9 %.
 
   A la simulación le quedan entonces unos 3 M ciclos por hora de juego a velocidad Normal, algo más que los 2,5 M supuestos arriba ([detalles](04_construccion.md#lo-que-cambia-en-el-presupuesto-de-la-fase-4)).
-- **Cuánto gasta CorsixTH.** 24,6 millones de instrucciones x86 por hora en ese hospital (fase 3), unas 68.000 por humanoide. Frente a 2,5 M ciclos son 10 veces más, y la VR4300 no ejecuta una instrucción por ciclo cuando falla la caché (unos 70 ciclos por fallo, fase 1). El motor nuevo tiene que hacer el mismo trabajo con **unas 10–20 veces menos instrucciones**.
+- **Cuánto gasta CorsixTH.** 24,6 millones de instrucciones x86 por hora en ese hospital (fase 3), unas 68.000 por humanoide. Frente a 2,5 M ciclos son 10 veces más, y la VR4300 no ejecuta una instrucción por ciclo cuando falla la caché. En ares, cada fallo cuesta unos 45 ciclos, y 85 si hay que escribir una línea modificada; la fase 1 decía 70 por un error de medida, ya corregido. El motor nuevo tiene que hacer el mismo trabajo con **unas 10–20 veces menos instrucciones**.
 - **Por qué parece alcanzable:**
   - se pierde el intérprete: el 76,5 % del tiempo de CorsixTH es la VM de Lua;
   - el 47 % de lo que ejecuta esa VM es una búsqueda que se puede sustituir por contadores;
@@ -153,15 +153,15 @@ Propuesta para el mando de N64, a validar en el prototipo. La interfaz de Theme 
 |---|---|---|---|
 | **La simulación no llega a velocidad Normal en el hospital lleno** | Alta | Algoritmos incrementales; repartir el trabajo entre ticks; recortes del apartado anterior | Hitos 4 y 5 de la fase 5 |
 | **Esfuerzo.** Hay que reescribir 24.749 líneas de lógica y rehacer 19.512 de interfaz | Alta | Bucle mínimo primero (hito 4); avanzar por sistemas, no por pantallas | A lo largo de la fase 5 |
-| **CPU del dibujo.** `rdpq_tex_blit` gasta 3.425–4.248 ciclos por sprite; con 400 elementos a 30 fps sería la mitad de la CPU | Alta | Rutina de dibujo propia (~1.630 ciclos), bloques `rspq` para el suelo y las paredes, 20 fps si hace falta | Hitos 2 y 3 |
+| **CPU del dibujo.** `rdpq_tex_blit` gasta 3.497–4.248 ciclos por sprite; con 400 elementos a 30 fps sería la mitad de la CPU | Alta | Carga y rectángulo con APIs estables (1.758–2.542 ciclos) o a mano (~1.630); el suelo en bloques `rspq`; 20 fps si hace falta | Hitos 2 y 3 |
 | Fidelidad de las reglas: CorsixTH no es idéntico al original (el autor del port de Wii lo abandonó por eso) | Media, ya acotada | 71 diferencias clasificadas; CorsixTH como referencia con 6 excepciones; lista de control en la fase 5 | Al implementar cada sistema |
 | Escenarios de comparación: las partidas de referencia de la fase 1 no curan a nadie (0 curas en 2.000 h en `mediano`) | Media | Escenarios propios validados por hito | Antes del hito 4 |
 | Relleno del RDP con muchos sprites solapados a 320 × 240 | Media | Texturas CI8 o CI4, recortes por casilla, medir en el hito 2 | Hitos 2 y 3 |
 | Legibilidad de las ventanas de gestión a 320 × 240 | Media | Retocar en el conversor o rehacer la maquetación, como la PS1 | Al convertir la interfaz |
 | Formato de guardado en 32–128 KiB | Media | Guardar solo el estado, sin animaciones ni cachés | Al implementar el guardado |
-| ares frente a la consola real (sin SummerCart todavía). ares cobra 40 ciclos por fallo de caché de datos y no modela los bloqueos del pipeline ni la competencia por la RDRAM | Media | Las ROM escriben sus medidas en pantalla para leerlas en la consola; confirmar los ciclos con un SummerCart64 | Cuando haya flashcart |
+| ares frente a la consola real (sin SummerCart todavía). ares cobra 40 ciclos por fallo de caché de datos (80 si expulsa una línea modificada) y uno más por acierto, y no modela los bloqueos del pipeline ni la competencia por la RDRAM | Media | Las ROM escriben sus medidas en pantalla para leerlas en la consola; confirmar los ciclos con un SummerCart64 | Cuando haya flashcart |
 | Licencias: datos del juego, SoundFont (TimGM6mb es GPL-2) y `wii_vm.c` (todos los derechos reservados) | Media | Conversor para que cada uno use sus datos; SoundFont compatible; no se usa nada de `wii_vm` | Antes de publicar nada |
-| Cambios en la rama `preview` de libdragon: el mezclador, `wav64`, `mid64`, `sf64` y el vídeo son APIs preview | Media | Commit fijado en la fase 0; `LIBDRAGON_PREVIEW = 1` para que avise de cada una; actualizar solo a propósito | Continuo |
+| Cambios en la rama `preview` de libdragon: el mezclador, `wav64`, `mid64`, `sf64` y el vídeo son APIs preview | Media | Commit fijado en la fase 0; lista de APIs preview usadas en la integración continua; actualizar solo a propósito | Continuo |
 | Rendimiento de H.264 para los vídeos | Baja | En ares, vídeos sintéticos de 320 × 240 a 15 y 25 fps se ven sin saltar fotogramas; falta probar los reales | Al convertir los vídeos |
 
 ## Cambios al plan de la fase 5
@@ -169,7 +169,7 @@ Propuesta para el mando de N64, a validar en el prototipo. La interfaz de Theme 
 El detalle está en [`04_construccion.md`](04_construccion.md#orden-de-trabajo).
 
 - **Antes del hito 1, el entorno del motor:**
-  - un `Makefile` con `LIBDRAGON_PREVIEW = 1`;
+  - un `Makefile` con `n64.mk` tal cual (`-O2`), y en la integración continua una compilación con `LIBDRAGON_PREVIEW=1` que liste las APIs preview usadas;
   - `tools/run_ares.sh` en modo Homebrew, para tener `debugf` con cualquier tamaño de ROM, perfiles con fallos de caché y salida automática;
   - el núcleo compilando también en el PC, con pruebas y sanitizers.
 - **Hito 0 nuevo: el conversor.** Un conversor en el PC (Python, a partir de `tools/datos/`, más Lua para leer las definiciones de CorsixTH) genera en big-endian:

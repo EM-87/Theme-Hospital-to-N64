@@ -1,0 +1,8 @@
+# n64/pruebas/calibracion en ares v148 con General/HomebrewMode=true, 2026-10-23
+CAL emux=000017a1
+CAL alu3x1e6       ticks=1500225 ciclos(TICKS*2)=3000450 emux_ciclos=3000450 dhit=1 dmiss=0 dwb=0 ihit=0 imiss=1 ciclos/linea=0.00
+CAL leer_limpio    ticks=1475879 ciclos(TICKS*2)=2951758 emux_ciclos=2951758 dhit=1 dmiss=65538 dwb=62 ihit=65535 imiss=3 ciclos/linea=45.04
+CAL escribir       ticks=2776398 ciclos(TICKS*2)=5552796 emux_ciclos=5552796 dhit=0 dmiss=65537 dwb=65089 ihit=0 imiss=3 ciclos/linea=84.73
+CAL leer_tras_esc  ticks=1484151 ciclos(TICKS*2)=2968302 emux_ciclos=2968302 dhit=1 dmiss=65538 dwb=478 ihit=65537 imiss=2 ciclos/linea=45.29
+CAL aciertos       ticks=1615035 ciclos(TICKS*2)=3230070 emux_ciclos=3230069 dhit=640003 dmiss=0 dwb=0 ihit=640002 imiss=2 ciclos/linea=5.05
+CAL sink=4294705152 fin

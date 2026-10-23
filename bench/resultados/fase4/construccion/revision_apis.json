@@ -1,0 +1,154 @@
+{
+ "verificaciones": [
+  {
+   "id": "H1",
+   "veredicto": "confirmado",
+   "comprobacion": "Leído en ~/th64-work/src/libdragon (commit 39d0d609, árbol limpio): src/rdpq/rdpq_tex.c:33 `#define TMEM_PALETTE_ADDR 0x800`; :137 `tmem_pitch = ROUND_UP(TEX_FORMAT_PIX2BYTES(fmt, width) >> pitch_shift, 8)`; :190-192 `tmem_size = (... FMT_CI4 || FMT_CI8 ...) ? 2048 : 4096` más el assertf «too big to fit in TMEM»; :362-368 `calc_max_height = tmem_size / tmem_pitch`. include/rdpq_tex.h:213-215: «room for 256 colors in total ... one palette for a CI8 texture, or up to 16 palettes for CI4». include/rdpq.h:279: el campo palette del tile solo vale para CI4 («otherwise use 0»). Las cuentas 64×32 = 32×64 = 2.048 B cuadran."
+  },
+  {
+   "id": "H2",
+   "veredicto": "confirmado",
+   "comprobacion": "He vuelto a ejecutar `python3 -I .../apis/sprites/tmem_stats.py $TH_DATA_DIR` y la salida es idéntica: 4.601 sprites, 29 no caben (28 de MSPR y 1 de MBLK), 4.632 tiras {1: 4572, 2: 27, 3: 2}, 2.732 candidatos a CI4 y ninguno que no quepa, recortados al opaco siguen 29, 710 de ancho múltiplo de 8. Además lo recalculé por mi cuenta leyendo solo los .TAB, sin el decodificador: 4601 / 29 / 4632 / 76.903 de 1.162.304 px / 710; ancho: mediana 11, p90 24, máximo 75; alto: 13, 30 y 74. bench/resultados/fase2/graficos.json da /grupos/M/ci8 = 1367880. Matiz: el propio CorsixTH carga Data con prefijo V (app.lua:325 y :932); DATAM es la decisión de la fase 2 (docs/02_datos.md:18), no lo que usa CorsixTH."
+  },
+  {
+   "id": "H3",
+   "veredicto": "corregido",
+   "comprobacion": "El mecanismo se confirma en rdpq_tex.c:483-512 (ltd_texloader, «load it in horizontal strips»), en :362-368 y en el assert de rdpq_sprite.c:42 y rdpq_tex.c:190-191 (este solo existe sin NDEBUG). 80 → pitch 80 → 25 filas por carga → 3 tiras. Cifras: el 80×74 da 10.709, 10.711, 9.666 y 8.451 ciclos/blit en los cuatro registros guardados (gfxrom/out, out2, out3 y out4/isviewer.log). El valor 7.285 no aparece en ninguno. Recompilé gfxrom en mi directorio y lo ejecuté en ares: sale 8.451, igual que out4.",
+   "correccion": "80×74: 8.451–10.711 ciclos de CPU por blit, entre 2,4 y 2,5 veces lo de 16×13 (8451/3497 = 2,42; 10711/4248 = 2,52), y no entre 2,1 y 2,5. El 7.285 no se puede comprobar con lo guardado. RSP+RDP: 8,11–8,14 ms frente a 2,74–2,77 ms por 1.000, correcto."
+  },
+  {
+   "id": "H4",
+   "veredicto": "corregido",
+   "comprobacion": "Revisé los cuatro registros guardados. rdpq_tex_blit 16×13 con LOAD_BLOCK: 4.247, 4.248, 3.850 y 3.497 ciclos; los valores 3.425 y 3.471 no aparecen en ningún log. En bloque: 4.850, 4.849, 4.575 y 3.642; ninguno cae en el rango 3.849–4.018 citado, y el bloque sale entre un 4 y un 14 % más caro que la llamada directa. rdpq_sprite_blit: 5.664, 5.665, 5.743 y 4.862; el 4.558 no aparece. A mano: 1.626–1.634, correcto. Solo el rectángulo: 173, correcto. Recompilé gfxrom y lo ejecuté en ares: los números coinciden exactamente con out4 (3497/3642/1626/173/4862), así que la ejecución es determinista y la variación viene del binario. Sobre la causa, `mips64-elf-objdump -d build/th64gfx.elf` muestra que tex_xblit_norotate_noscale monta en la pila un trampolín de función anidada de GCC (draw_cb) y llama a `jal 800349e0 <_flush_cache>` (0x800261e0) en cada llamada. _flush_cache = data_cache_hit_writeback + inst_cache_hit_invalidate (system.c:1748). Lo mismo pasa en tex_xblit, tex_xblit_norotate y tex_xblit_xform. Lo medí con una ROM propia (verificar-apis/tramp) en ares: 262 ciclos por llamada con trampolín frente a 19 sin él. n64.mk:86 añade además -ftrivial-auto-var-init=pattern. NDEBUG no se define en ninguna parte (Makefile:19 y n64.mk), como se dice.",
+   "correccion": "rdpq_tex_blit 16×13: 3.497–4.248 ciclos en cuatro binarios. En bloque rspq: 3.642–4.850, más caro que la llamada directa. rdpq_sprite_blit: 4.862–5.743. Ejemplo de 600 elementos: 2,10–2,55 M ciclos, es decir 22,4–27,2 ms. Entre las causas falta el trampolín de GCC con vaciado de caché en cada blit: unos +243 ciclos medidos, el 6–7 % del total. No es la causa principal, pero depende de cómo emule ares las cachés y puede explicar parte de la variación entre binarios."
+  },
+  {
+   "id": "H5",
+   "veredicto": "confirmado",
+   "comprobacion": "src/sprite_internal.h:12 (SPRITE_EXT_VERSION 6) y :54-90 (sprite_ext_t, _Static_assert 128); src/sprite.c:38 (assert «please regenerate your asset files»); include/sprite.h:42-63 (cabecera de 8 B). sprite_internal.h no se instala: en /opt/libdragon/include solo están sprite.h y rdpq_sprite.h. He vuelto a ejecutar overhead.py: 4.156.088 B (3,96 MiB), 4601×648 = 2,84 MiB, 1.405.200 B (1,34 MiB) y 1.199.624 B (1,14 MiB). Prueba independiente: pasé cinco sprites reales de MSPR a PNG con mksprite y el tamaño es exactamente 8 + round8(w·h) + 128 + 512 (73×74 → 6.056 B; 14×26 → 1.016 B). Matiz: los 512 B de paleta salen de que el PLTE del PNG tiene 256 entradas. Con un PLTE de 16 entradas mksprite escribe 32 B (mi p16.png de 10×4 → 192 B)."
+  },
+  {
+   "id": "H6",
+   "veredicto": "confirmado",
+   "comprobacion": "Código: mksprite.c:519-528 (memcpy de la paleta y used_colors = índice máximo + 1), :571-572 (CI4 si used_colors ≤ 16), :1676-1689 (escribe num_colors entradas) y :157-160 (conv_rgb5551: >>3 y alfa ≥ 128). Prueba propia (verificar-apis/mks_test.py), con un PNG escrito a mano sin PIL: cinco sprites reales de DATAM (MSPR 100, 1234, 1640, 2401 y 3000) con la MPALETTE descomprimida de fase2/raw, que tiene una entrada repetida, y tRNS solo en el 255. Resultado: índices y paleta RGBA5551 idénticos en 5 de 5, formato CI8 y pal_used_colors = 256. Con un PLTE de 16 entradas elige CI4 y escribe 32 B de paleta: la «paleta entera del PNG» no siempre son 256 entradas."
+  },
+  {
+   "id": "H7",
+   "veredicto": "corregido",
+   "comprobacion": "He vuelto a ejecutar ele_flags.py: 24.983 elementos; 7.633 con espejo horizontal (30,6 %), 348 con vertical y 4.263 al 50 %; 1.350 sprites volteados y 384 solo volteados. Código: th_gfx.cpp:169-178 (formato del elemento), :968-980 (espejo de la animación entera) y :943-956 (se salta el elemento si layer_id no coincide); rdpq_mode.h:32-37; rdpq_rect.h:45-50 (x0 > x1 invierte dsdx); rdpq_tex.c:533 (flip_x con x0 > x1). Vi las capturas out4/captura.png y out3/recorte_copy2.png: el COPY con espejo conserva la diagonal. Con un script propio (verificar-apis/drawn.py) apliqué el filtro de capas a cada fotograma: como mucho una variante de layer_id por capa, más los elementos con layer_id 0.",
+   "correccion": "La mediana de 14, el p90 de 28 y el máximo de 47 cuentan las entradas de la lista del fotograma, no lo que se dibuja. Tras el filtro de capas se dibujan como mucho una mediana de 8, un p90 de 16 y un máximo de 28. Ponderado por referencias en los fotogramas, el espejo horizontal es el 29,1 % y el alfa del 50 % el 13,6 %."
+  },
+  {
+   "id": "H8",
+   "veredicto": "confirmado",
+   "comprobacion": "th_gfx_sdl.cpp:1450-1475 (_makeAltBitmap; el 255 no se remapea); graphics.lua:265-330 (makeGreyscaleGhost) y :343-350 (loadGhost); place_objects.lua:382-389; place_staff.lua:48-50; edit_room.lua:35-40 (Ghost1.dat índice 6 con Alt32_BlueRedSwap); th_lua_map.cpp:326-368 (las paredes del plano con thdf_alt_palette). Logs: el cambio de TLUT por blit suma 173, 170, 297 y 576 ciclos; RSP+RDP 5,43–5,46 ms frente a 2,74–2,77 ms por 1.000; 16 y 256 colores cuestan igual (5.449/5.449). rdpq.h:279: la paleta por tile solo existe para CI4. Matiz: los +2,7 µs de RSP+RDP vienen de ares (paraLLEl-RDP) y no reflejan los tiempos del hardware. Falta además lo que CorsixTH hace por elemento sin tablas de recoloreo (ver omisiones)."
+  },
+  {
+   "id": "H9",
+   "veredicto": "confirmado",
+   "comprobacion": "th_map.cpp:973-978 (sombras de suelo, sprites 74 y 75) y :996-997 (sombra de pared, sprite 156) con thdf_alpha_75. th_gfx_sdl.cpp:936-940: alpha_50 → AlphaMod 0x80, alpha_75 → 0x40, es decir un 25 % opaco. rdpq_mode.h:516 RDPQ_BLENDER_MULTIPLY = (IN_RGB, IN_ALPHA, MEMORY_RGB, INV_MUX_ALPHA). gfxrom/src/main.c usa el combinador ((0,0,0,TEX0), (TEX0,0,PRIM,0)) con PRIM alfa 128 y alphacompare(1); en out4/captura.png se ven los dos sprites de 80×74 semitransparentes. Solo se probó el 50 %; el 75 % (PRIM alfa 64) es el mismo mecanismo pero no está probado."
+  },
+  {
+   "id": "H10",
+   "veredicto": "confirmado",
+   "comprobacion": "Código: mkfont_bmfont.cpp:368-372 («only text format of FNT files is supported»); :160-162 (lodepng_decode32_file convierte cualquier PNG, también indexado, a RGBA, así que RGBA no es un requisito); mkfont.cpp:438-439 y :452-453 (RGBA16 por defecto en fuentes de mapa de bits); mkfont_out.cpp:1259-1262; rdpq_text.h:51-54 (solo UTF-8). Repetí th2bmfont.py y mkfont en mi directorio: CI4 6.056 B (idéntico byte a byte al del investigador), CI8 10.600, RGBA16 14.840 (el formato por defecto) y 3.138 con -c 1. Heap de 594 a 601 KiB en los logs. Texto en mi ejecución: 290 µs con print, 219 µs de build y 167 µs de render, igual que out4; 301 y 353 en out3 y out."
+  },
+  {
+   "id": "H11",
+   "veredicto": "confirmado",
+   "comprobacion": "Repetí th2bmfont.py con FONT01V (fase2/raw) y FONT101M (QDATAM) contra LANG-4.DAT: 194 glifos en las dos; 91 códigos distintos; por encima de 127, ü é á í ó ú ñ Ñ ¿ ¡; ninguno sin glifo; faltan ÁÍÓÚ. LANG-4 es español («Medicina General», «Síndrome de rey»). En spanish.lua conté Ó 2 (líneas 91 y 811), Á 1 (686) e Í 1 (1473). Dato extra: con fuentes de mapa de bits, CorsixTH dibuja Á, Í y Ó como «?» (th_strings.cpp:75-88: U+00C1 → 0x3F)."
+  },
+  {
+   "id": "H12",
+   "veredicto": "confirmado",
+   "comprobacion": "mixer.h:61 (MIXER_MAX_CHANNELS 32) y :40-56 (mezcla en el RSP); wav64.h:152 («start the same waveform on multiple independent channels»); wav64_vadpcm.c:145-150; `audioconv64 --help-compress` → «vadpcm,huffman=true ... (default: true for wav64)». Logs out2.txt y out3.txt: sin canales, 0,31/0,28 %; 1 efecto, 3,10/3,50 %; 8 efectos, 16,53/16,70 %; sin Huffman, 2,96 %; ficheros de 22.766 y 25.086 B (+10,2 %). Matiz: son 8 copias del mismo efecto en bucle sonando a la vez, un caso peor que el habitual."
+  },
+  {
+   "id": "H13",
+   "veredicto": "confirmado",
+   "comprobacion": "`audioconv64 --help` (SF2 => SF64, MID => MID64); sf64.h:22-30 («Samples are streamed from the filesystem»); audiorom/out/isviewer.log: assert en mixer.c:593 «frequency 44100.0 exceeds configured limit 31995.0 on channel 6»; audioplayer.c:33 (MID_VOICES 24) y :269-270 (mixer_ch_set_limits(i, 0, 96000, 0)); emux.h:1-9 (extensiones de emulador). Ficheros de 8.431 y 1.817.501 B. CPU: 4,95 % (out2) y 5,66 % (out3). Además, con mi ROM verificar-apis/audioram: un límite de 48.000 aborta en los primeros 10 s (49.414,9 Hz en el canal 7) y 64.000 aguanta."
+  },
+  {
+   "id": "H14",
+   "veredicto": "corregido",
+   "comprobacion": "La audiorom del investigador no llama a rdpq_init, así que mixer_init → rspq_init (mixer.c, tras :357) reserva los dos búferes dinámicos del RDP de 64 KiB (rdpq_constants.h:13) y su coste cuenta como audio. Lo comprobé con mi ROM verificar-apis/audioram en ares: rdpq_init (con rspq_init) 136 KiB; audio_init(32000, 4) 20 KiB; mixer_init(32) 0 KiB; sf64_load 353 KiB; sintetizador + mid64 16 KiB; 10 s de MIDI con 16 voces, +82 KiB. La rambase del repo da lo mismo («RDP +136 KiB», «Audio a 32 kHz +20 KiB»), y esas dos partidas ya estaban en la fila «Vídeo, RDP y audio 0,59» de docs/04_decision.md (versión 3043d06, línea 75).",
+   "correccion": "Al audio se le pueden atribuir unos 507 KiB, no 643: los 643 incluyen 136 KiB de rspq_init que ya paga rdpq. Frente a la partida de 0,20 MiB («búferes del mezclador y sintetizador»), lo que hay que comparar es 643 − 156 ≈ 487 KiB, unos 0,48 MiB, de los que 353 KiB son el banco TimGM6mb. La versión actual de docs/04 ya usa 0,47."
+  },
+  {
+   "id": "H15",
+   "veredicto": "corregido",
+   "comprobacion": "fmv.c:24-26 (8 o 4 imágenes), :34-41 (32 bpp y 2 búferes), :66-84 (busca el .wav64 con el mismo nombre) y :272-275 (al terminar, display_set_fps_limit(0) y display_close); fmv.h:165-177 y :103-104 (audio_mixer_channel, por defecto 0). Logs out.txt, out_noexp.txt, out2.txt y out3.txt: correctos los fps (15,13–15,22 y 25,06–25,20), los picos (2903, 2452, 2298, 1848 y 1627 KiB) y unos 112 KiB por imagen (320×240×1,5). ffmpeg 6.1.1 está instalado. El ejemplo del vídeo ya estaba compilado en el árbol: examples/videoplayer/videoplayer.z64 del 9 de octubre, con caminandes.ogv y filesystem/caminandes.h264 de 2.742.503 B, aunque sin .wav64. Lo ejecuté en ares (run_ares.sh, 70 s): 320×176 a 24 fps, 24,0–24,1 fps reales, y entre el 32 y el 56 % de CPU de usuario por fotograma (H.264 entre el 27 y el 51 %) en 13 volcados del perfilador. Los vídeos sintéticos iban a 42 y 236 kbit/s; Caminandes a 146.",
+   "correccion": "El pico máximo es de 2.903 KiB, es decir 2,83 MiB; el resumen dice 2,90. «Va a ritmo completo» solo está probado con testsrc. Con contenido real (el ejemplo, sin audio) también va a 24 fps en ares, pero gasta entre el 32 y el 56 % de la CPU. No es cierto que el ejemplo no se pudiera ejecutar sin descargar nada: su ROM ya existía. Requisito que no se menciona: video_register_codec(&h264_codec) antes de fmv_play (videoplayer.c:43-44)."
+  },
+  {
+   "id": "H16",
+   "veredicto": "confirmado",
+   "comprobacion": "joypad.h:125-132; joypad.c:438-441 y :517-518; joybus.h:146 (0x0200). ares: mouse.cpp:52-61 (sclamp<8>(x) y sclamp<8>(-y); bit 31 = izquierdo → A, bit 30 = derecho → B) y :17-20 (estado 0x02 0x00); port.cpp:19 (setSupported Gamepad y Mouse) y :36-37; nintendo-64.cpp:139 (allocate(\"Gamepad\")) y :46-51; presentation.cpp:917-950. desktop-ui.cpp no tiene ninguna opción de puerto (solo --system, --setting, --save-state, …) y settings.cpp solo tiene Nintendo64/ExpansionPak y ControllerPakBankString. joyrom/m4/isviewer.log: t=8 «mando N64 (id 0x0500)», t=9 «RATON N64 (id 0x0200)». Matices: sclamp<8> da de −128 a +127, no ±127; el registro escribe una vez por segundo, así que «≤ 1 s» es el límite de lo que se puede medir."
+  },
+  {
+   "id": "H17",
+   "veredicto": "confirmado",
+   "comprobacion": "grep -c en include/: mixer.h 19 API y 8 SYM; wav64.h 2 (wav64_load y wav64_seek); mid64.h 12; sf64.h 7; sf64_synth.h 16; video.h 10; fmv.h 1; asset.h 2; rdpq_font.h, rdpq_text.h, rdpq_paragraph.h, joypad.h y surface.h 0. /opt/libdragon/include/n64.mk:8 tiene LIBDRAGON_PREVIEW ?= 2, igual que el n64.mk de la fuente (git status limpio). Matices: rdpq_tex.h no es del todo estable (rdpq_tex_can_upload, :206, y allow_xform, :340, son preview), ni sprite.h (sprite_get_palette_used_colors y sprite_is_shq) ni audio.h (3). Y preview.h dice que el valor por defecto es 0 mientras que n64.mk pone 2: es una incoherencia upstream que puede cambiar, así que conviene fijar LIBDRAGON_PREVIEW en el Makefile."
+  }
+ ],
+ "recomendaciones_discutibles": [
+  {
+   "recomendacion": "Dibujo: «Grabar las capas estáticas visibles (suelo y paredes) en un bloque rspq al mover la cámara y repetirlo cada fotograma».",
+   "objecion": "Las paredes no forman una capa separable. En th_map.cpp:1059 se dibuja primero todo el suelo con sus sombras (draw_floor, :956-981). Después, por cada línea de barrido, se alternan pared norte, entidades tempranas, pared oeste, capa ui y entidades, con redibujados (:1062-1115). Solo el suelo y sus sombras se pueden grabar en un bloque. Las paredes tienen que ir intercaladas en orden de pintor con los humanoides y objetos. Además el bloque guarda coordenadas absolutas de pantalla, así que cada desplazamiento de cámara obliga a regrabarlo."
+  },
+  {
+   "recomendacion": "Dibujo: blitter propio a mano (1.630 ciclos) frente a rdpq_tex_blit (3.425–4.248).",
+   "objecion": "Se deja fuera la opción intermedia, que está en los mismos logs: rdpq_tex_upload + rdpq_texture_rectangle, ambas API estables, cuesta 1.758–2.542 ciclos (2.114 en el binario reproducible). La ruta a mano solo mejora a esa entre un 8 y un 36 %, y a cambio hay que mantener a mano la sincronización y el estado de TMEM. Conviene medir esa opción antes de escribir comandos del RDP. Además la «mediana de 14 elementos por humanoide» que se usa como motivo es el tamaño de la lista: tras el filtro de capas se dibujan como mucho 8 (p90 16)."
+  },
+  {
+   "recomendacion": "Formato de sprites: «la TLUT se sube una vez por fotograma».",
+   "objecion": "rdpq_font sube su propia paleta en la posición 0 de la TLUT: rdpq_font.c:202, :221 y :251, con 16 colores para una fuente CI4 y 256 para una CI8. Cualquier texto dibujado entre sprites o antes de ellos machaca las entradas 0–15 de MPALETTE, o todas. Lo mismo pasa con rdpq_sprite_blit y con fmv. Hay que volver a subir MPALETTE después de cada tanda de texto e interfaz y restaurar el modo, o dibujar todo el texto al final."
+  },
+  {
+   "recomendacion": "Audio: «Subir la partida de audio del presupuesto de RAM de 0,20 a unos 0,65 MiB».",
+   "objecion": "Los 643 KiB cuentan dos veces 136 KiB de rspq_init, que ya paga rdpq, y 20 KiB de audio_init, que ya estaban en la fila de 0,59 MiB. Medido en mi ROM: rdpq_init 136 KiB, audio_init 20 y mixer_init(32) 0. La cifra comparable es de unos 0,48 MiB con el banco TimGM6mb entero."
+  },
+  {
+   "recomendacion": "Vídeo: fmv_play con disable_display_init sobre el display del juego (y la música MIDI en los canales 0–15).",
+   "objecion": "fmv_play reproduce el audio en audio_mixer_channel, que por defecto es el canal 0 (fmv.h:103-104), justo el primero del sintetizador en el reparto propuesto. Hay que pasarle un canal libre o parar la música. Además, al terminar llama a display_set_fps_limit(0) (fmv.c:272), lo que borra cualquier límite de fps que hubiera puesto el juego. Y con contenido real el decodificador gasta entre el 32 y el 56 % de la CPU por fotograma: medido con el ejemplo videoplayer en ares, a 24 fps."
+  },
+  {
+   "recomendacion": "Ratón: «sumar stick_x y stick_y a la posición del puntero en cada lectura».",
+   "objecion": "libdragon lee el joybus en cada VI, sin esperar a joypad_poll (joypad.c:550-553 y :628, vi_install_vblank_handler), y joypad_poll solo copia el último resultado (joypad.c:661-665). Para el ratón no hay acumulación: solo :438-440, :518 y :714-716 lo mencionan. Como el ratón informa del movimiento desde la última lectura, un juego que llame a joypad_poll a 30 fps o menos pierde la mitad o más del movimiento. Hay que acumular el delta en un manejador de vblank, en cada VI."
+  },
+  {
+   "recomendacion": "Fuentes: «una pantalla de gestión con 30 líneas serían unos 5–9 ms por fotograma».",
+   "objecion": "Con rdpq_text_print son 30 × 0,290–0,353 ms, es decir 8,7–10,6 ms. Con rdpq_paragraph_render son 30 × 0,167 ms, 5,0 ms, y la maquetación se paga aparte (219 µs por párrafo). La horquilla mezcla los dos métodos."
+  }
+ ],
+ "omisiones": [
+  {
+   "omision": "Efectos de paciente por elemento, que no son recoloreo por tabla: «glowing» (radiación) y «jelly» (gelatinitis). El punto 3 del encargo pedía cómo recolorea TH por elemento, y no se estudian.",
+   "evidencia": "th_gfx.cpp:958-965 (render_effect para capas de paciente); th_gfx_sdl.cpp:1383-1391: glowing = scoped_color_mod(0, 205 ± 50, 0), que en el RDP es un combinador TEX0×PRIM; :1393-1430: jelly dibuja el sprite en bandas horizontales con desplazamiento sinusoidal, es decir varios rectángulos por sprite (173 ciclos cada uno con la textura ya cargada, según el log)."
+  },
+  {
+   "omision": "No se distingue entre elementos de la lista de un fotograma y elementos dibujados, y el presupuesto de dibujo se apoya en la cifra mayor.",
+   "evidencia": "th_gfx.cpp:943-956 descarta los elementos cuyo layer_id no coincide. verificar-apis/drawn.py: como mucho se dibuja una mediana de 8, un p90 de 16 y un máximo de 28 por fotograma, frente a 14, 28 y 47 en la lista."
+  },
+  {
+   "omision": "El ejemplo de vídeo de libdragon ya estaba compilado y se podía ejecutar sin descargar nada, con contenido real.",
+   "evidencia": "examples/videoplayer/videoplayer.z64 (9 de octubre, 5,6 MB) con caminandes.h264 de 2.742.503 B en su DFS. Ejecutado en ares: 320×176 a 24 fps, 24,0–24,1 fps y entre el 32 y el 56 % de CPU de usuario por fotograma (H.264 entre el 27 y el 51 %), sin audio porque falta el .wav64. Salida en verificar-apis/vp.txt."
+  },
+  {
+   "omision": "La RAM del audio incluye la de rspq_init, que pertenece a rdpq.",
+   "evidencia": "verificar-apis/audioram/out96/isviewer.log: «rdpq_init (con rspq_init) 136 KiB; audio_init(32000,4) 20 KiB; mixer_init(32) 0 KiB». En rdpq_constants.h:13, RDPQ_DYNAMIC_BUFFER_SIZE = 64 KiB, y rspq_init reserva dos."
+  },
+  {
+   "omision": "No se identifica la sobrecarga de las funciones anidadas de GCC (trampolines) en rdpq_tex_blit.",
+   "evidencia": "objdump de th64gfx.elf: tex_xblit, tex_xblit_norotate, tex_xblit_norotate_noscale y tex_xblit_xform llaman a _flush_cache en cada invocación (0x800261e0). Medido en ares con verificar-apis/tramp: 262 frente a 19 ciclos por llamada."
+  },
+  {
+   "omision": "No se evalúa la opción de un solo .sprite por hoja (atlas generado con mksprite), que reduciría los 648 B por sprite a una sola cabecera y paleta sin salir de las herramientas oficiales.",
+   "evidencia": "rdpq_blitparms_t admite subrectángulos (s0, t0, width y height en rdpq_tex.h:328-331) y el coste fijo de .sprite es por fichero (sprite_internal.h:54-90). Con subrectángulos no se puede usar LOAD_BLOCK, porque no cubren el ancho entero (rdpq_tex.c:144-146). Hay que medirlo frente al formato propio."
+  },
+  {
+   "omision": "No se considera el códec ULC para efectos y locutor como alternativa a VADPCM con Huffman.",
+   "evidencia": "`audioconv64 --help-compress`: «ulc (or 2) ... A simple and fast transform codec. Worse compression than Opus, but better runtime performance». No se ha medido ni en CPU ni en tamaño."
+  }
+ ]
+}

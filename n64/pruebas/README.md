@@ -15,12 +15,13 @@ make -C n64/pruebas/hilos
 ARES_SETTINGS="General/HomebrewMode=true" tools/run_ares.sh n64/pruebas/hilos/th64hilos.z64 out/hilos 60
 ```
 
-`ARES_SETTINGS="General/HomebrewMode=true"` hace falta en las ROMs que usan `debug_init_emulog()`, EMUX o `profile.h` (`sim`, `depuracion`, `hilos`, `dso`, `guardado`, `rom_grande`). Con `--no-expansion`, ares arranca con 4 MiB.
+`ARES_SETTINGS="General/HomebrewMode=true"` hace falta en las ROMs que usan `debug_init_emulog()`, EMUX o `profile.h` (`calibracion`, `sim`, `depuracion`, `hilos`, `dso`, `guardado`, `rom_grande`). Con `--no-expansion`, ares arranca con 4 MiB.
 
 ## Qué mide cada una
 
 | Directorio | Qué mide | Resultado |
 |---|---|---|
+| `calibracion/` | Modelo de ciclos de ares: bucle de ALU, lectura de 1 MiB con fallos limpios, escritura, lectura con fallos sucios y aciertos (contadores EMUX; modo Homebrew) | 45 ciclos por línea con fallo limpio, 85 con sucio, 5 por vuelta con acierto |
 | `sim/` | Ciclos de un módulo de prueba (A* sobre 128 × 128 y 361 entidades) con `TICKS_READ`, `profile.h` y EMUX. Con `-DSALIR_AL_FINAL` cierra ares desde la ROM. `SIM_OPT=-Os` compila el módulo con `-Os`. También sirve de objetivo para GDB | 715 ciclos por nodo con `-O2` y 683 con `-Os`; huella igual que en el PC (`host/main_host.c`) |
 | `cpp/` | Tamaño de código de C frente a C++ con y sin excepciones, RTTI, STL e `iostream` (`make ROMNAME=<variante> EXTRA_CXXFLAGS=…`; la versión en C con `make -f c_base.mk`) | +88 KB solo por enlazar C++; +421 KB con `iostream` |
 | `depuracion/` | Pantalla de `assertf` con backtrace y validador del RDP (`rdpq_debug_start`) | Mensajes y backtrace con fichero:línea |

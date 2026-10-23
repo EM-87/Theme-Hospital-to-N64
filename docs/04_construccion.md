@@ -16,18 +16,40 @@ Responde a tres cosas que Eduardo planteó al revisar la decisión:
 
 Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas en el PC.
 
-**Revisión.** La revisión independiente de cada tema, que repite las comprobaciones intentando refutarlas, aún no ha podido hacerse: se ha cortado varias veces por el límite de gasto. Hasta entonces, se han repetido a mano las cifras que cambian el plan:
-- la RAM del audio: se corrigió, porque 136 KiB eran de `rspq` y ya estaban contados;
-- la compilación de las ROMs desde el repositorio;
-- el núcleo de ejemplo en el PC: 60.045 comprobaciones sin fallos y la misma huella;
-- las sumas de los presupuestos;
-- la configuración de `n64.mk` y del servidor GDB de ares. Las fuentes de las pruebas están en [`n64/pruebas/`](../n64/pruebas/) y [`tools/construccion/`](../tools/construccion/), y sus salidas en `bench/resultados/fase4/` ([cómo reproducirlo](#cómo-reproducirlo)).
+**Revisión.**
+- **Herramientas y APIs:** cada tema lo revisó después otro agente, que repitió las comprobaciones intentando refutarlas. Confirmó 26 de 36 hallazgos y corrigió 10. Las correcciones ya están aplicadas aquí; las más importantes son:
+  - la RAM del audio;
+  - el modelo de ciclos de ares;
+  - `-Os` y el backtrace;
+  - de dónde sale el coste de C++;
+  - el coste del dibujo con APIs estables;
+  - los elementos que de verdad se dibujan por fotograma.
+- **Método, fidelidad y modo demo:** sus revisiones se cortaron por el límite de gasto. Sus cifras se han repetido a mano, ejecutando otra vez los scripts y leyendo las salidas:
+  - las líneas de datos;
+  - las 126 definiciones;
+  - las llamadas a `math.random`;
+  - el aspecto de los pacientes;
+  - la dispersión entre semillas;
+  - las 0 curas de `mediano`;
+  - las opciones y los recuentos de CorsixTH;
+  - la RAM con 4 MiB;
+  - los sprites del nivel 1;
+  - las sumas de los presupuestos.
 
-**Los ciclos de CPU son los del reloj emulado por ares.** ares cobra un ciclo por instrucción, 40 por cada fallo de la caché de datos y 48 por cada fallo de la de instrucciones. No modela los bloqueos del pipeline ni la competencia por la RDRAM con el RSP y el RDP. Es determinista: la misma ROM da los mismos ciclos con un margen de ±2. Sirve para comparar versiones del código, pero los valores absolutos probablemente son optimistas y habrá que confirmarlos en una consola.
+Las fuentes de las pruebas están en [`n64/pruebas/`](../n64/pruebas/) y [`tools/construccion/`](../tools/construccion/), y sus salidas en `bench/resultados/fase4/` ([cómo reproducirlo](#cómo-reproducirlo)).
+
+**Los ciclos de CPU son los del reloj emulado por ares.** El modelo de ares cobra:
+- un ciclo por instrucción, más otro por cada lectura o escritura que acierta en la caché de datos;
+- 40 ciclos por cada fallo de la caché de datos, 80 si además hay que escribir una línea modificada;
+- 48 por cada fallo de la caché de instrucciones.
+
+Medido con una ROM de calibración (`n64/pruebas/calibracion`), leer 1 MiB cuesta 45 ciclos por línea si las líneas que salen de la caché están limpias, y 85 si estaban modificadas. La fase 1 hablaba de unos 70: su medida mezclaba lecturas y escrituras. Ya está corregido en [`01_mediciones.md`](01_mediciones.md); el factor de CPU de esa fase se midió aparte y no cambia.
+
+ares no modela los bloqueos del pipeline ni la competencia por la RDRAM con el RSP y el RDP. Es determinista: la misma ROM da los mismos ciclos con un margen de ±2. Pero el modo Homebrew los cambia en un 0,4 %, así que las comparaciones tienen que usar siempre el mismo modo. Sirve para comparar versiones del código; los valores absolutos probablemente son optimistas y habrá que confirmarlos en una consola.
 
 ## En breve
 
-1. **C (gnu17) con el `n64.mk` de libdragon, sin C++.** Solo enlazar C++ añade 88 KB de código, que en la N64 vive en la RAM; con `iostream`, 421 KB.
+1. **C (gnu17) con el `n64.mk` de libdragon.** C++ también funciona, pero tal cual añade 88 KB de código, que en la N64 vive en la RAM; con `iostream`, 421 KB. Esos 88 KB solo desaparecen compilando sin asserts (`NDEBUG`) y con un `operator new` que no lance excepciones. Como CorsixTH se traduce desde Lua y libdragon es C, C++ no compensa ese cuidado.
 2. **Tres capas:**
    - un **núcleo de simulación en C portable**, que compila igual en el PC y en la N64 y da la misma huella de estado en los dos;
    - una **capa de plataforma**: libdragon en la consola, y un ejecutable sin pantalla en el PC;
@@ -38,10 +60,15 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
    - **comparación estadística** con CorsixTH donde hay azar;
    - **la misma huella** en el PC y en la N64.
 5. **Depuración en ares:**
-   - con GDB (`gdb-multiarch`, porque el de la toolchain no arranca en Ubuntu 24.04);
+   - con GDB (`gdb-multiarch` instalado con apt, porque el de la toolchain no arranca en Ubuntu 24.04);
    - en «modo Homebrew», que da `debugf` sin límite de tamaño de ROM, perfiles con fallos de caché y salida automática para pruebas;
    - con la pantalla de error de libdragon, que trae backtrace con fichero y línea.
-6. **Dibujo con una rutina propia sobre `rdpq`.** `rdpq_tex_blit` gasta 3.425–4.248 ciclos de CPU por sprite; la misma carga escrita a mano, unos 1.630. Los sprites van en un formato propio por hoja: 1,34 MiB, frente a 3,96 MiB como `.sprite` sueltos.
+6. **Dibujo por una vía más barata que `rdpq_tex_blit`.** Ciclos de CPU por sprite:
+   - `rdpq_tex_blit`: 3.497–4.248;
+   - cargar la textura y dibujar un rectángulo con APIs estables: 1.758–2.542;
+   - la misma carga escrita a mano: unos 1.630.
+
+   Se empieza por las APIs estables y se mide en el hito 2. Los sprites van en un formato propio por hoja: 1,34 MiB, frente a 3,96 MiB como `.sprite` sueltos.
 7. **Audio:**
    - efectos en VADPCM **sin** la compresión Huffman que trae activada `audioconv64`: con ocho efectos sonando se pasa del 16,7 % de CPU al 3,0 %;
    - la música en MIDI, con un banco de sonidos recortado a los instrumentos que usa el juego.
@@ -65,11 +92,11 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
 | Comportamiento indefinido en la propia N64 | `-fsanitize=undefined -fsanitize-trap=undefined` | Sí | +1.856 B de código; ares se para en la línea exacta |
 | Análisis estático | `gcc -fanalyzer` (PC y N64); `clang-tidy`, solo para el núcleo | Sí | clang no entiende el ABI `o64` de libdragon |
 | Emulador | ares v148 en modo Homebrew | Sí | Ciclos reproducibles a ±2 |
-| Depurador | Servidor GDB de ares y `gdb-multiarch` 15.1 | Sí | Puntos de ruptura, variables, structs, paso a paso, watchpoints |
+| Depurador | Servidor GDB de ares y `gdb-multiarch` 15.1 | Sí | Puntos de ruptura, variables, structs, paso a paso, watchpoints. Sin IPv6 hace falta `DebugServer/UseIPv4=true`, que escucha en todas las interfaces y sin contraseña: solo detrás de un cortafuegos |
 | Perfilado | `profile.h` con EMUX: ciclos y fallos de caché por bloque | Sí | — |
 | Validar el RDP | `rdpq_debug_start()` en la ROM; `rdpvalidate` sin consola | Sí | `rdpvalidate` devuelve 0 aunque encuentre errores: hay que buscar «ERROR» en su salida |
 | Assets | `mkasset`, `audioconv64`, `videoconv64`, `mkfont` | Sí | — |
-| Integración continua | GitHub Actions con la imagen `ghcr.io/dragonminded/libdragon:preview` fijada por digest | Borrador sin ejecutar | Compilar libdragon y sus herramientas sobre la imagen: unos 2 min, frente a 432 s del `tools/setup.sh` completo |
+| Integración continua | GitHub Actions con la imagen `ghcr.io/dragonminded/libdragon:preview` fijada por digest | Borrador sin ejecutar | Compilar libdragon y sus herramientas sobre la imagen: unos 54 s sin otra carga, frente a 432 s del `tools/setup.sh` completo. Falta comprobar que su GCC es la misma que la local (imagen del 2026-09-14, paquete local del 2026-10-09) |
 | Consola real | SummerCart64 con `sc64deployer` o UNFLoader | No (no hay flashcart) | libdragon envía `debugf` por USB a 64drive, EverDrive y SummerCart64 |
 
 ### El día a día
@@ -82,14 +109,14 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
 
 ### Detalles que conviene saber
 
-- **Las APIs preview de libdragon no avisan.** En la rama `preview`, `n64.mk` fija `LIBDRAGON_PREVIEW ?= 2`: todas las APIs preview se pueden usar sin ningún aviso. Es lo contrario de lo que decía `docs/00_entorno.md`, ya corregido; el cambio es del commit `ea505c352` de libdragon, del 2026-08-21. El motor pondrá `LIBDRAGON_PREVIEW = 1` para que el compilador avise de cada una. Usará muchas: el mezclador, `wav64`, `mid64`, `sf64`, el vídeo, `profile.h` y los hilos.
+- **Las APIs preview de libdragon no avisan.** En la rama `preview`, `n64.mk` fija `LIBDRAGON_PREVIEW ?= 2`: todas las APIs preview se pueden usar sin ningún aviso. Es lo contrario de lo que decía `docs/00_entorno.md`, ya corregido; el cambio es del commit `ea505c352` de libdragon, del 2026-08-21. El motor usará muchas a propósito: el mezclador, `wav64`, `mid64`, `sf64`, el vídeo, `profile.h` y los hilos. Con `LIBDRAGON_PREVIEW = 1` habría un aviso en cada uso, que no rompe la compilación y acabaría siendo ruido. Así que se deja el 2, y un trabajo de integración continua con `LIBDRAGON_PREVIEW=1` lista las APIs preview usadas para revisarlas al actualizar libdragon.
 - **No hay que pasar `CFLAGS` por la línea de `make`.** Así se pierden los flags de `n64.mk` y la compilación falla. Para opciones por fichero se usa `objetivo.o: CFLAGS += …`.
 - **`-O2` frente a `-Os`.** Con un módulo de prueba de 362 líneas (A* sobre 128 × 128 y un pool de 384 entidades):
-  - `-Os` ocupa un 17,6 % menos (3.136 frente a 3.808 B de código);
-  - en ares fue un 3–4,5 % más rápido;
+  - `-Os` ocupa un 17,6 % menos (3.136 frente a 3.808 B). Pero una parte es relleno: `-Os` desactiva la alineación de funciones a 32 B que pone `n64.mk`, y de la que depende el backtrace de la pantalla de error. El código en sí baja un 15 %;
+  - en ares fue un 3–4,5 % más rápido, pero ares no modela los bloqueos del pipeline, que es justo lo que optimiza `-O2`;
   - LTO solo ahorra 384 B.
 
-  Se empieza con `-O2` y se prueba `-Os` módulo a módulo midiendo ciclos.
+  **Se usa `-O2`.** `-Os` solo en módulos concretos, recuperando la alineación (`-falign-functions=32`) y midiendo en consola.
 - **Tipos.** Con el ABI `o64` de libdragon, `long` y los punteros ocupan 4 B; en el PC, 8. En las estructuras que se guardan solo se usan tipos de `stdint` y comprobaciones de tamaño con `_Static_assert`.
 
   Coste en ares, en ciclos por operación:
@@ -118,15 +145,20 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
   - Controller Pak, con 31.488 B útiles.
 
   Una trampa: sondear la FlashRAM después de detectar 32 KiB de SRAM corrompe la SRAM. El motor lee el tipo de guardado declarado en la cabecera y no sondea.
-- **Precios** consultados el 2026-10-10, casi todos de fuentes secundarias:
+- **EMUX sin modo Homebrew.** Sin ese modo, `emux_prof_read` no devuelve 0, sino basura (el código de la métrica): hay que comprobar antes `emux_detect()`. Además, `profile_dump` puede provocar una excepción de coma flotante en bancos de pruebas que no esperan nunca al RSP ni al vídeo.
+- **Precios** consultados el 2026-10-10 y el 2026-10-13, casi todos de fuentes secundarias:
 
   | Qué | Precio |
   |---|---|
   | SummerCart64 | 70–99 $ |
   | EverDrive-64 X7 | ~149 $ |
+  | EverDrive-64 Pro | ~169 $ |
   | Expansion Pak suelto, usado | 40 $ |
   | Expansion Pak completo, usado | 70 $ |
   | Ratón de N64 | Un único anuncio, a 401 $ |
+
+  - El SummerCart64 conviene comprarlo por los canales que enlaza su web oficial, porque hay clones.
+  - El EverDrive-64 Pro todavía no aparece en el código USB de libdragon del commit fijado.
 
 ## APIs de libdragon y lo que genera el conversor
 
@@ -142,9 +174,10 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
 
   Ocupa 1,34 MiB. Como `.sprite` de `mksprite` serían 3,96 MiB, porque cada uno lleva 648 B fijos, paleta incluida. Además, el formato `.sprite` es interno y versionado. `mksprite` sí conserva bien los índices y la paleta de un PNG indexado (probado), por si hace falta.
 - **Animaciones.** Cada fotograma de Theme Hospital es una lista de elementos. En `DATAM`:
-  - **elementos por fotograma:** mediana 14, p90 28 y máximo 47;
-  - **espejo horizontal:** el 30,6 % de los elementos;
-  - **semitransparencia al 50 %:** el 17,1 %;
+  - **elementos en la lista de un fotograma:** mediana 14, p90 28 y máximo 47;
+  - **elementos que de verdad se dibujan:** mediana 8, p90 16 y máximo 28. Cada elemento pertenece a una capa (ropa, pelo…) y solo se dibujan los de la capa elegida;
+  - **espejo horizontal:** el 29,1 % de los elementos dibujados, ponderado por uso;
+  - **semitransparencia al 50 %:** el 13,6 %;
   - **sombras del mapa:** van al 75 %.
 
   El modo COPY del RDP, el rápido, no admite ni espejo ni transparencias: el hospital se dibuja en el modo estándar de un ciclo. Con un rectángulo con `x0 > x1` sale el espejo (comprobado).
@@ -152,12 +185,22 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
 
   | Cómo | Ciclos de CPU |
   |---|---:|
-  | `rdpq_sprite_blit` (sube la paleta en cada llamada) | 4.558–5.743 |
-  | `rdpq_tex_blit`, 16 × 13 | 3.425–4.248 |
-  | La misma carga, escrita a mano | 1.626–1.634 |
+  | `rdpq_sprite_blit` (sube la paleta en cada llamada) | 4.862–5.743 |
+  | `rdpq_tex_blit`, 16 × 13 | 3.497–4.248 |
+  | `rdpq_tex_blit` grabado en un bloque `rspq` | 3.642–4.850 (no ahorra) |
+  | `rdpq_tex_upload` + `rdpq_texture_rectangle` (APIs estables) | 1.758–2.542 |
+  | La misma carga, escrita a mano con comandos del RDP | 1.626–1.634 |
   | Solo el rectángulo, con la textura ya cargada | 173 |
 
-  **Decisión: una rutina de dibujo propia** para los elementos de las animaciones; `rdpq_tex_blit` solo para lo grande. El suelo y las paredes se graban en un bloque `rspq` al mover la cámara, y cada fotograma solo se repite el bloque. Si aun así la CPU no llega, el siguiente paso es un comando propio en el RSP que dibuje un fotograma de TH entero.
+  Las horquillas vienen de compilar varias veces: cambia la disposición del código en la caché. Parte del coste de `rdpq_tex_blit` (unos 240 ciclos) son las funciones anidadas de GCC, que vacían la caché en cada llamada.
+
+  **Decisión: no usar `rdpq_tex_blit` para los elementos de las animaciones.** Primero, la vía estable (cargar la textura y dibujar un rectángulo), medida en el hito 2; la versión a mano solo ahorra entre un 8 y un 36 % más, y obliga a llevar a mano el estado de la TMEM.
+
+  Solo el suelo y sus sombras se pueden grabar en un bloque `rspq`. Las paredes se dibujan intercaladas con humanoides y objetos, en orden de pintor (`th_map.cpp`), y el bloque guarda coordenadas absolutas: hay que regrabarlo al mover la cámara. Si aun así la CPU no llega, el siguiente paso es un comando propio en el RSP que dibuje un fotograma de TH entero.
+- **La paleta de las fuentes.** `rdpq_font` sube su propia paleta en la posición 0 de la TLUT, y `rdpq_sprite_blit` y el vídeo hacen lo mismo. Hay que volver a subir la paleta del juego después de cada tanda de texto, o dibujar el texto al final.
+- **Efectos de los pacientes.**
+  - La radiación hace brillar en verde: en el RDP es multiplicar la textura por un color.
+  - La gelatinitis dibuja el sprite en franjas horizontales que ondulan: varios rectángulos por sprite.
 - **Fantasmas.** CorsixTH solo recolorea con tablas los objetos y empleados que se están colocando, y las puertas o ventanas no válidas. La ropa y la piel van por capas. En la N64 basta con cambiar la paleta antes de esos elementos: entre 170 y 570 ciclos más cada uno.
 
 ### Texto
@@ -165,7 +208,7 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
 - `mkfont` convierte fuentes BMFont en formato de texto. Una fuente de TH convertida así (FONT01V) ocupa 6.056 B en CI4 y se dibuja bien con `rdpq_text_print` (comprobado en captura).
 - El texto de libdragon va en UTF-8: el conversor pasa los textos de CP437 a UTF-8.
 - **Español.** Las fuentes de TH tienen todos los caracteres que usa `LANG-4.DAT`. Les faltan Á, Í, Ó y Ú, que CorsixTH usa 4 veces en su español: o se cambian por A, I y O, o se dibujan esos glifos.
-- **Coste.** Una línea de 44 caracteres cuesta 0,29–0,35 ms con `rdpq_text_print`, y 0,17 ms ya maquetada con `rdpq_paragraph`. Una ventana de gestión con 30 líneas serían 5–9 ms por fotograma: el texto fijo se maqueta una vez o se dibuja en una superficie aparte.
+- **Coste.** Una línea de 44 caracteres cuesta 0,29–0,35 ms con `rdpq_text_print`, y 0,17 ms ya maquetada con `rdpq_paragraph`. Una ventana de gestión con 30 líneas serían 8,7–10,6 ms por fotograma con `rdpq_text_print`, y 5,0 ms ya maquetada (más 0,22 ms por párrafo al maquetarla una vez). El texto fijo se maqueta una vez o se dibuja en una superficie aparte.
 
 ### Audio
 
@@ -178,7 +221,7 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
   | Música MIDI con 16 voces | 5,0–5,7 % |
   | Música más 8 efectos, sin Huffman | 9,1 % |
 
-  **Decisión:** `--wav-compress vadpcm,huffman=false`.
+  **Decisión:** `--wav-compress vadpcm,huffman=false`. Queda por medir el códec ULC de libdragon, que promete más velocidad que Opus.
 - **Música.** MID64 más SF64. Hace falta `mixer_ch_set_limits` en los canales del sintetizador: sin él, la primera nota aborta.
 - **RAM.** Se midieron 643 KiB para todo el audio con el banco TimGM6mb completo, pero no todo es nuevo:
   - 136 KiB son las colas de `rspq`, que `mixer_init` reserva solo si nadie lo ha hecho antes. En el juego ya las reserva `rdpq`: comprobado en `n64/pruebas/audio_init` y en `mixer.c:357`;
@@ -188,15 +231,20 @@ Cada tema tiene experimentos propios: ROMs ejecutadas en ares v148 y programas e
 
 ### Vídeo
 
-- `fmv_play` reproduce H.264 con su sonido. Con vídeos sintéticos de 320 × 240 a 15 y 25 fps, en ares se mostraron todos los fotogramas, sin saltos.
-- **Memoria.** Mientras suena un vídeo hacen falta entre 1,6 y 2,3 MiB más, según los fotogramas que se decodifican por adelantado. Al terminar se libera todo.
+- `fmv_play` reproduce H.264 con su sonido. Antes hay que registrar el códec con `video_register_codec`.
+- **Rendimiento.** Con vídeos sintéticos de 320 × 240 a 15 y 25 fps, en ares se mostraron todos los fotogramas, sin saltos. Con contenido real, el vídeo de ejemplo de libdragon (320 × 176 a 24 fps) gasta entre el 32 y el 56 % de la CPU.
+- **Memoria.** Mientras suena un vídeo hacen falta entre 1,6 y 2,3 MiB más sobre la pantalla del juego, y 2,8 MiB si `fmv_play` abre la suya. Al terminar se libera todo.
+- **Detalles:**
+  - el sonido del vídeo va por defecto al canal 0 del mezclador, que es del sintetizador: hay que darle otro canal o parar la música;
+  - al terminar, quita cualquier límite de fps que hubiera puesto el juego.
 - **Decisión:** los vídeos solo fuera de la partida (intro, fin de nivel), o liberando antes la caché de sprites, sobre la pantalla de 16 bits del juego (`disable_display_init`).
-- **Pendiente:** repetirlo con los vídeos reales de TH y medir la CPU libre mientras suenan.
+- **Pendiente:** repetirlo con los vídeos reales de TH.
 
 ### Mandos y ratón
 
 - `joypad` presenta el ratón de N64 como un mando de estilo `JOYPAD_STYLE_MOUSE`: el stick trae el movimiento relativo, y A y B son los botones.
 - ares v148 lo emula, y libdragon lo detectó al conectarlo con la ROM en marcha. Se conecta desde el menú de ares; no hay opción de línea de órdenes.
+- **Hay que acumular el movimiento en cada barrido de pantalla.** libdragon lee los mandos en cada uno, y `joypad_poll` solo copia la última lectura. El ratón informa del movimiento desde la lectura anterior, así que un juego que lea a 30 fps perdería la mitad del movimiento.
 - El movimiento no se ha probado, porque ares corre sin dispositivo de entrada.
 
 ## Método: estructura del motor y pruebas
@@ -295,7 +343,7 @@ Después, hasta tener algo jugable, en este orden:
 Respuesta a la pregunta 4 («Supongo que Corsix habrá mejorado, evalúa»): **en parte**. CorsixTH corrige errores del original y reproduce muchas reglas a propósito, contrastadas con el original (las velocidades se midieron en DOSBox). Pero le falta contenido, y algunas fórmulas son suyas.
 
 Las fuentes:
-- el changelog de CorsixTH: 822 entradas, de las que solo 22 citan el original;
+- el changelog de CorsixTH: de sus más de 800 entradas, solo unas 20–30 citan el original, según el criterio de búsqueda;
 - 157 commits que lo mencionan;
 - los comentarios del código;
 - la wiki, contrastada siempre con el código;
@@ -429,26 +477,28 @@ En hardware hace falta una consola sin Expansion Pak (con el Jumper Pak) además
   - unos 0,23 MiB con el banco recortado (estimado).
 
   El presupuesto pasa de 5,20 a 5,23 MiB, con 2,77 de margen; con el banco entero, 5,47 y 2,53. Actualizado en [`04_decision.md`](04_decision.md#presupuesto-de-ram).
-- **CPU: el dibujo cuenta.** Un ejemplo con 400 elementos dinámicos por fotograma a 30 fps:
+- **CPU: el dibujo cuenta.** Un ejemplo con 400 elementos dibujados por fotograma a 30 fps:
   - con `rdpq_tex_blit`, 46 M ciclos por segundo: el 49 % de la CPU;
-  - con la rutina propia, 20 M: el 21 %.
+  - con carga y rectángulo de las APIs estables, 21–30 M: un 22–33 %;
+  - escrito a mano, 20 M: el 21 %.
 
-  El audio gasta otro 8–9 % (efectos sin Huffman más MIDI). Con la rutina propia, el suelo y las paredes en bloques `rspq` y el texto ya maquetado, a la simulación le quedan unos 3 M ciclos por hora de juego a velocidad Normal: algo más que los 2,5 M que suponía la fase 4. Cuántos elementos se dibujan de verdad se mide en los hitos 2 y 3.
+  El audio gasta otro 8–9 % (efectos sin Huffman más MIDI). Sin `rdpq_tex_blit`, con el suelo en bloques `rspq` y el texto ya maquetado, a la simulación le quedan unos 3 M ciclos por hora de juego a velocidad Normal: algo más que los 2,5 M que suponía la fase 4. Cuántos elementos se dibujan de verdad se mide en los hitos 2 y 3.
 
 ## Riesgos nuevos o que cambian
 
 | Riesgo | Gravedad | Cómo se reduce | Cuándo se sabe |
 |---|---|---|---|
-| CPU del dibujo | Alta | Rutina propia, bloques `rspq` para lo estático, 20 fps si hace falta; comando propio en el RSP como último recurso | Hitos 2 y 3 |
+| CPU del dibujo | Alta | Carga y rectángulo con APIs estables, o a mano; el suelo en bloques `rspq`; 20 fps si hace falta; comando propio en el RSP como último recurso | Hitos 2 y 3 |
 | Escenarios de comparación: las partidas de referencia no curan a nadie | Media | Escenarios propios validados por hito | Antes del hito 4 |
 | Ciclos de ares optimistas | Media | Confirmar en consola con el SummerCart64 | Al tener flashcart |
-| Dependencia de APIs preview (mezclador, `wav64`, `mid64`, `sf64`, vídeo) | Media | Commit de libdragon fijado; `LIBDRAGON_PREVIEW = 1`; actualizar solo a propósito | Continuo |
+| Dependencia de APIs preview (mezclador, `wav64`, `mid64`, `sf64`, vídeo) | Media | Commit de libdragon fijado; lista de APIs preview usadas en la integración continua; actualizar solo a propósito | Continuo |
 | La demo consume tiempo de la fase 5 | Media | No comprometerla hasta el hito 5; solo lo barato | Hito 5 |
 | Glifos del español (Á, Í, Ó, Ú) | Baja | Sustituirlos o dibujarlos en el conversor | Hito 0 |
 
 ## Limitaciones
 
 - Todo está medido en ares. No hay flashcart para probar en consola.
+- La revisión independiente solo se completó en dos de los cinco temas: herramientas y APIs (`bench/resultados/fase4/construccion/revision_*.json`). En método, fidelidad y modo demo, las cifras se repitieron a mano, pero nadie ha intentado refutar sus recomendaciones.
 - El código del motor completo no existe: los tamaños de código (1,00 y 0,75 MiB) son estimaciones, y son lo que decide la demo.
 - El banco de sonidos recortado y su RAM (~101 KiB) son un ajuste lineal sobre dos bancos medidos, no una medida.
 - El vídeo se midió con contenido sintético.

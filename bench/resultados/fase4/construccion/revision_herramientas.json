@@ -1,0 +1,175 @@
+{
+ "verificaciones": [
+  {
+   "id": "H1",
+   "veredicto": "confirmado",
+   "comprobacion": "Leí /opt/libdragon/include/n64.mk (idéntico a ~/th64-work/src/libdragon/n64.mk, diff vacío): :81 -falign-functions=32, :82 -ffunction-sections -fdata-sections -g -ffile-prefix-map, :83 -ffast-math -ftrapping-math -fno-associative-math, :84 -DN64 -O2 -Wall -Werror -Wno-error=deprecated-declarations, :85 -Wno-error=unused-*, :86 -ftrivial-auto-var-init=pattern, :87 -std=gnu17, :88 -std=gnu++17, :91 --gc-sections, :255-256 '-G 0 -DN64_DSO'. No hay -flto. Compilé g.c con 'mips64-elf-gcc -march=vr4300 -mabi=o64 -O2 -c' en mi directorio: 'lw v0,0(gp) R_MIPS_GPREL16 x' y secciones .sdata (4 B) y .sbss (6 B), así que el valor efectivo es -G 8.",
+   "correccion": "Solo cambia una cita: el bloque de D=1 (-g3) está en n64.mk:123-129, no en :112-117."
+  },
+  {
+   "id": "H2",
+   "veredicto": "confirmado",
+   "comprobacion": "n64.mk:8 'LIBDRAGON_PREVIEW ?= 2', y el comentario de :4 sigue diciendo '0 ... (default)'. 'git log -L3,8:n64.mk' → 'ea505c352 Fri Aug 21 2026 n64.mk: change default to LIBDRAGON_PREVIEW in the preview branch'. 'git show HEAD:docs/00_entorno.md' línea 69 dice que las APIs están 'bloqueadas por defecto'. El CI usa --env=LIBDRAGON_PREVIEW=0 en build-toolchain-library-and-roms.yml:126, :132 y :136.",
+   "correccion": "Matices: las líneas del CI son 126, 132 y 136, no 128. Además, la copia de trabajo de docs/00_entorno.md (modificada el 2026-10-12 y sin commit) ya incluye una «Corrección (fase 4)» con esto mismo, así que solo queda pendiente en HEAD."
+  },
+  {
+   "id": "H3",
+   "veredicto": "confirmado",
+   "comprobacion": "Sobre una copia de su proyecto sim en mi directorio: 'make -s CFLAGS+=-DSALIR_AL_FINAL' → 'src/main.c:23:5: error: implicit declaration of function debug_init_emulog' y avisos 'emux_detect is deprecated: libdragon preview API'. Con 'make V=1 SIM_OPT=-Os', la línea de sim.c lleva ' -O2 ... -Os' (gana -Os)."
+  },
+  {
+   "id": "H4",
+   "veredicto": "corregido",
+   "comprobacion": "Compilé sim.c con los flags de n64.mk: .text = 3808 B (-O2, 9 secciones), 3136 B (-Os, 11) y 7904 B (-O3). .rodata: 24, 20 y 24 B. Con 'mips64-elf-size' de sus ELF: roms/th64tools_O2.elf text=148500 y th64tools_Os.elf text=147828 (diferencia de 672 B). Reejecuté sus ROMs en ares en modo Homebrew y salen los mismos números: '80296818 ticks ... 715 ciclos/nodo' y '76750706 ticks ... 683 ciclos/nodo'; tick medio 4928563 frente a 4765618. LTO: lto/build/th64tools.elf text=148020.",
+   "correccion": "Los .text son correctos, pero los absolutos del ELF no son 127480/126808: son 148500/147828 (la diferencia de 672 B sí cuadra). Parte del ahorro de -Os no es código. 'objdump -h' muestra que con -Os las secciones .text.* quedan alineadas a 2**2 y con -O2 a 2**5: GCC no aplica -falign-functions=32 cuando optimiza para tamaño. La suma de los tamaños de función con -O2, sin relleno, es 3688 B, así que el código baja 552 B (−15 %) y los otros 120 B son relleno de alineación. La ventaja de velocidad (−4,5 % en A*, −3,3 % por tick) solo está medida en el modelo de ares, que no penaliza los bloqueos del pipeline (véase H10). El ahorro de LTO depende de la referencia: 480 B frente a th64tools_O2.elf y 352 B frente a sim/build/th64tools.elf."
+  },
+  {
+   "id": "H5",
+   "veredicto": "corregido",
+   "comprobacion": "Con mips64-elf-size: c_base text=117400, c_like=205896, exc=207688, rtti=206536, stl_noexc=218600, stl_full=220408, iostream=641816 (data 107653). El log de out/cpp muestra RTTI y la excepción capturada. Luego recompilé c_like en mi directorio (-fno-exceptions -fno-rtti, sin STL): 205896. Con -DNDEBUG: 202360, y el mapa ya no contiene debugcpp. Añadiendo un operator new/delete propio que no lanza (malloc + abort): 205400 sin NDEBUG y 116088 con NDEBUG. Según el mapa, en la build con NDEBUG la cadena es main.o → new_op.o (operator new) → eh_throw.o (__cxa_throw) → vterminate.o (__verbose_terminate_handler) → cp-demangle.o (__cxa_demangle), más eh_personality.o y unwind-dw2.o.",
+   "correccion": "El coste de 88 KB no viene de «enlazar C++» ni solo de debugcpp. Lo arrastran dos cosas, cada una por separado: el operator new estándar, que lanza bad_alloc y trae el terminate verboso, el demangler y el desenrollador; y __debug_init_cpp. __debug_init_cpp no lo inyecta solo debug_init_*: debugcpp.h:17-23 también lo mete en console_init, dfs_init, joypad_init, timer_init y display_init, y solo cuando no está definido NDEBUG. Con -DNDEBUG y un operator new que no lanza, el programa C++ equivalente ocupa 116088 B, menos que la base en C (117400). Las cifras de STL e iostream son correctas."
+  },
+  {
+   "id": "H6",
+   "veredicto": "corregido",
+   "comprobacion": "out/dbg/isviewer.log:36-50: 'ASSERTION FAILED: salud >= 0 / file \"src/main.c\", line 6, function: comprueba_paciente / paciente 42 ... comprueba_paciente+0x3c (src/main.c:6) ... main+0x1f8 (src/main.c:31)' y '[RDPQ_VALIDATION] ERROR: tile 0 was not configured'. 'rdpvalidate tools/rdpvalidate/test.rdp' imprime '[RDPQ_VALIDATION] ERROR: tile 0 is RGB-based...' y 'echo $?' da 0. sim/build/th64tools.elf.sym ocupa 11036 B. backtrace.c:37-38 explica que la tabla se consulta directamente en la ROM.",
+   "correccion": "El .sym de 11036 B corresponde a un ELF con 148372 B de .text ('mips64-elf-size sim/build/th64tools.elf', misma hora 20:07:45), no a uno de 127 KB. El resto es correcto."
+  },
+  {
+   "id": "H7",
+   "veredicto": "confirmado",
+   "comprobacion": "Fuentes de ares: settings.hpp:109-113 (port=9123, enabled=false, useIPv4=false); settings.cpp:104 y :128-130; program/load.cpp:79-80, :128-129 y :136-141; tcp-socket.cpp:117 (INADDR_ANY) y :124 (in6addr_loopback). En Python, AF_INET6 → 'Errno 97 Address family not supported'. 'ldd mips64-elf-gdb' → 'libpython3.10.so.1.0 => not found'. build-toolchain-matrix.yml:37 compila el paquete Linux-x86_64 en ubuntu-22.04. No ejecuté su gdb-multiarch porque es un binario descargado. En su lugar escribí un cliente mínimo del protocolo remoto en Python (verificar-herramientas/rsp/rsp.py) y lo lancé contra roms/th64tools_gdb.z64 con DebugServer/Enabled=true, Port=9377, UseIPv4=true y Boot/AwaitGDBClient=true. Resultado: 'qSupported → PacketSize=4096;...', '? → T05', 'Z0,8000fb80,4 → OK', 'c → S05 (6.16 s)', lectura 'mffffffff80025138,4 → 00000000', escritura 'M...:000003e8 → OK' y relectura '000003E8'. Sus logs out/gdb, gdb2 y gdb3 contienen lo que dice el hallazgo.",
+   "correccion": "Hay dos detalles del servidor que no menciona y que importan a quien escriba su propio cliente o integración: el primer byte recibido tiene que ser '+', porque si no ares desconecta ('Non-GDB client detected', tcptext-server.cpp); y el PC se compara enmascarado a 32 bits (cpu.cpp:38), así que un Z0 con la dirección extendida en signo (ffffffff8000fb80) nunca salta."
+  },
+  {
+   "id": "H8",
+   "veredicto": "confirmado",
+   "comprobacion": "n64sys.h:226 'TICKS_READ() C0_COUNT()' y :233 'TICKS_PER_SECOND (CPU_FREQUENCY/2)'. En ares, interpreter-scc.cpp:39 devuelve COUNT como scc.count>>1 y cpu.cpp:106-107 suma los ciclos a profile.cpuCycles. profile.h:186-193 y :280-286 pegan el nombre del slot con ##. profile.c:111-123 llama a emux_prof_clear(i) para i<num_slots. Reejecuté la ROM: 'astar EMUX ciclos=160593499' frente a 'ticks = 160593636 ciclos', y 'dcache aciertos=22903306 fallos=505032 icache fallos=54'.",
+   "correccion": "Dos matices. profile_dump imprime microsegundos, no ciclos: '1712941' es TIMER_MICROS(mean), según profile.c:175-187. Y emux.h:92 define EMUX_PROF_INSNS (0x0002), pero ares v148 no lo implementa: el switch de emux.cpp:138-150 no tiene ese caso."
+  },
+  {
+   "id": "H9",
+   "veredicto": "confirmado",
+   "comprobacion": "out/sim_Os/isviewer.log: 'Profiled frames: 1', 'FPU status: 01020E04 [NOTIMPL]', 'v1: 7fff ffff ffff fff6' (es -10 con el bit de signo borrado, como hace la conversión de uint64 a float) y 'profile_dump+0x8e0 (libdragon/src/profile.c:214)'. profile.c:213-214 convierte (frame_avg_wall - frame_avg_user) a float.",
+   "correccion": "La causa precisa no es tener un solo frame. total_wall - total_user se reduce a (sys_fin - sys_inicio) - (δ_fin - δ_inicio), donde δ es el desfase entre leer get_ticks() y get_user_ticks() (profile.c:84-85 y :142-145). Por eso el fallo aparece cuando no se acumula tiempo de sistema (esperas de accounting; el IRQ no cuenta, según el comentario de profile.c:127-130) y el par de lecturas final tarda más que el inicial. Perfilar más frames no lo evita."
+  },
+  {
+   "id": "H10",
+   "veredicto": "corregido",
+   "comprobacion": "dcache.cpp:7 y :16 'cpu.step(40 * 2)' (llenado y writeback), dcache.cpp:62 y :91 'cpu.step(1 * 2)' en cada ACIERTO, cpu.hpp:202 y :210 'step(48 * 2)'. En el JIT, que es el modo por defecto (desktop-ui/emulator/nintendo-64.cpp:117), recompiler-ipu.cpp:164-165 dice 'Cache hit: account for the hit latency' y llama a emitCpuStep(2). recompiler.cpp:742-747 cuenta 1 ciclo por instrucción y 64 si es un salto a sí misma. memory/bus.hpp:34 no añade tiempo de RDRAM. Construí una ROM de calibración (verificar-herramientas/calib) y la ejecuté en ares en modo Homebrew: 'alu3x1e6 ... emux_ciclos=3000450', 'leer_limpio ... ciclos/linea=45.04' (4 instrucciones + 40), 'escribir ... dwb=65089 ciclos/linea=84.73' (fallo + writeback de la víctima sucia) y 'aciertos ... 5.05' por vuelta de 4 instrucciones con un lw que acierta. Un segundo arranque dio salida idéntica (diff vacío), y sus ROMs O2 y Os repitieron los ticks exactos.",
+   "correccion": "El modelo no es «1 ciclo por instrucción». En ares cada load o store que acierta en la caché de datos suma 1 ciclo, así que cuesta 2. Un fallo cuesta 40 ciclos, y 80 si expulsa una línea sucia. Un fallo de instrucciones cuesta 48, y un salto a sí mismo 64. En el A*, los 22,9 M aciertos suman otros 22,9 M ciclos (14,3 %), además de los 20,2 M de los fallos (12,6 %, sin contar los writebacks). Que no hay bloqueos del pipeline ni competencia por la RDRAM se confirma. La reproducibilidad también: lo repetí con resultados idénticos."
+  },
+  {
+   "id": "H11",
+   "veredicto": "confirmado",
+   "comprobacion": "debug.c:309-326: debug_init_emulog usa EMUX si 'emux_detect(1) & EMUX_FEAT1_LOG' y si no, ISViewer. ares cartridge.cpp:50 'if(rom.size <= 0x03ff0000)' crea el ISViewer. out/grande_false/isviewer.log tiene 0 líneas TH64; out/grande_true tiene 'debug_init_emulog=1 emux=17a1, relleno.bin 67108864 bytes'. Mi ROM calib en modo Homebrew cerró ares sola ('ares terminó solo', 3,0 s); sin ese modo siguió viva ('ares seguía vivo: se mata'). libdragon README.md:140 recomienda el modo Homebrew."
+  },
+  {
+   "id": "H12",
+   "veredicto": "confirmado",
+   "comprobacion": "Reejecuté su hilos/th64hilos.z64 en ares: 'corrutina pila 1024: 1280 B por corrutina; resume+yield 1604 ciclos' y 'kthread pila 1024: 1448 B por hilo; ... 6763 ciclos por yield, contador 10000'. coroutine.c:21, :68 y :85-111 usan ucontext/swapcontext; kernel.h:27 dice 'hybrid cooperative/preemptive'. Las cuentas cuadran: 361 × 1604 = 579.044 y 18 ms × 93,75 MHz = 1,6875 M ciclos (34 %), con el temporizador de 18 ms de docs/01_mediciones.md:32. La prueba de corrutinas rota por 100 pilas de 1 KiB (100 KiB > 8 KiB de caché de datos), así que ya incluye fallos de caché."
+  },
+  {
+   "id": "H13",
+   "veredicto": "confirmado",
+   "comprobacion": "Reejecuté dso/th64dso.z64: 'tras dlopen(sim.dso) heap usado 554744 B' (−1160 = 553.584), 'dlopen 81382 us', 'tras dlclose 1216 B', 'dlopen(menu.dso) 1124 us', '6408 B' (−1216 = 5.192). Ficheros: sim.dso 6546 B y menu.dso 707 B. Reglas en n64.mk:250-275. El mecanismo del coste: n64dso.c:229 hace calloc(p_memsz) y :653 escribe mem_size completo, así que el bss va dentro de la imagen comprimida como ceros y dlopen (dlfcn.c:526 asset_loadfd) lo descomprime entero.",
+   "correccion": "Matiz: tras dlclose quedan 56 B que no vuelven (1160 → 1216)."
+  },
+  {
+   "id": "H14",
+   "veredicto": "confirmado",
+   "comprobacion": "Los logs de run2 dicen: EEPROM 512 B y 2048 B 'leido, arranques=1'; SRAM 32768 B (sram1m, con fichero .ram de 131072 B); sram768k 'medios encontrados 0'; FlashRAM 131072 B 'MX29L1101_A, sector 16384 B, pagina 128 B'; CPak 31488 B '1 de 123'. sram.c:21 'SRAM_SIZE 0x00008000' y sram_read rechaza offset+len > SRAM_SIZE. ares mia/medium/nintendo-64.cpp:770 tiene comentada la línea de sram=96_KiB. cpakfs_path.c separa el código de editor y el nombre con '-'. El ejemplo de cpakfs.h:235 ('cpak1:/NAFJ.01/DOUBUTSUNOMORI.A', con cpak_mount) está desfasado. No reproduje la variante con barra que falla."
+  },
+  {
+   "id": "H15",
+   "veredicto": "confirmado",
+   "comprobacion": "'od -An -tx1 -j 0x34 -N 12' de save/*.z64: eeprom4k ...45 44 00 12, eeprom16k 22, sram256k 32, sram768k 42, flashram 52, sram1m 62, cpak '02 00 00 00 ... 45 44 00 02'. ed64romconfig.c:57-61 (offsets 0x3C, 0x3F y 0x34) y :354 'config = save_type | rtc | regionfree<<1 | (expansionpak_type << 2)'. ares nintendo-64.cpp:765-829 solo lee los bits 4-7, 0 y 1 del byte 0x3F (ignora los bits 2-3 del Expansion Pak) y 'case 0x80: //N64 mouse //not supported yet'. ares/n64/controller/port.cpp:19 'setSupported({\"Gamepad\", \"Mouse\"})'. libdragon tiene JOYPAD_STYLE_MOUSE (joypad.h:132)."
+  },
+  {
+   "id": "H16",
+   "veredicto": "confirmado",
+   "comprobacion": "'od -c out/save_sram256k/saves/Nintendo 64/save_sram256k.ram' → '360 \\0 \\0 \\0 S A V E ...' (0xF0000000 en el offset 0). flashram.c:45 'FLASHRAM_COMMAND_ADDRESS (FLASHRAM_ADDRESS | 0x00010000)' y :53 'CMD_READ_MODE 0xF0000000'. En save_sram256k run2: 'vacio, arranques=0'. savedoodle.c:60-110 vuelve tras el primer medio que detecta. Que la SRAM de 32 KiB se refleje en 0x10000 se deduce del dato (ares la lee con cartridge.ram.read en pi/bus.hpp:44). No lo he comprobado en hardware: confianza media."
+  },
+  {
+   "id": "H17",
+   "veredicto": "corregido",
+   "comprobacion": "Por la API de ghcr: el índice preview tiene 'docker-content-digest: sha256:bbc663285582d0d6...' y manifiesto amd64 sha256:7bbda5de... con 3 capas y 257.7 MB comprimidos. La configuración dice 'creado 2026-09-14T23:57:36Z', env N64_INST=/n64_toolchain y label version 22.04; el historial es COPY /n64_toolchain (solo la toolchain). Entre las etiquetas están latest, trunk, preview, unstable y opengl. Dockerfile:4 usa 'ubuntu:22.04'. El README de libdragon-docker documenta 'libdragon init --branch preview'. 'docker --version' → 29.8.2. Repetí la compilación desde cero (git clone --shared en mi directorio, CCACHE_DISABLE=1, -j4, carga ~1-3): 'libdragon rc=0 16.40 s' y 'tools rc=0 37.47 s'. ROM: 0,57 s desde cero y 0,40-0,41 s tras tocar sim.c.",
+   "correccion": "Sin carga, libdragon y sus herramientas compilan en unos 54 s (16,4 + 37,5), no en unos 120 s. Las cifras de 28,66 y 91,8 s no aparecen en ci/build_lib.log ni en ci/build_tools.log, y salieron con otros agentes cargando la máquina. Tampoco está comprobado que la toolchain de la imagen (construida el 2026-09-14) sea la misma GCC que la de /opt/libdragon (paquete continuous-prerelease del 2026-10-09, tools/setup.sh:26-27), aunque ci/rom.yml lo da por hecho («GCC 16.2»)."
+  },
+  {
+   "id": "H18",
+   "veredicto": "confirmado",
+   "comprobacion": "usb.h:17-20 (CART_64DRIVE, CART_EVERDRIVE, CART_SC64); usb.c:146-148 'ED25_VERSION 0xED640007 V2.5, ED3_VERSION 0xED640008 V3, EDX_VERSION 0xED640013 X7, X5' y macros de SC64; libcart/cart.h:7-12. El README de SummerCart64 (WebFetch) cita literalmente '~23.8 MiB/s peak transfer rate USB interface', 'EEPROM 4k/16k, SRAM and FlashRAM save types with an automatic writeback to the SD card', 'IS-Viewer 64 debug interface (fixed 64 kiB buffer...)' y 'UNFLoader support'; también dice '64 MiB SDRAM' y ROMs de hasta 78 MiB con memoria extendida."
+  },
+  {
+   "id": "H19",
+   "veredicto": "confirmado",
+   "comprobacion": "Búsqueda web el 2026-10-13. La X7 a 149 $ aparece en artículos de agosto de 2026 (timeextension.com/news/2026/08/..., generationamiga.com/2026/08/02/...). SC64: camelcamelcamel da 70,39-87,99 $ de terceros (precio actual del 15-07-2026: 87,99 $) y mydealz da la Kaico Edition a 67,99 €. No pude comprobar ni la tienda oficial ni los precios del ratón y del Expansion Pak. Confianza baja, como dice el propio hallazgo.",
+   "correccion": "Falta un dato: el EverDrive-64 Pro (169 $, agosto de 2026, 128 MB de RAM, 64DD y USB) ya sustituye a la X7 como modelo superior de Krikzz. Y 64dd.org avisa de clones de SC64 fabricados en masa en AliExpress."
+  }
+ ],
+ "recomendaciones_discutibles": [
+  {
+   "recomendacion": "Lenguaje y flags: probar -Os módulo a módulo comparando ciclos en ares; si se usa C++, -fno-exceptions -fno-rtti y sin iostream (motivo: C++ añade 88 KB solo por enlazarlo).",
+   "objecion": "Tres problemas. (1) ares no puede decidir la comparación -O2 frente a -Os. Cobra +1 ciclo por cada acceso que acierta en la caché (dcache.cpp:62 y :91; recompiler-ipu.cpp:164-165) y no modela los bloqueos load-use ni otros del pipeline, así que la planificación de -O2 con -mtune=vr4300 no aporta nada en ares. La ventaja del 3-4,5 % hay que medirla en consola antes de elegir flags. (2) -Os desactiva -falign-functions=32 (objdump -h: 2**2 frente a 2**5). n64.mk:81 avisa de que backtrace() depende de esa alineación, y el heurístico sin .sym (backtrace.c:250) deja de funcionar en esas funciones. (3) -fno-exceptions -fno-rtti no quita los 88 KB, que vienen del operator new que lanza y de debugcpp. Medido: con -DNDEBUG y un operator new/delete propio que no lanza, la variante C++ ocupa 116088 B, frente a 117400 B de la base en C."
+  },
+  {
+   "recomendacion": "Poner LIBDRAGON_PREVIEW = 1 en el Makefile del motor para que avise de cada API preview; corregir docs/00_entorno.md:69.",
+   "objecion": "El motor dependerá a propósito de muchas APIs preview: profile, emux, kernel, sram, flashram, cpakfs y mid64/sf64, que son la razón de elegir preview (docs/00). Con 1 habrá avisos en cada uso, y con -Wno-error=deprecated-declarations (n64.mk:84) nunca rompen la compilación, así que serán ruido permanente. Es más útil dejar 2 y tener un trabajo de CI con LIBDRAGON_PREVIEW=1 que liste las APIs usadas, o una lista mantenida a mano. La corrección de docs/00 ya está hecha en la copia de trabajo, aunque sin commit."
+  },
+  {
+   "recomendacion": "Ejecutar ares siempre con General/HomebrewMode=true.",
+   "objecion": "Para desarrollar está bien, pero las cifras de ciclos cambian con el modo: el mismo A* da 161.186.552 ciclos sin él y 160.593.636 con él (out/sim_nohb frente a sim_hb, ~0,4 %). Las medidas de fases anteriores, tomadas sin ese modo, no son comparables, y el banco de regresiones tiene que fijar un modo. Además, sin el modo Homebrew emux_prof_read no devuelve 0 sino el código de la métrica (mi ROM: 'dhit=32 dmiss=33 dwb=34 ihit=16 imiss=17'), así que cada lectura debe ir protegida con emux_detect()."
+  },
+  {
+   "recomendacion": "Depuración: gdb-multiarch contra el servidor GDB de ares con DebugServer/UseIPv4=true y Boot/AwaitGDBClient=true.",
+   "objecion": "UseIPv4=true no escucha en 127.0.0.1 sino en INADDR_ANY (tcp-socket.cpp:117): deja un servidor GDB sin autenticación, que lee y escribe memoria, abierto a toda la red. En el portátil de desarrollo hay que usarlo solo con cortafuegos, o con IPv6 en ::1 cuando exista. Además, el gdb-multiarch probado es un binario sacado de un .deb descargado con apt-get download y ejecutado desde el scratchpad, contra la regla de no ejecutar nada descargado. El flujo del proyecto debería instalarlo con el gestor de paquetes en tools/setup.sh, o compilar mips64-elf-gdb con tools/build-gdb.sh de libdragon."
+  },
+  {
+   "recomendacion": "Perfilado: llamar a profile_dump solo después de varios profile_next_frame.",
+   "objecion": "El número de frames no influye. La diferencia wall-user se reduce a (sys_fin - sys_inicio) - (δ_fin - δ_inicio) (profile.c:84-85 y :142-145): el fallo aparece cuando no se acumula tiempo de sistema (ninguna espera de accounting) y el desfase de lectura final supera al inicial, tenga los frames que tenga. En un bucle de juego real con esperas de display o rspq no debería pasar; en bancos de solo CPU hay que evitar profile_dump o meter una espera. Además, profile_dump imprime microsegundos, no ciclos."
+  },
+  {
+   "recomendacion": "CI: imagen ghcr.io/dragonminded/libdragon:preview fijada por digest, más build.sh --no-examples (unos 2 min).",
+   "objecion": "La compilación tarda unos 54 s sin carga (16,4 s libdragon y 37,5 s herramientas, medido aquí), no 2 min. Lo importante es otra cosa: nadie ha comprobado que la GCC de la imagen (2026-09-14) sea la del paquete que usa tools/setup.sh (2026-10-09). El workflow debería imprimir y comparar 'mips64-elf-gcc --version' antes de dar por buenas las comparaciones de tamaño o ciclos entre CI y local. Las afirmaciones de ci/rom.yml sobre GCC 16.2 están sin verificar."
+  },
+  {
+   "recomendacion": "Comprar un SummerCart64 como flashcart de desarrollo (70-99 $) y el EverDrive-64 X7 solo si se quiere un segundo cartucho.",
+   "objecion": "La elección de SC64 es razonable, pero hay que comprarlo por los canales oficiales (los que enlaza summercart64.dev: PCBWay o compras en grupo), porque 64dd.org avisa de clones fabricados en masa en AliExpress. Falta además el EverDrive-64 Pro (169 $, agosto de 2026), que ya es el modelo superior de Krikzz. En el commit 39d0d609, usb.c:146-148 solo reconoce los ID de V2.5, V3 y X7/X5, así que el soporte de debugf por USB en el Pro está sin comprobar."
+  }
+ ],
+ "omisiones": [
+  {
+   "omision": "No se concilió la contradicción con docs/01_mediciones.md (unos 70 ciclos por fallo de caché en ares) a pesar de que el encargo la citaba. La cifra de docs/01 es un artefacto de medida y habría que corregir docs/01:140 y :171.",
+   "evidencia": "El modelo de ares da 40 ciclos por llenado (dcache.cpp:7). Mi ROM de calibración (verificar-herramientas/calib, modo Homebrew y también sin él) mide 'leer_limpio ciclos/linea=45.04' (lw + 3 instrucciones + 40). La medida de la fase 1 (n64/luabench/src/main.c:26-38 y :88-92; luabench.json 'ns_por_linea 763.5') cronometra también el bucle de inicialización 'buf[i]=i' y data_cache_hit_writeback_invalidate, no solo las lecturas. El modelo predice unos 6,5 M (escritura con fallo y writeback) + ~0,3 M + 11,8 M (4 × 65.536 × 45) ≈ 18,6 M ciclos ≈ 198 ms, frente a los 200,1 ms medidos. Un fallo limpio cuesta unos 45 ciclos y uno sucio unos 85, no 70."
+  },
+  {
+   "omision": "El modelo de ares cobra 1 ciclo extra por cada acceso que acierta en la caché de datos (loads y stores cuestan 2), y eso cambia el reparto del coste en el A* y en cualquier comparación de código.",
+   "evidencia": "dcache.cpp:62 y :91 'cpu.step(1 * 2)' en el acierto; recompiler-ipu.cpp:164-165 'Cache hit: account for the hit latency' → emitCpuStep(2). Medido: 'aciertos ... ciclos/linea=5.05' por vuelta de 4 instrucciones con un lw. En el A*: 22.903.306 aciertos = 14,3 % de los ciclos."
+  },
+  {
+   "omision": "Trampas de EMUX: sin modo Homebrew, emux_prof_read devuelve el código de la métrica en lugar de 0, y EMUX_PROF_INSNS no está implementado en ares v148.",
+   "evidencia": "Mi ROM calib sin modo Homebrew imprime 'emux_ciclos=0 dhit=32 dmiss=33 dwb=34 ihit=16 imiss=17' (0x20, 0x21, 0x22, 0x10, 0x11: el registro t1 sin tocar). libdragon emux.h:92 define EMUX_PROF_INSNS 0x0002, y ares cpu/emux.cpp:138-150 no tiene el caso 0x0002."
+  },
+  {
+   "omision": "No se identificó qué arrastra los ~88 KB de C++ ni cómo evitarlos. Era clave para responder si C++ es viable.",
+   "evidencia": "Mapa de c_like con -DNDEBUG: new_op.o → eh_throw.o (__cxa_throw) → vterminate.o (__verbose_terminate_handler) → cp-demangle.o, eh_personality.o y unwind-dw2.o. Tamaños de .text: 205896 (original), 202360 (NDEBUG), 205400 (operator new propio), 116088 (NDEBUG y operator new propio). debugcpp.h:10 solo engancha __debug_init_cpp si !defined(NDEBUG)."
+  },
+  {
+   "omision": "No se avisó de que -Os anula -falign-functions=32 ni de que una parte del ahorro de .text es relleno de alineación.",
+   "evidencia": "'mips64-elf-objdump -h sim.o': con -O2, .text.sim_astar 0x580 2**5; con -Os, 0x39c 2**2. La suma de tamaños de función con -O2 es 3688 B, frente a 3808 B de secciones. En el ELF de -Os, heap_push queda en 0x8000ec98 y sim_astar en 0x8000ed94, ninguna alineada a 32. n64.mk:81: 'if you change this, also change backtrace() in backtrace.c'."
+  },
+  {
+   "omision": "Detalles del servidor GDB de ares necesarios para scripts o IDE propios, y su exposición de red.",
+   "evidencia": "El primer byte del cliente tiene que ser '+' o ares lo desconecta (nall/tcptext/tcptext-server.cpp: 'Non-GDB client detected'). Mi primer cliente fue rechazado 8 veces hasta que envió '+'. El PC se compara enmascarado a 32 bits (n64/cpu/cpu.cpp:38 'reportPC(ipu.pc & 0xFFFFFFFF)'), así que 'Z0,ffffffff8000fb80' nunca salta y 'Z0,8000fb80' sí ('c → S05 (6.16 s)'). Con UseIPv4 el servidor escucha en INADDR_ANY (tcp-socket.cpp:117)."
+  },
+  {
+   "omision": "No se contrastó el caso de ROM de más de 64 MiB con los límites del hardware de prueba: desbloquear debugf en ares no sirve si la ROM no cabe en el flashcart.",
+   "evidencia": "README de SummerCart64: '64 MiB SDRAM memory for game and save data' y ROMs de hasta 78 MiB solo con memoria extendida. El presupuesto de cartucho del proyecto debería seguir en ≤ 64 MiB."
+  },
+  {
+   "omision": "No se valoró el EverDrive-64 Pro, que el propio investigador cita en sus fuentes, ni su soporte en libdragon.",
+   "evidencia": "Búsqueda del 2026-10-13: EverDrive-64 Pro a 169 $ (agosto de 2026; generationamiga.com y timeextension.com). En libdragon 39d0d609, usb.c:146-148 solo tiene ED25_VERSION, ED3_VERSION y EDX_VERSION ('X7, X5'), y libcart/cart.h:7-12 no menciona el Pro."
+  }
+ ]
+}

@@ -76,7 +76,9 @@ step_apt() {
     `# Medición, datos y ejecución sin pantalla` \
     heaptrack valgrind p7zip-full innoextract xvfb x11-utils xdotool imagemagick \
     `# Fase 2: renderizar la música MIDI para medir su tamaño como audio` \
-    fluidsynth timgm6mb-soundfont
+    fluidsynth timgm6mb-soundfont \
+    `# Fase 4: depurar ROMs en ares (el mips64-elf-gdb de la toolchain pide libpython3.10)` \
+    gdb-multiarch
 }
 
 step_data() {
