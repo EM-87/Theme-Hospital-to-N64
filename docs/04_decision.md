@@ -159,7 +159,7 @@ Propuesta para el mando de N64, a validar en el prototipo. La interfaz de Theme 
 | Relleno del RDP con muchos sprites solapados a 320 × 240 | Media | Texturas CI8 o CI4, recortes por casilla, medir en el hito 2 | Hitos 2 y 3 |
 | Legibilidad de las ventanas de gestión a 320 × 240 | Media | Retocar en el conversor o rehacer la maquetación, como la PS1 | Al convertir la interfaz |
 | Formato de guardado en 32–128 KiB | Media | Guardar solo el estado, sin animaciones ni cachés | Al implementar el guardado |
-| ares frente a la consola real (sin SummerCart todavía). ares cobra 40 ciclos por fallo de caché de datos (80 si expulsa una línea modificada) y uno más por acierto, y no modela los bloqueos del pipeline ni la competencia por la RDRAM | Media | Las ROM escriben sus medidas en pantalla para leerlas en la consola; confirmar los ciclos con un SummerCart64 | Cuando haya flashcart |
+| ares frente a la consola real (flashcart en camino: un clon del SummerCart64). ares cobra 40 ciclos por fallo de caché de datos (80 si expulsa una línea modificada) y uno más por acierto, y no modela los bloqueos del pipeline ni la competencia por la RDRAM | Media | Las ROM escriben sus medidas en pantalla para leerlas en la consola; confirmar los ciclos con el flashcart; con el clon, actualizar antes el firmware oficial y comprobar el USB | Cuando llegue el flashcart |
 | Licencias: datos del juego, SoundFont (TimGM6mb es GPL-2) y `wii_vm.c` (todos los derechos reservados) | Media | Conversor para que cada uno use sus datos; SoundFont compatible; no se usa nada de `wii_vm` | Antes de publicar nada |
 | Cambios en la rama `preview` de libdragon: el mezclador, `wav64`, `mid64`, `sf64` y el vídeo son APIs preview | Media | Commit fijado en la fase 0; lista de APIs preview usadas en la integración continua; actualizar solo a propósito | Continuo |
 | Rendimiento de H.264 para los vídeos | Baja | En ares, vídeos sintéticos de 320 × 240 a 15 y 25 fps se ven sin saltar fotogramas; falta probar los reales | Al convertir los vídeos |
@@ -201,19 +201,27 @@ El 2026-10-10:
 | 5. Controles y ratón | «En principio ok»; no tiene ratón | Esquema aceptado; el ratón se prueba en ares |
 | — | «La única alternativa sensata es un motor propio. ¿Has evaluado ya cómo construirlo? ¿Herramientas y eso?» | Camino 2 aceptado. Herramientas, APIs, método y pruebas en [`04_construccion.md`](04_construccion.md) |
 
+### Segunda ronda
+
+El 2026-10-23:
+
+| Pregunta | Respuesta | Qué cambia |
+|---|---|---|
+| 1. ¿Tienes un Expansion Pak? | Sí | Se puede probar el juego completo en consola. La demo con 4 MiB se prueba quitándolo y poniendo el Jumper Pak |
+| 2. ¿Flashcart? | Un clon chino del SummerCart64, unos 50 € | Prueba en consola en cuanto llegue. Es un diseño abierto y un clon puede valer, pero la calidad de fabricación y el firmware no están garantizados (más abajo) |
+| 3. Umbral de comparación con CorsixTH | De acuerdo | 20 semillas por escenario; se acepta si curados, muertes, saldo y reputación quedan dentro de la diferencia detectable con N = 20 (±15 % en curados, ±7,5 % en saldo) |
+| 4. Opciones de la N64 | Pidió que se le recordaran | Pendiente ([abajo](#preguntas-que-quedan)) |
+| 5. ¿Decidir la demo en el hito 5? | «Supongo» | La demo se decide en el hito 5, con el tamaño real del código |
+
+**El clon del SummerCart64.** Al recibirlo:
+1. actualizar el firmware con el `sc64deployer` oficial;
+2. comprobar que el programa lo reconoce;
+3. cargar `n64/rambase` y ver que su salida llega al PC por USB.
+
+Si el clon no admite el firmware oficial o el USB falla, se pierde la depuración por USB, pero no las medidas: las ROMs de medida también escriben sus resultados en pantalla.
+
 ## Preguntas que quedan
 
-1. **¿Tienes un Expansion Pak?** No lo dijiste. Para la demo haría falta además una consola sin él, con el Jumper Pak.
-2. **¿Compramos un SummerCart64** (unos 70–99 $)? Sin flashcart no se puede probar nada en tu N64, y los ciclos de ares hay que confirmarlos en consola.
-3. **Umbral de la comparación estadística con CorsixTH.** Propuesta:
-   - 20 semillas por escenario;
-   - aceptar si las medias de curados, muertes, saldo y reputación están dentro de la diferencia que se puede detectar con esa N.
-
-   Con 10 semillas eso es ±21 % en curados y ±11 % en saldo; con 20, ±15 % y ±7,5 %.
-4. **¿Te parecen bien las opciones de la N64?**
-   - **4 de reglas:** acciones en pausa, subidas de sueldo automáticas, retirar salas destruidas, recordar el contenido de las salas.
-   - **5 de interfaz.**
-   - El resto, fijo.
-5. **¿Te parece bien decidir la demo en el hito 5**, y no antes?
+1. **Opciones de la N64** (pregunta 4). Hay que confirmarlas. Explicadas en la respuesta del 2026-10-23 y en [`04_construccion.md`](04_construccion.md#fidelidad-corsixth-frente-al-original).
 
 Con tu visto bueno, la fase 5 empieza por el entorno del motor y el hito 0.
