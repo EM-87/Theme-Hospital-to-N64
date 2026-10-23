@@ -32,6 +32,8 @@ n64/pruebas/*/assets/
 *.z64
 *.v64
 *.n64
+# Partidas guardadas que ares deja junto a las ROMs (SRAM)
+*.ram
 
 # Trazas y perfiles (se publican resumidos en docs/, no en crudo)
 *.tracy

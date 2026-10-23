@@ -10,6 +10,7 @@ Este repositorio **no contiene datos del juego**. Cada usuario aporta los suyos,
 - Fase 2, inventario de datos y presupuesto de cartucho: [`docs/02_datos.md`](docs/02_datos.md)
 - Fase 3, arquitectura de CorsixTH y reutilización: [`docs/03_arquitectura.md`](docs/03_arquitectura.md)
 - Fase 4, decisión (camino, RAM, recortes, controles, riesgos): [`docs/04_decision.md`](docs/04_decision.md), y cómo se construye el motor (herramientas, APIs, método, fidelidad, modo demo): [`docs/04_construccion.md`](docs/04_construccion.md)
+- Fase 5, prototipos en N64 (en curso): [`docs/05_prototipo.md`](docs/05_prototipo.md). Hasta ahora, el mapa de un nivel con scroll a 30 fps
 
 ```bash
 tools/setup.sh          # instala todo (Ubuntu 24.04); necesita TH_DATA_URL o TH_DATA_ZIP para los datos
@@ -18,6 +19,8 @@ make -C n64/hello && tools/run_ares.sh n64/hello/th64hello.z64 out/hello
 tools/bench_medir.sh "$TH64_WORK/resultados/fase1" 3   # campaña de medición de la fase 1
 tools/datos/fase2.sh                                    # inventario y tamaños de los datos (fase 2)
 make -C n64/rambase && ARES_UNTIL="TH64 ram: fin" tools/run_ares.sh n64/rambase/th64rambase.z64 out/rambase 30   # RAM libre (fase 4)
+python3 -I tools/conv/conv.py && tools/motor_check.sh   # assets del motor y todas sus comprobaciones (fase 5)
+make -C motor && tools/run_ares.sh motor/th64.z64 out/motor 30   # el motor en ares
 ```
 
 Estructura:
@@ -25,6 +28,7 @@ Estructura:
 | Ruta | Contenido |
 |---|---|
 | `docs/` | plan y documento de hallazgos de cada fase |
-| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`), del código (`tools/arquitectura/`) y de cómo construir el motor (`tools/construccion/`) |
+| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`), del código (`tools/arquitectura/`), de cómo construir el motor (`tools/construccion/`), el conversor de datos del motor (`tools/conv/`) y los oráculos del mapa (`tools/oraculo_mapa/`) |
 | `bench/` | arnés de medición dentro de CorsixTH, partidas de referencia y resultados resumidos |
 | `n64/` | ROMs: hola mundo, benchmarks de CPU (`luabench`), medida de RAM libre (`rambase`) y ROMs de medida de la fase 4 (`pruebas/`) |
+| `motor/` | el motor de la fase 5: núcleo portable, vista del mapa, capa de la N64 y pruebas ([`motor/README.md`](motor/README.md)) |

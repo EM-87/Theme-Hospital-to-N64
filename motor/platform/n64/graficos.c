@@ -11,6 +11,7 @@ bool hoja_cargar(hoja_t *h, const char *ruta)
     // El fichero ya está en big-endian, como la N64.
     uint32_t ini_tabla = *(uint32_t *)(b + 8), ini_pix = *(uint32_t *)(b + 12);
     h->bloque = b;
+    h->tam = tam;
     h->num = *(uint16_t *)(b + 4);
     h->tabla = (const hoja_entrada_t *)(b + ini_tabla);
     h->pixeles = b + ini_pix;

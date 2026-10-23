@@ -14,6 +14,7 @@ typedef struct {
 
 typedef struct {
     void *bloque;            // fichero entero, tal como lo cargó asset_load
+    int tam;                 // bytes del fichero
     uint16_t num;
     const hoja_entrada_t *tabla;
     uint8_t *pixeles;

@@ -5,6 +5,7 @@ Motor propio en C sobre libdragon (fase 5). La lógica de CorsixTH v0.70.1 sirve
 | Ruta | Contenido |
 |---|---|
 | `core/` | Núcleo de la simulación en C portable (gnu17): sin libdragon, solo enteros y coma fija Q16.16, pools de tamaño fijo. Compila igual en el PC y en la N64 |
+| `vista/` | La vista del mapa en C portable: proyección isométrica, lista de sprites en el orden de dibujo de CorsixTH y un rasterizador por software que sirve de referencia. La usan la N64 y `th64sim` |
 | `platform/n64/` | Capa de la consola: vídeo, RDP, mandos, sonido, ficheros |
 | `platform/pc/` | `th64sim`, el núcleo en el PC sin pantalla |
 | `tests/` | Pruebas del núcleo (`th_test.h`), las mismas en el PC y en la ROM |
@@ -17,6 +18,13 @@ make -C motor               # ROM: motor/th64.z64
 make -C motor PRUEBAS=1     # ROM con las pruebas del núcleo: motor/th64_pruebas.z64
 cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && ctest --test-dir motor/build/pc
 ```
+
+`th64sim` (en `motor/build/pc/`):
+- `th64sim huella <semilla> <ticks>`: huella de la simulación de referencia, la misma que en la ROM;
+- `th64sim mapa <nivel.tmp> <n> [mapa_nivelN.tsv]`: carga un nivel y lo compara casilla a casilla con el volcado de CorsixTH (`bench/scenarios/volcar_mapa.lua`);
+- `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia; la usa [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md).
+
+La ROM normal abre el visor del mapa: el stick o la cruceta mueven la cámara, Z pasa al nivel siguiente, R oculta los datos y L mide el tiempo del RDP en cada fotograma (solo en la consola: ares no lo emula).
 
 Reglas del núcleo:
 - solo tipos de `stdint`, sin `long` ni `int` sin tamaño en lo que se guarda;

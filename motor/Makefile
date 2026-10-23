@@ -18,11 +18,11 @@ endif
 include $(N64_INST)/include/n64.mk
 
 # El núcleo se compila además con -Wextra; -Werror y -O2 ya los pone n64.mk.
-CFLAGS += -Wextra -Icore/include -Itests
+CFLAGS += -Wextra -Icore/include -Ivista -Itests
 
-C_FILES := $(wildcard core/src/*.c) $(wildcard platform/n64/*.c)
+C_FILES := $(wildcard core/src/*.c) $(wildcard vista/*.c) $(wildcard platform/n64/*.c)
 ifdef PRUEBAS
-  C_FILES += tests/test_core.c
+  C_FILES += tests/test_core.c tests/test_map.c
   CFLAGS += -DTH_PRUEBAS
 endif
 OBJS := $(addprefix $(BUILD_DIR)/,$(C_FILES:.c=.o))
@@ -31,12 +31,17 @@ all: $(ROMNAME).z64
 .PHONY: all
 
 # Assets: tools/conv los deja sin comprimir en assets/; aquí se comprimen
-# (hojas de sprites con aPLib, -c 2) o se copian (paletas) a filesystem/.
+# (hojas de sprites y niveles con aPLib, -c 2) o se copian (paletas) a filesystem/.
 MKASSET := $(N64_INST)/bin/mkasset
-ASSETS := $(shell find assets -type f \( -name '*.tsh' -o -name '*.tpl' \) 2>/dev/null)
+ASSETS := $(shell find assets -type f \( -name '*.tsh' -o -name '*.tpl' -o -name '*.tmp' \) 2>/dev/null)
 FS_ASSETS := $(patsubst assets/%,filesystem/%,$(ASSETS))
 
 filesystem/%.tsh: assets/%.tsh
+	@mkdir -p $(dir $@)
+	@echo "    [ASSET] $@"
+	@$(MKASSET) -c 2 -o $(dir $@) $<
+
+filesystem/%.tmp: assets/%.tmp
 	@mkdir -p $(dir $@)
 	@echo "    [ASSET] $@"
 	@$(MKASSET) -c 2 -o $(dir $@) $<

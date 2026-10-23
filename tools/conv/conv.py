@@ -7,7 +7,7 @@ meterlos en la ROM). Nada de lo que genera va al repositorio.
 
 Uso:
   python3 -I tools/conv/conv.py [--datos DIR] [--salida DIR] [--vistas DIR] [pasos...]
-Pasos (por defecto, todos): graficos animaciones
+Pasos (por defecto, todos): graficos animaciones niveles
 """
 import argparse
 import json
@@ -19,6 +19,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 import anim  # noqa: E402
 import hojas  # noqa: E402
+import niveles  # noqa: E402
 import paleta  # noqa: E402
 import rnc  # noqa: E402
 
@@ -139,7 +140,16 @@ def paso_animaciones(d, salida, vistas, resumen, oraculo=None):
     resumen["animaciones"] = r
 
 
-PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones}
+def paso_niveles(d, salida, vistas, resumen):
+    resumen["niveles"] = []
+    for n in range(1, 13):
+        tmp, r = niveles.convertir(d.leer("LEVELS", f"LEVEL.L{n}"))
+        rel = f"niveles/nivel{n:02d}.tmp"
+        r.update({"nivel": n, "fichero": rel, "bytes": escribir(salida, rel, tmp)})
+        resumen["niveles"].append(r)
+
+
+PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones, "niveles": paso_niveles}
 
 
 def main():
@@ -173,6 +183,10 @@ def main():
             o = r["oraculo"]
             print(f"  duraciones frente a CorsixTH: {o['iguales']} iguales, {len(o['distintas'])} distintas "
                   f"{[(i, a, b) for i, a, b in o['distintas']][:5]}")
+    if "niveles" in a.pasos:
+        for r in resumen["niveles"]:
+            print(f"nivel {r['nivel']:2d}          {r['parcelas']:2d} parcelas, {r['objetos']:3d} objetos, {r['divisorias']:3d} paredes divisorias, "
+                  f"cámara {tuple(r['camara'])}  {r['bytes']} B  -> {r['fichero']}")
     if "graficos" in a.pasos:
         print(f"paleta             {len(resumen['paleta']['variantes'])} variantes  "
               f"{resumen['paleta']['bytes']:5d} B  -> paleta.tpl")

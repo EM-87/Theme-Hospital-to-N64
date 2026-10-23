@@ -1,4 +1,4 @@
-// Pruebas del módulo de ejemplo (pool + coma fija + rng). Mismo fichero en el
+// Pruebas del núcleo: pool, coma fija, rng y, en test_map.c, el mapa. Mismo fichero en el
 // PC (gcc/clang, con o sin sanitizers) y en la N64 (ROM que lo ejecuta en ares).
 #include "th_test.h"
 
@@ -219,6 +219,7 @@ int th_run_core_tests(void)
     test_pool();
     test_rng();
     test_golden();
+    th_test_map();
     th_test_log("pruebas: %d comprobaciones, %d fallos\n", th_test_checks, th_test_failures);
     return th_test_failures;
 }

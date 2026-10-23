@@ -5,7 +5,9 @@
 #   3. ROM de pruebas en ares (modo Homebrew): las mismas pruebas sin fallos
 #      y la misma huella de la simulación de referencia que en el PC; si hay
 #      assets (tools/conv/conv.py), el RDP dibuja un sprite sin ningún píxel
-#      distinto de lo que dicen la hoja y la paleta;
+#      distinto de lo que dicen la hoja y la paleta (hito 1), dibuja el mapa
+#      igual que el rasterizador de referencia y el recorrido de la cámara va
+#      a 30 fps sin saltos (hito 2);
 #   4. ROM normal: compila y arranca.
 # Uso: tools/motor_check.sh [dir_salida]   (por defecto $TH64_WORK/resultados/motor_check)
 set -euo pipefail
@@ -33,7 +35,7 @@ echo "   pruebas ok"
 paso "3. ROM de pruebas en ares"
 make -s -C "$M" PRUEBAS=1 > "$OUT/make_pruebas.log"
 ARES_SETTINGS="General/HomebrewMode=true" ARES_UNTIL="TH64 pruebas: fin" \
-  "$REPO_DIR/tools/run_ares.sh" "$M/th64_pruebas.z64" "$OUT/ares_pruebas" 60 > /dev/null
+  "$REPO_DIR/tools/run_ares.sh" "$M/th64_pruebas.z64" "$OUT/ares_pruebas" 900 > /dev/null
 log="$OUT/ares_pruebas/isviewer.log"
 grep -q "TH64 pruebas: fin, 0 fallos" "$log" || { echo "   FALLO: las pruebas no terminaron sin fallos en la N64"; grep "TH64" "$log"; exit 1; }
 huella_n64=$(sed -n 's/.*huella golden_sim(1, 10000) = \([0-9a-f]*\).*/\1/p' "$log")
@@ -43,12 +45,19 @@ echo "   huella igual en el PC y en la N64: $huella_n64"
 if grep -q "assets ok" "$log"; then
   grep -q "TH64 hito1: .* 0 distintos" "$log" || { echo "   FALLO: el sprite dibujado no coincide"; grep "TH64 hito1" "$log"; exit 1; }
   grep "TH64 hito1" "$log" | sed 's/^/   /'
+  grep -q "TH64 hito2: comparacion con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: el mapa no se dibuja como la referencia"; grep "TH64 hito2" "$log"; exit 1; }
+  grep -q "TH64 hito2: recorrido .* 0 saltos" "$log" || { echo "   FALLO: el recorrido no va a 30 fps"; grep "TH64 hito2" "$log"; exit 1; }
+  grep "TH64 hito2: \(comparacion\|recorrido\|por fotograma\)" "$log" | sed 's/^/   /'
 else
   echo "   (sin assets: no se comprueba el dibujo; ejecuta tools/conv/conv.py)"
 fi
 
 paso "4. ROM normal"
 make -s -C "$M" > "$OUT/make_rom.log"
-ARES_UNTIL="TH64 motor: heap" "$REPO_DIR/tools/run_ares.sh" "$M/th64.z64" "$OUT/ares_rom" 30 > /dev/null
-grep "TH64 motor" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
+# Con assets, la ROM avisa de que ha cargado el nivel; sin ellos, solo del heap.
+hasta="TH64 motor: heap"
+grep -q "assets ok" "$log" && hasta="TH64 hito2: nivel"
+ARES_UNTIL="$hasta" "$REPO_DIR/tools/run_ares.sh" "$M/th64.z64" "$OUT/ares_rom" 60 > /dev/null
+grep "TH64 motor\|TH64 hito2" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
+grep -q "$hasta" "$OUT/ares_rom/isviewer.log" || { echo "   FALLO: la ROM normal no arranca"; exit 1; }
 echo "== todo correcto"
