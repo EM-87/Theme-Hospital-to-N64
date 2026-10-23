@@ -105,6 +105,13 @@ Cada hito se cierra con un commit, una captura de ares y una nota en `docs/05_pr
 
 ---
 
+## Al final, cuando el juego base funcione
+
+Deseos de Eduardo (fase 4), con su valoración en [`04_decision.md`](04_decision.md#deseos-para-el-final):
+- girar la cámara en 4 vistas, como en RollerCoaster Tycoon;
+- salas con esquinas interiores;
+- ampliaciones como pediatría y maternidad, con arte nuevo.
+
 ## Fuera de alcance por ahora
 
 Multijugador, hospitales rivales con IA (CorsixTH tampoco los tiene completos), editor de mapas e idiomas distintos del inglés y el español.

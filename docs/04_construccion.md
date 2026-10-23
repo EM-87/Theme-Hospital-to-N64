@@ -1,6 +1,6 @@
 # Fase 4 — Cómo se construye el motor
 
-Fecha: 2026-10-12. Estado: **evaluación, pendiente de revisión con Eduardo** junto con [`04_decision.md`](04_decision.md).
+Fecha: 2026-10-12, revisado el 2026-10-23. Estado: **cerrada** junto con [`04_decision.md`](04_decision.md).
 
 Responde a tres cosas que Eduardo planteó al revisar la decisión:
 - «¿Has evaluado ya cómo construirlo? ¿Herramientas y eso?»

@@ -1,6 +1,6 @@
 # Fase 4 — Decisión
 
-Fecha: 2026-10-10, actualizado el 2026-10-12. Estado: **camino 2 aceptado por Eduardo; respuestas incorporadas ([abajo](#respuestas-de-eduardo)); pendiente de su visto bueno final**, junto con [`04_construccion.md`](04_construccion.md), que explica cómo se construye el motor. Según el plan, la fase 5 no empieza hasta ese visto bueno.
+Fecha: 2026-10-10, actualizado el 2026-10-23. Estado: **cerrada**. Eduardo aprobó el camino 2, respondió a las preguntas ([abajo](#respuestas-de-eduardo)) y dio el visto bueno para empezar la fase 5 el 2026-10-23. Cómo se construye el motor: [`04_construccion.md`](04_construccion.md).
 
 Este documento solo usa cifras ya medidas en las fases 1–3 y una medida nueva (la RAM que deja libre libdragon, más abajo). Cuando una cifra es una estimación, se dice. 1 MiB = 1.048.576 bytes.
 
@@ -220,8 +220,16 @@ El 2026-10-23:
 
 Si el clon no admite el firmware oficial o el USB falla, se pierde la depuración por USB, pero no las medidas: las ROMs de medida también escriben sus resultados en pantalla.
 
-## Preguntas que quedan
+Pregunta 4, el 2026-10-23: **de acuerdo** con las opciones propuestas ([`04_construccion.md`](04_construccion.md#fidelidad-corsixth-frente-al-original)). Se revisará en el prototipo si «acciones en pausa» y «recordar el contenido de las salas» deben venir activadas por defecto, porque ahorran manejo del puntero con el stick.
 
-1. **Opciones de la N64** (pregunta 4). Hay que confirmarlas. Explicadas en la respuesta del 2026-10-23 y en [`04_construccion.md`](04_construccion.md#fidelidad-corsixth-frente-al-original).
+## Deseos para el final
 
-Con tu visto bueno, la fase 5 empieza por el entorno del motor y el hito 0.
+Eduardo quiere añadir, cuando el juego base funcione, tres cosas que no están ni en el original ni en CorsixTH. No entran en la fase 5, pero dos de ellas condicionan decisiones que se toman ya, así que se apuntan aquí con una primera valoración.
+
+| Deseo | Qué dicen los datos y el código | Qué se hace ya para no cerrar la puerta | Esfuerzo al final |
+|---|---|---|---|
+| **Girar la cámara en 4 vistas**, como en RollerCoaster Tycoon | CorsixTH no gira la cámara. Pero los datos parecen dar para componer las 4 vistas: <br>• los humanoides tienen dos direcciones dibujadas más su espejo (`walk_north`, `walk_east`); <br>• los objetos se colocan en 4 orientaciones, dos de ellas con espejo; <br>• cada tipo de pared tiene cara interior y exterior para los bordes norte y oeste (`walls/*.lua`). <br>Dudas: los objetos que no son simétricos se verían al revés; las sombras del suelo están dibujadas para una sola luz; la fachada del edificio vista desde detrás | La capa de dibujo separa las coordenadas del mundo de la proyección a pantalla, y el orden de dibujo depende de la vista. El núcleo no sabe nada de la cámara | Medio. Antes, un estudio de qué sprites faltan o quedan mal en cada vista |
+| **Salas con esquinas interiores** (en forma de L, etc.) | El original y CorsixTH solo hacen rectángulos: la sala es (x, y, ancho, alto) en unos 30 sitios de la lógica de salas. Por ejemplo, el «espacio extra» que mejora el ánimo del personal usa ancho × alto (`room.lua:1206`). Las paredes son piezas por borde; si hace falta una pieza para la esquina interior se verá al dibujar el mapa (hito 2) | **En el núcleo, la sala se guarda como un conjunto de casillas** (una máscara sobre su rectángulo envolvente), aunque al principio solo se construyan rectángulos. Las reglas que dependen del tamaño cuentan casillas | Bajo o medio si el núcleo ya lo prevé: interfaz para dibujar la forma, colocación de puertas y objetos |
+| **Pediatría y maternidad**, u otras ampliaciones | No existen en el original ni en CorsixTH. En los datos no hay sprites de niños, embarazadas ni cunas, y tampoco reglas que copiar | Las salas, enfermedades y tipos de paciente son tablas de datos (ya previsto), y el conversor admitirá hojas de sprites propias (PNG con la paleta de TH) junto a las de `DATAM` | El mayor: hace falta arte nuevo y original al estilo de TH, que sí se podría distribuir con el proyecto porque sería suyo, además de diseñar las reglas y la interfaz. RAM y cartucho, poco |
+
+Orden propuesto al final: primero las esquinas interiores, luego la cámara y por último las ampliaciones.
