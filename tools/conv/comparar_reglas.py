@@ -4,7 +4,9 @@ fuera del juego y con stubs) con las que tiene CorsixTH en memoria
 (bench/scenarios/volcar_reglas.lua).
 
 Uso: python3 -I tools/conv/comparar_reglas.py <reglas.json> <dir del oráculo>
-  reglas.json: el que deja `conv.py --vistas DIR reglas` en DIR
+       python3 -I tools/conv/comparar_reglas.py --textos <textos.json> <dir del oráculo>
+  reglas.json, textos.json: los que deja `conv.py --vistas DIR reglas textos` en DIR
+  dir del oráculo: el de bench/scenarios/volcar_reglas.lua o volcar_textos.lua
 
 Reglas de la comparación:
   * una cadena de idioma del extractor ({"$ref": "_S..."}) vale lo que haya en
@@ -47,7 +49,30 @@ def diferencias(a, b, ruta, out, limite=20):
         out.append(f"{ruta}: {json.dumps(a)[:60]} frente a {json.dumps(b)[:60]}")
 
 
+def contar(t):
+    if isinstance(t, dict):
+        return sum(contar(v) for v in t.values())
+    if isinstance(t, list):
+        return sum(contar(v) for v in t)
+    return 1
+
+
+def textos(nuestro, oraculo):
+    """Los textos tienen que ser idénticos, cadena a cadena."""
+    a = json.load(open(nuestro, encoding="utf-8"))
+    b = json.load(open(os.path.join(oraculo, "textos.json"), encoding="utf-8"))
+    fallos = 0
+    for idioma in sorted(a):
+        d = []
+        diferencias(a[idioma], b.get(idioma), idioma, d)
+        print(f"textos {idioma:<8} {contar(a[idioma])} cadenas: " + ("iguales" if not d else "; ".join(d[:5])))
+        fallos += bool(d)
+    sys.exit(1 if fallos else 0)
+
+
 def main():
+    if len(sys.argv) == 4 and sys.argv[1] == "--textos":
+        textos(sys.argv[2], sys.argv[3])
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     nuestro = json.load(open(sys.argv[1]))

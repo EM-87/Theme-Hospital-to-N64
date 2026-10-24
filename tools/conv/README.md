@@ -1,11 +1,11 @@
 # Conversor de datos (fase 5, hito 0)
 
-Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los assets del motor en `motor/assets/`, sin comprimir. Al compilar la ROM, `motor/Makefile` los comprime en `motor/filesystem/`. Nada de lo que genera va al repositorio. El paso de reglas necesita además `lua5.4` y el código de CorsixTH v0.70.1 (`$CORSIXTH_DIR`, que deja `tools/setup.sh`).
+Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los assets del motor en `motor/assets/`, sin comprimir. Al compilar la ROM, `motor/Makefile` los comprime en `motor/filesystem/`. Nada de lo que genera va al repositorio. Los pasos de reglas, textos y fuentes necesitan además el código de CorsixTH v0.70.1 (`$CORSIXTH_DIR`, que deja `tools/setup.sh`), y los dos primeros, `lua5.4`.
 
 ```bash
 source tools/env.sh
 python3 -I tools/conv/conv.py                    # todos los pasos
-python3 -I tools/conv/conv.py graficos           # solo un paso (graficos, animaciones, niveles, reglas)
+python3 -I tools/conv/conv.py graficos           # solo un paso (graficos, animaciones, niveles, reglas, textos, fuentes)
 python3 -I tools/conv/conv.py --vistas DIR       # además, vistas previas en PNG
 ```
 
@@ -18,7 +18,10 @@ python3 -I tools/conv/conv.py --vistas DIR       # además, vistas previas en PN
 | `niveles.py` | Mapas de los 12 niveles (`LEVELS/LEVEL.Lx`) al formato TMP1: lee como `load_from_th_file` de CorsixTH, con su tabla de bloques |
 | `reglas.lua` | Extrae las reglas del código de CorsixTH con `lua5.4` y stubs: objetos, salas, enfermedades (con el aspecto de los pacientes como distribución exacta), diagnósticos, marcadores, duraciones fijadas, animaciones de caminar, configuración por defecto, `base_config.lua` y los 36 niveles de la campaña. Escribe el JSON canónico de `json_canonico.lua` |
 | `reglas.py` | Ese JSON al formato TRG1, con la ida y vuelta comprobada. `python3 -I tools/conv/reglas.py comprobar <th64sim> motor/assets` compara el lector del núcleo con el del conversor |
-| `comparar_reglas.py` | Compara las reglas del extractor con las que tiene CorsixTH en memoria (`bench/scenarios/volcar_reglas.lua`) |
+| `comparar_reglas.py` | Compara las reglas del extractor con las que tiene CorsixTH en memoria (`bench/scenarios/volcar_reglas.lua`); con `--textos`, los textos (`bench/scenarios/volcar_textos.lua`) |
+| `textos.lua` | Ejecuta el `strings.lua` de CorsixTH con `lua5.4` para el inglés y el español, con la lectura de `LANG-x.DAT` y el paso de CP437 a UTF-8 hechos en Lua como en su C++. Los textos van a TRG1 (`textos/english.trg`, `textos/spanish.trg`) |
+| `fuentes.py` | Las 5 fuentes de `QDATAM` a BMFont (`.fnt` y atlas `.png`), con los caracteres por su código Unicode. El Makefile del motor las pasa a `font64` con `mkfont` |
+| `json_canonico.lua` | El JSON canónico que comparten el extractor y los oráculos dentro de CorsixTH |
 | `conv.py` | La orden principal y el formato TPL1 de las paletas |
 
 Formatos (big-endian, como la N64):
@@ -44,4 +47,14 @@ Comprobaciones al convertir:
     ```
 
     Da 60 de 60 objetos, 23 de 23 salas, 34 de 34 enfermedades, 9 de 9 diagnósticos y 36 de 36 niveles iguales.
+- **Textos:** la ida y vuelta de cada TRG1, y contra CorsixTH:
+
+  ```bash
+  tools/bench_run.sh bench/scenarios/volcar_textos.lua $TH64_WORK/resultados/hito0/oraculo_textos
+  python3 -I tools/conv/conv.py --vistas $TH64_WORK/resultados/hito0/vistas textos
+  python3 -I tools/conv/comparar_reglas.py --textos $TH64_WORK/resultados/hito0/vistas/textos.json $TH64_WORK/resultados/hito0/oraculo_textos
+  ```
+
+  Da las 5.524 cadenas inglesas y las 5.543 españolas iguales.
+- **Fuentes:** el conversor cuenta los caracteres de los textos que no tiene cada fuente.
 - **Niveles:** el conversor no los compara por sí mismo. Lo hace el núcleo, que es el que los interpreta: `th64sim mapa` carga cada nivel y lo compara con el volcado de CorsixTH ([`docs/05_prototipo.md`](../../docs/05_prototipo.md#hito-2--mapa-isométrico-con-scroll-a-30-fps)).

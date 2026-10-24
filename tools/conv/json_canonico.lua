@@ -19,17 +19,21 @@ local function esc(s)
   end) .. '"'
 end
 
+-- Devuelve n si las claves son exactamente 1..n; si no, nil. Solo usa pairs
+-- (las tablas de cadenas de CorsixTH dan error al pedir una clave que no
+-- existe, así que ni t[i] ni ipairs sirven para ver dónde acaban).
 local function is_array(t)
-  local n = 0
+  local n, claves = 0, {}
   for k in pairs(t) do
-    if math.type(k) ~= "integer" or k < 1 then return false end
+    if math.type(k) ~= "integer" or k < 1 then return nil end
     n = n + 1
+    claves[k] = true
   end
-  if n == 0 then return false end
+  if n == 0 then return nil end
   for i = 1, n do
-    if t[i] == nil then return false end
+    if not claves[i] then return nil end
   end
-  return true
+  return n
 end
 
 local function fuente(f)
@@ -57,8 +61,9 @@ local function json(v, opts, stack)
   assert(not stack[v], "ciclo")
   stack[v] = true
   local parts = {}
-  if is_array(v) then
-    for _, x in ipairs(v) do parts[#parts + 1] = json(x, opts, stack) end
+  local n = is_array(v)
+  if n then
+    for i = 1, n do parts[#parts + 1] = json(v[i], opts, stack) end
     stack[v] = nil
     return "[" .. table.concat(parts, ",") .. "]"
   end

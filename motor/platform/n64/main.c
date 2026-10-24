@@ -481,7 +481,8 @@ static th_humanoid *caminata(int x1, int y1, int x2, int y2, int tick)
 // PC; tools/motor_check.sh compara las huellas con las de th64sim reglas.
 static bool comprobar_reglas(void)
 {
-    static const char *const rutas[] = {"rom:/reglas/definiciones.trg", "rom:/reglas/full01.trg"};
+    static const char *const rutas[] = {"rom:/reglas/definiciones.trg", "rom:/reglas/full01.trg",
+                                        "rom:/textos/english.trg", "rom:/textos/spanish.trg"};
     bool ok = true;
     for (unsigned i = 0; i < sizeof rutas / sizeof rutas[0]; i++) {
         FILE *f = fopen(rutas[i], "rb");
@@ -505,6 +506,21 @@ static bool comprobar_reglas(void)
         }
         free(datos);
     }
+    // Las fuentes de QDATAM, convertidas con mkfont.
+    static const char *const fuentes[] = {"font100m", "font101m", "font130m", "font131m", "font132m"};
+    int cargadas = 0;
+    for (unsigned i = 0; i < sizeof fuentes / sizeof fuentes[0]; i++) {
+        char ruta[64];
+        snprintf(ruta, sizeof ruta, "rom:/fuentes/%s.font64", fuentes[i]);
+        FILE *f = fopen(ruta, "rb");
+        if (!f)
+            continue;
+        fclose(f);
+        rdpq_font_t *fuente = rdpq_font_load(ruta);
+        cargadas += fuente != NULL;
+        rdpq_font_free(fuente);
+    }
+    debugf("TH64 fuentes: %d de %u cargadas\n", cargadas, (unsigned)(sizeof fuentes / sizeof fuentes[0]));
     return ok;
 }
 #endif

@@ -97,9 +97,30 @@ Comprobaciones:
 
   Para comprobar el comparador, se metieron 3 cambios a mano (un entero, un entero cambiado por real y una lista más corta), y detectó los 3.
 
+**Textos: hecho.** [`textos.lua`](../tools/conv/textos.lua) ejecuta el `strings.lua` de CorsixTH con `lua5.4`, igual que en el juego: cada idioma hereda de otro y de las cadenas originales (`LANG-0.DAT` el inglés y `LANG-4.DAT` el español). Lo que en el juego es C++ se hace aquí en Lua:
+- la lectura de `LANG-x.DAT` (`th_string_list`);
+- el paso de CP437 a UTF-8, con la tabla del propio CorsixTH (`Src/cp437_table.h`), que no es CP437 puro: 0x92 pasa a «?».
+
+| Idioma | Cadenas | TRG1 | Validar en la N64 |
+|---|---:|---:|---:|
+| Inglés | 5.524 | 263.592 B | 18 ms |
+| Español | 5.543 | 289.036 B | 18 ms |
+
+Comprobaciones:
+- [`volcar_textos.lua`](../bench/scenarios/volcar_textos.lua) carga los dos idiomas dentro de CorsixTH, con su lector en C++. `comparar_reglas.py --textos` da las dos tablas idénticas, cadena a cadena.
+- La N64 lee los dos ficheros con la misma huella que el PC.
+
+Las tablas incluyen todo lo que añade CorsixTH: opciones de PC, trucos, errores. Son unas tres veces lo que preveía el presupuesto de RAM (0,10 MiB por idioma). Cuando llegue la interfaz se verá si se quitan las partes que la N64 no usa o si el texto se lee del cartucho.
+
+**Fuentes: hecho.** Las 5 fuentes de baja resolución de `QDATAM` pasan a BMFont, un `.fnt` de texto con su atlas `.png` ([`fuentes.py`](../tools/conv/fuentes.py)), y el Makefile las convierte a `font64` con `mkfont`:
+- **Codificación:** cada carácter va por su código Unicode, con la misma tabla que los textos.
+- **`FONT100M`:** son las 26 cifras y signos con fondo degradado, en 15 colores; seguramente las del contador del panel. Ocupa 487 B.
+- **Las otras 4:** son fuentes completas de un color (rojo, negro, azul y blanco), de 145 caracteres. Ocupan unos 1.540 B cada una.
+- **Cobertura:** en inglés no falta ningún carácter. En español faltan Á, Í y Ó, que salen 4 veces en todos los textos.
+
+La ROM de pruebas carga las 5.
+
 **Queda del hito 0:**
-- los textos en UTF-8;
-- las fuentes;
 - el banco de sonidos recortado;
 - un mapa de prueba;
 - las posiciones por fotograma de los marcadores, que solo usa la interfaz.

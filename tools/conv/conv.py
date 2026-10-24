@@ -7,8 +7,9 @@ meterlos en la ROM). Nada de lo que genera va al repositorio.
 
 Uso:
   python3 -I tools/conv/conv.py [--datos DIR] [--salida DIR] [--vistas DIR] [pasos...]
-Pasos (por defecto, todos): graficos animaciones niveles reglas
-El paso reglas necesita además lua5.4 y el código de CorsixTH ($CORSIXTH_DIR).
+Pasos (por defecto, todos): graficos animaciones niveles reglas textos fuentes
+Los pasos reglas, textos y fuentes necesitan además el código de CorsixTH
+($CORSIXTH_DIR); los dos primeros, también lua5.4.
 """
 import argparse
 import json
@@ -19,6 +20,7 @@ import sys
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 import anim  # noqa: E402
+import fuentes  # noqa: E402
 import hojas  # noqa: E402
 import niveles  # noqa: E402
 import paleta  # noqa: E402
@@ -175,8 +177,51 @@ def paso_reglas(d, salida, vistas, resumen):
     resumen["reglas"] = r
 
 
+IDIOMAS = ("english", "spanish")
+
+
+def paso_textos(d, salida, vistas, resumen):
+    lua = os.path.join(os.environ.get("CORSIXTH_DIR", ""), "CorsixTH", "Lua")
+    doc = reglas.extraer_textos(lua, d.ruta("DATA"), IDIOMAS)
+    r = {"ficheros": {}}
+    for idioma in IDIOMAS:
+        rel = f"textos/{idioma}.trg"
+        trg = reglas.escribir(doc[idioma])
+        if not reglas.igual(reglas.leer(trg), doc[idioma]):
+            sys.exit(f"ERROR: {rel} no se lee igual que se escribió")
+        r["ficheros"][rel] = escribir(salida, rel, trg)
+    if vistas:
+        os.makedirs(vistas, exist_ok=True)
+        with open(os.path.join(vistas, "textos.json"), "w") as f:
+            json.dump(doc, f, indent=1, sort_keys=True, ensure_ascii=False)
+    resumen["textos"] = r
+
+
+def paso_fuentes(d, salida, vistas, resumen):
+    tabla = fuentes.tabla_cp437(os.environ.get("CORSIXTH_DIR", ""))
+    rgb = paleta.colores_rgb8(d.leer("DATA", "MPALETTE.DAT"))
+    # Cobertura: los caracteres de los textos ya convertidos (paso textos).
+    textos = {}
+    for idioma in IDIOMAS:
+        ruta = os.path.join(salida, "textos", f"{idioma}.trg")
+        if os.path.exists(ruta):
+            textos[idioma] = reglas.leer(open(ruta, "rb").read())
+    r = {"fuentes": []}
+    for nombre in fuentes.FUENTES:
+        sprites = hojas.leer(d.leer("QDATAM", nombre + ".TAB"), d.leer("QDATAM", nombre + ".DAT"),
+                             hojas.es_compleja(nombre))
+        fnt, png, glifos = fuentes.convertir(nombre, sprites, rgb, tabla)
+        base = f"fuentes/{nombre.lower()}"
+        f = {"fuente": f"QDATAM/{nombre}", "glifos": len(glifos), "fnt": escribir(salida, base + ".fnt", fnt.encode()),
+             "png": escribir(salida, base + ".png", png)}
+        if len(glifos) > 60:
+            f["faltan"] = {i: "".join(sorted(fuentes.cobertura(t, glifos))) for i, t in textos.items()}
+        r["fuentes"].append(f)
+    resumen["fuentes"] = r
+
+
 PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones, "niveles": paso_niveles,
-         "reglas": paso_reglas}
+         "reglas": paso_reglas, "textos": paso_textos, "fuentes": paso_fuentes}
 
 
 def main():
@@ -222,6 +267,13 @@ def main():
         print(f"                  definiciones {f['reglas/definiciones.trg']} B, {len(niv)} niveles de "
               f"{min(niv)} a {max(niv)} B; aspecto factorizado en {r['aspectos_factorizados']} de {r['aspectos']} "
               f"enfermedades; duraciones fijadas {r['duraciones']}")
+    if "textos" in a.pasos:
+        for rel, n in resumen["textos"]["ficheros"].items():
+            print(f"textos            {n} B  -> {rel}")
+    if "fuentes" in a.pasos:
+        for f in resumen["fuentes"]["fuentes"]:
+            print(f"{f['fuente']:<17} {f['glifos']:4d} glifos  -> fuentes/; faltan: "
+                  + (", ".join(f"{i}: {c!r}" for i, c in f.get("faltan", {}).items()) or "(solo cifras)"))
     if "graficos" in a.pasos:
         print(f"paleta             {len(resumen['paleta']['variantes'])} variantes  "
               f"{resumen['paleta']['bytes']:5d} B  -> paleta.tpl")

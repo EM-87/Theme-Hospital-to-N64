@@ -49,13 +49,19 @@ huella_n64=$(sed -n 's/.*huella golden_sim(1, 10000) = \([0-9a-f]*\).*/\1/p' "$l
 grep "comprobaciones" "$log" | sed 's/^/   /'
 echo "   huella igual en el PC y en la N64: $huella_n64"
 if grep -q "assets ok" "$log"; then
-  for f in definiciones full01; do
-    grep -q "TH64 reglas: .*$f.trg: .*huella" "$log" || continue
+  for f in definiciones full01 english spanish; do
+    grep -q "TH64 reglas: .*/$f.trg: .*huella" "$log" || continue
     h_n64=$(sed -n "s/.*TH64 reglas: .*$f.trg: .*huella \([0-9a-f]*\).*/\1/p" "$log")
-    h_pc=$("$M/build/pc/th64sim" reglas "$M/assets/reglas/$f.trg" 2>&1 > /dev/null | sed -n 's/^huella //p')
+    ruta="$M/assets/reglas/$f.trg"
+    [ -f "$ruta" ] || ruta="$M/assets/textos/$f.trg"
+    h_pc=$("$M/build/pc/th64sim" reglas "$ruta" 2>&1 > /dev/null | sed -n 's/^huella //p')
     [ "$h_n64" = "$h_pc" ] || { echo "   FALLO: reglas $f: huella N64 $h_n64 frente a PC $h_pc"; exit 1; }
-    grep "TH64 reglas: .*$f.trg" "$log" | sed 's/^/   /'
+    grep "TH64 reglas: .*/$f.trg" "$log" | sed 's/^/   /'
   done
+  if ls "$M"/assets/fuentes/*.fnt > /dev/null 2>&1; then
+    grep -q "TH64 fuentes: 5 de 5 cargadas" "$log" || { echo "   FALLO: no se cargan las fuentes"; grep "TH64 fuentes" "$log"; exit 1; }
+    grep "TH64 fuentes" "$log" | sed 's/^/   /'
+  fi
   grep -q "TH64 hito1: .* 0 distintos" "$log" || { echo "   FALLO: el sprite dibujado no coincide"; grep "TH64 hito1" "$log"; exit 1; }
   grep "TH64 hito1" "$log" | sed 's/^/   /'
   grep -q "TH64 hito2: comparacion con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: el mapa no se dibuja como la referencia"; grep "TH64 hito2" "$log"; exit 1; }

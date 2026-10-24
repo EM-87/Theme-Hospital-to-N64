@@ -46,6 +46,17 @@ def extraer(lua_dir, levels_dir):
         return json.load(open(ruta)), r.stdout.strip()
 
 
+def extraer_textos(lua_dir, data_dir, idiomas):
+    """Ejecuta textos.lua y devuelve {idioma: tabla _S} en JSON canónico."""
+    with tempfile.TemporaryDirectory() as tmp:
+        ruta = os.path.join(tmp, "textos.json")
+        r = subprocess.run(["lua5.4", os.path.join(AQUI, "textos.lua"), lua_dir, data_dir, ruta, *idiomas],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError("textos.lua: " + r.stderr.strip())
+        return json.load(open(ruta, encoding="utf-8"))
+
+
 def resolver_duraciones(doc, duraciones_anim):
     """Las duraciones fijadas como getAnimLength(N) pasan a un número."""
     for d in doc["duraciones"]:
@@ -263,12 +274,15 @@ def ficheros(doc):
 
 def comprobar_c(th64sim, dir_assets):
     """Compara el lector del núcleo (th64sim reglas) con leer() en cada TRG1
-    de dir_assets/reglas. Devuelve (ficheros, distintos)."""
-    d = os.path.join(dir_assets, "reglas")
-    nombres = sorted(f for f in os.listdir(d) if f.endswith(".trg"))
+    de dir_assets/reglas y dir_assets/textos. Devuelve (ficheros, distintos)."""
+    nombres = []
+    for sub in ("reglas", "textos"):
+        d = os.path.join(dir_assets, sub)
+        if os.path.isdir(d):
+            nombres += [os.path.join(sub, f) for f in sorted(os.listdir(d)) if f.endswith(".trg")]
     distintos = []
     for f in nombres:
-        ruta = os.path.join(d, f)
+        ruta = os.path.join(dir_assets, f)
         r = subprocess.run([th64sim, "reglas", ruta], capture_output=True, text=True)
         if r.returncode != 0 or not igual(json.loads(r.stdout), leer(open(ruta, "rb").read())):
             distintos.append(f)
@@ -280,6 +294,6 @@ if __name__ == "__main__":
     if len(sys.argv) != 4 or sys.argv[1] != "comprobar":
         sys.exit("uso: python3 -I tools/conv/reglas.py comprobar <th64sim> <dir assets>")
     total, mal = comprobar_c(sys.argv[2], sys.argv[3])
-    print(f"reglas: {total - len(mal)} de {total} ficheros iguales en el núcleo y en el conversor"
+    print(f"reglas y textos: {total - len(mal)} de {total} ficheros iguales en el núcleo y en el conversor"
           + (f"; distintos: {', '.join(mal)}" if mal else ""))
     sys.exit(1 if mal else 0)

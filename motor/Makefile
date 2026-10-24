@@ -31,12 +31,17 @@ all: $(ROMNAME).z64
 .PHONY: all
 
 # Assets: tools/conv los deja sin comprimir en assets/; aquí se comprimen
-# (hojas de sprites, animaciones, niveles y reglas con aPLib, -c 2) o se
-# copian (paletas) a filesystem/.
+# (hojas de sprites, animaciones, niveles, reglas y textos con aPLib, -c 2) o
+# se copian (paletas) a filesystem/.
 MKASSET := $(N64_INST)/bin/mkasset
 ASSETS := $(shell find assets -type f \( -name '*.tsh' -o -name '*.tpl' -o -name '*.tmp' -o -name '*.tan' \
   -o -name '*.trg' \) 2>/dev/null)
 FS_ASSETS := $(patsubst assets/%,filesystem/%,$(ASSETS))
+# Fuentes: el conversor deja BMFont (.fnt y su atlas .png) y mkfont las pasa a
+# font64 en CI4 (la de más colores, FONT100M, tiene 15 y el transparente).
+MKFONT := $(N64_INST)/bin/mkfont
+FUENTES := $(shell find assets -type f -name '*.fnt' 2>/dev/null)
+FS_ASSETS += $(patsubst assets/%.fnt,filesystem/%.font64,$(FUENTES))
 
 filesystem/%.tsh: assets/%.tsh
 	@mkdir -p $(dir $@)
@@ -57,6 +62,11 @@ filesystem/%.trg: assets/%.trg
 	@mkdir -p $(dir $@)
 	@echo "    [ASSET] $@"
 	@$(MKASSET) -c 2 -o $(dir $@) $<
+
+filesystem/%.font64: assets/%.fnt assets/%.png
+	@mkdir -p $(dir $@)
+	@echo "    [FONT] $@"
+	@$(MKFONT) --format CI4 -o $(dir $@) $< > /dev/null
 
 filesystem/%.tpl: assets/%.tpl
 	@mkdir -p $(dir $@)
