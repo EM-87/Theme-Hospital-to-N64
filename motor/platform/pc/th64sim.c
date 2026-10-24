@@ -4,6 +4,8 @@
 // - mapa: carga un nivel convertido (TMP1), escribe su huella y, si se le da
 //   el volcado del oráculo de CorsixTH (bench/scenarios/volcar_mapa.lua), lo
 //   compara casilla a casilla;
+// - caminos: repite con el A* del núcleo los caminos que pidió el oráculo de
+//   CorsixTH (bench/scenarios/caminos.lua) y los compara casilla a casilla;
 // - vista: dibuja con el rasterizador de referencia (vista/raster.c) lo que se
 //   ve del mapa desde una posición de cámara y lo guarda en PPM, para
 //   compararlo con una captura de CorsixTH (tools/oraculo_mapa).
@@ -15,6 +17,7 @@
 
 #include "raster.h"
 #include "th/map.h"
+#include "th/path.h"
 #include "th/version.h"
 #include "th_test.h"
 #include "vista.h"
@@ -29,6 +32,7 @@ static int uso(void)
             "th64sim %s\n"
             "Uso: th64sim huella <semilla> <ticks>\n"
             "     th64sim mapa <nivel.tmp> <número de nivel> [mapa_nivelN.tsv]\n"
+            "     th64sim caminos <nivel.tmp> <número de nivel> <caminos_nivelN.tsv>\n"
             "     th64sim vista <nivel.tmp> <número de nivel> <bloques.tsh> <paleta> <unidad> <x> <y> <ancho> <alto> "
             "<salida.ppm> [mezcla.pgm]\n"
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
@@ -242,6 +246,65 @@ static int orden_vista(int argc, char **argv)
     return 0;
 }
 
+static th_pathfinder buscador;
+
+static int orden_caminos(char **argv)
+{
+    if (cargar_mapa(argv[2], atoi(argv[3])))
+        return 1;
+    FILE *f = fopen(argv[4], "r");
+    if (!f) {
+        fprintf(stderr, "no se puede abrir %s\n", argv[4]);
+        return 1;
+    }
+    static char linea[65536];
+    static uint8_t xs[TH_PATH_NODES], ys[TH_PATH_NODES];
+    int pares = 0, misma_longitud = 0, mismo_camino = 0, sin_camino = 0, max_long = 0;
+    long long expandidos = 0;
+    uint32_t max_expandidos = 0;
+    while (fgets(linea, sizeof linea, f)) {
+        char *p = linea;
+        int x1 = (int)strtol(p, &p, 10), y1 = (int)strtol(p, &p, 10);
+        int x2 = (int)strtol(p, &p, 10), y2 = (int)strtol(p, &p, 10);
+        int esperada = (int)strtol(p, &p, 10);
+        pares++;
+        int l = th_path_find(&buscador, &mapa, x1, y1, x2, y2);
+        expandidos += buscador.expanded;
+        if (buscador.expanded > max_expandidos)
+            max_expandidos = buscador.expanded;
+        if (l != esperada) {
+            if (pares - misma_longitud <= 5)
+                printf("  (%d,%d)->(%d,%d): th64 %d pasos, CorsixTH %d\n", x1, y1, x2, y2, l, esperada);
+            continue;
+        }
+        misma_longitud++;
+        if (l < 0) {
+            sin_camino++;
+            mismo_camino++;
+            continue;
+        }
+        if (l > max_long)
+            max_long = l;
+        int n = th_path_get(&buscador, xs, ys, TH_PATH_NODES);
+        int igual = n == l + 1;
+        for (int i = 0; igual && i < n; i++) {
+            int cx = (int)strtol(p, &p, 10);
+            p++; // la coma
+            int cy = (int)strtol(p, &p, 10);
+            igual = cx == xs[i] && cy == ys[i];
+        }
+        mismo_camino += igual;
+        if (!igual && pares - mismo_camino <= 5)
+            printf("  (%d,%d)->(%d,%d): misma longitud (%d), otro camino\n", x1, y1, x2, y2, l);
+    }
+    fclose(f);
+    printf("caminos: %d pares; %d con la misma longitud y %d con el mismo camino que CorsixTH (%d sin camino); "
+           "el más largo, %d pasos; %.1f nodos expandidos de media, %lu como máximo\n",
+           pares, misma_longitud, mismo_camino, sin_camino, max_long, pares ? (double)expandidos / pares : 0.0,
+           (unsigned long)max_expandidos);
+    return pares > 0 && mismo_camino == pares ? 0 : 1;
+}
+
 static int orden_mapa(int argc, char **argv)
 {
     if (cargar_mapa(argv[2], atoi(argv[3])))
@@ -267,6 +330,8 @@ int main(int argc, char **argv)
     }
     if ((argc == 4 || argc == 5) && strcmp(argv[1], "mapa") == 0)
         return orden_mapa(argc, argv);
+    if (argc == 5 && strcmp(argv[1], "caminos") == 0)
+        return orden_caminos(argv);
     if ((argc == 12 || argc == 13) && strcmp(argv[1], "vista") == 0)
         return orden_vista(argc, argv);
     return uso();
