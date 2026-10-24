@@ -58,6 +58,8 @@ enum {
     TH_ACTION_MEANDER,
     TH_ACTION_SEEK_ROOM,
     TH_ACTION_STAFF_RECEPTION,
+    TH_ACTION_CALL_CHECKPOINT, // obj: sala; val: identidad de la llamada
+    TH_ACTION_ANSWER_CALL,
 };
 
 // Banderas de una acción (flags): las que pone quien la crea.

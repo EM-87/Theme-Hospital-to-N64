@@ -459,4 +459,224 @@ Lo que el motor tiene que hacer:
 - volver al borde y desaparecer;
 - los sueldos de fin de mes y las subidas de sueldo: hubo 24 en las 10 semillas, unas 2 por semilla.
 
-Lo que queda fuera, porque pesa menos del 0,2 %: vomitar, orinar y la basura que dejan.
+Lo que queda fuera, porque pesa menos del 0,2 %: vomitar, orinar y la basura que dejan. La comparación del hito 4 enseñó que, aun así, vomitar y orinar retrasan al 7,5 % de los pacientes en su salida (ver [«De la consulta a irse»](#comparación-con-corsixth)).
+
+## Hito 4 — Bucle mínimo
+
+**Hecho.** En la ROM, el hospital del escenario funciona solo, con el contador de dinero y la fecha abajo. Los pacientes:
+1. llegan andando desde el borde del mapa;
+2. hacen cola en la recepción y esperan sentados en los bancos;
+3. pasan la consulta, donde los diagnostican y les cobran;
+4. se van.
+
+La simulación es la de CorsixTH v0.70.1, escrita en C con enteros. Contra CorsixTH:
+- **comparación estadística:** 15 cifras por semilla en 40 semillas de 9.000 horas (400 corridas del motor). En 14, la diferencia está dentro del azar: \|t\| < 2. La otra, el tiempo de la consulta a irse, es 2,4 horas más corto (−10 %). Sale de los pacientes que vomitan u orinan por el camino, algo que el motor aún no tiene;
+- **el ciclo del médico:** en qué reparte el tiempo y cuánto dura cada uso de la mesa, igual dentro del azar;
+- **el escenario:** 16.384 de 16.384 casillas iguales en las 40 semillas;
+- **lo que se ve:** los objetos salen como en la captura de CorsixTH, salvo diferencias de 5 o menos en los bordes.
+
+La N64 simula exactamente lo mismo que el PC: tras 3.000 horas, la misma huella del estado.
+
+![El hospital del escenario en ares, 4.900 horas después de empezar](img/05_hito4.png)
+
+*La ROM en ares (320 × 240, ampliada), en la hora 4.900: pacientes en el mostrador de recepción y, en la consulta, el médico en su mesa y un paciente. Abajo, el saldo (197.088 $) y la fecha (9 de abril del año 1) con FONT100M, una fuente de contador de `QDATAM` que solo tiene cifras y guion. Es el primer fotograma tras simular las 4.900 horas: por eso marca 0,1 fps.*
+
+### Qué hay
+
+- **Simulación: [`th/sim.h`](../motor/core/include/th/sim.h)** (`sim.c` y `sim_rooms.c`, 2.500 líneas). Es la parte de `World`, `Hospital`, `Room`, `Patient` y `Staff` que usa el escenario, en el mismo orden que `World:onTick`: fin del día y del mes, llegadas, mostrador, humanoides por orden de creación, temperatura y faxes.
+  - **Unidades y azar.** Las fracciones van en millonésimas y el azar es un xorshift propio. No es el generador de Lua, así que la comparación con CorsixTH es estadística, con muchas semillas.
+  - **Llegadas.** `updateSpawnDates`, con su Poisson y la población. El primer paciente llega por el punto más cercano a un mostrador atendido.
+  - **Recepción.** La recepcionista va a su mostrador, y está el temporizador del mostrador. El paciente hace cola y acepta el precio (`agreesToPay`).
+  - **Consulta de GP.**
+    - El paciente espera en la cola de la puerta, en un banco o de pie, y llama a la puerta.
+    - El médico alterna el archivador y la mesa (`doStaffUseCycle`).
+    - La certeza del diagnóstico (`completeDiagnosticStep`).
+    - `dealtWithPatient` y el cobro: el 25 % por seguro, que la aseguradora paga dos meses después.
+  - **Llamadas de personal** (`CallsDispatcher`). El médico deambula por el pasillo hasta que la consulta lo llama, cuando un paciente va hacia ella. Ver «El médico llegaba a la consulta antes».
+  - **Faxes y subidas de sueldo.** Los abre y contesta el jugador del arnés de CorsixTH:
+    - arriesga el diagnóstico si puede y, si no, manda al paciente a casa;
+    - sube el sueldo cuando se lo piden.
+
+    Se modela la puerta de los mensajes del panel inferior (`UIBottomPanel`) y la pausa del arnés, porque deciden cuántas horas pasan hasta la respuesta.
+  - **Personal.** Cansancio y felicidad (calor, sueldo frente al justo, sala) y peticiones de subida. Los sueldos se pagan a fin de mes. El paso rápido o lento depende de la destreza y del cansancio.
+  - **Reputación.** La baja mandar a un paciente a casa y la mueven los precios.
+  - **Temperatura del mapa** (`level_map::update_temperatures`). Da los mismos valores, casilla a casilla, y solo recalcula las casillas que pueden cambiar. Ver «Rendimiento».
+- **Acciones de los humanoides: [`th/humanoid.h`](../motor/core/include/th/humanoid.h).** La cola de acciones general de `humanoid.lua`: `must_happen`, interrupciones, `setNextAction`, `queueAction` y temporizadores. Hay 12 acciones:
+  - caminar, con puertas y llamada a la puerta;
+  - aparecer y desaparecer;
+  - quedarse quieto y deambular;
+  - buscar la recepción y buscar sala;
+  - hacer cola, con bancos;
+  - usar un objeto, con uso prolongado y el bucle de la mesa del médico;
+  - atender el mostrador;
+  - `call_checkpoint` y `answer_call`.
+- **Caminos: [`th/path.h`](../motor/core/include/th/path.h).** Además del A*:
+  - la casilla libre para esperar (`find_idle_tile`);
+  - el recorrido de objetos cercanos (`visit_objects`);
+  - las distancias a todo el mapa en una búsqueda en anchura. Dan las mismas longitudes que el A*: el primer paciente busca así su punto de llegada con una búsqueda por mostrador, en lugar de un A* por punto.
+- **Vista.** Los objetos del escenario, con su animación, su espejo y su capa:
+  - la lista temprana de `level_map::draw`: las puertas de la pared norte y los objetos con `early_list` se dibujan antes que la pared;
+  - el recorte por columnas de `thdf_crop` de los objetos de varias casillas (el mostrador, los bancos y la mesa).
+
+  Los objetos no se ven mientras alguien los usa, como en CorsixTH: se ve al humanoide que los usa.
+- **N64.** Con el escenario del hito 4 en el cartucho, la ROM abre el hospital en marcha:
+  - un tick (una hora de juego) cada 54 ms de reloj, como CorsixTH a velocidad Normal;
+  - Z multiplica la velocidad por 8, y A sigue al último paciente que ha llegado;
+  - `make HORAS=N` hace una ROM con el hospital N horas adelantado, para las capturas.
+- **PC.**
+  - `th64sim hito4` corre el escenario y escribe las mismas trazas que `traza_hito4.lua`;
+  - `th64sim escena4` dibuja una vista del hospital;
+  - [`tools/oraculo_hito4/motor.sh`](../tools/oraculo_hito4/README.md) y `comparar.py` comparan el motor con una campaña de CorsixTH;
+  - dos sondas de CorsixTH sirven para buscar diferencias: [`sonda_gp.lua`](../bench/scenarios/sonda_gp.lua), el ciclo del médico, y [`sonda_paciente.lua`](../bench/scenarios/sonda_paciente.lua), la cola de acciones de un paciente.
+
+### Comprobaciones
+
+| Qué | Contra qué | Resultado |
+|---|---|---|
+| Casillas del escenario de las 40 semillas, cargado en el motor | Lo que exporta CorsixTH de cada partida ([`exportar_escenario.lua`](../bench/scenarios/exportar_escenario.lua) y `th64sim escenario`) | **16.384 de 16.384 iguales** en las 40 |
+| El bucle: 15 cifras por semilla en 40 semillas de 9.000 horas, con 10 corridas del motor por semilla | La campaña de CorsixTH ([`traza_hito4.lua`](../bench/scenarios/traza_hito4.lua), `motor.sh` y `comparar.py`) | **14 de 15 con \|t\| < 2.** La otra, ver «Comparación con CorsixTH» |
+| El ciclo del médico: qué hace cada hora y cuándo se sienta y se despacha cada paciente, en 5 semillas | [`sonda_gp.lua`](../bench/scenarios/sonda_gp.lua), con la misma partida que la campaña: el mismo saldo final y la misma huella del generador | Igual dentro del azar (tabla abajo) |
+| Los objetos a 640 × 480, sin personas, en la escena del escenario 1 | Captura de CorsixTH parado ([`captura_escenario.lua`](../bench/scenarios/captura_escenario.lua) y `th64sim escena4`) | De los 17.513 píxeles de objetos: 12.689 idénticos, 4.694 a 2 o menos y 130 de 3 a 5. **Ninguno difiere en más de 5.** De los 307.200, solo 220 difieren en más de 2, todos en el borde de un objeto o a 1 píxel de él: el filtrado lineal de CorsixTH |
+| Lo que dibuja el RDP con el hospital tras las 3.000 horas, con objetos y personas, a 320 × 240 | El rasterizador de referencia, en la misma ROM | **0 píxeles distintos de 76.800**, 4.577 de ellos de entidades |
+| La simulación en la N64: 3.000 horas de la semilla 1 | `th64sim hito4` en el PC | **La misma huella** (44923eae) |
+| Distancias de la búsqueda en anchura: 40 orígenes y 400 destinos por escenario, en los 40 escenarios | El A* | **640.000 de 640.000 iguales** |
+| La pasada de temperatura repartida entre fotogramas: 9.000 horas, avanzando un trozo al azar tras cada tick | La pasada de una vez | La misma huella; 4.979 pasadas las acabó el tick siguiente |
+| Hito 3: caminos y caminatas | CorsixTH | Siguen **12.000 de 12.000** caminos y **6.522 de 6.522** ticks iguales |
+| Pruebas del núcleo | — | 60.233 comprobaciones, 0 fallos en el PC, con ASan y UBSan, y en la N64. Con ASan y UBSan corren además 3 escenarios de 9.000 horas |
+
+`tools/motor_check.sh` repite en cada ejecución la quinta y la sexta fila, y comprueba que el recorrido del hospital en marcha no salta fotogramas. Las demás se repiten con [`tools/oraculo_hito4/`](../tools/oraculo_hito4/README.md).
+
+### Comparación con CorsixTH
+
+Media y desviación típica por semilla. CorsixTH, 40 semillas; el motor, 400 corridas (10 por semilla, con semillas propias). La t es la de Welch.
+
+| Cifra | CorsixTH | Motor | Diferencia | t |
+|---|---:|---:|---:|---:|
+| Pacientes que llegan | 28,9 ± 2,3 | 28,4 ± 2,4 | −1,9 % | −1,46 |
+| Pasan por la recepción | 24,7 ± 2,2 | 24,2 ± 2,3 | −2,1 % | −1,45 |
+| Pasan por la consulta | 23,7 ± 2,9 | 23,1 ± 2,8 | −2,7 % | −1,37 |
+| Diagnosticados | 23,1 ± 2,9 | 22,5 ± 2,9 | −2,3 % | −1,12 |
+| Se van a casa | 23,1 ± 2,9 | 22,5 ± 2,8 | −2,6 % | −1,23 |
+| Llegar andando a la recepción (h) | 1.397 ± 84 | 1.389 ± 82 | −0,6 % | −0,62 |
+| Cola de la recepción (h) | 58,5 ± 25,5 | 57,5 ± 24,0 | −1,6 % | −0,23 |
+| Esperar la consulta (h) | 322 ± 357 | 302 ± 293 | −6,2 % | −0,35 |
+| Consulta (h) | 203,8 ± 79,8 | 199,7 ± 65,4 | −2,0 % | −0,31 |
+| **De la consulta a irse (h)** | **23,5 ± 3,3** | **21,1 ± 2,4** | **−10,2 %** | **−4,48** |
+| Volver andando al borde (h) | 1.464 ± 88 | 1.442 ± 94 | −1,5 % | −1,51 |
+| Cobros de la consulta | 23,1 ± 2,9 | 22,7 ± 2,9 | −2,0 % | −0,97 |
+| Cobrado por la consulta ($) | 2.313 ± 290 | 2.266 ± 287 | −2,0 % | −0,97 |
+| Sueldos ($) | 1.209 ± 259 | 1.206 ± 250 | −0,2 % | −0,07 |
+| Saldo al final, frente al inicial ($) | +734 ± 361 | +689 ± 318 | −6,2 % | −0,76 |
+
+Los 40 escenarios salen de la misma campaña ([`campana.sh`](../tools/oraculo_hito4/campana.sh) con las semillas 1–40). Correr el motor 400 veces tarda 3 min 26 s en el PC.
+
+**De la consulta a irse.** Por paciente, las dos distribuciones tienen los mismos picos y casi las mismas proporciones: 8 horas (12,0 % en CorsixTH y 13,0 % en el motor), 16 (2,3 y 3,0 %), 22–23 (6,6 y 9,9 %) y 24 (66,8 y 70,1 %). Lo que falta en el motor es una cola: el 7,5 % de los pacientes de CorsixTH tarda más de 28 horas (52,8 de media). Sin esos pacientes, la media de CorsixTH es 21,04 horas, y la del motor, 21,03.
+
+La sonda de un paciente ([`sonda_paciente.lua`](../bench/scenarios/sonda_paciente.lua)) enseña la causa, en la semilla 1, paciente 4:
+- sale de la consulta en la hora 3.042;
+- en la 3.048 empieza a vomitar (`vomit`, que tiene que acabar);
+- el jugador arriesga el diagnóstico en la 3.050, pero la acción nueva espera detrás del vómito, que dura hasta la 3.076;
+- después el paciente acaba de caminar, busca sala de tratamiento y, con el segundo fax, se va en la 3.093: 51 horas en lugar de 24.
+
+En las 40 semillas, vomitar y orinar suman 1.455 horas-paciente entre la consulta y la salida, y la cola, 2.192 horas de más. El resto es lo que esas acciones interrumpen y repiten (`interruptAndRequeueAction`) y el fax que llega más tarde. El escenario las dejó fuera porque pesan menos del 0,2 % del tiempo de los pacientes, pero retrasan al 7,5 % de ellos en esta fase. Entran con la basura y el bedel.
+
+**El médico llegaba a la consulta antes.** La primera comparación tenía 5 cifras con \|t\| ≥ 2:
+- pasan por la consulta, −5,7 % (t = −2,85);
+- diagnosticados, t = −3,08;
+- se van a casa, t = −3,13;
+- cobros de la consulta, t = −3,0;
+- de la consulta a irse, t = −3,64.
+
+Las visitas a la consulta duraban 16 horas más en el motor (166 frente a 150 horas en la silla). La sonda del médico enseñó por qué; las cifras son de la semilla 1:
+- en CorsixTH el médico pasea por el pasillo unas 1.140 horas, hasta que el primer paciente va hacia la consulta y esta lo llama (`CallsDispatcher`);
+- el motor lo mandaba a la consulta en la hora 0, así que se cansaba antes: cansancio medio 0,40 frente a 0,31;
+- cansado, va despacio (`slow_animation`) el 13 % del tiempo, frente al 1 %, y las consultas se alargan.
+
+Con las llamadas de personal, las cuatro primeras vuelven al azar. La quinta es la de los vómitos.
+
+| El médico (semillas 1–5) | CorsixTH | Motor |
+|---|---:|---:|
+| Usa la mesa | 55,9 % | 54,7 % |
+| Camina | 32,0 % | 32,1 % |
+| Usa el archivador | 6,6 % | 6,2 % |
+| Espera de pie | 5,5 % | 7,0 % |
+| Va despacio | 0,6 % | 0,0 % |
+| Cansancio medio | 0,306 | 0,288 |
+| Cada uso de la mesa, mediana | 83 h | 83 h |
+| Cada uso de la mesa, media | 86,6 h (289 usos) | 88,4 h (2.766 usos) |
+| Del momento en que el paciente se sienta a que lo despacha, mediana | 81 h (121 visitas) | 79 h (1.195 visitas) |
+
+La sonda abre y contesta los faxes igual que la traza: con la misma partida, CorsixTH da el mismo saldo final y la misma huella del generador que en la campaña. En la primera versión no los abría, y en CorsixTH el médico se iba del hospital hacia la hora 4.200: nadie contestaba su petición de subida, y `checkIfWaitedTooLongForRaise` lo despide.
+
+### Rendimiento
+
+Dos medidas en ares con la ROM de pruebas y la semilla 1:
+- **3.000 horas del escenario tan deprisa como se pueda**, con la pasada de temperatura entera en cada tick;
+- **el hospital en marcha:** 450 fotogramas a 30 fps, con la cámara fija en el hospital y un tick cada 54 ms, como a velocidad Normal. Empieza en la hora 3.000, justo después de un cambio de mes: lo peor para la temperatura (ver abajo).
+
+| 3.000 horas | Media por tick | El tick más largo | Temperatura, por casilla |
+|---|---:|---:|---:|
+| Todo el mapa en cada tick, como CorsixTH | 29,5 ms | 434,8 ms | — |
+| Solo las casillas que pueden cambiar | 22,5 ms | 443,3 ms | 4,13 µs |
+| Los datos de cada casilla juntos; el primer paciente, con una búsqueda en anchura | 11,5 ms | 61,2 ms | 2,06 µs |
+| Camino rápido si los cuatro vecinos pesan 4 | 8,8 ms | 52,9 ms | 1,53 µs |
+| Un puntero por casilla | **5,7 ms** | **44,5 ms** | **0,94 µs** |
+
+| El hospital en marcha (ROM final) | Pasada de temperatura en el tick | Repartida entre fotogramas |
+|---|---:|---:|
+| Tick, de media | 15,9 ms | 1,9 ms |
+| Tick, el más largo | 44,7 ms | 29,4 ms |
+| Temperatura entre fotogramas, de media (como mucho) | — | 8,9 ms (13,5) |
+| CPU del dibujo por fotograma | 12,6 ms | 12,6 ms |
+| Fotograma entero, de media (el más largo) | 22,8 ms (57,7) | 23,0 ms (42,3) |
+| Fotogramas que se saltan | 1 | **0** |
+| Sprites por fotograma (de entidades) | 471 (45) | 471 (45) |
+
+- **La temperatura era casi todo el tick.** CorsixTH recalcula las 16.384 casillas en cada tick (el 12 % de su CPU en la partida llena, fase 3). Cada cambio de la tabla da la misma huella:
+  1. **Solo lo que puede cambiar.** Se recalculan las casillas que cambiaron en la pasada anterior y sus vecinas, más todas las de un tipo si cambia su mezcla (el aire o el radiador). Son 5.319 casillas por tick de media. Sin embargo, durante unas 440 horas tras cada cambio de mes son casi todas: el aire de fuera cambia, y las casillas de fuera se acercan a él un 1 % por hora.
+  2. **La caché de datos.** Las dos memorias y los pesos de cada casilla estaban en tres tablas separadas por 32 KiB. Las tres lecturas de una casilla caían en la misma línea de la caché de datos de la VR4300 (8 KiB, de correspondencia directa) y se echaban unas a otras: 390 ciclos por casilla. Juntas en 6 B, la mitad.
+  3. **El camino rápido.** Casi todas las casillas tienen los cuatro vecinos con peso 4, y su media es la suma de los cuatro entre 4. Así se ahorran la multiplicación de 64 bits y la lectura de los pesos.
+  4. **Un puntero.** El compilador recalculaba la dirección de cada vecina (unas 30 instrucciones por casilla). Con un puntero a la casilla, las vecinas quedan a desplazamientos fijos (±6 y ±768 B). Son 0,94 µs, unos 89 ciclos.
+  5. **Repartida entre fotogramas.** Nadie lee la temperatura hasta el tick siguiente, así que la ROM deja la pasada a medias (`temp_defer`) y la sigue tras dibujar cada fotograma, hasta 26 ms después de empezarlo. Si llega el tick siguiente con la pasada sin acabar, la acaba él antes de nada. Da la misma huella.
+
+  Tras un cambio de mes, una pasada entera cuesta unos 15 ms.
+- **El primer paciente** buscaba un camino con el A* desde el mostrador a cada uno de los 32 puntos de llegada: 2,1 ms en el PC y unos 380 ms en la N64. Con una búsqueda en anchura, 0,3 ms en el PC.
+- **El tick más largo de las 3.000 horas** (44,5 ms, hora 1.616) junta dos cosas:
+  - una pasada de temperatura casi entera (16.147 casillas, unos 15 ms);
+  - el A* de un paciente que se va a casa: 1,04 millones de instrucciones en el PC, unos 28 ms en la N64.
+
+  Los caminos largos ya estaban pendientes en el hito 3.
+- **Frente al presupuesto.** A velocidad Normal hay 5,07 M ciclos por hora de juego, 54 ms ([`04_decision.md`](04_decision.md#presupuesto-de-cpu)):
+  - el tick medio (5,7 ms) es el 11 %;
+  - las horas tras un cambio de mes, unos 16 ms: el 30 %;
+  - sin la temperatura, el tick cuesta 0,71 ms con 10 personas, contando lo fijo: el mapa de bits de lo que hay que recalcular, el mostrador y los faxes.
+
+  A velocidad ×8 (la Z de la ROM), en las horas tras un cambio de mes, la temperatura no cabe: son 8 ticks por fotograma.
+- **La caché de instrucciones.** Al crecer `sim.c`, los suelos pasaron de 2,7 a 5,2 ms por fotograma en todos los recorridos, también en el del hito 2, que no simula nada. La causa fue que el código de libdragon va detrás de todo el del motor, y se movió:
+  - `dibujar` y `__rdpq_texture_rectangle`, a la que llama en cada sprite, cayeron en las mismas líneas de la caché de instrucciones (16 KiB, de correspondencia directa) y se echaban una a otra en cada llamada;
+  - con funciones de 1 KiB y 0,4 KiB, eso pasa en 1 de cada 10 disposiciones del código, más o menos.
+
+  Ahora [`tools/cache_instrucciones.py`](../tools/cache_instrucciones.py) lo detecta en cada ROM y dice cuánto relleno lo evita. El relleno ([`relleno_cache.c`](../motor/platform/n64/relleno_cache.c)) va entre el motor y libdragon: 192 B en la ROM normal y 2.400 B en la de pruebas. `tools/motor_check.sh` falla si hay choques. Con el relleno, los suelos vuelven a 2,6–2,8 ms.
+
+### Memoria y tamaño
+
+| Dato | Valor |
+|---|---|
+| Simulación (`th_sim`, estática) | 153 KiB: 96 KiB de temperatura (6 B por casilla), 46 KiB de 64 personas y lo demás (objetos, salas, colas, faxes, mapas de bits) |
+| Humanoide | 684 B (332 en el hito 3). La cola de 12 acciones de 30 B ocupa 360 |
+| Heap con el hospital cargado | 2.813 KiB de 7.025. Las reglas pesan 369 KiB: `definiciones.trg`, entero, son 331 KiB |
+| ROM | 13.778.944 B, con el sonido del hito 0 |
+| Código (`text`) | 384.580 B (299.052 en el hito 3) |
+
+### Pendiente
+
+- **Las necesidades de los pacientes** (`Patient:tickDay`): vomitar, orinar, bostezar, la basura, la sed y la salud. Es lo único que separa al motor de CorsixTH en la comparación (ver «De la consulta a irse»). Con la basura llegan el bedel y sus llamadas.
+- **Los caminos largos.** Un A* de un paciente que se va puede costar unos 28 ms en la N64. Hay que repartirlos o acotarlos. Se mide en el hospital lleno, en el hito 5.
+- **La temperatura a velocidades altas.** A ×8, en las horas tras un cambio de mes, se saltan fotogramas. La pasada es un cálculo regular sobre el mapa entero: se podría llevar al RSP.
+- **La memoria de cada humanoide.** Con la cola de acciones, 684 B. Con 384 humanoides serían 257 KiB, frente a los 96 KiB del presupuesto de la fase 4. Hay que compactar la acción, que tiene campos que solo usa un tipo.
+- **Las reglas en RAM.** `definiciones.trg` se carga entero (331 KiB); basta con las salas, los objetos y las enfermedades del nivel.
+- **El despachador de llamadas.** Solo llama a personal para salas que piden a uno. Faltan:
+  - reparar, regar y vacunar;
+  - las salas con más personal;
+  - el `isRoomInDemand` completo.
+- **El panel inferior.** El contador usa FONT100M de `QDATAM`; el panel de CorsixTH usa `Font05V` de `QDATA` y un gráfico con el símbolo del dólar. Llega con la interfaz.

@@ -62,6 +62,30 @@ static void test_caminos(void)
     TH_CHECK_EQ(th_path_find(&buscador, &mapa, 5, 5, 6, 5), 1);
 }
 
+// La búsqueda en anchura da las mismas longitudes que el A* (el primer
+// paciente elige así su punto de llegada).
+static void test_distancias(void)
+{
+    mapa_de_prueba();
+    static th_pathfinder anchura;
+    static const int8_t origen[][2] = {{10, 10}, {25, 19}, {5, 5}, {0, 0}};
+    static const int8_t destino[][2] = {{13, 12}, {25, 20}, {5, 5}, {6, 5}, {127, 127}, {30, 21}, {10, 10}};
+    int iguales = 0, total = 0;
+    for (unsigned o = 0; o < sizeof origen / sizeof origen[0]; o++) {
+        th_path_distances(&anchura, &mapa, origen[o][0], origen[o][1]);
+        for (unsigned d = 0; d < sizeof destino / sizeof destino[0]; d++) {
+            const int a = th_path_find(&buscador, &mapa, origen[o][0], origen[o][1], destino[d][0], destino[d][1]);
+            iguales += a == th_path_distance(&anchura, &mapa, destino[d][0], destino[d][1]);
+            total++;
+        }
+    }
+    TH_CHECK_EQ(iguales, total);
+    th_path_distances(&anchura, &mapa, 25, 19);
+    TH_CHECK_EQ(th_path_distance(&anchura, &mapa, 25, 20), 11);
+    TH_CHECK_EQ(th_path_distance(&anchura, &mapa, 5, 5), -1); // no transitable
+    TH_CHECK_EQ(th_path_distance(&anchura, &mapa, -1, 5), -1);
+}
+
 // TAN1 sintético: 27 animaciones de un fotograma cada una (la i, fotograma i),
 // salvo la 18 (caminar al este), que encadena los fotogramas 18 → 27 → 18, y
 // la 16 (caminar al norte), 16 → 28 → 16.
@@ -186,6 +210,7 @@ static void test_caminata(void)
 void th_test_humanoid(void)
 {
     test_caminos();
+    test_distancias();
     test_anims();
     test_caminata();
 }

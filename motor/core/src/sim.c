@@ -492,16 +492,26 @@ static void spawn_patient(th_sim *s)
     }
     int point = TH_NONE;
     if (s->hosp.num_visitors == 0) {
-        // El primer paciente llega por el punto más cercano a un mostrador atendido.
+        // El primer paciente llega por el punto más cercano a un mostrador
+        // atendido. CorsixTH busca un camino por punto y mostrador; aquí, una
+        // búsqueda por mostrador da las mismas longitudes.
+        int16_t dist[sizeof s->desks][TH_SIM_SPAWN_POINTS];
+        for (int k = 0; k < s->n_desks; k++) {
+            const th_object *d = &s->obj[s->desks[k]];
+            if (d->receptionist == TH_NONE && d->reserved_for == TH_NONE)
+                continue;
+            th_path_distances(s->w.pf, s->w.map, d->x, d->y);
+            for (int i = 0; i < s->n_spawn; i++)
+                dist[k][i] = (int16_t)th_path_distance(s->w.pf, s->w.map, s->spawn[i].x, s->spawn[i].y);
+        }
         int best = -1;
         for (int i = 0; i < s->n_spawn; i++)
             for (int k = 0; k < s->n_desks; k++) {
                 const th_object *d = &s->obj[s->desks[k]];
                 if (d->receptionist == TH_NONE && d->reserved_for == TH_NONE)
                     continue;
-                const int dist = th_path_find(s->w.pf, s->w.map, d->x, d->y, s->spawn[i].x, s->spawn[i].y);
-                if (dist >= 0 && (best < 0 || dist < best)) {
-                    best = dist;
+                if (dist[k][i] >= 0 && (best < 0 || dist[k][i] < best)) {
+                    best = dist[k][i];
                     point = i;
                 }
             }
@@ -662,7 +672,7 @@ static void staff_tick(th_sim *s, int who)
 
 static uint16_t temperature_at(const th_sim *s, int x, int y)
 {
-    return s->temp[s->temp_idx][y * TH_MAP_WIDTH + x];
+    return s->temp[y * TH_MAP_WIDTH + x].t[s->temp_idx];
 }
 
 // Humanoid:tickDay: el calor y la felicidad. Devuelve 0 si no sigue.
@@ -808,54 +818,170 @@ static void answer_faxes(th_sim *s)
 
 // ---------------------------------------------------------------------------
 // Temperatura (level_map::update_temperatures)
+//
+// En CorsixTH, cada tick recorre el mapa entero: cada casilla se mezcla un
+// 25 % con la media ponderada de sus vecinas (peso 4 si se puede pasar o si
+// están en el mismo sitio, dentro o fuera del hospital y de una sala; si no,
+// 1) y después con el aire (fuera del hospital, 1 %), con 0 (dentro, 0,1 %) o
+// con el radiador (50 %). Aquí da lo mismo con menos trabajo:
+//   * los pesos de cada casilla no cambian mientras no cambie el mapa;
+//   * una casilla cuyo valor y el de sus vecinas no cambiaron en la pasada
+//     anterior, con el mismo aire y radiador, da el mismo valor, que ya está
+//     en las dos memorias. Solo se recalculan las demás.
+// Entre las vecinas de una casilla está la anterior y la siguiente del mapa
+// por filas aunque sean de otra fila: CorsixTH tampoco lo mira.
 
-static uint16_t merge(uint32_t node, uint32_t other, uint32_t ratio)
-{
-    return (uint16_t)((node * (ratio - 1) + other) / ratio);
-}
+enum { TEMP_AIR = 0, TEMP_HOSPITAL = 1, TEMP_RADIATOR = 2 };
 
-static uint32_t thermal(const th_sim *s, uint32_t *sum, int travel, int i, int nb, int prev)
+// Pesos en 2 bits (0, 1 o 4) de los vecinos norte, sur, este y oeste, el tipo
+// de mezcla en los bits 8–9 y la suma de los pesos en los bits 10–14.
+void th_sim_temperature_prepare(th_sim *s)
 {
-    if (nb < 0 || nb >= TH_MAP_WIDTH * TH_MAP_HEIGHT)
-        return 0;
-    const th_tile *a = &s->w.map->tiles[i], *b = &s->w.map->tiles[nb];
-    const uint32_t t = s->temp[prev][nb];
-    if (travel || (((a->flags ^ b->flags) & (TH_TILE_HOSPITAL | TH_TILE_ROOM)) == 0)) {
-        *sum += t * 4;
-        return 4;
-    }
-    *sum += t;
-    return 1;
-}
-
-static void update_temperatures(th_sim *s, uint16_t air, uint16_t radiator)
-{
-    if (radiator < air)
-        radiator = air;
-    const int prev = s->temp_idx, cur = prev ^ 1;
-    s->temp_idx = (uint8_t)cur;
     const th_tile *tiles = s->w.map->tiles;
+    static const int rel[4] = {-TH_MAP_WIDTH, TH_MAP_WIDTH, 1, -1};
+    static const uint32_t travel[4] = {TH_TILE_TRAVEL_N, TH_TILE_TRAVEL_S, TH_TILE_TRAVEL_E, TH_TILE_TRAVEL_W};
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
         const uint32_t f = tiles[i].flags;
-        uint32_t sum = 0, count = 0;
-        count += thermal(s, &sum, (f & TH_TILE_TRAVEL_N) != 0, i, i - TH_MAP_WIDTH, prev);
-        count += thermal(s, &sum, (f & TH_TILE_TRAVEL_S) != 0, i, i + TH_MAP_WIDTH, prev);
-        count += thermal(s, &sum, (f & TH_TILE_TRAVEL_E) != 0, i, i + 1, prev);
-        count += thermal(s, &sum, (f & TH_TILE_TRAVEL_W) != 0, i, i - 1, prev);
-        uint32_t other, ratio;
-        if (f & TH_TILE_HOSPITAL) {
-            const int radiator_here = s->radiator_thob >= 0 && tiles[i].object == s->radiator_thob;
-            other = radiator_here ? radiator : 0;
-            ratio = radiator_here ? 2 : 1000;
-        } else {
-            other = air;
-            ratio = 100;
+        unsigned code = 0, count = 0;
+        for (int k = 0; k < 4; k++) {
+            const int nb = i + rel[k];
+            if (nb < 0 || nb >= TH_MAP_WIDTH * TH_MAP_HEIGHT)
+                continue;
+            const int w = (f & travel[k]) || ((f ^ tiles[nb].flags) & (TH_TILE_HOSPITAL | TH_TILE_ROOM)) == 0 ? 4 : 1;
+            code |= (unsigned)(w == 4 ? 2 : 1) << (2 * k);
+            count += (unsigned)w;
         }
-        uint16_t t = s->temp[prev][i];
-        if (count)
-            t = merge(t, sum / count, 4);
-        s->temp[cur][i] = merge(t, other, ratio);
+        unsigned type = TEMP_AIR;
+        if (f & TH_TILE_HOSPITAL)
+            type = s->radiator_thob >= 0 && tiles[i].object == s->radiator_thob ? TEMP_RADIATOR : TEMP_HOSPITAL;
+        s->temp[i].cell = (uint16_t)(code | type << 8 | count << 10);
     }
+    s->temp_all = 1;
+}
+
+// Una casilla: p apunta a su valor anterior (temp[i].t[prev]); las vecinas
+// están a ±6 B (este y oeste) y a ±6 · 128 B (sur y norte), y el valor nuevo,
+// a nuevo B. Escribe el valor nuevo y devuelve 1 si ha cambiado.
+_Static_assert(sizeof(((th_sim *)0)->temp[0]) == 6, "la casilla de temperatura ocupa 6 B");
+#define TEMP_AT(p, off) (*(const uint16_t *)((p) + (off)))
+static inline __attribute__((always_inline)) uint32_t temperature_tile(uint8_t *p, int nuevo, uint32_t air,
+                                                                       uint32_t radiator)
+{
+    // ceil(2^32 / n): (suma · rec[n]) >> 32 es suma / n exacto para sumas de
+    // menos de 2^20 (16 vecinos de 65.535 como mucho).
+    static const uint64_t rec[17] = {0,          4294967296u, 2147483648u, 1431655766u, 1073741824u, 858993460u,
+                                     715827883u, 613566757u,  536870912u,  477218589u,  429496730u,  390451573u,
+                                     357913942u, 330382100u,  306783379u,  286331154u,  268435456u};
+    enum { N = -6 * TH_MAP_WIDTH, S = 6 * TH_MAP_WIDTH, E = 6, W = -6 };
+    const uint32_t t0 = TEMP_AT(p, 0);
+    // cell está 4 B detrás de t[0]: 4 o 2 B detrás de t[prev].
+    const unsigned cell = TEMP_AT(p, nuevo > 0 ? 4 : 2);
+    uint32_t t = t0;
+    if ((cell & 0xFF) == 0xAA) {
+        // Lo normal: los cuatro vecinos pesan 4 (suman 16), y la media es la
+        // suma de los cuatro valores entre 4.
+        const uint32_t sum = (uint32_t)TEMP_AT(p, N) + TEMP_AT(p, S) + TEMP_AT(p, E) + TEMP_AT(p, W);
+        t = (t * 3 + (sum >> 2)) >> 2;
+    } else if (cell >> 10 & 31) {
+        uint32_t sum = 0;
+        // Pesos: 1 → ×1, 2 → ×4.
+        if (cell & 3)
+            sum += (uint32_t)TEMP_AT(p, N) << ((cell & 3) == 2 ? 2 : 0);
+        if (cell >> 2 & 3)
+            sum += (uint32_t)TEMP_AT(p, S) << ((cell >> 2 & 3) == 2 ? 2 : 0);
+        if (cell >> 4 & 3)
+            sum += (uint32_t)TEMP_AT(p, E) << ((cell >> 4 & 3) == 2 ? 2 : 0);
+        if (cell >> 6 & 3)
+            sum += (uint32_t)TEMP_AT(p, W) << ((cell >> 6 & 3) == 2 ? 2 : 0);
+        const uint32_t avg = (uint32_t)((sum * rec[cell >> 10 & 31]) >> 32);
+        t = (t * 3 + avg) / 4;
+    }
+    switch (cell >> 8 & 3) {
+    case TEMP_AIR: t = (t * 99 + air) / 100; break;
+    case TEMP_HOSPITAL: t = t * 999 / 1000; break;
+    default: t = (t + radiator) / 2; break;
+    }
+    *(uint16_t *)(p + nuevo) = (uint16_t)t;
+    return t != t0;
+}
+
+void th_sim_temperature_begin(th_sim *s, uint16_t air, uint16_t radiator)
+{
+    th_sim_temperature_step(s, TH_SIM_TEMP_WORDS); // por si quedaba otra
+    if (radiator < air)
+        radiator = air;
+    s->temp_idx ^= 1;
+    // Qué casillas hay que recalcular: las que cambiaron y sus cuatro vecinas
+    // (las de al lado son el bit anterior y el siguiente; las de arriba y
+    // abajo, 128 bits = 4 palabras), más todas las de un tipo si cambia su mezcla.
+    enum { WORDS = TH_SIM_TEMP_WORDS };
+    const uint32_t *c = s->temp_changed;
+    const int all = s->temp_all;
+    for (int w = 0; w < WORDS; w++) {
+        uint32_t n = c[w] | c[w] << 1 | c[w] >> 1;
+        if (w > 0)
+            n |= c[w - 1] >> 31;
+        if (w + 1 < WORDS)
+            n |= c[w + 1] << 31;
+        if (w >= 4)
+            n |= c[w - 4];
+        if (w + 4 < WORDS)
+            n |= c[w + 4];
+        s->temp_need[w] = all ? 0xFFFFFFFFu : n;
+    }
+    const int air_changed = air != s->temp_air, rad_changed = radiator != s->temp_radiator;
+    if (!all && (air_changed || rad_changed))
+        for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
+            const unsigned type = s->temp[i].cell >> 8 & 3;
+            if ((type == TEMP_AIR && air_changed) || (type == TEMP_RADIATOR && rad_changed))
+                s->temp_need[i >> 5] |= 1u << (i & 31);
+        }
+    s->temp_air = air;
+    s->temp_radiator = radiator;
+    s->temp_all = 0;
+    s->temp_word = 0;
+    s->temp_pending = 1;
+}
+
+int th_sim_temperature_step(th_sim *s, int palabras)
+{
+    // El bit más bajo de una palabra (secuencia de De Bruijn): en la VR4300,
+    // __builtin_ctz es una llamada a __ctzdi2.
+    static const uint8_t debruijn[32] = {0,  1,  28, 2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4,  8,
+                                         31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9};
+    if (!s->temp_pending)
+        return 0;
+    const int prev = s->temp_idx ^ 1;
+    const uint32_t air = s->temp_air, radiator = s->temp_radiator;
+    // t[prev] de la casilla 0, y dónde queda t[cur] respecto a t[prev].
+    uint8_t *base = (uint8_t *)&s->temp[0].t[prev];
+    const int nuevo = prev ? -2 : 2;
+    int w = s->temp_word;
+    const int fin = w + palabras < TH_SIM_TEMP_WORDS ? w + palabras : TH_SIM_TEMP_WORDS;
+    for (; w < fin; w++) {
+        uint32_t bits = s->temp_need[w], changed = 0;
+        uint8_t *p = base + 6 * 32 * w;
+        if (bits == 0xFFFFFFFFu) {
+            for (int b = 0; b < 32; b++, p += 6)
+                changed |= temperature_tile(p, nuevo, air, radiator) << b;
+        } else {
+            while (bits) {
+                const int b = debruijn[((bits & -bits) * 0x077CB531u) >> 27];
+                bits &= bits - 1;
+                changed |= temperature_tile(p + 6 * b, nuevo, air, radiator) << b;
+            }
+        }
+        s->temp_changed[w] = changed;
+    }
+    s->temp_word = (uint16_t)w;
+    s->temp_pending = w < TH_SIM_TEMP_WORDS;
+    return s->temp_pending;
+}
+
+void th_sim_update_temperatures(th_sim *s, uint16_t air, uint16_t radiator)
+{
+    th_sim_temperature_begin(s, air, radiator);
+    th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
 }
 
 // outside_temperatures de world.lua (en grados / 50), × 65535.
@@ -948,6 +1074,8 @@ static void end_month(th_sim *s)
 
 void th_sim_tick(th_sim *s)
 {
+    // La pasada de temperatura de la hora anterior, si quedó a medias.
+    th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
     const th_date next = th_date_plus_hours(s->date, s->hours_per_tick);
     if (next.day != s->date.day) {
         end_day(s);
@@ -975,7 +1103,9 @@ void th_sim_tick(th_sim *s)
         if (p->alive && p->kind != TH_HUM_PATIENT)
             staff_tick(s, who);
     }
-    update_temperatures(s, outside[s->date.month - 1], (uint16_t)(400000ll * 65535 / TH_MICRO));
+    th_sim_temperature_begin(s, outside[s->date.month - 1], (uint16_t)(400000ll * 65535 / TH_MICRO));
+    if (!s->temp_defer)
+        th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
     s->hours++;
     answer_faxes(s);
 }
@@ -1228,7 +1358,7 @@ static int load_scenario(th_sim *s)
         rm->w = (uint8_t)th_rules_int(r, get(r, sa, "ancho"), 0);
         rm->h = (uint8_t)th_rules_int(r, get(r, sa, "alto"), 0);
         rm->is_active = (uint8_t)th_rules_bool(r, get(r, sa, "activa"), 1);
-        rm->staff_member = rm->just_dealt_with = TH_NONE;
+        rm->staff_member = rm->just_dealt_with = rm->call_staff = TH_NONE;
         rm->maximum_patients = 1;
         th_rnode pu = get(r, sa, "puerta");
         rm->door = (uint8_t)th_sim_object_at(s, th_rules_int(r, get(r, pu, "x"), 0), th_rules_int(r, get(r, pu, "y"), 0),
@@ -1294,7 +1424,7 @@ int th_sim_init(th_sim *s, th_map *m, th_pathfinder *pf, const th_anims *anims, 
     s->door_closed = 22;
     th_rng_seed(&s->rng, seed);
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
-        s->temp[0][i] = s->temp[1][i] = 8192;
+        s->temp[i].t[0] = s->temp[i].t[1] = 8192;
     int e = load_definitions(s);
     if (!e)
         e = load_level(s);
@@ -1302,20 +1432,17 @@ int th_sim_init(th_sim *s, th_map *m, th_pathfinder *pf, const th_anims *anims, 
         e = load_scenario(s);
     if (e)
         return e;
-    // El personal va a su sitio: la recepcionista al mostrador más cercano
-    // (Receptionist:onPlaceInCorridor) y el médico a su consulta (el despachador).
+    th_sim_temperature_prepare(s);
+    // La recepcionista va al mostrador más cercano (Receptionist:onPlaceInCorridor);
+    // el resto del personal deambula hasta que una sala lo llama (en la partida
+    // de CorsixTH, el médico pasea por el pasillo hasta que llega el primer
+    // paciente a la consulta).
     for (int k = 0; k < s->n_desks; k++)
         th_sim_desk_check_for_staff(s, s->desks[k]);
     for (int k = 0; k < s->n_order; k++) {
         const int who = s->order[k];
-        if (s->hum[who].kind != TH_HUM_DOCTOR)
-            continue;
-        for (int i = 0; i < s->n_rooms; i++)
-            if (s->rooms[i].type == th_sim_room_type(s, "gp") && s->rooms[i].staff_member == TH_NONE) {
-                th_sim_send_staff_to_room(s, &s->rooms[i], who);
-                s->rooms[i].staff_member = (uint8_t)who; // reservado mientras llega
-                break;
-            }
+        if (s->hum[who].kind != TH_HUM_RECEPTIONIST)
+            th_humanoid_set_next_action(&s->w, &s->hum[who].h, th_action_new(TH_ACTION_MEANDER));
     }
     return 0;
 }
@@ -1363,8 +1490,11 @@ uint32_t th_sim_hash(const th_sim *s)
         if (p->kind == TH_HUM_PATIENT)
             h = fnv(h, (uint32_t)p->u.p.diagnosis_progress);
         else
-            h = fnv(h, (uint32_t)p->u.s.fatigue ^ (uint32_t)p->u.s.wage << 20);
+            h = fnv(h, (uint32_t)p->u.s.fatigue ^ (uint32_t)p->u.s.wage << 20 ^ (uint32_t)p->u.s.on_call << 12);
     }
+    for (int i = 0; i < s->n_rooms; i++)
+        h = fnv(h, (uint32_t)s->rooms[i].call_open << 16 | (uint32_t)s->rooms[i].call_staff << 8 |
+                       s->rooms[i].call_serial);
     for (int i = 0; i < s->n_obj; i++)
         h = fnv(h, (uint32_t)s->obj[i].user << 8 | s->obj[i].reserved_for);
     for (int q = 0; q < s->n_queues; q++)
@@ -1372,6 +1502,6 @@ uint32_t th_sim_hash(const th_sim *s)
             h = fnv(h, (uint32_t)q << 8 | s->queues[q].member[i]);
     uint32_t t = 0;
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
-        t = t * 31u + s->temp[s->temp_idx][i];
+        t = t * 31u + s->temp[i].t[s->temp_idx];
     return fnv(h, t);
 }

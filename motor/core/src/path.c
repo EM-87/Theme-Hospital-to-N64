@@ -165,6 +165,56 @@ int th_path_find(th_pathfinder *pf, const th_map *m, int sx, int sy, int dx, int
     }
 }
 
+// Distancias desde (sx, sy) a todo el mapa con las mismas reglas de paso que
+// th_path_find, en una búsqueda en anchura. Los pasos cuestan 1 y la
+// distancia de Manhattan nunca disminuye más de 1 por paso, así que A* da la
+// longitud mínima: la misma que esta búsqueda.
+void th_path_distances(th_pathfinder *pf, const th_map *m, int sx, int sy)
+{
+    pf->dest = TH_PATH_NONE;
+    pf->expanded = 0;
+    memset(pf->seen, 0, sizeof(pf->seen));
+    memset(pf->visited, 0, sizeof(pf->visited));
+    if (sx < 0 || sy < 0 || sx >= TH_MAP_WIDTH || sy >= TH_MAP_HEIGHT)
+        return;
+    unsigned n = (unsigned)(sy * TH_MAP_WIDTH + sx);
+    pf->start = (uint16_t)n;
+    set_seen(pf, n);
+    pf->nodes[n].prev = TH_PATH_NONE;
+    pf->nodes[n].distance = 0;
+    unsigned head = 0, tail = 0;
+    pf->heap[tail++] = (uint16_t)n;
+    static const uint32_t travel[4] = {TH_TILE_TRAVEL_W, TH_TILE_TRAVEL_E, TH_TILE_TRAVEL_N, TH_TILE_TRAVEL_S};
+    static const int rel[4] = {-1, 1, -TH_MAP_WIDTH, TH_MAP_WIDTH};
+    while (head < tail) {
+        n = pf->heap[head++];
+        pf->expanded++;
+        const uint32_t f = m->tiles[n].flags;
+        const int passable = (f & TH_TILE_PASSABLE) != 0;
+        for (int k = 0; k < 4; k++) {
+            if (!(f & travel[k]))
+                continue;
+            const unsigned nb = (unsigned)((int)n + rel[k]);
+            if (nb == pf->start || is_seen(pf, nb) || (passable && !(m->tiles[nb].flags & TH_TILE_PASSABLE)))
+                continue;
+            set_seen(pf, nb);
+            pf->nodes[nb].prev = (uint16_t)n;
+            pf->nodes[nb].distance = (uint16_t)(pf->nodes[n].distance + 1);
+            pf->heap[tail++] = (uint16_t)nb;
+        }
+    }
+}
+
+int th_path_distance(const th_pathfinder *pf, const th_map *m, int x, int y)
+{
+    if (x < 0 || y < 0 || x >= TH_MAP_WIDTH || y >= TH_MAP_HEIGHT)
+        return -1;
+    const unsigned n = (unsigned)(y * TH_MAP_WIDTH + x);
+    if (!(m->tiles[n].flags & TH_TILE_PASSABLE) || !is_seen(pf, n))
+        return -1;
+    return pf->nodes[n].distance;
+}
+
 // abstract_pathfinder::init para las búsquedas sin destino.
 static unsigned init_search(th_pathfinder *pf, int sx, int sy)
 {

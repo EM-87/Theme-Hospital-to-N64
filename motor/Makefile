@@ -1,6 +1,8 @@
 # ROM del motor (fase 5). Uso, con `source tools/env.sh` antes:
 #   make                 ROM normal: th64.z64
 #   make PRUEBAS=1       ROM que ejecuta las pruebas del núcleo: th64_pruebas.z64
+#   make HORAS=N         ROM normal cuyo hospital empieza N horas adelantado:
+#                        th64_horas.z64 (para capturas)
 # Los assets los genera el conversor (tools/conv) en filesystem/, que no está
 # en el repositorio porque sale de los datos del juego de cada usuario.
 ifeq ($(N64_INST),)
@@ -10,6 +12,9 @@ endif
 ifdef PRUEBAS
   ROMNAME := th64_pruebas
   BUILD_DIR := build/n64_pruebas
+else ifdef HORAS
+  ROMNAME := th64_horas
+  BUILD_DIR := build/n64_horas
 else
   ROMNAME := th64
   BUILD_DIR := build/n64
@@ -21,6 +26,9 @@ include $(N64_INST)/include/n64.mk
 CFLAGS += -Wextra -Icore/include -Ivista -Itests
 
 C_FILES := $(wildcard core/src/*.c) $(wildcard vista/*.c) $(wildcard platform/n64/*.c)
+ifdef HORAS
+  CFLAGS += -DTH_HOSPITAL_HORAS=$(HORAS)
+endif
 ifdef PRUEBAS
   C_FILES += tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c
   CFLAGS += -DTH_PRUEBAS
@@ -103,7 +111,7 @@ $(ROMNAME).z64: N64_ROM_SAVETYPE = sram256k
 $(ROMNAME).z64: $(BUILD_DIR)/$(ROMNAME).dfs
 
 clean:
-	$(RM) -r build/n64 build/n64_pruebas th64.z64 th64_pruebas.z64
+	$(RM) -r build/n64 build/n64_pruebas build/n64_horas th64.z64 th64_pruebas.z64 th64_horas.z64
 .PHONY: clean
 
 ifneq ($(wildcard $(BUILD_DIR)),)

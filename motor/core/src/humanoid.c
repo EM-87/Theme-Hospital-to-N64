@@ -198,6 +198,8 @@ static void on_removed(th_world *w, th_humanoid *h, const th_action *a)
     if ((a->kind == TH_ACTION_USE_OBJECT || a->kind == TH_ACTION_STAFF_RECEPTION) && a->obj != TH_NONE &&
         s->obj[a->obj].reserved_for == who(w, h))
         s->obj[a->obj].reserved_for = TH_NONE;
+    if (a->kind == TH_ACTION_CALL_CHECKPOINT)
+        th_sim_call_checkpoint_removed(s, who(w, h), a->obj, a->val);
     if (a->kind == TH_ACTION_WALK && (a->flags & TH_AF_IS_ENTERING)) {
         th_room *r = th_sim_room_at(s, a->x, a->y);
         th_sim_unexpect_from_room(s, who(w, h), r);
@@ -1207,11 +1209,13 @@ static void knock_tick(th_world *w, th_humanoid *h)
 }
 
 // ---------------------------------------------------------------------------
-// Deambular (meander.lua), para pacientes
+// Deambular (meander.lua)
 
 static void meander_start(th_world *w, th_humanoid *h, th_action *a)
 {
     th_sim *s = w->sim;
+    if (th_sim_staff_meander(s, who(w, h), (a->flags & TH_AF_MUST_HAPPEN) != 0))
+        return;
     int x, y;
     if (!th_sim_idle_tile(s, h->tile_x, h->tile_y, th_rng_range(&s->rng, 1, 24), &x, &y)) {
         x = h->tile_x;
@@ -1261,6 +1265,7 @@ static void goto_room(th_world *w, th_humanoid *h, th_room *r, int diag_idx)
         p->u.p.n_diag--;
     }
     th_humanoid_set_next_action(w, h, th_sim_room_enter_action(s, r, who(w, h)));
+    th_sim_call_for_staff(s, r); // si la sala no tiene el personal que necesita
 }
 
 // action_seek_room_find_room
@@ -1515,6 +1520,15 @@ static void start_action(th_world *w, th_humanoid *h)
     case TH_ACTION_MEANDER: meander_start(w, h, a); break;
     case TH_ACTION_SEEK_ROOM: seek_room_start(w, h, a); break;
     case TH_ACTION_STAFF_RECEPTION: reception_start(w, h, a); break;
+    case TH_ACTION_CALL_CHECKPOINT:
+        a->flags |= TH_AF_MUST_HAPPEN;
+        th_sim_call_checkpoint(w->sim, a->obj, a->val);
+        th_humanoid_finish_action(w, h);
+        break;
+    case TH_ACTION_ANSWER_CALL:
+        a->flags |= TH_AF_MUST_HAPPEN;
+        th_sim_answer_call_action(w->sim, who(w, h));
+        break;
     default: idle_start(w, h, a); break;
     }
     // Si la acción estaba marcada para interrumpirla, se interrumpe ahora.

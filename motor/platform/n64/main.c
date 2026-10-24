@@ -35,7 +35,10 @@
 #include "th/map.h"
 #include "th/path.h"
 #include "th/rng.h"
+#include "objetos.h"
 #include "th/rules.h"
+#include "th/scenario.h"
+#include "th/sim.h"
 #include "th/version.h"
 #include "vista.h"
 
@@ -55,7 +58,7 @@ static void log_debugf(const char *fmt, ...)
 void (*th_test_log)(const char *fmt, ...) = log_debugf;
 #endif
 
-enum { FUENTE_DEPURACION = 1 };
+enum { FUENTE_DEPURACION = 1, FUENTE_DINERO = 2 };
 #define COLOR_FONDO RGBA32(24, 72, 64, 255)
 #define ANCHO 320
 #define ALTO 240
@@ -65,13 +68,20 @@ enum { FUENTE_DEPURACION = 1 };
 #define MAX_HUMANOIDES 64
 // Velocidad Normal de CorsixTH: un tick del mundo cada 54 ms (tick_rate 3 de 18 ms).
 #define MS_POR_TICK 54
+// Horas que el hospital avanza al arrancar (make HORAS=N; para capturas).
+#ifndef TH_HOSPITAL_HORAS
+#define TH_HOSPITAL_HORAS 0
+#endif
 
 static th_map mapa;
 static th_pathfinder buscador;
 static th_anims anims;
 static th_world mundo = {.map = &mapa, .pf = &buscador, .anims = &anims};
 static th_humanoid humanoides[MAX_HUMANOIDES];
-static th_view_entity entidades[MAX_HUMANOIDES];
+static th_view_entity entidades[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+// Hito 4: el hospital del escenario (rom:/escenarios/hito4.trg), si lo hay.
+static th_sim sim;
+static bool hospital;
 static int n_humanoides;
 static th_rng azar;
 static th_draw elementos[4096];
@@ -152,6 +162,98 @@ static bool cargar_anims(const char *ruta)
     int tam = 0;
     uint8_t *datos = asset_load(ruta, &tam);
     return datos && th_anims_init(&anims, datos, (size_t)tam) == 0;
+}
+
+static th_view vista_en(int x, int y);
+static th_view vista_de(const th_humanoid *h);
+
+static bool existe(const char *ruta)
+{
+    FILE *f = fopen(ruta, "rb");
+    if (f)
+        fclose(f);
+    return f != NULL;
+}
+
+// Lee unas reglas (TRG1) y las deja cargadas para siempre.
+static bool cargar_reglas_rom(const char *ruta, th_rules *r)
+{
+    if (!existe(ruta))
+        return false;
+    int tam = 0;
+    uint8_t *datos = asset_load(ruta, &tam);
+    return datos && th_rules_init(r, datos, (size_t)tam) == 0;
+}
+
+// Hito 4: el nivel del escenario con sus casillas y el hospital listo para
+// empezar (th_sim_init), con la semilla dada.
+static bool cargar_hospital(uint32_t semilla)
+{
+    static th_rules defs, nivel_cfg, esc;
+    static bool reglas = false;
+    if (!reglas) {
+        if (!cargar_reglas_rom("rom:/escenarios/hito4.trg", &esc))
+            return false;
+        char ruta[64];
+        const char *dif = th_rules_str(&esc, th_rules_get(&esc, esc.root, "dificultad"), NULL);
+        snprintf(ruta, sizeof ruta, "rom:/reglas/%s%02d.trg", dif ? dif : "full",
+                 (int)th_rules_int(&esc, th_rules_get(&esc, esc.root, "nivel"), 1));
+        if (!cargar_reglas_rom("rom:/reglas/definiciones.trg", &defs) || !cargar_reglas_rom(ruta, &nivel_cfg))
+            return false;
+        reglas = true;
+    }
+    const int n = th_rules_int(&esc, th_rules_get(&esc, esc.root, "nivel"), 1);
+    hospital = false;
+    if (!cargar_nivel(n) || th_scenario_apply_cells(&mapa, &esc, th_rules_get(&esc, esc.root, "celdas")) < 0)
+        return false;
+    const int e = th_sim_init(&sim, &mapa, &buscador, &anims, &defs, &nivel_cfg, &esc, semilla);
+    if (e)
+        debugf("TH64 hito4: el escenario no se puede cargar (%d)\n", e);
+    hospital = e == 0;
+    return hospital;
+}
+
+// Cámara inicial del hospital: el mostrador de recepción.
+static th_view vista_hospital(void)
+{
+    for (int i = 0; i < sim.n_obj; i++)
+        if (sim.obj[i].type == TH_OBJ_RECEPTION_DESK)
+            return vista_en(sim.obj[i].x, sim.obj[i].y - 2);
+    return vista_en(mapa.camera_x, mapa.camera_y);
+}
+
+// El último paciente que ha llegado y sigue en el mapa (o -1).
+static int ultimo_paciente(void)
+{
+    int mejor = -1, id = 0;
+    for (int k = 0; k < sim.n_order; k++) {
+        const th_person *p = &sim.hum[sim.order[k]];
+        if (p->kind == TH_HUM_PATIENT && p->h.tile_x >= 0 && p->u.p.id > id) {
+            id = p->u.p.id;
+            mejor = sim.order[k];
+        }
+    }
+    return mejor;
+}
+
+// El dinero y la fecha con FONT100M, una fuente de contador: solo tiene
+// dígitos y el guion (lo demás son casillas vacías). Como en el panel de
+// CorsixTH, el dinero va sin símbolo.
+static void dibujar_marcador(void)
+{
+    rdpq_text_printf(NULL, FUENTE_DINERO, 8, ALTO - 8, "%ld", (long)sim.hosp.balance);
+    rdpq_text_printf(NULL, FUENTE_DINERO, ANCHO - 72, ALTO - 8, "%02d-%02d-%d", sim.date.day, sim.date.month,
+                     sim.date.year);
+}
+
+// La pasada de temperatura pendiente (sim.temp_defer), hasta el instante
+// límite (en ticks del reloj) o hasta acabarla. Devuelve el tiempo gastado.
+static uint32_t temperatura_hasta(uint32_t limite)
+{
+    const uint32_t t0 = get_ticks();
+    while (sim.temp_pending && (int32_t)(limite - get_ticks()) > 0)
+        th_sim_temperature_step(&sim, 16);
+    return get_ticks() - t0;
 }
 
 // Cámara con la casilla (x, y) en el centro de la pantalla.
@@ -252,16 +354,21 @@ typedef struct {
 static void dibujar_escena(const th_view *v, medida_t *m)
 {
     uint32_t t0 = get_ticks();
-    for (int i = 0; i < n_humanoides; i++) {
-        const th_humanoid *h = &humanoides[i];
-        entidades[i] = (th_view_entity){.tile_x = h->tile_x, .tile_y = h->tile_y, .px = h->px, .py = h->py,
-                                        .frame = h->frame, .anim = h->anim, .flags = h->anim_flags,
-                                        .drawing_layer = h->drawing_layer, .attach_seq = h->attach_seq,
-                                        .layers = h->layers, .crop = TH_VIEW_NO_CROP};
+    int n = 0;
+    if (hospital) {
+        n = th_vista_sim(&sim, entidades, (int)(sizeof entidades / sizeof entidades[0]));
+    } else {
+        for (int i = 0; i < n_humanoides; i++) {
+            const th_humanoid *h = &humanoides[i];
+            entidades[n++] = (th_view_entity){.tile_x = h->tile_x, .tile_y = h->tile_y, .px = h->px, .py = h->py,
+                                              .frame = h->frame, .anim = h->anim, .flags = h->anim_flags,
+                                              .drawing_layer = h->drawing_layer, .attach_seq = h->attach_seq,
+                                              .layers = h->layers, .crop = TH_VIEW_NO_CROP};
+        }
     }
     th_scene sc = {.map = &mapa, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = entidades,
-                   .entity_count = n_humanoides};
-    int n = th_view_scene(v, &sc, &lista);
+                   .entity_count = n};
+    n = th_view_scene(v, &sc, &lista);
     assertf(n >= 0, "la lista de dibujo no cabe");
     uint32_t t1 = get_ticks();
     mapa_n64_dibujar(&lista, hojas, paletas.colores[PALETA_NORMAL], ANCHO, ALTO, &m->st);
@@ -459,6 +566,50 @@ static void recorrido_mundo(const char *nombre, th_view v, bool seguir, int foto
            s.caminos ? s.cpu_caminos * ms / s.caminos : 0.0f, s.max_camino * ms);
 }
 
+// Hito 4: el hospital a la velocidad Normal durante 'fotogramas', con la
+// cámara quieta en 'v'. Mide la CPU del dibujo y de la simulación.
+static void recorrido_hospital(th_view v, int fotogramas)
+{
+    cuentas_t c = {0};
+    int ticks = 0;
+    uint32_t cpu_sim = 0, max_sim = 0, cpu_temp = 0, max_temp = 0;
+    // Como en el juego: la pasada de temperatura se reparte entre fotogramas.
+    sim.temp_defer = 1;
+    for (int f = 1; f <= fotogramas; f++) {
+        surface_t *pantalla = display_get();
+        uint32_t ahora = get_ticks();
+        while (ticks < f * (1000 / FPS) / MS_POR_TICK) {
+            const uint32_t t0 = get_ticks();
+            th_sim_tick(&sim);
+            const uint32_t d = get_ticks() - t0;
+            cpu_sim += d;
+            if (d > max_sim)
+                max_sim = d;
+            ticks++;
+        }
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        medida_t m;
+        dibujar_escena(&v, &m);
+        dibujar_marcador();
+        rdpq_detach_show();
+        const uint32_t d = temperatura_hasta(ahora + TICKS_FROM_MS(26));
+        cpu_temp += d;
+        if (d > max_temp)
+            max_temp = d;
+        contar(&c, ahora, get_ticks(), &m);
+    }
+    th_sim_temperature_step(&sim, TH_SIM_TEMP_WORDS);
+    sim.temp_defer = 0;
+    informar("hito4", "del hospital en marcha", &c);
+    const float ms = 1000.0f / TICKS_PER_SECOND;
+    debugf("TH64 hito4: %d ticks del hospital: %.3f ms por tick de media, %.3f ms el mas largo; temperatura entre "
+           "fotogramas: %.3f ms de media, %.3f ms como mucho; %d personas\n",
+           ticks, cpu_sim * ms / (ticks ? ticks : 1), max_sim * ms, cpu_temp * ms / fotogramas, max_temp * ms,
+           sim.n_order);
+}
+
 // Un humanoide que camina de (x1, y1) a (x2, y2), parado en el tick 'tick',
 // como en bench/scenarios/caminata.lua (capas 4, 2 y 2).
 static th_humanoid *caminata(int x1, int y1, int x2, int y2, int tick)
@@ -524,13 +675,6 @@ static bool comprobar_reglas(void)
     return ok;
 }
 
-static bool existe(const char *ruta)
-{
-    FILE *f = fopen(ruta, "rb");
-    if (f)
-        fclose(f);
-    return f != NULL;
-}
 
 // Unidades de trabajo fijo (de algo menos de 1 ms) hechas en ms milisegundos,
 // llamando a mixer_try_play entre una y otra si suena audio, como haría el
@@ -627,12 +771,17 @@ int main(void)
     debugf("TH64 pruebas: nucleo, %d fallos\n", fallos);
 #endif
 
+    relleno_cache();
     display_init(RESOLUTION_320x240, DEPTH_16_BPP, 3, GAMMA_NONE, FILTERS_RESAMPLE);
     rdpq_init();
     joypad_init();
     asset_init_compression(2);
     const bool dfs_ok = dfs_init(DFS_DEFAULT_LOCATION) == DFS_ESUCCESS;
     rdpq_text_register_font(FUENTE_DEPURACION, rdpq_font_load_builtin(FONT_BUILTIN_DEBUG_MONO));
+    // El contador de dinero, con FONT100M (o la de depuración si no está).
+    rdpq_text_register_font(FUENTE_DINERO, dfs_ok && existe("rom:/fuentes/font100m.font64")
+                                               ? rdpq_font_load("rom:/fuentes/font100m.font64")
+                                               : rdpq_font_load_builtin(FONT_BUILTIN_DEBUG_MONO));
     th_rng_seed(&azar, 64);
 
     int nivel = 1;
@@ -727,20 +876,93 @@ int main(void)
         zona_x1 = TH_MAP_WIDTH - 1;
         zona_y1 = TH_MAP_HEIGHT - 1;
     }
+    if (assets && cargar_hospital(1)) {
+        // Hito 4: 3.000 horas del escenario tan deprisa como se pueda (la
+        // huella tiene que ser la de th64sim hito4 con la semilla 1), la vista
+        // del hospital contra la referencia y un recorrido con el hospital en marcha.
+        const int horas = 3000;
+        uint32_t total = 0, maximo = 0;
+        int hora_max = 0, n_max = 0;
+        // Para separar la temperatura del resto: casillas que recalculará
+        // (las que cambiaron y sus vecinas) y regresión lineal del tiempo.
+        double sn = 0, st = 0, snn = 0, snt = 0;
+        for (int i = 0; i < horas; i++) {
+            int n = 0;
+            for (int w = 0; w < TH_MAP_WIDTH * TH_MAP_HEIGHT / 32; w++) {
+                const uint32_t *c = sim.temp_changed;
+                uint32_t m = c[w] | c[w] << 1 | c[w] >> 1;
+                if (w > 0)
+                    m |= c[w - 1] >> 31;
+                if (w + 1 < TH_MAP_WIDTH * TH_MAP_HEIGHT / 32)
+                    m |= c[w + 1] << 31;
+                if (w >= 4)
+                    m |= c[w - 4];
+                if (w + 4 < TH_MAP_WIDTH * TH_MAP_HEIGHT / 32)
+                    m |= c[w + 4];
+                n += __builtin_popcount(m);
+            }
+            const uint32_t t0 = get_ticks();
+            th_sim_tick(&sim);
+            const uint32_t d = get_ticks() - t0;
+            total += d;
+            if (d > maximo) {
+                maximo = d;
+                hora_max = i + 1;
+                n_max = n;
+            }
+            const double us = d * 1e6 / TICKS_PER_SECOND;
+            sn += n;
+            st += us;
+            snn += (double)n * n;
+            snt += n * us;
+        }
+        const float ms = 1000.0f / TICKS_PER_SECOND;
+        debugf("TH64 hito4: %d horas: %u pacientes, saldo %ld, reputacion %ld, huella %08lx; %.3f ms por tick de "
+               "media, %.3f ms el mas largo; simulacion %u KiB\n",
+               horas, (unsigned)sim.patients_spawned, (long)sim.hosp.balance, (long)sim.hosp.reputation,
+               (unsigned long)th_sim_hash(&sim), total * ms / horas, maximo * ms, (unsigned)(sizeof sim / 1024));
+        const double pend = (horas * snt - sn * st) / (horas * snn - sn * sn);
+        debugf("TH64 hito4: temperatura: %.0f casillas por tick de media; %.2f us por casilla, %.0f us el resto del "
+               "tick; el mas largo, la hora %d (%d casillas)\n",
+               sn / horas, pend, (st - pend * sn) / horas, hora_max, n_max);
+        th_view c = vista_hospital();
+        const int distintos = comprobar_vista("hito4", &c);
+        debugf("TH64 hito4: comparacion con la referencia: %d pixeles distintos\n", distintos);
+        if (distintos)
+            fallos++;
+        recorrido_hospital(c, 450);
+    }
     debugf("TH64 pruebas: fin, %d fallos\n", fallos);
     if (emux_detect(0))
         emux_ioctl_exit();
 #endif
 
-    if (assets) {
+    // Con el escenario del hito 4, el hospital; si no, el visor del hito 3.
+    if (assets && cargar_hospital(1)) {
+        for (int i = 0; i < TH_HOSPITAL_HORAS; i++)
+            th_sim_tick(&sim);
+        sim.temp_defer = 1; // la pasada de temperatura, entre fotogramas
+        v = vista_hospital();
+        int plantilla = 0;
+        for (int k = 0; k < sim.n_order; k++)
+            plantilla += sim.hum[sim.order[k]].kind != TH_HUM_PATIENT;
+        heap_stats_t hs;
+        sys_get_heap_stats(&hs);
+        debugf("TH64 hito4: hospital del escenario cargado: %d objetos, %d salas, %d en plantilla; %d horas "
+               "adelantado, %d pacientes en el mapa; heap usado %d KiB; simulacion %u KiB\n",
+               sim.n_obj, sim.n_rooms, plantilla, TH_HOSPITAL_HORAS, sim.n_order - plantilla, hs.used / 1024,
+               (unsigned)(sizeof sim / 1024));
+    } else if (assets) {
+        cargar_nivel(nivel);
         n_humanoides = 0;
         nuevo_humanoide(mapa.camera_x, mapa.camera_y);
     }
-    bool datos = true, medir_rdp = false, seguir = true;
+    int velocidad = 1;
+    bool datos = true, medir_rdp = false, seguir = !hospital;
     float cpu_ms = 0, lista_ms = 0, sim_ms = 0, rdp_buf_ms = 0, rdp_pipe_ms = 0;
     mapa_n64_stats_t st = {0};
     sim_t s = {0};
-    uint32_t reloj = get_ticks(), acumulado = 0;
+    uint32_t reloj = get_ticks(), acumulado = 0, t_temp = 0;
     const uint32_t por_tick = TICKS_PER_SECOND / 1000 * MS_POR_TICK;
     for (;;) {
         joypad_poll();
@@ -752,7 +974,7 @@ int main(void)
             medir_rdp = !medir_rdp;
         if (pulsado.a)
             seguir = !seguir;
-        if (assets && pulsado.b) {
+        if (assets && pulsado.b && !hospital) {
             for (int i = 0; i < 10; i++) {
                 int x, y;
                 casilla_al_azar(&x, &y);
@@ -761,7 +983,9 @@ int main(void)
                     a_pasear(h, &s);
             }
         }
-        if (assets && pulsado.z) {
+        if (hospital && pulsado.z)
+            velocidad = velocidad == 1 ? 8 : 1;
+        if (assets && !hospital && pulsado.z) {
             nivel = nivel % NIVELES + 1;
             if (cargar_nivel(nivel)) {
                 v = vista_en(mapa.camera_x, mapa.camera_y);
@@ -785,16 +1009,27 @@ int main(void)
         // El mundo avanza un tick cada 54 ms de reloj (como mucho 4 por fotograma).
         acumulado += t0 - reloj;
         reloj = t0;
-        uint32_t sim0 = s.cpu_ticks + s.cpu_caminos;
-        for (int k = 0; assets && acumulado >= por_tick && k < 4; k++) {
-            acumulado -= por_tick;
-            tick_mundo(&s);
+        uint32_t sim0 = s.cpu_ticks + s.cpu_caminos, t_sim = 0;
+        for (int k = 0; assets && acumulado * velocidad >= por_tick && k < 4 * velocidad; k++) {
+            acumulado -= por_tick / velocidad;
+            if (hospital) {
+                const uint32_t t = get_ticks();
+                th_sim_tick(&sim);
+                t_sim += get_ticks() - t;
+            } else {
+                tick_mundo(&s);
+            }
         }
         if (acumulado >= por_tick)
             acumulado = 0;
-        uint32_t sim = s.cpu_ticks + s.cpu_caminos - sim0;
-        if (assets && seguir && n_humanoides > 0)
+        uint32_t sim_cpu = s.cpu_ticks + s.cpu_caminos - sim0 + t_sim + t_temp;
+        if (hospital && seguir) {
+            const int p = ultimo_paciente();
+            if (p >= 0)
+                v = vista_de(&sim.hum[p].h);
+        } else if (assets && seguir && n_humanoides > 0) {
             v = vista_de(&humanoides[0]);
+        }
         if (medir_rdp)
             *DP_STATUS = DP_WSTATUS_RESET_CLOCK_COUNTER | DP_WSTATUS_RESET_CMD_COUNTER | DP_WSTATUS_RESET_PIPE_COUNTER |
                          DP_WSTATUS_RESET_TMEM_COUNTER;
@@ -816,7 +1051,7 @@ int main(void)
         const float ms = 1000.0f / TICKS_PER_SECOND;
         cpu_ms += ((t1 - t0) * ms - cpu_ms) / 30;
         lista_ms += (m.lista * ms - lista_ms) / 30;
-        sim_ms += (sim * ms - sim_ms) / 30;
+        sim_ms += (sim_cpu * ms - sim_ms) / 30;
         st = m.st;
         if (datos) {
             rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 12, "TH64 %s  nivel %d  (%d,%d)", TH64_VERSION, nivel, v.x,
@@ -824,18 +1059,29 @@ int main(void)
             if (assets) {
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 24, "CPU %.1f ms (mundo %.1f, lista %.1f) %.1f fps",
                                  cpu_ms, sim_ms, lista_ms, display_get_fps());
-                rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 36, "%d humanoides  %d sprites  %d cargas", n_humanoides,
-                                 st.sprites, st.cargas);
+                if (hospital)
+                    rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 36, "%d personas  rep %ld  x%d  %d sprites",
+                                     sim.n_order, (long)sim.hosp.reputation, velocidad, st.sprites);
+                else
+                    rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 36, "%d humanoides  %d sprites  %d cargas",
+                                     n_humanoides, st.sprites, st.cargas);
                 if (medir_rdp)
                     rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 48, "RDP ocupado %.2f ms (pipe %.2f ms)", rdp_buf_ms,
                                      rdp_pipe_ms);
             } else {
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 24, "Sin assets: ejecuta tools/conv/conv.py");
             }
-            rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 220, "RAM %d KiB  heap %d/%d KiB", ram_kib, heap.used / 1024,
-                             heap.total / 1024);
-            rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 232, "A: seguir  B: +10  Z: nivel  R: datos  L: RDP");
+            if (hospital) {
+                rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 210, "A: seguir al ultimo paciente  Z: x1/x8  R: datos");
+            } else {
+                rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 220, "RAM %d KiB  heap %d/%d KiB", ram_kib,
+                                 heap.used / 1024, heap.total / 1024);
+                rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 232, "A: seguir  B: +10  Z: nivel  R: datos  L: RDP");
+            }
         }
+        if (hospital)
+            dibujar_marcador();
         rdpq_detach_show();
+        t_temp = hospital ? temperatura_hasta(t0 + TICKS_FROM_MS(26)) : 0;
     }
 }

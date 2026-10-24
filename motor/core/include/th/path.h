@@ -35,6 +35,11 @@ typedef struct th_pathfinder {
 // longitud en pasos o -1 si no hay camino (o el destino no es transitable).
 int th_path_find(th_pathfinder *pf, const th_map *m, int sx, int sy, int dx, int dy);
 
+// Las longitudes de th_path_find desde (sx, sy) a todas las casillas de una
+// vez (búsqueda en anchura); th_path_distance da la de una casilla, o -1.
+void th_path_distances(th_pathfinder *pf, const th_map *m, int sx, int sy);
+int th_path_distance(const th_pathfinder *pf, const th_map *m, int x, int y);
+
 // idle_tile_finder::find_idle_tile (World:getIdleTile sin parcela): la
 // n-ésima casilla transitable del hospital donde se puede esperar, buscando
 // desde (sx, sy) sin cruzar puertas. Devuelve 1 y la casilla, o 0.

@@ -113,6 +113,11 @@ typedef struct th_room {
     int8_t max_times;      // GP: veces que el médico puede no acabar de diagnosticar
     uint8_t just_dealt_with;
     uint8_t maximum_patients;
+    // La llamada de personal de la sala en CallsDispatcher (una sola: las
+    // salas del hito 4 piden un único miembro del personal).
+    uint8_t call_open;   // hay llamada en la cola
+    uint8_t call_staff;  // quién la atiende (TH_NONE = nadie aún)
+    uint8_t call_serial; // identidad de la llamada (la de CallCheckPointAction)
     int32_t happiness_factor; // millonésimas
     uint64_t humanoids;       // quién está dentro
 } th_room;
@@ -167,6 +172,7 @@ typedef struct th_staff {
     uint8_t waiting_for_staffroom;
     uint8_t dealing_with_patient;
     uint8_t last_room;            // sala (número)
+    uint8_t on_call;              // sala cuya llamada atiende (0 = ninguna)
     uint8_t pay_rise;             // mood pay_rise activo
     int32_t rise_amount;
 } th_staff;
@@ -204,6 +210,7 @@ enum {
     TH_EV_DIAGNOSED,  // Patient:setDiagnosed
     TH_EV_GO_HOME,    // Patient:goHome (arg: TH_HOME_*)
     TH_EV_DESPAWN,    // desaparece por el borde del mapa
+    TH_EV_DEALT,      // GPRoom:dealtWithPatient (el médico lo despacha)
 };
 enum { TH_HOME_KICKED = 1, TH_HOME_OVER_PRICED, TH_HOME_CURED };
 enum { TH_MONEY_TREATMENT = 1, TH_MONEY_INSURANCE_PENDING, TH_MONEY_INSURANCE, TH_MONEY_WAGES };
@@ -261,8 +268,28 @@ typedef struct th_sim {
     uint8_t n_desks;
     uint8_t desks[8]; // mostradores, en orden de creación (ticks)
     int16_t radiator_thob; // -1 si no hay radiadores
-    uint8_t temp_idx;
-    uint16_t temp[2][TH_MAP_WIDTH * TH_MAP_HEIGHT];
+    // Temperatura de cada casilla, con dos memorias que se alternan (las de
+    // level_map), y lo que hace falta para recalcular solo lo que puede
+    // cambiar: por casilla, los pesos de sus vecinos y el tipo de mezcla
+    // (th_sim_temperature_prepare), qué casillas cambiaron en la última pasada
+    // y con qué aire y radiador se hizo.
+    // Lo de cada casilla va junto: en tres tablas separadas por 32 KiB, las
+    // tres lecturas de una casilla caen en la misma línea de la caché de datos
+    // de la VR4300 (8 KiB, de correspondencia directa) y se echan unas a otras.
+    // La pasada se puede dejar a medias (temp_defer) y seguir entre
+    // fotogramas: nadie lee la temperatura hasta el tick siguiente, que la
+    // acaba antes de nada.
+    uint8_t temp_idx, temp_all;
+    uint8_t temp_defer;   // th_sim_tick deja la pasada por hacer
+    uint8_t temp_pending; // hay una pasada a medias
+    uint16_t temp_word;   // siguiente palabra de temp_need
+    uint16_t temp_air, temp_radiator;
+    struct {
+        uint16_t t[2]; // las dos memorias
+        uint16_t cell; // pesos de los vecinos, tipo de mezcla y suma de pesos
+    } temp[TH_MAP_WIDTH * TH_MAP_HEIGHT];
+    uint32_t temp_changed[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
+    uint32_t temp_need[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32]; // lo que recalcula la pasada en curso
     // Faxes y subidas de sueldo: los que esperan en la cola del panel inferior
     // y los que ya enseña (message_windows), con la puerta de los mensajes
     // (UIBottomPanel:_messageDoorTick).
@@ -283,8 +310,20 @@ int th_sim_init(th_sim *s, th_map *m, th_pathfinder *pf, const th_anims *anims, 
                 const th_rules *level, const th_rules *scen, uint32_t seed);
 // Una hora de juego (World:onTick con hours_per_tick 1).
 void th_sim_tick(th_sim *s);
-// Huella del estado: la misma en el PC y en la N64.
+// Huella del estado: la misma en el PC y en la N64. Con la pasada de
+// temperatura acabada (th_sim_temperature_step).
 uint32_t th_sim_hash(const th_sim *s);
+// level_map::update_temperatures: una pasada con el aire y el radiador dados
+// (de 0 a 65.535). Da lo mismo que recorrer el mapa entero, pero solo
+// recalcula las casillas que pueden cambiar. th_sim_temperature_prepare
+// recalcula los pesos de las casillas: hay que llamarla si cambia el mapa.
+void th_sim_temperature_prepare(th_sim *s);
+void th_sim_update_temperatures(th_sim *s, uint16_t air, uint16_t radiator);
+// La misma pasada por partes: begin la prepara y step recalcula como mucho
+// «palabras» × 32 casillas; devuelve 1 si aún queda.
+#define TH_SIM_TEMP_WORDS (TH_MAP_WIDTH * TH_MAP_HEIGHT / 32)
+void th_sim_temperature_begin(th_sim *s, uint16_t air, uint16_t radiator);
+int th_sim_temperature_step(th_sim *s, int palabras);
 
 static inline th_person *th_sim_person(th_sim *s, th_humanoid *h)
 {
@@ -346,7 +385,13 @@ void th_sim_price_level_impact(th_sim *s, int who, const th_casebook *cb);
 // Entre sim.c y sim_rooms.c.
 void th_sim_desk_tick(th_sim *s, int desk);
 void th_sim_room_make_leave(th_sim *s, th_room *r, int who);
-void th_sim_send_staff_to_room(th_sim *s, th_room *r, int who);
+// Llamadas de personal (CallsDispatcher).
+void th_sim_call_for_staff(th_sim *s, th_room *r);
+int th_sim_answer_call(th_sim *s, int who);
+void th_sim_answer_call_action(th_sim *s, int who);
+int th_sim_staff_meander(th_sim *s, int who, int must_happen);
+void th_sim_call_checkpoint(th_sim *s, int room, int serial);
+void th_sim_call_checkpoint_removed(th_sim *s, int who, int room, int serial);
 int32_t th_sim_random_micro(th_sim *s); // math.random() en millonésimas: [0, 1.000.000)
 // Pacientes.
 void th_sim_go_home(th_sim *s, int who, int reason);

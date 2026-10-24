@@ -545,6 +545,8 @@ void th_sim_desk_tick(th_sim *s, int desk)
 // Consulta de GP (rooms/gp.lua) y lo general de Room
 
 static void dealt_with_patient(th_sim *s, th_room *r, int patient);
+static void drop_call(th_sim *s, th_room *r);
+static void checkpoint_completed(th_sim *s, int room, int serial);
 
 // GPRoom:doStaffUseCycle
 static void gp_staff_cycle(th_sim *s, th_room *r, int doctor)
@@ -605,6 +607,8 @@ static void command_entering_staff(th_sim *s, th_room *r, int staff)
         gp_staff_cycle(s, r, staff);
     else
         th_humanoid_set_next_action(&s->w, &s->hum[staff].h, th_action_new(TH_ACTION_MEANDER));
+    if (staff_criteria_met(s, r))
+        drop_call(s, r);
 }
 
 // GPRoom:commandEnteringPatient
@@ -711,6 +715,8 @@ static void dealt_with_patient(th_sim *s, th_room *r, int patient)
     if (r->just_dealt_with == patient)
         return;
     r->just_dealt_with = (uint8_t)patient;
+    if (s->ev.patient)
+        s->ev.patient(s->ev.ctx, s, patient, TH_EV_DEALT, 0);
     th_person *p = &s->hum[patient];
     th_humanoid_set_next_action(&s->w, &p->h, leave_action(s, r));
     if (!p->u.p.diagnosed) {
@@ -746,6 +752,8 @@ void th_sim_room_on_enter(th_sim *s, th_room *r, int who)
         p->u.s.last_room = r->num;
     r->humanoids |= 1ull << who;
     if (p->kind != TH_HUM_PATIENT) {
+        if (p->u.s.on_call) // Staff:setCallCompleted
+            checkpoint_completed(s, p->u.s.on_call, th_sim_room(s, p->u.s.on_call)->call_serial);
         command_entering_staff(s, r, who);
         th_sim_room_try_advance_queue(s, r);
         return;
@@ -783,8 +791,232 @@ void th_sim_room_make_leave(th_sim *s, th_room *r, int who)
     th_humanoid_set_next_action(&s->w, &s->hum[who].h, leave_action(s, r));
 }
 
-// Hace entrar al personal en su sala (como si el despachador lo llamara).
-void th_sim_send_staff_to_room(th_sim *s, th_room *r, int who)
+// ---------------------------------------------------------------------------
+// Llamadas de personal (calls_dispatcher.lua). Una sala sin el personal que
+// necesita lo llama cuando un paciente va hacia ella: acude el más adecuado de
+// los que están libres o, si no hay ninguno, el primero que se quede libre (al
+// empezar a deambular). Solo las llamadas a salas, y una por sala (las del
+// hito 4 piden un solo miembro del personal); las de reparar, regar y vacunar
+// no hacen falta aún.
+
+// Room:isRoomInDemand, simplificado: algún paciente dentro o en la cola.
+static int room_in_demand(const th_sim *s, const th_room *r)
 {
-    th_humanoid_set_next_action(&s->w, &s->hum[who].h, th_sim_room_enter_action(s, r, who));
+    return th_sim_room_patient_count(s, r) > 0 || patient_size(&s->queues[s->obj[r->door].queue]) > 0;
+}
+
+// Staff:isIdle. Sin sala de personal, nadie va a descansar (waiting_for_staffroom
+// no cuenta), así que going_to_staffroom y staffroom_needed no se ponen nunca.
+static int staff_is_idle(const th_sim *s, int who)
+{
+    const th_person *p = &s->hum[who];
+    if (!p->alive || p->kind == TH_HUM_PATIENT || p->u.s.on_call)
+        return 0;
+    if (p->h.user_of != TH_NONE && s->obj[p->h.user_of].type == TH_OBJ_DOOR)
+        return 0;
+    const th_room *r = humanoid_room((th_sim *)s, who);
+    if (!r)
+        return 1;
+    if (p->h.queue_len && (p->h.queue[0].flags & TH_AF_IS_LEAVING))
+        return 0;
+    return !room_in_demand(s, r);
+}
+
+// Lo que pide la sala (getRequiredStaffCriteria): el primer criterio.
+static const char *call_criterion(const th_sim *s, const th_room *r)
+{
+    th_rnode req = required_staff(s, r);
+    return th_rules_len(s->defs, req) ? th_rules_str(s->defs, th_rules_entry_key(s->defs, req, 0), NULL) : NULL;
+}
+
+// CallsDispatcher.verifyStaffForRoom (staff_allowed_to_move es true por defecto)
+static int verify_staff_for_room(const th_sim *s, const th_room *r, int who)
+{
+    const char *crit = call_criterion(s, r);
+    return crit && staff_is_idle(s, who) && fulfills(&s->hum[who], crit);
+}
+
+// CallsDispatcher.getPriorityForRoom, en millonésimas (cuanto menos, mejor).
+static int64_t priority_for_room(th_sim *s, const th_room *r, int who)
+{
+    const th_person *p = &s->hum[who];
+    int x, y;
+    entrance(s, r, 1, &x, &y);
+    const int d = th_path_find(s->w.pf, s->w.map, p->h.tile_x, p->h.tile_y, x, y);
+    int64_t score = d >= 0 ? (int64_t)d * TH_MICRO : 0;
+    score -= (int64_t)s->queues[s->obj[r->door].queue].reported * 5 * TH_MICRO;
+    score -= (int64_t)(p->u.s.fatigue > 0 ? p->u.s.fatigue : 0) * 40;
+    if (!humanoid_room(s, who))
+        score -= 50 * TH_MICRO;
+    const char *crit = call_criterion(s, r);
+    if (crit && (!strcmp(crit, "Researcher") || !strcmp(crit, "Psychiatrist") || !strcmp(crit, "Surgeon")))
+        score -= 100000ll * TH_MICRO;
+    return score;
+}
+
+// CallsDispatcher.sendStaffToRoom (desde fuera de la sala)
+static void execute_call(th_sim *s, th_room *r, int who)
+{
+    r->call_staff = (uint8_t)who;
+    s->hum[who].u.s.on_call = r->num;
+    th_humanoid *h = &s->hum[who].h;
+    th_humanoid_set_next_action(&s->w, h, th_sim_room_enter_action(s, r, who));
+    th_action cp = th_action_new(TH_ACTION_CALL_CHECKPOINT);
+    cp.obj = r->num;
+    cp.val = r->call_serial;
+    th_humanoid_queue_action(h, cp);
+}
+
+// CallsDispatcher:findSuitableStaff: el de menor puntuación entre los que
+// valen. Con uno solo no hace falta puntuar (la puntuación no gasta azar).
+static void find_suitable_staff(th_sim *s, th_room *r)
+{
+    int best = TH_NONE, n = 0;
+    int64_t best_score = 0;
+    uint8_t cand[TH_SIM_HUMANOIDS];
+    for (int k = 0; k < s->n_order; k++) {
+        const int who = s->order[k];
+        const th_person *p = &s->hum[who];
+        if (p->kind != TH_HUM_PATIENT && p->kind != TH_HUM_HANDYMAN && verify_staff_for_room(s, r, who))
+            cand[n++] = (uint8_t)who;
+    }
+    for (int i = 0; i < n; i++) {
+        const int64_t score = n > 1 ? priority_for_room(s, r, cand[i]) : 0;
+        if (best == TH_NONE || score < best_score) {
+            best = cand[i];
+            best_score = score;
+        }
+    }
+    if (best != TH_NONE)
+        execute_call(s, r, best);
+}
+
+// CallsDispatcher:callForStaff
+void th_sim_call_for_staff(th_sim *s, th_room *r)
+{
+    if (!r || staff_criteria_met(s, r) || !call_criterion(s, r) || r->call_open)
+        return;
+    r->call_open = 1;
+    r->call_staff = TH_NONE;
+    r->call_serial++;
+    find_suitable_staff(s, r);
+}
+
+// CallsDispatcher.unassignCall
+static void unassign_call(th_sim *s, th_room *r, int answer_next)
+{
+    const int who = r->call_staff;
+    r->call_staff = TH_NONE;
+    s->hum[who].u.s.on_call = 0;
+    if (answer_next)
+        th_humanoid_set_next_action(&s->w, &s->hum[who].h, th_action_new(TH_ACTION_ANSWER_CALL));
+}
+
+// CallsDispatcher:dropFromQueue
+static void drop_call(th_sim *s, th_room *r)
+{
+    if (!r->call_open)
+        return;
+    r->call_open = 0;
+    if (r->call_staff != TH_NONE)
+        unassign_call(s, r, 1);
+}
+
+// CallsDispatcher.onCheckpointCompleted (CallCheckPointAction al empezar y
+// Staff:setCallCompleted al entrar en la sala).
+static void checkpoint_completed(th_sim *s, int room, int serial)
+{
+    th_room *r = th_sim_room(s, room);
+    if (!r || !r->call_open || r->call_serial != serial || r->call_staff == TH_NONE)
+        return;
+    s->hum[r->call_staff].u.s.on_call = 0;
+    r->call_staff = TH_NONE;
+    r->call_open = 0;
+}
+
+void th_sim_call_checkpoint(th_sim *s, int room, int serial)
+{
+    checkpoint_completed(s, room, serial);
+}
+
+// CallsDispatcher.staffActionInterruptHandler: la CallCheckPointAction se
+// quita de la cola sin llegar a empezar. La llamada se queda sin nadie (el
+// callForStaff que sigue la encuentra en la cola y no busca a otro): la
+// atenderá el primero que se quede libre.
+void th_sim_call_checkpoint_removed(th_sim *s, int who, int room, int serial)
+{
+    th_room *r = th_sim_room(s, room);
+    if (!r || !r->call_open || r->call_serial != serial || r->call_staff != who)
+        return;
+    r->call_staff = TH_NONE;
+    s->hum[who].u.s.on_call = 0;
+}
+
+// CallsDispatcher:answerCall: la mejor llamada para este miembro del
+// personal, quitándosela a otro si la atiende peor.
+int th_sim_answer_call(th_sim *s, int who)
+{
+    const th_person *p = &s->hum[who];
+    if (p->kind == TH_HUM_HANDYMAN || p->kind == TH_HUM_PATIENT)
+        return 0;
+    th_room *best = NULL;
+    int64_t best_score = 0;
+    for (int i = 0; i < s->n_rooms; i++) {
+        th_room *r = &s->rooms[i];
+        if (!r->call_open || !verify_staff_for_room(s, r, who))
+            continue;
+        const int64_t score = priority_for_room(s, r, who);
+        if (r->call_staff != TH_NONE && priority_for_room(s, r, r->call_staff) <= score)
+            continue;
+        if (!best || score < best_score) {
+            best = r;
+            best_score = score;
+        }
+    }
+    if (!best)
+        return 0;
+    if (best->call_staff != TH_NONE)
+        unassign_call(s, best, 1);
+    execute_call(s, best, who);
+    return 1;
+}
+
+// El principio de MeanderAction para el personal libre en el pasillo: atender
+// una llamada o volver a su última sala si aún le hace falta. Devuelve 1 si
+// ya no deambula.
+int th_sim_staff_meander(th_sim *s, int who, int must_happen)
+{
+    th_person *p = &s->hum[who];
+    if (p->kind == TH_HUM_PATIENT || humanoid_room(s, who) || !staff_is_idle(s, who))
+        return 0;
+    th_humanoid *h = &p->h;
+    if (p->kind != TH_HUM_HANDYMAN && th_sim_answer_call(s, who)) {
+        if (must_happen)
+            th_humanoid_finish_action(&s->w, h);
+        return 1;
+    }
+    // testStaffCriteria(getMaximumStaffCriteria(), humanoid): en las salas del
+    // hito 4 el máximo es lo requerido.
+    th_room *r = p->u.s.last_room ? th_sim_room(s, p->u.s.last_room) : NULL;
+    const char *crit = r ? call_criterion(s, r) : NULL;
+    if (r && r->is_active && crit && !staff_criteria_met(s, r) && fulfills(p, crit)) {
+        th_humanoid_queue_action(h, th_sim_room_enter_action(s, r, who));
+        th_humanoid_finish_action(&s->w, h);
+        return 1;
+    }
+    p->u.s.last_room = 0;
+    return 0;
+}
+
+// AnswerCallAction
+void th_sim_answer_call_action(th_sim *s, int who)
+{
+    th_humanoid *h = &s->hum[who].h;
+    if (!th_sim_answer_call(s, who)) {
+        th_room *r = humanoid_room(s, who);
+        if (r)
+            th_humanoid_queue_action(h, leave_action(s, r));
+        th_humanoid_queue_action(h, th_action_new(TH_ACTION_MEANDER));
+    }
+    th_humanoid_finish_action(&s->w, h);
 }

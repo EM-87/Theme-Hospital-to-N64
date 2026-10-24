@@ -16,6 +16,7 @@ source tools/env.sh
 tools/motor_check.sh        # todo: PC, PC con sanitizers, pruebas en ares, ROM
 make -C motor               # ROM: motor/th64.z64
 make -C motor PRUEBAS=1     # ROM con las pruebas del núcleo: motor/th64_pruebas.z64
+make -C motor HORAS=4900    # ROM normal con el hospital 4.900 horas adelantado: motor/th64_horas.z64
 cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && ctest --test-dir motor/build/pc
 ```
 
@@ -26,12 +27,20 @@ cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && cte
 - `th64sim caminos <nivel.tmp> <n> <caminos_nivelN.tsv>`: repite con el A* del núcleo los caminos que pidió CorsixTH (`bench/scenarios/caminos.lua`) y los compara casilla a casilla;
 - `th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>`: repite con el núcleo la caminata de un humanoide que volcó CorsixTH (`bench/scenarios/caminata.lua`) y la compara tick a tick (casilla, desplazamiento, animación, fotograma y banderas);
 - `th64sim reglas <reglas.trg> [ruta]`: vuelca un fichero de reglas, o una parte («objetos.bench.orientations.north»), en el JSON canónico del conversor, y su huella;
+- `th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir>`: simula el hospital del escenario y escribe las trazas de `bench/scenarios/traza_hito4.lua` (`pacientes.tsv`, `dinero.tsv`, `dias.tsv`, `acciones.tsv`) y la huella. Con `TH64_SONDA_GP=<dir>`, además lo que escribe `bench/scenarios/sonda_gp.lua`; con `TH64_DEPURAR=<id>`, la cola de acciones de ese paciente tras cada hora;
 - `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia;
-- `th64sim escena ...`: lo mismo, con el humanoide de una caminata en un tick dado.
+- `th64sim escena ...`: lo mismo, con el humanoide de una caminata en un tick dado;
+- `th64sim escena4 ...`: lo mismo con el hospital de un escenario (objetos y personas), tras unas horas de simulación.
 
-Las dos últimas las usa [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md).
+Las tres últimas las usan [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md) y [`tools/oraculo_hito4/`](../tools/oraculo_hito4/README.md).
 
-La ROM normal abre el visor del mapa con un humanoide que pasea por él:
+Con el escenario del hito 4 en `assets/escenarios/hito4.trg` (lo copia `tools/oraculo_hito4/motor.sh`), la ROM normal abre el hospital en marcha, con el dinero y la fecha abajo:
+- el stick o la cruceta mueven la cámara;
+- A sigue al último paciente que ha llegado o deja de seguirlo;
+- Z alterna entre velocidad Normal (un tick, una hora de juego, cada 54 ms) y 8 veces más deprisa;
+- R oculta los datos; L mide el tiempo del RDP.
+
+Sin el escenario, la ROM normal abre el visor del mapa con un humanoide que pasea por él:
 - el stick o la cruceta mueven la cámara;
 - A sigue al primer humanoide o deja de seguirlo (mover la cámara también lo deja);
 - B añade 10 humanoides que pasean por casillas al azar;

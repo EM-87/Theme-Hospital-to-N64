@@ -33,13 +33,15 @@ typedef struct {
 
 static registro reg[MAX_PACIENTES + 1];
 static FILE *f_dinero;
+// TH64_SONDA_GP=<dir>: lo mismo que bench/scenarios/sonda_gp.lua (medico.tsv y visitas.tsv).
+static FILE *f_medico, *f_visitas;
 
 enum { F_LLEGANDO, F_COLA, F_TRAS_RECEPCION, F_CONSULTA, F_DIAGNOSTICADO, F_A_CASA, N_FASES };
 static const char *const fases[N_FASES] = {"llegando", "cola_recepcion", "tras_recepcion",
                                            "consulta", "diagnosticado",  "a_casa"};
 static const char *const acciones[] = {"-",           "idle",  "walk",       "spawn",      "seek_reception",
                                        "queue",       "use_object", "knock_door", "meander", "seek_room",
-                                       "staff_reception"};
+                                       "staff_reception", "call_checkpoint", "answer_call"};
 static long horas_accion[N_FASES][sizeof acciones / sizeof acciones[0]];
 
 static uint8_t *leer(const char *ruta, size_t *len)
@@ -104,6 +106,10 @@ static void suceso(void *ctx, const th_sim *s, int who, int ev, int arg)
         }
         break;
     case TH_EV_DESPAWN: r->desaparece = hora; break;
+    case TH_EV_DEALT:
+        if (f_visitas)
+            fprintf(f_visitas, "%d\tdespacha\n", hora);
+        break;
     default: break;
     }
 }
@@ -154,6 +160,32 @@ static void depurar_paciente(th_sim *s, int who)
                 (a->flags & TH_AF_TODO_INTERRUPT) ? "*" : "");
     }
     fprintf(stderr, " | t=%u fn=%u fax=%d\n", p->h.timer, p->h.timer_fn, s->n_fax);
+}
+
+static void sondear_gp(const th_sim *s)
+{
+    static const char *const objetos[] = {"other", "door", "bench", "reception_desk", "desk", "cabinet", "chair",
+                                          "radiator"};
+    static uint8_t sentado[TH_SIM_HUMANOIDS];
+    for (int k = 0; k < s->n_order; k++) {
+        const int who = s->order[k];
+        const th_person *p = &s->hum[who];
+        if (!p->alive)
+            continue;
+        const th_action *a = p->h.queue_len ? &p->h.queue[0] : NULL;
+        const char *obj = a && a->kind == TH_ACTION_USE_OBJECT ? objetos[s->obj[a->obj].type] : "-";
+        if (p->kind == TH_HUM_DOCTOR) {
+            const th_room *r = p->h.in_room ? th_sim_room((th_sim *)s, p->h.in_room) : NULL;
+            fprintf(f_medico, "%u\t%s\t%s\t%u\t%d\t%.4f\t%s\n", (unsigned)s->hours, a ? acciones[a->kind] : "-", obj,
+                    (unsigned)p->h.anim, p->h.slow_animation ? 1 : 0, p->u.s.fatigue / 1e6,
+                    r ? s->room_types[r->type] : "-");
+        } else if (p->kind == TH_HUM_PATIENT) {
+            const int en_silla = a && a->kind == TH_ACTION_USE_OBJECT && s->obj[a->obj].type == TH_OBJ_CHAIR;
+            if (en_silla && !sentado[who])
+                fprintf(f_visitas, "%u\tsienta\n", (unsigned)s->hours);
+            sentado[who] = (uint8_t)en_silla;
+        }
+    }
 }
 
 // Lo que traza_hito4.lua mira al acabar cada hora.
@@ -289,16 +321,30 @@ int th64sim_hito4(char **argv)
     const int horas = atoi(argv[5]);
     if (getenv("TH64_DEPURAR"))
         depurar = atoi(getenv("TH64_DEPURAR"));
+    if (getenv("TH64_SONDA_GP")) {
+        f_medico = abrir(getenv("TH64_SONDA_GP"), "medico.tsv");
+        f_visitas = abrir(getenv("TH64_SONDA_GP"), "visitas.tsv");
+        if (!f_medico || !f_visitas)
+            return 1;
+        fputs("hora\taccion\tobjeto\tanimacion\tlento\tcansancio\tsala\n", f_medico);
+        fputs("hora\tsuceso\n", f_visitas);
+    }
     const int32_t saldo0 = sim.hosp.balance;
     volcar_dia(f_dias, &sim);
     for (int h = 0; h < horas; h++) {
         th_sim_tick(&sim);
         muestrear(&sim);
+        if (f_medico)
+            sondear_gp(&sim);
         if ((h + 1) % 50 == 0)
             volcar_dia(f_dias, &sim);
     }
     fclose(f_dias);
     fclose(f_dinero);
+    if (f_medico) {
+        fclose(f_medico);
+        fclose(f_visitas);
+    }
     FILE *f = abrir(dir, "pacientes.tsv");
     if (!f)
         return 1;

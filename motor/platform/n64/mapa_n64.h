@@ -28,6 +28,10 @@ typedef struct {
 // césped). Hay que llamarla una vez con la hoja de bloques, antes de dibujar.
 void mapa_n64_preparar(const hoja_t *bloques, int unidad);
 
+// Relleno entre el motor y libdragon para la caché de instrucciones
+// (relleno_cache.c). Se llama una vez, al empezar.
+void relleno_cache(void);
+
 // hojas[TH_SHEET_*]: los bloques del mapa y los sprites de las entidades.
 void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS], const uint16_t *paleta, int ancho,
                       int alto, mapa_n64_stats_t *st);

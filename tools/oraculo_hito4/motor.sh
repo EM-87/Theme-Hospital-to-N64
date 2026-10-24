@@ -5,7 +5,9 @@
 #      la pasa a TRG1 (escenario.py), si no está ya;
 #   2. comprueba que el motor deja las 16.384 casillas como CorsixTH;
 #   3. corre la simulación del motor (th64sim hito4) con R semillas propias.
-# Al final, resumen.py de cada lado y comparar.py.
+# Al final, resumen.py de cada lado y comparar.py. El escenario de la primera
+# semilla se copia a motor/assets/escenarios/hito4.trg: es el que llevan las
+# ROM (make) y el que usa tools/motor_check.sh.
 #
 # Uso: tools/oraculo_hito4/motor.sh [semillas] [horas] [repeticiones] [dir_campaña]
 #   semillas: por defecto "1 2 3 4 5 6 7 8 9 10"
@@ -42,6 +44,9 @@ for s in $semillas; do
   done
   echo "semilla $s: $(tail -1 "$E/comprobacion.txt"); $(cat "$M/semilla_${s}_1/salida.txt")"
 done
+primera=${semillas%% *}
+mkdir -p "$A/escenarios"
+cp "$O/escenario_$primera/escenario.trg" "$A/escenarios/hito4.trg"
 python3 -I "$REPO_DIR/tools/oraculo_hito4/resumen.py" "$O"/semilla_[0-9]* --json "$O/corsixth.json" > "$O/corsixth.txt"
 python3 -I "$REPO_DIR/tools/oraculo_hito4/resumen.py" "$M"/semilla_* --json "$M/motor.json" > "$M/motor.txt"
 python3 -I "$REPO_DIR/tools/oraculo_hito4/comparar.py" "$O/corsixth.json" "$M/motor.json"
