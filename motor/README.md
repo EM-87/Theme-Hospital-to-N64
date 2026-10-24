@@ -21,7 +21,8 @@ cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && cte
 
 `th64sim` (en `motor/build/pc/`):
 - `th64sim huella <semilla> <ticks>`: huella de la simulación de referencia, la misma que en la ROM;
-- `th64sim mapa <nivel.tmp> <n> [mapa_nivelN.tsv]`: carga un nivel y lo compara casilla a casilla con el volcado de CorsixTH (`bench/scenarios/volcar_mapa.lua`);
+- `th64sim mapa <nivel.tmp> <n> [mapa_nivelN.tsv]`: carga un nivel y lo compara casilla a casilla con el volcado de CorsixTH (`bench/scenarios/volcar_mapa.lua`); con `--volcar celdas.tsv`, vuelca el mapa del núcleo en el formato de `bench/scenarios/exportar_escenario.lua`;
+- `th64sim escenario <nivel.tmp> <escenario.trg> <celdas.tsv>`: carga un nivel con un escenario exportado de CorsixTH (`tools/oraculo_hito4/escenario.py`) y compara las 16.384 casillas con las de CorsixTH;
 - `th64sim caminos <nivel.tmp> <n> <caminos_nivelN.tsv>`: repite con el A* del núcleo los caminos que pidió CorsixTH (`bench/scenarios/caminos.lua`) y los compara casilla a casilla;
 - `th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>`: repite con el núcleo la caminata de un humanoide que volcó CorsixTH (`bench/scenarios/caminata.lua`) y la compara tick a tick (casilla, desplazamiento, animación, fotograma y banderas);
 - `th64sim reglas <reglas.trg> [ruta]`: vuelca un fichero de reglas, o una parte («objetos.bench.orientations.north»), en el JSON canónico del conversor, y su huella;
