@@ -27,9 +27,9 @@ Punto de partida: el núcleo de ejemplo de la fase 4 (`n64/pruebas/nucleo`), con
 - el generador xorshift32;
 - el marco de pruebas.
 
-## Hito 0 — Conversor (en curso)
+## Hito 0 — Conversor
 
-El hito 0 se hace por partes. Primero los gráficos, porque es lo único que necesita el hito 1. Las animaciones, las tablas de reglas, los niveles, los textos, las fuentes y el banco de sonidos van después, antes de los hitos 2–4.
+**Hecho.** Solo queda una parte que usa la interfaz (al final de esta sección). Se hizo por partes: primero los gráficos, porque es lo único que necesitaba el hito 1, y después las animaciones, los niveles, las reglas, los textos, las fuentes y el sonido, antes de los hitos 2–4.
 
 **Gráficos: hecho.** [`tools/conv/`](../tools/conv/README.md):
 - **RNC.** Un descompresor en Python, portado del de CorsixTH. Da exactamente lo mismo que `rnc_decode` en los 241 ficheros RNC de los datos: 16,3 MB descomprimidos en 11 s. El conversor no necesita compilar CorsixTH.
@@ -120,10 +120,37 @@ Las tablas incluyen todo lo que añade CorsixTH: opciones de PC, trucos, errores
 
 La ROM de pruebas carga las 5.
 
-**Queda del hito 0:**
-- el banco de sonidos recortado;
-- un mapa de prueba;
-- las posiciones por fotograma de los marcadores, que solo usa la interfaz.
+**Sonido: hecho** ([`sonidos.py`](../tools/conv/sonidos.py)). Lo pasa a los formatos de libdragon el Makefile, con `audioconv64`.
+
+- **Efectos y locutor.** Cada idioma tiene su `SOUND-n.DAT`, con el número de su `LANG-n.DAT`: `SOUND-0` el inglés y `SOUND-4` el español.
+  - Cada sonido se guarda una sola vez, como WAV, aunque esté en los dos idiomas: 191 son comunes, 185 solo del inglés y 197 solo del español.
+  - Van en VADPCM sin Huffman, como decidió la fase 4.
+  - CorsixTH toca el sonido de un fotograma por su posición en el archivo del idioma cargado, y el orden cambia de un idioma a otro. Por eso cada idioma lleva una tabla de las 746 posiciones, de cada una a su fichero (`sonido/english.trg`).
+  - De las 127 posiciones que usan las animaciones, dos suenan distinto según el idioma (la 80 y la 223), igual que en CorsixTH.
+- **Música.** Las 8 piezas XMI pasan a MIDI con el `xmi2mid.cpp` de CorsixTH, compilado aquí con `g++`; no hace falta compilar CorsixTH entero.
+- **Banco de instrumentos.** Se toca con TimGM6mb, como en la fase 4, recortado a lo que usan las piezas. Es un SF2 nuevo con solo esos presets, sus instrumentos y sus muestras: 28 de 136 presets, 43 instrumentos y 177 de 520 muestras.
+  - Comprobación: fluidsynth sintetiza cada pieza con el banco entero y con el recortado, y en las 8 el audio sale idéntico byte a byte (120 MB de WAV a 22.050 Hz).
+  - `audioconv64` avisa de que el sintetizador de libdragon no tiene envolvente de modulación (3 instrumentos) ni vibrato (27). En la N64 sonará algo distinto que en fluidsynth.
+
+| Qué | En la ROM | Estimación de la fase 2 |
+|---|---:|---:|
+| Efectos comunes (wav64) | 1.656.394 B | 1,43 MiB |
+| Propios del inglés | 5.628.660 B | 4,88 MiB |
+| Propios del español | 4.099.038 B | 3,46 MiB |
+| Música (8 piezas en mid64) | 78.482 B | 77 KiB |
+| Banco recortado (sf64) | 713.908 B | 1,81 MiB entero |
+
+Los efectos y la voz ocupan entre un 10 y un 13 % más que lo estimado en la fase 2: es el Huffman que se quita, como ya avisó la fase 4. El banco recortado deja libre más de lo que suma eso. La ROM normal ocupa ahora 13.697.024 B.
+
+En la ROM de pruebas, en ares:
+- carga el banco recortado, que ocupa **98 KiB de RAM** (la fase 4 estimaba unos 101);
+- toca `FORTUNE` 3 s, y a los 3 s va por los 3.258 ms;
+- busca a la vez un efecto por su posición en la tabla del idioma (la 10, `FALLOVER.WAV`) y lo hace sonar;
+- **el audio se lleva el 4,4 % de la CPU**. Se mide con el método de la fase 4: trabajo fijo hecho con y sin audio, llamando a `mixer_try_play` entre medias.
+
+**Lo que queda del hito 0:**
+- **Las posiciones por fotograma de los marcadores.** Solo las usa la interfaz (la ventana del paciente, los iconos de humor) y se calcularán con ella.
+- **El mapa de prueba** que preveía el plan ya no hace falta. Las pruebas del núcleo construyen mapas sintéticos, sin datos del juego, y las comparaciones usan los niveles de verdad y el escenario del hito 4.
 
 **Una medida de paso.** La ROM de pruebas con el lector de reglas da 17,59 ms con 50 humanoides en pantalla, frente a 23,73 en la del hito 3, y 5,52 ms en el recorrido del hito 2, frente a 6,41. El dibujo no ha cambiado: es la disposición del código en la caché de instrucciones, que mueve estas cifras hasta un 26 %. El hito 5 tendrá que medir con varias compilaciones, o fijar la disposición del código.
 

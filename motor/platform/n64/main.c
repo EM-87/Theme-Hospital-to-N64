@@ -523,6 +523,96 @@ static bool comprobar_reglas(void)
     debugf("TH64 fuentes: %d de %u cargadas\n", cargadas, (unsigned)(sizeof fuentes / sizeof fuentes[0]));
     return ok;
 }
+
+static bool existe(const char *ruta)
+{
+    FILE *f = fopen(ruta, "rb");
+    if (f)
+        fclose(f);
+    return f != NULL;
+}
+
+// Unidades de trabajo fijo (de algo menos de 1 ms) hechas en ms milisegundos,
+// llamando a mixer_try_play entre una y otra si suena audio, como haría el
+// bucle del juego. Con y sin audio, da la CPU que se lleva el audio (el mismo
+// método que n64/pruebas/audio en la fase 4).
+static volatile uint32_t sumidero;
+static uint32_t unidades(int ms, bool audio)
+{
+    const uint32_t t0 = get_ticks();
+    uint32_t n = 0;
+    while (TICKS_DISTANCE(t0, get_ticks()) < ms * (int)(TICKS_PER_SECOND / 1000)) {
+        for (uint32_t i = 0; i < 20000; i++)
+            sumidero += i * 7;
+        n++;
+        if (audio)
+            mixer_try_play();
+    }
+    return n;
+}
+
+// Hito 0, el sonido: el SoundFont recortado y una pieza de música, con un
+// efecto encima, buscado en la tabla de sonidos del idioma como haría un
+// fotograma de animación. Suena 3 s mientras se mide la CPU que se lleva.
+static bool comprobar_sonido(void)
+{
+    if (!existe("rom:/musica/banco.sf64") || !existe("rom:/sonido/english.trg")) {
+        debugf("TH64 sonido: faltan los assets (tools/conv/conv.py sonido)\n");
+        return true;
+    }
+    const uint32_t base = unidades(1000, false);
+    audio_init(22050, AUDIO_DEFAULT_LATENCY);
+    mixer_init(32);
+    heap_stats_t h0, h1;
+    sys_get_heap_stats(&h0);
+    sf64_bank_t *banco = sf64_load("rom:/musica/banco.sf64");
+    sys_get_heap_stats(&h1);
+    sf64_synth_t *synth = sf64_synth_create(banco);
+    sf64_synth_set_mode(synth, SF64_MODE_GM1);
+    for (int i = 0; i < 16; i++)
+        mixer_ch_set_limits(i, 16, 96000, 0); // sin esto, la primera nota aborta (fase 4)
+    sf64_synth_set_channels(synth, 0, 16, MIXER_PRIORITY_MUSIC);
+    mid64player_t *mid = mid64player_load("rom:/musica/fortune.mid64");
+    mid64player_play(mid, sf64_synth_midi_target(synth));
+
+    // Sonido 10 de la tabla inglesa: [nombre, ruta sin extensión].
+    int tam = 0;
+    uint8_t *datos = asset_load("rom:/sonido/english.trg", &tam);
+    th_rules tabla;
+    char ruta[96] = "";
+    const char *nombre = "?";
+    wav64_t *efecto = NULL;
+    if (th_rules_init(&tabla, datos, (size_t)tam) == 0) {
+        const th_rnode e = th_rules_at(&tabla, tabla.root, 10 - 1);
+        nombre = th_rules_str(&tabla, th_rules_at(&tabla, e, 0), NULL);
+        const char *r = th_rules_str(&tabla, th_rules_at(&tabla, e, 1), NULL);
+        if (r) {
+            snprintf(ruta, sizeof ruta, "rom:/%s.wav64", r);
+            efecto = wav64_load(ruta, NULL);
+            wav64_set_loop(efecto, true);
+            wav64_play(efecto, 16);
+        }
+    }
+    const uint32_t con_audio = unidades(3000, true);
+    const unsigned va_por = (unsigned)mid64player_tell_ms(mid);
+    debugf("TH64 sonido: banco de %d presets, %d KiB en RAM; FORTUNE dura %lu ms y va por %u ms; efecto %s (%s) "
+           "%s; el audio se lleva el %.1f %% de la CPU (%lu unidades por segundo con audio, %lu sin)\n",
+           sf64_preset_count(banco), (h1.used - h0.used) / 1024, (unsigned long)mid64player_get_duration_ms(mid),
+           va_por, nombre ? nombre : "?", ruta, efecto && mixer_ch_playing(16) ? "sonando" : "NO suena",
+           100.0 * (1.0 - con_audio / 3.0 / base), (unsigned long)(con_audio / 3), (unsigned long)base);
+    const bool ok = efecto && va_por > 2000;
+    mixer_ch_stop(16);
+    if (efecto)
+        wav64_close(efecto);
+    free(datos);
+    mid64player_stop(mid);
+    mid64player_close(mid);
+    sf64_synth_close(synth);
+    sf64_close(banco);
+    mixer_close();
+    audio_close();
+    return ok;
+}
 #endif
 
 int main(void)
@@ -575,6 +665,8 @@ int main(void)
 
 #ifdef TH_PRUEBAS
     if (assets && !comprobar_reglas())
+        fallos++;
+    if (assets && !comprobar_sonido())
         fallos++;
     if (assets) {
         // Hito 2. Nivel 1: cámara inicial, una sombra sobre una pared (casilla

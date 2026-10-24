@@ -1,11 +1,11 @@
 # Conversor de datos (fase 5, hito 0)
 
-Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los assets del motor en `motor/assets/`, sin comprimir. Al compilar la ROM, `motor/Makefile` los comprime en `motor/filesystem/`. Nada de lo que genera va al repositorio. Los pasos de reglas, textos y fuentes necesitan además el código de CorsixTH v0.70.1 (`$CORSIXTH_DIR`, que deja `tools/setup.sh`), y los dos primeros, `lua5.4`.
+Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los assets del motor en `motor/assets/`, sin comprimir. Al compilar la ROM, `motor/Makefile` los comprime en `motor/filesystem/`. Nada de lo que genera va al repositorio. Los pasos de reglas, textos, fuentes y sonido necesitan además el código de CorsixTH v0.70.1 (`$CORSIXTH_DIR`, que deja `tools/setup.sh`). Reglas y textos necesitan también `lua5.4`, y sonido, `g++` y el SoundFont TimGM6mb (paquete `timgm6mb-soundfont`, GPL-2, que también instala `tools/setup.sh`).
 
 ```bash
 source tools/env.sh
 python3 -I tools/conv/conv.py                    # todos los pasos
-python3 -I tools/conv/conv.py graficos           # solo un paso (graficos, animaciones, niveles, reglas, textos, fuentes)
+python3 -I tools/conv/conv.py graficos           # solo un paso (graficos, animaciones, niveles, reglas, textos, fuentes, sonido)
 python3 -I tools/conv/conv.py --vistas DIR       # además, vistas previas en PNG
 ```
 
@@ -22,6 +22,7 @@ python3 -I tools/conv/conv.py --vistas DIR       # además, vistas previas en PN
 | `textos.lua` | Ejecuta el `strings.lua` de CorsixTH con `lua5.4` para el inglés y el español, con la lectura de `LANG-x.DAT` y el paso de CP437 a UTF-8 hechos en Lua como en su C++. Los textos van a TRG1 (`textos/english.trg`, `textos/spanish.trg`) |
 | `fuentes.py` | Las 5 fuentes de `QDATAM` a BMFont (`.fnt` y atlas `.png`), con los caracteres por su código Unicode. El Makefile del motor las pasa a `font64` con `mkfont` |
 | `json_canonico.lua` | El JSON canónico que comparten el extractor y los oráculos dentro de CorsixTH |
+| `sonidos.py` | Efectos y locutor del inglés y el español (`SOUND-0` y `SOUND-4`) a WAV sin repetir, con una tabla posición → fichero por idioma (`sonido/english.trg`). La música, de XMI a MIDI con el `xmi2mid.cpp` de CorsixTH. Y el SoundFont TimGM6mb recortado a los presets que usan las piezas. El Makefile los pasa a wav64, mid64 y sf64 |
 | `conv.py` | La orden principal y el formato TPL1 de las paletas |
 
 Formatos (big-endian, como la N64):
@@ -57,4 +58,13 @@ Comprobaciones al convertir:
 
   Da las 5.524 cadenas inglesas y las 5.543 españolas iguales.
 - **Fuentes:** el conversor cuenta los caracteres de los textos que no tiene cada fuente.
+- **Sonido:** el SoundFont recortado tiene que tener exactamente los presets pedidos. Además, fuera del conversor, fluidsynth da el mismo audio con el banco recortado que con el entero:
+
+  ```bash
+  for m in motor/assets/musica/*.mid; do
+    fluidsynth -q -n -i -r 22050 -F /tmp/a.wav /usr/share/sounds/sf2/TimGM6mb.sf2 $m
+    fluidsynth -q -n -i -r 22050 -F /tmp/b.wav motor/assets/musica/banco.sf2 $m
+    cmp /tmp/a.wav /tmp/b.wav && echo "$m igual"
+  done
+  ```
 - **Niveles:** el conversor no los compara por sí mismo. Lo hace el núcleo, que es el que los interpreta: `th64sim mapa` carga cada nivel y lo compara con el volcado de CorsixTH ([`docs/05_prototipo.md`](../../docs/05_prototipo.md#hito-2--mapa-isométrico-con-scroll-a-30-fps)).

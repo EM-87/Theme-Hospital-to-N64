@@ -7,9 +7,10 @@ meterlos en la ROM). Nada de lo que genera va al repositorio.
 
 Uso:
   python3 -I tools/conv/conv.py [--datos DIR] [--salida DIR] [--vistas DIR] [pasos...]
-Pasos (por defecto, todos): graficos animaciones niveles reglas textos fuentes
-Los pasos reglas, textos y fuentes necesitan además el código de CorsixTH
-($CORSIXTH_DIR); los dos primeros, también lua5.4.
+Pasos (por defecto, todos): graficos animaciones niveles reglas textos fuentes sonido
+Los pasos reglas, textos, fuentes y sonido necesitan además el código de
+CorsixTH ($CORSIXTH_DIR); reglas y textos, también lua5.4; sonido, g++ y el
+SoundFont TimGM6mb (paquete timgm6mb-soundfont, que instala tools/setup.sh).
 """
 import argparse
 import json
@@ -26,6 +27,7 @@ import niveles  # noqa: E402
 import paleta  # noqa: E402
 import reglas  # noqa: E402
 import rnc  # noqa: E402
+import sonidos  # noqa: E402
 
 REPO = os.path.normpath(os.path.join(AQUI, "..", ".."))
 
@@ -220,8 +222,42 @@ def paso_fuentes(d, salida, vistas, resumen):
     resumen["fuentes"] = r
 
 
+def paso_sonido(d, salida, vistas, resumen):
+    # Efectos y locutor: WAV sin repetir y una tabla posición → fichero por idioma.
+    ficheros, tablas, r = sonidos.sonidos(lambda n: d.leer("SOUND", "DATA", n))
+    r["wav_bytes"] = sum(escribir(salida, rel, wav) for rel, wav in ficheros.items())
+    r["wav"] = len(ficheros)
+    for idioma, t in tablas.items():
+        trg = reglas.escribir(t)
+        if not reglas.igual(reglas.leer(trg), t):
+            sys.exit(f"ERROR: la tabla de sonidos de {idioma} no se lee igual que se escribió")
+        escribir(salida, f"sonido/{idioma}.trg", trg)
+    # Música: XMI a MIDI con el código de CorsixTH, y el SoundFont recortado.
+    cache = os.path.join(os.environ.get("TH64_WORK", os.path.expanduser("~/th64-work")), "cache", "xmi2mid")
+    exe = sonidos.compilar_xmi2mid(os.environ.get("CORSIXTH_DIR", ""), cache)
+    midi = d.ruta("SOUND", "MIDI")
+    usados, piezas = set(), []
+    for f in sorted(os.listdir(midi)):
+        if f.upper().endswith(".XMI"):
+            mid = sonidos.xmi_a_midi(exe, d.leer("SOUND", "MIDI", f))
+            escribir(salida, f"musica/{f[:-4].lower()}.mid", mid)
+            usados |= sonidos.programas(mid)
+            piezas.append(f[:-4].lower())
+    sf2 = open(sonidos.SOUNDFONT, "rb").read()
+    presentes = sonidos.presets_sf2(sf2)
+    # Un preset que no esté en el banco se toca con el programa 0 de su banco.
+    quedan = {p if p in presentes else (p[0], 0) for p in usados}
+    banco, rs = sonidos.recortar_sf2(sf2, quedan)
+    if sonidos.presets_sf2(banco) != quedan:
+        sys.exit("ERROR: el SoundFont recortado no tiene los presets pedidos")
+    rs.update({"bytes": escribir(salida, "musica/banco.sf2", banco), "bytes_original": len(sf2),
+               "usados": sorted(usados), "sin_preset": sorted(usados - presentes)})
+    r["musica"] = {"piezas": piezas, "banco": rs}
+    resumen["sonido"] = r
+
+
 PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones, "niveles": paso_niveles,
-         "reglas": paso_reglas, "textos": paso_textos, "fuentes": paso_fuentes}
+         "reglas": paso_reglas, "textos": paso_textos, "fuentes": paso_fuentes, "sonido": paso_sonido}
 
 
 def main():
@@ -274,6 +310,14 @@ def main():
         for f in resumen["fuentes"]["fuentes"]:
             print(f"{f['fuente']:<17} {f['glifos']:4d} glifos  -> fuentes/; faltan: "
                   + (", ".join(f"{i}: {c!r}" for i, c in f.get("faltan", {}).items()) or "(solo cifras)"))
+    if "sonido" in a.pasos:
+        r = resumen["sonido"]
+        print(f"sonido            {r['wav']} WAV ({r['wav_bytes']} B): {r['comunes']} comunes, propios {r['propios']}; "
+              f"entradas por idioma {r['entradas']}, sin PCM {r['sin_pcm']}")
+        b = r["musica"]["banco"]
+        print(f"música            {len(r['musica']['piezas'])} piezas; banco recortado {b['presets']} de "
+              f"{b['presets_original']} presets, {b['instrumentos']} instrumentos, {b['muestras']} de "
+              f"{b['muestras_original']} muestras, {b['bytes']} de {b['bytes_original']} B; sin preset: {b['sin_preset']}")
     if "graficos" in a.pasos:
         print(f"paleta             {len(resumen['paleta']['variantes'])} variantes  "
               f"{resumen['paleta']['bytes']:5d} B  -> paleta.tpl")

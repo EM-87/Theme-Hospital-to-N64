@@ -42,6 +42,15 @@ FS_ASSETS := $(patsubst assets/%,filesystem/%,$(ASSETS))
 MKFONT := $(N64_INST)/bin/mkfont
 FUENTES := $(shell find assets -type f -name '*.fnt' 2>/dev/null)
 FS_ASSETS += $(patsubst assets/%.fnt,filesystem/%.font64,$(FUENTES))
+# Sonido: audioconv64 pasa los WAV a wav64 en VADPCM sin Huffman (la
+# decisión de la fase 4: el Huffman se descomprime en la CPU), los MIDI a
+# mid64 y el SoundFont recortado a sf64.
+AUDIOCONV := $(N64_INST)/bin/audioconv64
+SONIDOS := $(shell find assets -type f -name '*.wav' 2>/dev/null)
+MUSICA := $(shell find assets -type f -name '*.mid' 2>/dev/null)
+BANCOS := $(shell find assets -type f -name '*.sf2' 2>/dev/null)
+FS_ASSETS += $(patsubst assets/%.wav,filesystem/%.wav64,$(SONIDOS)) \
+  $(patsubst assets/%.mid,filesystem/%.mid64,$(MUSICA)) $(patsubst assets/%.sf2,filesystem/%.sf64,$(BANCOS))
 
 filesystem/%.tsh: assets/%.tsh
 	@mkdir -p $(dir $@)
@@ -67,6 +76,20 @@ filesystem/%.font64: assets/%.fnt assets/%.png
 	@mkdir -p $(dir $@)
 	@echo "    [FONT] $@"
 	@$(MKFONT) --format CI4 -o $(dir $@) $< > /dev/null
+
+filesystem/%.wav64: assets/%.wav
+	@mkdir -p $(dir $@)
+	@$(AUDIOCONV) --wav-compress vadpcm,huffman=false -o $(dir $@) $< > /dev/null
+
+filesystem/%.mid64: assets/%.mid
+	@mkdir -p $(dir $@)
+	@echo "    [MID] $@"
+	@$(AUDIOCONV) -o $(dir $@) $< > /dev/null
+
+filesystem/%.sf64: assets/%.sf2
+	@mkdir -p $(dir $@)
+	@echo "    [SF2] $@"
+	@$(AUDIOCONV) -o $(dir $@) $< > /dev/null 2>&1
 
 filesystem/%.tpl: assets/%.tpl
 	@mkdir -p $(dir $@)

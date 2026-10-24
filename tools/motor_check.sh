@@ -8,8 +8,9 @@
 #      distinto de lo que dicen la hoja y la paleta (hito 1), dibuja el mapa
 #      igual que el rasterizador de referencia y el recorrido de la cámara va
 #      a 30 fps sin saltos (hito 2); lo mismo con humanoides caminando, y la
-#      cámara que sigue a uno va a 30 fps sin saltos (hito 3); las reglas se
-#      leen en la N64 con la misma huella que en el PC (hito 0);
+#      cámara que sigue a uno va a 30 fps sin saltos (hito 3); las reglas y los
+#      textos se leen en la N64 con la misma huella que en el PC, se cargan las
+#      fuentes y suenan la música y un efecto (hito 0);
 #   4. ROM normal: compila y arranca.
 # Uso: tools/motor_check.sh [dir_salida]   (por defecto $TH64_WORK/resultados/motor_check)
 set -euo pipefail
@@ -61,6 +62,10 @@ if grep -q "assets ok" "$log"; then
   if ls "$M"/assets/fuentes/*.fnt > /dev/null 2>&1; then
     grep -q "TH64 fuentes: 5 de 5 cargadas" "$log" || { echo "   FALLO: no se cargan las fuentes"; grep "TH64 fuentes" "$log"; exit 1; }
     grep "TH64 fuentes" "$log" | sed 's/^/   /'
+  fi
+  if [ -f "$M/assets/musica/banco.sf2" ]; then
+    grep -q "TH64 sonido: .*sonando" "$log" || { echo "   FALLO: no suena el sonido"; grep "TH64 sonido" "$log"; exit 1; }
+    grep "TH64 sonido" "$log" | sed 's/^/   /'
   fi
   grep -q "TH64 hito1: .* 0 distintos" "$log" || { echo "   FALLO: el sprite dibujado no coincide"; grep "TH64 hito1" "$log"; exit 1; }
   grep "TH64 hito1" "$log" | sed 's/^/   /'
