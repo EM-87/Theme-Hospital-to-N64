@@ -23,7 +23,7 @@
 --     fijadas a mano), config (vacía) y el resto, stub;
 --   * corsixth.require y require: no cargan nada;
 --   * permanent"x"(t): devuelve t y lo guarda por nombre (así se recogen las
---     animaciones de caminar de humanoid.lua).
+--     animaciones de caminar y de las puertas de humanoid.lua).
 -- El aspecto de cada paciente (disease.initPatient, que usa math.random) se
 -- convierte en una distribución exacta recorriendo todas las ramas de sus
 -- llamadas a math.random.
@@ -303,6 +303,8 @@ end
 
 local walk = report.permanent.humanoid_walk_animations
 assert(walk and next(walk), "no se han recogido las animaciones de caminar")
+local puertas = report.permanent.humanoid_door_animations
+assert(puertas and next(puertas), "no se han recogido las animaciones de las puertas")
 local doc = {
   version = 1,
   objetos = objetos,
@@ -312,6 +314,7 @@ local doc = {
   marcadores = report.markers,
   duraciones = report.anim_lengths,
   caminar = walk,
+  puertas = puertas,
   config = app.config,
   base_config = base_config,
   niveles = niveles,

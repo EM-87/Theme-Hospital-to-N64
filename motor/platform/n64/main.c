@@ -257,7 +257,7 @@ static void dibujar_escena(const th_view *v, medida_t *m)
         entidades[i] = (th_view_entity){.tile_x = h->tile_x, .tile_y = h->tile_y, .px = h->px, .py = h->py,
                                         .frame = h->frame, .anim = h->anim, .flags = h->anim_flags,
                                         .drawing_layer = h->drawing_layer, .attach_seq = h->attach_seq,
-                                        .layers = h->layers};
+                                        .layers = h->layers, .crop = TH_VIEW_NO_CROP};
     }
     th_scene sc = {.map = &mapa, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = entidades,
                    .entity_count = n_humanoides};

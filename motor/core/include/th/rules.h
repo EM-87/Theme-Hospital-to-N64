@@ -43,6 +43,10 @@ int th_rules_type(const th_rules *r, th_rnode n);
 int32_t th_rules_int(const th_rules *r, th_rnode n, int32_t def);
 // Número en Q16.16, redondeado al más cercano. Si no es un número, def.
 fx32 th_rules_fixed(const th_rules *r, th_rnode n, fx32 def);
+// Número en millonésimas (1,0 = 1.000.000), redondeado al más cercano: la
+// unidad de la simulación para atributos y probabilidades. Satura en ±INT32_MAX.
+// Si no es un número, def.
+int32_t th_rules_micro(const th_rules *r, th_rnode n, int32_t def);
 // Verdadero para true; falso para false, nil o ausente; def para lo demás.
 int th_rules_bool(const th_rules *r, th_rnode n, int def);
 // Cadena (terminada en 0) y su longitud; NULL si no es una cadena.

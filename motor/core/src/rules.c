@@ -174,6 +174,45 @@ int32_t th_rules_int(const th_rules *r, th_rnode n, int32_t def)
     }
 }
 
+int32_t th_rules_micro(const th_rules *r, th_rnode n, int32_t def)
+{
+    switch (th_rules_type(r, n)) {
+    case TH_RULES_INT: {
+        const int32_t i = (int32_t)dato(r, n);
+        if (i > 2147 || i < -2147)
+            return i > 0 ? INT32_MAX : -INT32_MAX;
+        return i * 1000000;
+    }
+    case TH_RULES_REAL: {
+        // valor = m × 2^(e − 1075); se toman los 31 bits altos de m para
+        // que m × 10^6 quepa en 64 bits.
+        const uint64_t b = th_rules_real_bits(r, n);
+        const int e = (int)(b >> 52 & 0x7FF);
+        if (e == 0)
+            return 0;
+        const uint64_t m = ((b & ((1ull << 52) - 1)) | 1ull << 52) >> 22;
+        const int sh = e - 1075 + 22;
+        uint64_t q;
+        if (sh >= 0) {
+            if (e == 0x7FF || sh > 10)
+                return b >> 63 ? -INT32_MAX : INT32_MAX;
+            q = (m * 1000000u) << sh;
+        } else if (sh < -60) {
+            q = 0;
+        } else {
+            const uint64_t p = m * 1000000u;
+            q = p >> -sh;
+            if (p >> (-sh - 1) & 1)
+                q++;
+        }
+        if (q > INT32_MAX)
+            q = INT32_MAX;
+        return b >> 63 ? -(int32_t)q : (int32_t)q;
+    }
+    default: return def;
+    }
+}
+
 fx32 th_rules_fixed(const th_rules *r, th_rnode n, fx32 def)
 {
     switch (th_rules_type(r, n)) {

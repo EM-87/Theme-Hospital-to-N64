@@ -85,7 +85,15 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
         if (d->clip_y1 < y1)
             y1 = d->clip_y1;
     }
-    int vx0 = d->x < 0 ? 0 : d->x, vx1 = d->x + e->ancho > ancho ? ancho : d->x + e->ancho;
+    // Recorte horizontal (thdf_crop): las columnas de pantalla [cx0, cx1).
+    int cx0 = d->x, cx1 = d->x + e->ancho;
+    if (d->flags & TH_DRAW_CROP) {
+        if (d->clip_x0 > cx0)
+            cx0 = d->clip_x0;
+        if (d->clip_x1 < cx1)
+            cx1 = d->clip_x1;
+    }
+    int vx0 = cx0 < 0 ? 0 : cx0, vx1 = cx1 > ancho ? ancho : cx1;
     int vy0 = y0 < 0 ? 0 : y0, vy1 = y1 > alto ? alto : y1;
     if (vx1 > vx0 && vy1 > vy0)
         st->pixeles += (vx1 - vx0) * (vy1 - vy0);
@@ -109,14 +117,18 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
         st->cargas++;
     }
     if (!espejo && !boca_abajo) {
-        rdpq_texture_rectangle(TILE0, d->x, y0, d->x + e->ancho, y1, 0, y0 - d->y);
+        rdpq_texture_rectangle(TILE0, cx0, y0, cx1, y1, cx0 - d->x, y0 - d->y);
         return;
     }
-    // Con las coordenadas de pantalla al revés, el RDP recorre la textura al revés.
-    int x0 = d->x, x1 = d->x + e->ancho, t0 = y0 - d->y, t1 = y1 - d->y;
+    // Con las coordenadas de pantalla al revés, el RDP recorre la textura al
+    // revés. Con recorte, la franja de textura es la que cae en [cx0, cx1).
+    int x0 = cx0, x1 = cx1, t0 = y0 - d->y, t1 = y1 - d->y;
+    int s0 = cx0 - d->x, s1 = cx1 - d->x;
     if (espejo) {
-        x0 = x1;
-        x1 = d->x;
+        x0 = cx1;
+        x1 = cx0;
+        s0 = e->ancho - (cx1 - d->x);
+        s1 = e->ancho - (cx0 - d->x);
     }
     if (boca_abajo) {
         int a = y0;
@@ -126,7 +138,7 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
         t0 = e->alto - t1;
         t1 = e->alto - a;
     }
-    rdpq_texture_rectangle_scaled(TILE0, x0, y0, x1, y1, 0, t0, e->ancho, t1);
+    rdpq_texture_rectangle_scaled(TILE0, x0, y0, x1, y1, s0, t0, s1, t1);
 }
 
 void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS], const uint16_t *paleta, int ancho,

@@ -50,6 +50,7 @@ enum {
     TH_DRAW_ALPHA50 = 4, // al 50 % (thdf_alpha_50)
     TH_DRAW_FLIP_H = 8,  // en espejo
     TH_DRAW_FLIP_V = 16, // cabeza abajo
+    TH_DRAW_CROP = 32,   // solo las columnas de pantalla [clip_x0, clip_x1) (thdf_crop)
 };
 
 typedef struct th_draw {
@@ -57,6 +58,7 @@ typedef struct th_draw {
     uint8_t sheet, flags;
     int16_t x, y;               // esquina superior izquierda en pantalla
     int16_t clip_y0, clip_y1;
+    int16_t clip_x0, clip_x1;
 } th_draw;
 
 typedef struct th_drawlist {
@@ -84,7 +86,11 @@ typedef struct th_view_entity {
     uint8_t drawing_layer; // orden dentro de la casilla (DrawingLayers)
     uint32_t attach_seq;   // con la misma capa de dibujo, la última en llegar va primero
     const uint8_t *layers; // TH_ANIM_LAYERS
+    int8_t crop;           // columna de recorte (thdf_crop) o TH_VIEW_NO_CROP
+    uint8_t early;         // va en la lista temprana de la casilla (thdf_early_list)
 } th_view_entity;
+
+#define TH_VIEW_NO_CROP (-128)
 
 #define TH_VIEW_MAX_ENTITIES 512 // entidades que pueden caer cerca de la pantalla
 
@@ -107,8 +113,8 @@ static inline void th_view_tile(const th_view *v, int x, int y, int *sx, int *sy
 // Rellena la lista con lo que se ve: primero, por líneas de casillas de
 // arriba abajo y de izquierda a derecha, cada suelo y su sombra; después, por
 // cada línea, las paredes norte de derecha a izquierda (con la sombra sobre la
-// pared) y, de izquierda a derecha, la pared oeste y las entidades de cada
-// casilla. Junto a una entidad animada se vuelve a pintar lo que la tapa en
+// pared y las entidades de la lista temprana de la casilla) y, de izquierda a
+// derecha, la pared oeste y las demás entidades de cada casilla. Junto a una entidad animada se vuelve a pintar lo que la tapa en
 // CorsixTH (la pared norte de la casilla de la izquierda y lo que hay en
 // ella). Solo entran los sprites que tocan la pantalla. Devuelve el número de
 // elementos o -1 si no caben.

@@ -14,7 +14,9 @@
 // - reglas: vuelca un fichero de reglas (TRG1) en el JSON canónico del
 //   conversor, para comprobar el lector del núcleo (tools/conv/reglas.py);
 // - escenario: carga un nivel con un escenario exportado de CorsixTH
-//   (tools/oraculo_hito4) y compara sus casillas con las de CorsixTH.
+//   (tools/oraculo_hito4) y compara sus casillas con las de CorsixTH;
+// - hito4: corre ese escenario con la simulación y escribe la traza de
+//   bench/scenarios/traza_hito4.lua (hito4.c).
 // Más adelante cargará un escenario y escribirá el mismo volcado que el
 // oráculo de la simulación (docs/04_construccion.md).
 #include <stdio.h>
@@ -28,8 +30,10 @@
 #include "th/path.h"
 #include "th/rules.h"
 #include "th/scenario.h"
+#include "th/sim.h"
 #include "th/version.h"
 #include "th_test.h"
+#include "objetos.h"
 #include "vista.h"
 
 void (*th_test_log)(const char *fmt, ...) = NULL;
@@ -44,6 +48,9 @@ static int uso(void)
             "Uso: th64sim huella <semilla> <ticks>\n"
             "     th64sim mapa <nivel.tmp> <número de nivel> [mapa_nivelN.tsv | --volcar celdas.tsv]\n"
             "     th64sim escenario <nivel.tmp> <escenario.trg> <celdas.tsv>\n"
+            "     th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>\n"
+            "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
+            "<unidad> <x> <y> <ancho> <alto> <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
             "     th64sim caminos <nivel.tmp> <número de nivel> <caminos_nivelN.tsv>\n"
             "     th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>\n"
             "     th64sim escena <nivel.tmp> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> <unidad> <x> <y> "
@@ -582,7 +589,7 @@ static int orden_escena(int argc, char **argv)
         th_humanoid_tick(&w, h);
     th_view_entity e = {.tile_x = h->tile_x, .tile_y = h->tile_y, .px = h->px, .py = h->py, .frame = h->frame,
                         .anim = h->anim, .flags = h->anim_flags, .drawing_layer = h->drawing_layer,
-                        .attach_seq = h->attach_seq, .layers = h->layers};
+                        .attach_seq = h->attach_seq, .layers = h->layers, .crop = TH_VIEW_NO_CROP};
     printf("tick %d: humanoide en (%d,%d) %+d%+d, animación %u, fotograma %lu\n", tick, h->tile_x, h->tile_y, h->px,
            h->py, h->anim, (unsigned long)h->frame);
     th_view v = {.unit = atoi(argv[7]), .x = atoi(argv[8]), .y = atoi(argv[9]), .w = atoi(argv[10]),
@@ -727,8 +734,47 @@ static int orden_reglas(int argc, char **argv)
     return 0;
 }
 
+int th64sim_hito4(char **argv); // hito4.c
+th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
+
+// Dibuja el escenario del hito 4 tras unas horas de simulación: el mapa, los
+// objetos y, si se pide, las personas.
+static int orden_escena4(int argc, char **argv)
+{
+    // escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <anim.tan> <paleta> <unidad> <x> <y> <w> <h>
+    //         <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]
+    uint8_t *b_datos, *s_datos;
+    th_sheet bloques, sprites;
+    static uint8_t paleta[256][3];
+    if (cargar_hoja(argv[4], &bloques, &b_datos) || cargar_hoja(argv[5], &sprites, &s_datos) ||
+        cargar_paleta(argv[7], paleta) != 0)
+        return 1;
+    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], argv[6], 1);
+    if (!s)
+        return 1;
+    const int horas = atoi(argv[13]);
+    for (int i = 0; i < horas; i++)
+        th_sim_tick(s);
+    static th_view_entity ents[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+    int n = th_vista_sim(s, ents, (int)(sizeof ents / sizeof ents[0]));
+    if (!atoi(argv[14]))
+        n -= s->n_order; // sin las personas (van al final)
+    th_view v = {.unit = atoi(argv[8]), .x = atoi(argv[9]), .y = atoi(argv[10]), .w = atoi(argv[11]),
+                 .h = atoi(argv[12])};
+    th_scene sc = {.map = s->w.map, .sheets = {&bloques, &sprites}, .anims = s->w.anims, .entities = ents,
+                   .entity_count = n};
+    int r = dibujar_escena(&v, &sc, paleta, argv[15], argc > 16 ? argv[16] : NULL, argc > 17 ? argv[17] : NULL);
+    free(b_datos);
+    free(s_datos);
+    return r;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc == 7 && strcmp(argv[1], "hito4") == 0)
+        return th64sim_hito4(argv);
+    if (argc >= 16 && argc <= 18 && strcmp(argv[1], "escena4") == 0)
+        return orden_escena4(argc, argv);
     if (argc == 4 && strcmp(argv[1], "huella") == 0) {
         uint32_t seed = (uint32_t)strtoul(argv[2], NULL, 0);
         int ticks = atoi(argv[3]);

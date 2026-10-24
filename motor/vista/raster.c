@@ -46,6 +46,8 @@ static void pintar(th_raster *r, const th_sheet *sh, const th_draw *d)
             uint8_t c = fila[d->flags & TH_DRAW_FLIP_H ? w - 1 - i : i];
             if (x < 0 || x >= r->w || c == TH_TRANSPARENT)
                 continue;
+            if ((d->flags & TH_DRAW_CROP) && (x < d->clip_x0 || x >= d->clip_x1))
+                continue;
             uint8_t *o = &r->rgb[3 * (y * r->w + x)];
             const uint8_t *p = r->paleta[c];
             if (alfa < 255) {

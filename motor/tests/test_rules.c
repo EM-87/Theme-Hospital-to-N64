@@ -125,6 +125,12 @@ static void test_lectura(void)
     TH_CHECK_EQ(th_rules_fixed(&r, th_rules_at(&r, l, 5), 0), INT32_MAX);
     TH_CHECK_EQ(th_rules_int(&r, th_rules_at(&r, l, 5), 0), INT32_MAX);
     TH_CHECK_EQ(th_rules_real_bits(&r, th_rules_at(&r, l, 3)), 0xBFE8000000000000ull);
+    TH_CHECK_EQ(th_rules_micro(&r, th_rules_path(&r, r.root, "#3"), 0), 2500000);
+    TH_CHECK_EQ(th_rules_micro(&r, th_rules_path(&r, r.root, "#-1"), 0), 7000000);
+    TH_CHECK_EQ(th_rules_micro(&r, th_rules_at(&r, l, 3), 0), -750000);
+    TH_CHECK_EQ(th_rules_micro(&r, th_rules_at(&r, l, 4), 0), 100000);
+    TH_CHECK_EQ(th_rules_micro(&r, th_rules_at(&r, l, 5), 0), INT32_MAX);
+    TH_CHECK_EQ(th_rules_micro(&r, th_rules_get(&r, r.root, "abc"), -5), -5);
     TH_CHECK_EQ(th_rules_int(&r, th_rules_get(&r, r.root, "abc"), -5), -5);
     // Entradas en orden: claves enteras primero.
     TH_CHECK_EQ(th_rules_int(&r, th_rules_entry_key(&r, r.root, 0), 0), -1);

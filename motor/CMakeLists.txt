@@ -21,7 +21,7 @@ add_library(th_core STATIC ${TH_CORE_SOURCES})
 target_include_directories(th_core PUBLIC core/include)
 
 # La vista del mapa y el rasterizador de referencia: portables, sin libdragon.
-add_library(th_vista STATIC vista/vista.c vista/raster.c)
+add_library(th_vista STATIC vista/vista.c vista/raster.c vista/objetos.c)
 target_include_directories(th_vista PUBLIC vista)
 target_link_libraries(th_vista PUBLIC th_core)
 
@@ -32,7 +32,7 @@ target_link_libraries(th_core_tests PUBLIC th_core)
 add_executable(test_core tests/main_pc.c)
 target_link_libraries(test_core th_core_tests)
 
-add_executable(th64sim platform/pc/th64sim.c)
+add_executable(th64sim platform/pc/th64sim.c platform/pc/hito4.c)
 target_link_libraries(th64sim th_core_tests th_vista)
 
 enable_testing()

@@ -75,19 +75,25 @@ static int has_entities(const builder *bd, int x, int y)
 }
 
 // Añade un sprite si toca la pantalla. Devuelve 0 o -1 si la lista está llena.
-static int add_sprite(builder *bd, int wall, int sheet, int sprite, int w, int h, int x, int y, int flags,
-                      int clip_y0, int clip_y1)
+static int add_sprite_crop(builder *bd, int wall, int sheet, int sprite, int w, int h, int x, int y, int flags,
+                           int clip_y0, int clip_y1, int clip_x0, int clip_x1)
 {
     if (!w)
         return 0;
-    int y0 = y, y1 = y + h;
+    int y0 = y, y1 = y + h, x0 = x, x1 = x + w;
     if (flags & TH_DRAW_CLIP) {
         if (clip_y0 > y0)
             y0 = clip_y0;
         if (clip_y1 < y1)
             y1 = clip_y1;
     }
-    if (x >= bd->v->w || x + w <= 0 || y0 >= bd->v->h || y1 <= 0 || y0 >= y1)
+    if (flags & TH_DRAW_CROP) {
+        if (clip_x0 > x0)
+            x0 = clip_x0;
+        if (clip_x1 < x1)
+            x1 = clip_x1;
+    }
+    if (x0 >= bd->v->w || x1 <= 0 || x0 >= x1 || y0 >= bd->v->h || y1 <= 0 || y0 >= y1)
         return 0;
     if (bd->f > bd->b)
         return -1;
@@ -99,7 +105,15 @@ static int add_sprite(builder *bd, int wall, int sheet, int sprite, int w, int h
     d->y = (int16_t)y;
     d->clip_y0 = (int16_t)clip_y0;
     d->clip_y1 = (int16_t)clip_y1;
+    d->clip_x0 = (int16_t)clip_x0;
+    d->clip_x1 = (int16_t)clip_x1;
     return 0;
+}
+
+static int add_sprite(builder *bd, int wall, int sheet, int sprite, int w, int h, int x, int y, int flags,
+                      int clip_y0, int clip_y1)
+{
+    return add_sprite_crop(bd, wall, sheet, sprite, w, h, x, y, flags, clip_y0, clip_y1, 0, 0);
 }
 
 static int add(builder *bd, int wall, int block, int x, int y, int flags, int clip_y0, int clip_y1)
@@ -144,6 +158,13 @@ static int add_entity(builder *bd, const th_view_entity *e, int sx, int sy)
     const th_sheet *sh = bd->sc->sheets[TH_SHEET_SPRITES];
     const int u = bd->v->unit;
     const int x = sx + e->px * u / 32, y = sy + e->py * u / 32;
+    // animation::draw con thdf_crop: solo una franja de dos casillas de ancho.
+    int crop = 0, cx0 = 0, cx1 = 0;
+    if (e->crop != TH_VIEW_NO_CROP) {
+        crop = TH_DRAW_CROP;
+        cx0 = x + (e->crop - 1) * u;
+        cx1 = cx0 + 2 * u;
+    }
     for (uint32_t i = th_anims_frame_list(a, e->frame);; i++) {
         uint16_t n = th_anims_list_entry(a, i);
         if (n == TH_ANIM_LIST_END || n >= a->elements)
@@ -173,7 +194,7 @@ static int add_entity(builder *bd, const th_view_entity *e, int sx, int sy)
         }
         int flags = (f & TH_ANIM_FLIP_H ? TH_DRAW_FLIP_H : 0) | (f & TH_ANIM_FLIP_V ? TH_DRAW_FLIP_V : 0) |
                     (f & TH_ANIM_ALPHA50 ? TH_DRAW_ALPHA50 : 0) | (f & TH_ANIM_ALPHA75 ? TH_DRAW_ALPHA25 : 0);
-        if (add_sprite(bd, 1, TH_SHEET_SPRITES, el.sprite, w, h, px, y + ey, flags, 0, 0) < 0)
+        if (add_sprite_crop(bd, 1, TH_SHEET_SPRITES, el.sprite, w, h, px, y + ey, flags | crop, 0, 0, cx0, cx1) < 0)
             return -1;
     }
     return 0;
@@ -211,9 +232,9 @@ static int first_entity(const builder *bd, int x, int y)
 }
 
 // Las entidades de la casilla (x, y) cuya capa de dibujo es 'layer' (o todas
-// si es -1), dibujadas en la casilla de pantalla (sx, sy). Devuelve cuántas
-// había, o -1 si la lista se llenó.
-static int add_tile_entities(builder *bd, int x, int y, int sx, int sy, int layer)
+// si es -1), de la lista temprana (early = 1) o de la normal, dibujadas en la
+// casilla de pantalla (sx, sy). Devuelve cuántas había, o -1 si la lista se llenó.
+static int add_tile_entities_list(builder *bd, int x, int y, int sx, int sy, int layer, int early)
 {
     if (x < 0 || y < 0 || x >= TH_MAP_WIDTH || y >= TH_MAP_HEIGHT || !has_entities(bd, x, y))
         return 0;
@@ -223,13 +244,18 @@ static int add_tile_entities(builder *bd, int x, int y, int sx, int sy, int laye
         const th_view_entity *e = &bd->sc->entities[bd->ent[i]];
         if (tile_key(e) != key)
             break;
-        if (layer >= 0 && e->drawing_layer != layer)
+        if ((layer >= 0 && e->drawing_layer != layer) || e->early != early)
             continue;
         if (add_entity(bd, e, sx, sy) < 0)
             return -1;
         n++;
     }
     return n;
+}
+
+static int add_tile_entities(builder *bd, int x, int y, int sx, int sy, int layer)
+{
+    return add_tile_entities_list(bd, x, y, sx, sy, layer, 0);
 }
 
 static int floor_div(int a, int b)
@@ -331,9 +357,10 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
             if (sombra && add(&bd, 0, sombra, sx - u, sy, TH_DRAW_ALPHA25, 0, 0) < 0)
                 return -1;
         }
-        // Paredes norte de derecha a izquierda.
+        // Paredes norte de derecha a izquierda, cada una con las entidades de
+        // la lista temprana de su casilla.
         for (x = x1, t = t0 + (x1 - x0) * paso, sx = sx0 + 2 * u * (x1 - x0); x >= x0; x--, t -= paso, sx -= 2 * u)
-            if (add_north_wall(&bd, t, sx, sy) < 0)
+            if (add_north_wall(&bd, t, sx, sy) < 0 || add_tile_entities_list(&bd, x, s - x, sx, sy, -1, 1) < 0)
                 return -1;
         // De izquierda a derecha: la pared oeste y las entidades de la casilla.
         int prev_needs_redraw = 0;
@@ -349,6 +376,10 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
                     const th_view_entity *e = &sc->entities[bd.ent[i]];
                     if (tile_key(e) != key)
                         break;
+                    if (e->early) {
+                        needs_redraw = 1;
+                        continue;
+                    }
                     if (add_entity(&bd, e, sx, sy) < 0)
                         return -1;
                     animated |= th_anims_is_multi_frame(sc->anims, e->anim);
@@ -370,6 +401,7 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
                 if (redraw && x - 1 >= 0 && y + 1 < TH_MAP_HEIGHT) {
                     out->redraws++;
                     if (add_north_wall(&bd, th_map_tile_c(m, x - 1, y + 1), sx - 2 * u, sy) < 0 ||
+                        add_tile_entities_list(&bd, x - 1, y + 1, sx - 2 * u, sy, -1, 1) < 0 ||
                         add_tile_entities(&bd, x - 1, y + 1, sx - 2 * u, sy, -1) < 0)
                         return -1;
                 }
