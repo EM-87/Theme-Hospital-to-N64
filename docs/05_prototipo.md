@@ -276,3 +276,93 @@ Dos recorridos automáticos en ares (ROM de pruebas), en el nivel 1, a 30 fps:
 - **El paso del personal.** El personal camina más deprisa o más despacio según su destreza y su cansancio: `walk.lua` tiene un paso el doble de rápido (`speed = "fast"`) y hay animaciones lentas (`slow_animation`). Llega con el personal.
 - **Entidades que se dibujan antes que las paredes** (la lista temprana de `level_map::draw`). La usan las puertas, algunos objetos (camas, máquinas) y los humanoides mientras los usan. Llega con los objetos.
 - **El coste de dibujar entidades** (ver «Rendimiento»). Hito 5.
+
+## Escenario del hito 4
+
+**Hecho.** El hito 4 se compara con CorsixTH por estadística, y para eso hace falta un escenario propio y validado ([`04_construccion.md`](04_construccion.md#cómo-se-comprueba)). Está en [`tools/oraculo_hito4/`](../tools/oraculo_hito4/README.md).
+
+### Por qué «nunca entraba nadie en la consulta»
+
+En la fase 4, la partida mínima del hito 4 parecía atascada: en 400 horas de juego nadie entraba en la consulta. No era un atasco. Los pacientes aparecen en el borde del mapa y caminan a una casilla cada 8 horas (un paso de `walk.lua`), así que tardan **1.439 horas de media en llegar a la recepción** (entre 908 y 1.984): de 18 a 40 días de juego. Con 400 horas no da tiempo a nada. Una sonda del hospital ([`sonda_hospital.lua`](../bench/scenarios/sonda_hospital.lua)) lo mostró: tras 5 meses, el hospital funcionaba.
+
+Lo de la partida `mediano` (un paciente 300 horas en la consulta con certeza 0) no se ha vuelto a mirar. En este escenario, ninguna visita a la consulta pasa de 572 horas.
+
+### El escenario
+
+Nivel 1 con un mostrador de recepción, 6 bancos, una consulta de GP de 4 × 4, una recepcionista y un médico ([`crear_hito4.lua`](../bench/scenarios/crear_hito4.lua)). Se construye con las mismas ventanas y validaciones que la interfaz, y sin emergencias, VIP, terremotos ni epidemias. Tiene tres ajustes:
+- **Llegan 6 pacientes al mes.** Una consulta atiende unos 6 al mes, porque cada visita dura unas 190 horas. Con 40 al mes, la cola de la consulta crecía sin parar: 88 esperando a los 4 meses.
+- **Las enfermedades del nivel están descubiertas.** En el nivel 1 no lo están, y sin eso el fax de «no hay más salas de diagnóstico» no deja arriesgar un diagnóstico: nadie llegaba a diagnosticarse.
+- **El jugador responde cada fax en cuanto llega**, con la ventana del juego (`UIFax:choice`): arriesga un diagnóstico si puede y, si no, manda al paciente a casa. Un jugador que no responde deja al paciente 60 días esperando.
+
+El ciclo de cada paciente queda así:
+1. llega andando desde el borde del mapa;
+2. hace cola en la recepción, donde acepta el precio de la consulta (`agreesToPay("diag_gp")`);
+3. espera sentado en un banco y llama a la puerta;
+4. pasa la consulta: el médico alterna el archivador y la mesa, sube la certeza del diagnóstico (0,59 de media) y cobra 100 $;
+5. no hay más salas de diagnóstico: fax, y el jugador arriesga el diagnóstico (199 de 234) o el médico ya lo tenía (35);
+6. no hay sala de tratamiento: fax, y el jugador lo manda a casa;
+7. vuelve andando al borde del mapa.
+
+### Validación
+
+[`traza_hito4.lua`](../bench/scenarios/traza_hito4.lua) sigue a cada paciente hora a hora y anota cada movimiento de dinero, sin gastar números aleatorios. Con la misma partida, dos ejecuciones dan las trazas idénticas byte a byte.
+
+**10 semillas de 6 meses de juego (9.000 horas) cada una**, 2 min 19 s en total:
+
+| Por semilla | Media | Desviación típica |
+|---|---:|---:|
+| Pacientes que llegan | 28,6 | 2,4 |
+| Pasan por la recepción | 24,6 | 1,8 |
+| Pasan por la consulta | 24,0 | 1,8 |
+| Diagnosticados | 23,4 | 1,8 |
+| Se van a casa | 23,4 | 1,8 |
+| Cobrado por la consulta (directo o por seguro) | 2.340 $ | 178 |
+| Sueldos | 1.330 $ | 170 |
+| Saldo al final, frente al inicial | +620 $ | 308 |
+
+Los pacientes que llegan y no pasan por la recepción siguen andando al acabar.
+
+| Fase (los 286 pacientes de las 10 semillas) | Media | Mediana | p10–p90 | Máximo |
+|---|---:|---:|---:|---:|
+| Llegar andando a la cola de la recepción | 1.439 h | 1.468 | 948–1.924 | 1.984 |
+| Cola de la recepción | 55 h | 59 | 26–100 | 150 |
+| Esperar la consulta | 253 h | 143 | 37–616 | 1.305 |
+| Consulta | 189 h | 161 | 112–322 | 572 |
+| De la consulta a irse | 23 h | 24 | 8–24 | 73 |
+| Volver andando al borde del mapa | 1.448 h | 1.411 | 995–1.963 | 2.013 |
+
+Criterios de validez, que se cumplen en las 10 semillas:
+- hay diagnósticos en todas (de 21 a 26);
+- ninguna consulta se atasca: la visita más larga dura 572 horas;
+- la espera no crece: como mucho, 5 pacientes esperan la consulta a la vez;
+- nadie muere ni se va por el precio.
+
+### Qué hacen los pacientes
+
+Horas-paciente de las 10 semillas, por acción:
+
+| Acción | Parte del tiempo |
+|---|---:|
+| Andar (llegar, 46,2 %; irse, 37,3 %; dentro del hospital, 5,9 %) | 89,4 % |
+| Usar un objeto: bancos (4,7 %), silla de la consulta (3,8 %) | 8,6 % |
+| Aparecer y desaparecer en el borde del mapa | 1,1 % |
+| Esperar de pie en la cola de la recepción | 0,7 % |
+| Vomitar (la diarrea) | 0,1 % |
+| Llamar a la puerta de la consulta | 0,1 % |
+| Buscar sala, orinar en el suelo | < 0,01 % |
+
+Esto acota el hito 4.
+
+Lo que el motor tiene que hacer:
+- llegadas por mes como `updateSpawnDates`;
+- aparecer en un punto del borde y andar;
+- buscar la recepción y hacer cola;
+- la recepcionista y su temporizador;
+- buscar la consulta, la cola de la puerta, los bancos y llamar a la puerta;
+- el ciclo del médico y la certeza del diagnóstico;
+- el cobro, con el 25 % por seguro, que la aseguradora paga dos meses después;
+- las dos decisiones del fax;
+- volver al borde y desaparecer;
+- los sueldos de fin de mes y las subidas de sueldo: hubo 24 en las 10 semillas, unas 2 por semilla.
+
+Lo que queda fuera, porque pesa menos del 0,2 %: vomitar, orinar y la basura que dejan.

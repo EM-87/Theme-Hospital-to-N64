@@ -29,7 +29,7 @@ Antes de nada: `source tools/env.sh`.
 | `metodo/oraculo/anim_len.py <VSTART> <VFRA> <anim_len.txt>` | Duración de las 5.186 animaciones calculada desde los ficheros originales, frente a la de CorsixTH | 5.183 iguales; 3 ajustes conocidos |
 | `metodo/oraculo/campana.sh [dir]` | Campaña completa: reproducibilidad, Lua 5.5, `math.random` por fase y 10 semillas | — |
 | `metodo/oraculo/comparar.py`, `estadistica2.py` | Comparación exacta de volcados y dispersión entre semillas | ±1,9 curados con N = 10 |
-| `metodo/oraculo/crear_hito4.lua` | Primer intento de partida mínima para el hito 4. **No sirve tal cual**: nunca entra nadie en la consulta | — |
+| `metodo/oraculo/crear_hito4.lua` | Primer intento de partida mínima para el hito 4. No servía tal cual: se probaba durante 400 horas de juego, y los pacientes tardan más de 1.000 en llegar andando a la recepción. Lo sustituye `bench/scenarios/crear_hito4.lua` ([`docs/05_prototipo.md`](../../docs/05_prototipo.md#escenario-del-hito-4)) | — |
 | `demo/niveles.lua <Lua> <Levels> <LEVELS> <mapas>` | Casillas, habitaciones, enfermedades y condiciones de victoria de cada nivel (los mapas, descomprimidos de RNC antes) | Tabla de niveles |
 | `demo/anims.lua`, `demo/sprites.py <DATAM> <Lua> <anims.tsv>` | Animaciones y sprites que necesita el nivel 1 | 2.046 sprites, 0,47 MiB |
 | `demo/banco.py <sf2> <mid…>` | Instrumentos del SoundFont que usa la música del juego | 28 instrumentos |

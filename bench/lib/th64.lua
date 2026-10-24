@@ -129,6 +129,7 @@ end
 -- epidemia para que siga activa, arriesgar tratamiento si el diagnóstico es dudoso).
 local FAX_CHOICES = {"accept_emergency", "accept_vip", "cover_up_epidemic",
   "guess_cure", "wait", "stay_on_level"}
+M.fax_choices = nil -- el guion puede poner aquí sus propias preferencias
 M.decisions = {}
 
 local function answer_window(win)
@@ -139,7 +140,7 @@ local function answer_window(win)
     win:increaseSalary()
   elseif class.is(win, UIFax) and win.message and win.message.choices then
     local idx
-    for _, want in ipairs(FAX_CHOICES) do
+    for _, want in ipairs(M.fax_choices or FAX_CHOICES) do
       for i, c in ipairs(win.message.choices) do
         if c.choice == want and c.enabled ~= false then idx = i break end
       end
