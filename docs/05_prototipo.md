@@ -535,7 +535,7 @@ La N64 simula exactamente lo mismo que el PC: tras 3.000 horas, la misma huella 
 |---|---|---|
 | Casillas del escenario de las 40 semillas, cargado en el motor | Lo que exporta CorsixTH de cada partida ([`exportar_escenario.lua`](../bench/scenarios/exportar_escenario.lua) y `th64sim escenario`) | **16.384 de 16.384 iguales** en las 40 |
 | El bucle: 15 cifras por semilla en 40 semillas de 9.000 horas, con 10 corridas del motor por semilla | La campaña de CorsixTH ([`traza_hito4.lua`](../bench/scenarios/traza_hito4.lua), `motor.sh` y `comparar.py`) | **14 de 15 con \|t\| < 2.** La otra, ver «Comparación con CorsixTH» |
-| El ciclo del médico: qué hace cada hora y cuándo se sienta y se despacha cada paciente, en 5 semillas | [`sonda_gp.lua`](../bench/scenarios/sonda_gp.lua), con la misma partida que la campaña: el mismo saldo final y la misma huella del generador | Igual dentro del azar (tabla abajo) |
+| El ciclo del médico: qué hace cada hora y cuándo se sienta y se despacha cada paciente, en 10 semillas | [`sonda_gp.lua`](../bench/scenarios/sonda_gp.lua), con la misma partida que la campaña: el mismo saldo final y la misma huella del generador | Igual dentro del azar (tabla abajo) |
 | Los objetos a 640 × 480, sin personas, en la escena del escenario 1 | Captura de CorsixTH parado ([`captura_escenario.lua`](../bench/scenarios/captura_escenario.lua) y `th64sim escena4`) | De los 17.513 píxeles de objetos: 12.689 idénticos, 4.694 a 2 o menos y 130 de 3 a 5. **Ninguno difiere en más de 5.** De los 307.200, solo 220 difieren en más de 2, todos en el borde de un objeto o a 1 píxel de él: el filtrado lineal de CorsixTH |
 | Lo que dibuja el RDP con el hospital tras las 3.000 horas, con objetos y personas, a 320 × 240 | El rasterizador de referencia, en la misma ROM | **0 píxeles distintos de 76.800**, 4.577 de ellos de entidades |
 | La simulación en la N64: 3.000 horas de la semilla 1 | `th64sim hito4` en el PC | **La misma huella** (44923eae) |
@@ -594,17 +594,17 @@ Las visitas a la consulta duraban 16 horas más en el motor (166 frente a 150 ho
 
 Con las llamadas de personal, las cuatro primeras vuelven al azar. La quinta es la de los vómitos.
 
-| El médico (semillas 1–5) | CorsixTH | Motor |
+| El médico (semillas 1–10) | CorsixTH | Motor |
 |---|---:|---:|
-| Usa la mesa | 55,9 % | 54,7 % |
-| Camina | 32,0 % | 32,1 % |
-| Usa el archivador | 6,6 % | 6,2 % |
-| Espera de pie | 5,5 % | 7,0 % |
-| Va despacio | 0,6 % | 0,0 % |
-| Cansancio medio | 0,306 | 0,288 |
-| Cada uso de la mesa, mediana | 83 h | 83 h |
-| Cada uso de la mesa, media | 86,6 h (289 usos) | 88,4 h (2.766 usos) |
-| Del momento en que el paciente se sienta a que lo despacha, mediana | 81 h (121 visitas) | 79 h (1.195 visitas) |
+| Usa la mesa | 55,1 % | 52,2 % |
+| Camina | 33,4 % | 34,7 % |
+| Usa el archivador | 6,1 % | 6,0 % |
+| Espera de pie | 5,3 % | 7,1 % |
+| Va despacio | 0,7 % | 0,0 % |
+| Cansancio medio | 0,308 | 0,288 |
+| Cada uso de la mesa, mediana | 90 h | 90 h |
+| Cada uso de la mesa, media | 99,5 h (495 usos) | 95,9 h (4.867 usos) |
+| Del momento en que el paciente se sienta a que lo despacha, mediana | 97 h (234 visitas) | 91 h (2.337 visitas) |
 
 La sonda abre y contesta los faxes igual que la traza: con la misma partida, CorsixTH da el mismo saldo final y la misma huella del generador que en la campaña. En la primera versión no los abría, y en CorsixTH el médico se iba del hospital hacia la hora 4.200: nadie contestaba su petición de subida, y `checkIfWaitedTooLongForRaise` lo despide.
 
