@@ -7,7 +7,8 @@ meterlos en la ROM). Nada de lo que genera va al repositorio.
 
 Uso:
   python3 -I tools/conv/conv.py [--datos DIR] [--salida DIR] [--vistas DIR] [pasos...]
-Pasos (por defecto, todos): graficos animaciones niveles
+Pasos (por defecto, todos): graficos animaciones niveles reglas
+El paso reglas necesita además lua5.4 y el código de CorsixTH ($CORSIXTH_DIR).
 """
 import argparse
 import json
@@ -21,6 +22,7 @@ import anim  # noqa: E402
 import hojas  # noqa: E402
 import niveles  # noqa: E402
 import paleta  # noqa: E402
+import reglas  # noqa: E402
 import rnc  # noqa: E402
 
 REPO = os.path.normpath(os.path.join(AQUI, "..", ".."))
@@ -149,7 +151,32 @@ def paso_niveles(d, salida, vistas, resumen):
         resumen["niveles"].append(r)
 
 
-PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones, "niveles": paso_niveles}
+def paso_reglas(d, salida, vistas, resumen):
+    lua = os.path.join(os.environ.get("CORSIXTH_DIR", ""), "CorsixTH", "Lua")
+    if not os.path.isfile(os.path.join(lua, "base_config.lua")):
+        sys.exit(f"no encuentro el código de CorsixTH en {lua} (CORSIXTH_DIR)")
+    doc, salida_lua = reglas.extraer(lua, d.ruta("LEVELS"))
+    tablas = [d.leer("DATAM", f"M{t}-1.ANI") for t in ("START", "FRA", "LIST", "ELE")]
+    prim, fot, _, _ = anim.leer(*tablas)
+    r = reglas.preparar(doc, anim.duraciones(prim, fot))
+    r["extractor"] = salida_lua
+    r["ficheros"] = {}
+    for rel, arbol in reglas.ficheros(doc).items():
+        trg = reglas.escribir(arbol)
+        # Comprobación de ida y vuelta, con igualdad estricta (1 no es 1.0).
+        if not reglas.igual(reglas.leer(trg), arbol):
+            sys.exit(f"ERROR: {rel} no se lee igual que se escribió")
+        r["ficheros"][rel] = escribir(salida, rel, trg)
+    r["duraciones"] = {str(x["animacion"]): x["duracion"] for x in doc["duraciones"]}
+    if vistas:
+        os.makedirs(vistas, exist_ok=True)
+        with open(os.path.join(vistas, "reglas.json"), "w") as f:
+            json.dump(doc, f, indent=1, sort_keys=True, ensure_ascii=False)
+    resumen["reglas"] = r
+
+
+PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones, "niveles": paso_niveles,
+         "reglas": paso_reglas}
 
 
 def main():
@@ -187,6 +214,14 @@ def main():
         for r in resumen["niveles"]:
             print(f"nivel {r['nivel']:2d}          {r['parcelas']:2d} parcelas, {r['objetos']:3d} objetos, {r['divisorias']:3d} paredes divisorias, "
                   f"cámara {tuple(r['camara'])}  {r['bytes']} B  -> {r['fichero']}")
+    if "reglas" in a.pasos:
+        r = resumen["reglas"]
+        f = r["ficheros"]
+        niv = [v for k, v in f.items() if k != "reglas/definiciones.trg"]
+        print(f"reglas            {r['extractor']}")
+        print(f"                  definiciones {f['reglas/definiciones.trg']} B, {len(niv)} niveles de "
+              f"{min(niv)} a {max(niv)} B; aspecto factorizado en {r['aspectos_factorizados']} de {r['aspectos']} "
+              f"enfermedades; duraciones fijadas {r['duraciones']}")
     if "graficos" in a.pasos:
         print(f"paleta             {len(resumen['paleta']['variantes'])} variantes  "
               f"{resumen['paleta']['bytes']:5d} B  -> paleta.tpl")

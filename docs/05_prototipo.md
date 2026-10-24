@@ -50,7 +50,7 @@ El hito 0 se hace por partes. Primero los gráficos, porque es lo único que nec
 
 **Animaciones: hecho.** Las tablas de `DATAM` (5.186 animaciones, 11.643 fotogramas, 108.607 entradas de lista y 24.983 elementos) pasan al formato TAN1: 481.038 B, dentro de los 0,48 MiB del presupuesto. Cada animación lleva su duración en fotogramas, calculada como `getAnimLength` de CorsixTH. Comprobaciones:
 - **El encadenamiento de `DATAM` es idéntico al de `DATA`**, que es el que usa CorsixTH. Las animaciones de baja resolución duran lo mismo.
-- **Las duraciones coinciden con las de CorsixTH en 5.183 de 5.186.** Las 3 distintas son los ajustes que hace su Lua: 2348 y 2938 duran 1 fotograma, y 4086 dura 8. Irán con las tablas de reglas.
+- **Las duraciones coinciden con las de CorsixTH en 5.183 de 5.186.** Las 3 distintas son los ajustes que hace su Lua: 2348 y 2938 duran 1 fotograma, y 4086 dura 8. Van en las reglas (ver abajo).
 - **El desplazamiento de los elementos** (resuelto en el hito 3). CorsixTH solo usa las animaciones de alta resolución y les resta (141, 186). En `DATAM` todas las x crudas son impares y todas las y pares, así que (x − 141)/2 e (y − 186)/2 son exactas: el mismo origen, a media escala.
 
 **Niveles: hecho** (para el hito 2). Los 12 mapas de `LEVELS` pasan al formato TMP1 (`tools/conv/niveles.py`):
@@ -59,6 +59,52 @@ El hito 0 se hace por partes. Primero los gráficos, porque es lo único que nec
 - las paredes van dos veces: las actuales y las originales, que incluyen las paredes divisorias entre parcelas (de 0 a 37 por nivel).
 
 Cada nivel ocupa 163.872 B; en la ROM, con aPLib, entre 2.216 y 5.743 B (42.644 B los 12). El conversor no interpreta nada más: lo demás que hace CorsixTH al cargar es lógica del juego y va en el núcleo (hito 2).
+
+**Reglas: hecho** (para el hito 4). Son las definiciones de CorsixTH y la configuración de cada nivel, en el formato TRG1 ([`tools/conv/reglas.py`](../tools/conv/reglas.py)).
+
+- **Extracción.** [`reglas.lua`](../tools/conv/reglas.lua) carga el código de CorsixTH con `lua5.4` de serie y unos stubs mínimos, como en la fase 4, y lo procesa como el juego al arrancar (`Object.processTypeDefinition`). Saca:
+  - 60 objetos, 23 salas, 34 enfermedades y 9 diagnósticos;
+  - 332 marcadores de animación (272 llamadas, desplegadas como `_unfoldAnims`);
+  - las animaciones de caminar de cada clase y la configuración por defecto de CorsixTH;
+  - `base_config.lua`;
+  - la configuración de los 36 niveles de la campaña (3 dificultades × 12), con la propia `Map:_loadOriginalCampaignLevel` de CorsixTH: `base_config.lua`, encima `FULL00.SAM`, `FULL01.SAM` y, en 5 niveles, el `originalNN.level` de CorsixTH.
+- **Las 3 duraciones fijadas en el Lua** se resuelven con las tablas de animación: 2348 y 2938 duran 1 fotograma, y 4086 dura 8, porque es `getAnimLength(2166)`.
+- **El aspecto de los pacientes** (`initPatient`, que elige tipo y capas con `math.random`) pasa a una distribución exacta. Se recorren todas las ramas de sus llamadas a `math.random`, ejecutando la propia función de CorsixTH. Después se factoriza: el tipo y, dentro de cada tipo, bloques de capas independientes, comprobado con fracciones. Sale exacto en las 34 enfermedades. Solo los huesos rotos necesitan un bloque de 3 capas (las vendas, 71 combinaciones), y con la configuración por defecto de CorsixTH solo hay hombres con huesos rotos.
+- **TRG1** guarda el árbol tal cual, como el de Lua: enteros, reales, cadenas, listas y mapas con las claves ordenadas, y las claves enteras distintas de las de texto. El núcleo ([`th/rules.h`](../motor/core/include/th/rules.h)):
+  - valida el fichero entero al abrirlo;
+  - busca por búsqueda binaria;
+  - lee los reales en Q16.16 solo con enteros;
+  - lee lo que necesita al cargar y suelta el fichero.
+
+| Fichero | Sin comprimir | En la ROM | Validar en la N64 |
+|---|---:|---:|---:|
+| `reglas/definiciones.trg` | 336.868 B | 60.908 B | 50 ms |
+| Un nivel (`reglas/full01.trg`…) | 26.936–30.740 B | unos 5.000 B | 4 ms |
+| Los 37 | 1.379.440 B | 257.726 B | — |
+
+Comprobaciones:
+- **Ida y vuelta:** los 37 ficheros se leen igual que se escribieron, con igualdad estricta (1 no es 1,0).
+- **El núcleo frente al conversor:** `th64sim reglas` vuelca cada fichero al mismo JSON canónico, y salen los 37 iguales. En la N64, la ROM de pruebas da la misma huella que el PC (`tools/motor_check.sh`).
+- **Contra CorsixTH:** [`volcar_reglas.lua`](../bench/scenarios/volcar_reglas.lua) vuelca, desde dentro del juego, lo que tiene en memoria. [`comparar_reglas.py`](../tools/conv/comparar_reglas.py) lo compara con el extractor, sin contar las cadenas de idioma, que en el juego ya están traducidas:
+
+  | Qué | Iguales |
+  |---|---:|
+  | Objetos | 60 de 60 |
+  | Salas | 23 de 23 |
+  | Enfermedades | 34 de 34 |
+  | Diagnósticos | 9 de 9 |
+  | Configuración de nivel | 36 de 36 |
+
+  Para comprobar el comparador, se metieron 3 cambios a mano (un entero, un entero cambiado por real y una lista más corta), y detectó los 3.
+
+**Queda del hito 0:**
+- los textos en UTF-8;
+- las fuentes;
+- el banco de sonidos recortado;
+- un mapa de prueba;
+- las posiciones por fotograma de los marcadores, que solo usa la interfaz.
+
+**Una medida de paso.** La ROM de pruebas con el lector de reglas da 17,59 ms con 50 humanoides en pantalla, frente a 23,73 en la del hito 3, y 5,52 ms en el recorrido del hito 2, frente a 6,41. El dibujo no ha cambiado: es la disposición del código en la caché de instrucciones, que mueve estas cifras hasta un 26 %. El hito 5 tendrá que medir con varias compilaciones, o fijar la disposición del código.
 
 ## Hito 1 — La ROM carga los assets y dibuja un sprite con su paleta
 

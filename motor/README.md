@@ -24,6 +24,7 @@ cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && cte
 - `th64sim mapa <nivel.tmp> <n> [mapa_nivelN.tsv]`: carga un nivel y lo compara casilla a casilla con el volcado de CorsixTH (`bench/scenarios/volcar_mapa.lua`);
 - `th64sim caminos <nivel.tmp> <n> <caminos_nivelN.tsv>`: repite con el A* del núcleo los caminos que pidió CorsixTH (`bench/scenarios/caminos.lua`) y los compara casilla a casilla;
 - `th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>`: repite con el núcleo la caminata de un humanoide que volcó CorsixTH (`bench/scenarios/caminata.lua`) y la compara tick a tick (casilla, desplazamiento, animación, fotograma y banderas);
+- `th64sim reglas <reglas.trg> [ruta]`: vuelca un fichero de reglas, o una parte («objetos.bench.orientations.north»), en el JSON canónico del conversor, y su huella;
 - `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia;
 - `th64sim escena ...`: lo mismo, con el humanoide de una caminata en un tick dado.
 

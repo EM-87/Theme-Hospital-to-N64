@@ -1,6 +1,7 @@
-// Pruebas del núcleo: pool, coma fija, rng y, aparte, el mapa (test_map.c) y
-// el A* y los humanoides (test_humanoid.c). Mismo fichero en el
-// PC (gcc/clang, con o sin sanitizers) y en la N64 (ROM que lo ejecuta en ares).
+// Pruebas del núcleo: pool, coma fija, rng y, aparte, el mapa (test_map.c),
+// el A* y los humanoides (test_humanoid.c) y las reglas (test_rules.c). Mismo
+// fichero en el PC (gcc/clang, con o sin sanitizers) y en la N64 (ROM que lo
+// ejecuta en ares).
 #include "th_test.h"
 
 #include "th/fixed.h"
@@ -222,6 +223,7 @@ int th_run_core_tests(void)
     test_golden();
     th_test_map();
     th_test_humanoid();
+    th_test_rules();
     th_test_log("pruebas: %d comprobaciones, %d fallos\n", th_test_checks, th_test_failures);
     return th_test_failures;
 }

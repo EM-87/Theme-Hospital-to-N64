@@ -10,7 +10,9 @@
 //   (bench/scenarios/caminata.lua) y la compara tick a tick;
 // - vista: dibuja con el rasterizador de referencia (vista/raster.c) lo que se
 //   ve del mapa desde una posición de cámara y lo guarda en PPM, para
-//   compararlo con una captura de CorsixTH (tools/oraculo_mapa).
+//   compararlo con una captura de CorsixTH (tools/oraculo_mapa);
+// - reglas: vuelca un fichero de reglas (TRG1) en el JSON canónico del
+//   conversor, para comprobar el lector del núcleo (tools/conv/reglas.py).
 // Más adelante cargará un escenario y escribirá el mismo volcado que el
 // oráculo de la simulación (docs/04_construccion.md).
 #include <stdio.h>
@@ -22,6 +24,7 @@
 #include "th/humanoid.h"
 #include "th/map.h"
 #include "th/path.h"
+#include "th/rules.h"
 #include "th/version.h"
 #include "th_test.h"
 #include "vista.h"
@@ -41,6 +44,7 @@ static int uso(void)
             "     th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>\n"
             "     th64sim escena <nivel.tmp> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> <unidad> <x> <y> "
             "<ancho> <alto> <caminata.tsv> <tick> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
+            "     th64sim reglas <reglas.trg> [ruta]\n"
             "     th64sim vista <nivel.tmp> <número de nivel> <bloques.tsh> <paleta> <unidad> <x> <y> <ancho> <alto> "
             "<salida.ppm> [mezcla.pgm]\n"
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
@@ -480,6 +484,101 @@ static int orden_mapa(int argc, char **argv)
     return argc > 4 ? comparar(argv[4]) : 0;
 }
 
+// JSON canónico de tools/conv/reglas.lua: claves enteras como "#n", reales
+// con punto o exponente.
+static void json_cadena(const char *s, uint32_t n)
+{
+    putchar('"');
+    for (uint32_t i = 0; i < n; i++) {
+        const unsigned char c = (unsigned char)s[i];
+        if (c == '"' || c == '\\')
+            printf("\\%c", c);
+        else if (c == '\n')
+            fputs("\\n", stdout);
+        else if (c == '\t')
+            fputs("\\t", stdout);
+        else if (c < 0x20 || c == 0x7F)
+            printf("\\u%04x", c);
+        else
+            putchar(c);
+    }
+    putchar('"');
+}
+
+static void json_valor(const th_rules *r, th_rnode n)
+{
+    uint32_t largo;
+    switch (th_rules_type(r, n)) {
+    case TH_RULES_NIL: fputs("null", stdout); break;
+    case TH_RULES_FALSE: fputs("false", stdout); break;
+    case TH_RULES_TRUE: fputs("true", stdout); break;
+    case TH_RULES_INT: printf("%ld", (long)th_rules_int(r, n, 0)); break;
+    case TH_RULES_REAL: {
+        const uint64_t bits = th_rules_real_bits(r, n);
+        double d;
+        memcpy(&d, &bits, sizeof d);
+        char txt[40];
+        snprintf(txt, sizeof txt, "%.17g", d);
+        fputs(txt, stdout);
+        if (!strpbrk(txt, ".eE"))
+            fputs(".0", stdout);
+        break;
+    }
+    case TH_RULES_STRING: {
+        const char *s = th_rules_str(r, n, &largo);
+        json_cadena(s, largo);
+        break;
+    }
+    case TH_RULES_LIST:
+        putchar('[');
+        for (uint32_t i = 0; i < th_rules_len(r, n); i++) {
+            if (i)
+                putchar(',');
+            json_valor(r, th_rules_at(r, n, i));
+        }
+        putchar(']');
+        break;
+    case TH_RULES_MAP:
+        putchar('{');
+        for (uint32_t i = 0; i < th_rules_len(r, n); i++) {
+            if (i)
+                putchar(',');
+            const th_rnode k = th_rules_entry_key(r, n, i);
+            if (th_rules_type(r, k) == TH_RULES_INT) {
+                printf("\"#%ld\"", (long)th_rules_int(r, k, 0));
+            } else {
+                const char *s = th_rules_str(r, k, &largo);
+                json_cadena(s, largo);
+            }
+            putchar(':');
+            json_valor(r, th_rules_entry_value(r, n, i));
+        }
+        putchar('}');
+        break;
+    }
+}
+
+static int orden_reglas(int argc, char **argv)
+{
+    size_t len;
+    uint8_t *datos = leer_fichero(argv[2], &len);
+    th_rules r;
+    if (!datos || th_rules_init(&r, datos, len) != 0) {
+        fprintf(stderr, "%s no es un fichero de reglas válido\n", argv[2]);
+        return 1;
+    }
+    const th_rnode n = argc > 3 ? th_rules_path(&r, r.root, argv[3]) : r.root;
+    if (!n) {
+        fprintf(stderr, "no existe la ruta %s\n", argv[3]);
+        return 1;
+    }
+    json_valor(&r, n);
+    putchar('\n');
+    fprintf(stderr, "huella %08lx\n", (unsigned long)th_rules_hash(&r, n));
+    free(datos);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 4 && strcmp(argv[1], "huella") == 0) {
@@ -496,6 +595,8 @@ int main(int argc, char **argv)
         return orden_caminata(argv);
     if (argc == 5 && strcmp(argv[1], "caminos") == 0)
         return orden_caminos(argv);
+    if ((argc == 3 || argc == 4) && strcmp(argv[1], "reglas") == 0)
+        return orden_reglas(argc, argv);
     if ((argc == 12 || argc == 13) && strcmp(argv[1], "vista") == 0)
         return orden_vista(argc, argv);
     return uso();

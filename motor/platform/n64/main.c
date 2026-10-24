@@ -35,6 +35,7 @@
 #include "th/map.h"
 #include "th/path.h"
 #include "th/rng.h"
+#include "th/rules.h"
 #include "th/version.h"
 #include "vista.h"
 
@@ -475,6 +476,39 @@ static th_humanoid *caminata(int x1, int y1, int x2, int y2, int tick)
 }
 #endif
 
+#ifdef TH_PRUEBAS
+// Hito 0: las reglas se leen y validan en la N64 (big-endian) igual que en el
+// PC; tools/motor_check.sh compara las huellas con las de th64sim reglas.
+static bool comprobar_reglas(void)
+{
+    static const char *const rutas[] = {"rom:/reglas/definiciones.trg", "rom:/reglas/full01.trg"};
+    bool ok = true;
+    for (unsigned i = 0; i < sizeof rutas / sizeof rutas[0]; i++) {
+        FILE *f = fopen(rutas[i], "rb");
+        if (!f) {
+            debugf("TH64 reglas: falta %s (tools/conv/conv.py reglas)\n", rutas[i]);
+            continue;
+        }
+        fclose(f);
+        int tam = 0;
+        uint8_t *datos = asset_load(rutas[i], &tam);
+        th_rules r;
+        const uint32_t t0 = get_ticks();
+        const bool valido = datos && th_rules_init(&r, datos, (size_t)tam) == 0;
+        const uint32_t t1 = get_ticks();
+        if (!valido) {
+            debugf("TH64 reglas: %s no vale\n", rutas[i]);
+            ok = false;
+        } else {
+            debugf("TH64 reglas: %s: %d B, validado en %.2f ms, huella %08lx\n", rutas[i] + 5, tam,
+                   (t1 - t0) * 1000.0f / TICKS_PER_SECOND, (unsigned long)th_rules_hash(&r, r.root));
+        }
+        free(datos);
+    }
+    return ok;
+}
+#endif
+
 int main(void)
 {
     debug_init(DEBUG_FEATURE_LOG_USB | DEBUG_FEATURE_LOG_EMU);
@@ -524,6 +558,8 @@ int main(void)
     display_set_fps_limit(FPS);
 
 #ifdef TH_PRUEBAS
+    if (assets && !comprobar_reglas())
+        fallos++;
     if (assets) {
         // Hito 2. Nivel 1: cámara inicial, una sombra sobre una pared (casilla
         // 71,71), la esquina superior del mapa y el exterior del hospital.

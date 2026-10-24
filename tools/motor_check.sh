@@ -8,7 +8,8 @@
 #      distinto de lo que dicen la hoja y la paleta (hito 1), dibuja el mapa
 #      igual que el rasterizador de referencia y el recorrido de la cámara va
 #      a 30 fps sin saltos (hito 2); lo mismo con humanoides caminando, y la
-#      cámara que sigue a uno va a 30 fps sin saltos (hito 3);
+#      cámara que sigue a uno va a 30 fps sin saltos (hito 3); las reglas se
+#      leen en la N64 con la misma huella que en el PC (hito 0);
 #   4. ROM normal: compila y arranca.
 # Uso: tools/motor_check.sh [dir_salida]   (por defecto $TH64_WORK/resultados/motor_check)
 set -euo pipefail
@@ -26,6 +27,10 @@ cmake --build "$M/build/pc" > "$OUT/build_pc.log"
 ctest --test-dir "$M/build/pc" --output-on-failure > "$OUT/ctest_pc.log" || { cat "$OUT/ctest_pc.log"; exit 1; }
 huella_pc=$("$M/build/pc/th64sim" huella 1 10000)
 echo "   pruebas ok; huella de referencia $huella_pc"
+if [ -d "$M/assets/reglas" ]; then
+  python3 -I "$REPO_DIR/tools/conv/reglas.py" comprobar "$M/build/pc/th64sim" "$M/assets" | sed 's/^/   /' \
+    || { echo "   FALLO: el núcleo no lee las reglas como el conversor"; exit 1; }
+fi
 
 paso "2. PC con ASan y UBSan"
 cmake -S "$M" -B "$M/build/pc-asan" -G Ninja -DTH_SANITIZE=ON > "$OUT/cmake_asan.log"
@@ -44,6 +49,13 @@ huella_n64=$(sed -n 's/.*huella golden_sim(1, 10000) = \([0-9a-f]*\).*/\1/p' "$l
 grep "comprobaciones" "$log" | sed 's/^/   /'
 echo "   huella igual en el PC y en la N64: $huella_n64"
 if grep -q "assets ok" "$log"; then
+  for f in definiciones full01; do
+    grep -q "TH64 reglas: .*$f.trg: .*huella" "$log" || continue
+    h_n64=$(sed -n "s/.*TH64 reglas: .*$f.trg: .*huella \([0-9a-f]*\).*/\1/p" "$log")
+    h_pc=$("$M/build/pc/th64sim" reglas "$M/assets/reglas/$f.trg" 2>&1 > /dev/null | sed -n 's/^huella //p')
+    [ "$h_n64" = "$h_pc" ] || { echo "   FALLO: reglas $f: huella N64 $h_n64 frente a PC $h_pc"; exit 1; }
+    grep "TH64 reglas: .*$f.trg" "$log" | sed 's/^/   /'
+  done
   grep -q "TH64 hito1: .* 0 distintos" "$log" || { echo "   FALLO: el sprite dibujado no coincide"; grep "TH64 hito1" "$log"; exit 1; }
   grep "TH64 hito1" "$log" | sed 's/^/   /'
   grep -q "TH64 hito2: comparacion con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: el mapa no se dibuja como la referencia"; grep "TH64 hito2" "$log"; exit 1; }
