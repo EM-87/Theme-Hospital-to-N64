@@ -7,7 +7,8 @@
 #      assets (tools/conv/conv.py), el RDP dibuja un sprite sin ningún píxel
 #      distinto de lo que dicen la hoja y la paleta (hito 1), dibuja el mapa
 #      igual que el rasterizador de referencia y el recorrido de la cámara va
-#      a 30 fps sin saltos (hito 2);
+#      a 30 fps sin saltos (hito 2); lo mismo con humanoides caminando, y la
+#      cámara que sigue a uno va a 30 fps sin saltos (hito 3);
 #   4. ROM normal: compila y arranca.
 # Uso: tools/motor_check.sh [dir_salida]   (por defecto $TH64_WORK/resultados/motor_check)
 set -euo pipefail
@@ -48,6 +49,9 @@ if grep -q "assets ok" "$log"; then
   grep -q "TH64 hito2: comparacion con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: el mapa no se dibuja como la referencia"; grep "TH64 hito2" "$log"; exit 1; }
   grep -q "TH64 hito2: recorrido .* 0 saltos" "$log" || { echo "   FALLO: el recorrido no va a 30 fps"; grep "TH64 hito2" "$log"; exit 1; }
   grep "TH64 hito2: \(comparacion\|recorrido\|por fotograma\)" "$log" | sed 's/^/   /'
+  grep -q "TH64 hito3: comparacion con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: los humanoides no se dibujan como la referencia"; grep "TH64 hito3" "$log"; exit 1; }
+  grep -q "TH64 hito3: recorrido siguiendo a un humanoide .* 0 saltos" "$log" || { echo "   FALLO: el recorrido con un humanoide no va a 30 fps"; grep "TH64 hito3" "$log"; exit 1; }
+  grep "TH64 hito3: \(comparacion\|recorrido\|por fotograma\|siguiendo\|con 50\)" "$log" | sed 's/^/   /'
 else
   echo "   (sin assets: no se comprueba el dibujo; ejecuta tools/conv/conv.py)"
 fi
@@ -56,8 +60,8 @@ paso "4. ROM normal"
 make -s -C "$M" > "$OUT/make_rom.log"
 # Con assets, la ROM avisa de que ha cargado el nivel; sin ellos, solo del heap.
 hasta="TH64 motor: heap"
-grep -q "assets ok" "$log" && hasta="TH64 hito2: nivel"
+grep -q "assets ok" "$log" && hasta="TH64 hito3: nivel"
 ARES_UNTIL="$hasta" "$REPO_DIR/tools/run_ares.sh" "$M/th64.z64" "$OUT/ares_rom" 60 > /dev/null
-grep "TH64 motor\|TH64 hito2" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
+grep "TH64 motor\|TH64 hito3" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
 grep -q "$hasta" "$OUT/ares_rom/isviewer.log" || { echo "   FALLO: la ROM normal no arranca"; exit 1; }
 echo "== todo correcto"

@@ -33,7 +33,7 @@ local function volcar()
   f:write(("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n"):format(k, h.tile_x - 1, h.tile_y - 1, px, py, h.th:getAnimation(),
     h.th:getFrame(), h.th:getFlag()))
 end
-local tick_png = tonumber(th64.opts.tick_png or "-1")
+local tick_png = tonumber(th64.opts["tick-png"] or "-1")
 local ui = TheApp.ui
 local function captura()
   local ventanas, cursor = ui.windows, ui.simulated_cursor
@@ -57,6 +57,7 @@ if tick_png >= 0 then
   -- Pausa para que el dibujo muestre el estado de ese tick.
   world:setSpeed("Pause")
   th64.autorun_speed = nil
+  TheApp.video:setBlueFilterActive(false) -- la pausa tiñe la pantalla de azul
   local ventanas, cursor = captura()
   th64.wait_ticks(3)
   local ok, err = TheApp.video:takeScreenshot(th64.opts.png)

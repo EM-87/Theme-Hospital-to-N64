@@ -25,7 +25,7 @@ add_library(th_vista STATIC vista/vista.c vista/raster.c)
 target_include_directories(th_vista PUBLIC vista)
 target_link_libraries(th_vista PUBLIC th_core)
 
-add_library(th_core_tests STATIC tests/test_core.c tests/test_map.c)
+add_library(th_core_tests STATIC tests/test_core.c tests/test_map.c tests/test_humanoid.c)
 target_include_directories(th_core_tests PUBLIC tests)
 target_link_libraries(th_core_tests PUBLIC th_core)
 

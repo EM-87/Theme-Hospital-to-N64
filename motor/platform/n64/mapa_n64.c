@@ -2,12 +2,13 @@
 
 #include <string.h>
 
-#define ALFA_SOMBRA 64 // 25 % de opacidad, como thdf_alpha_75 de CorsixTH
+#define ALFA_25 64  // 25 % de opacidad, como thdf_alpha_75 de CorsixTH
+#define ALFA_50 128 // thdf_alpha_50
 #define MAX_ORDEN 4096
 #define TMEM_TEXELES 2048 // la otra mitad de la TMEM es la paleta (TLUT)
 
 static uint16_t orden[MAX_ORDEN];
-static int cargado;          // sprite que está ahora en la TMEM; -1 = ninguno o desconocido
+static int32_t cargado;      // hoja << 16 | sprite en la TMEM; -1 = ninguno o desconocido
 static uint8_t se_sale[256]; // 1 = el bloque no cabe en el rombo de su casilla
 
 void mapa_n64_preparar(const hoja_t *bloques, int unidad)
@@ -38,13 +39,19 @@ static void modo_opaco(void)
     rdpq_mode_blender(0);
 }
 
-// Color de la textura con alfa = alfa de la textura × 64/255: los píxeles
+// Color de la textura con alfa = alfa de la textura × alfa/255: los píxeles
 // transparentes (alfa 0) los descarta la comparación de alfa y el resto se
 // mezcla con lo que hay en el framebuffer.
-static void modo_sombra(void)
+static void modo_sombra(int alfa)
 {
+    rdpq_set_prim_color(RGBA32(255, 255, 255, alfa));
     rdpq_mode_combiner(RDPQ_COMBINER1((TEX0, 0, PRIM, 0), (TEX0, 0, PRIM, 0)));
     rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+}
+
+static int alfa_de(const th_draw *d)
+{
+    return d->flags & TH_DRAW_ALPHA25 ? ALFA_25 : d->flags & TH_DRAW_ALPHA50 ? ALFA_50 : 255;
 }
 
 // Índices de los elementos [ini, fin) con (flags & TH_DRAW_ALPHA25) == alfa,
@@ -66,8 +73,10 @@ static int agrupar(const th_drawlist *l, int ini, int fin, int alfa)
     return n;
 }
 
-static void dibujar(const hoja_t *h, const th_draw *d, int ancho, int alto, mapa_n64_stats_t *st)
+static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int ancho, int alto,
+                    mapa_n64_stats_t *st)
 {
+    const hoja_t *h = hojas[d->sheet];
     const hoja_entrada_t *e = &h->tabla[d->sprite];
     int y0 = d->y, y1 = d->y + e->alto;
     if (d->flags & TH_DRAW_CLIP) {
@@ -81,32 +90,52 @@ static void dibujar(const hoja_t *h, const th_draw *d, int ancho, int alto, mapa
     if (vx1 > vx0 && vy1 > vy0)
         st->pixeles += (vx1 - vx0) * (vy1 - vy0);
     st->sprites++;
+    st->entidades += d->sheet == TH_SHEET_SPRITES;
+    const bool espejo = d->flags & TH_DRAW_FLIP_H, boca_abajo = d->flags & TH_DRAW_FLIP_V;
     if (th_sheet_stride(e->ancho) * e->alto > TMEM_TEXELES) {
-        // No cabe en la TMEM: rdpq_tex_blit lo parte en tiras (un adorno de
-        // 32 × 69; ninguno de estos lleva recorte).
+        // No cabe en la TMEM: rdpq_tex_blit lo parte en tiras (un adorno del
+        // mapa y 29 sprites de MSPR-0; ninguno de estos lleva recorte).
         surface_t s = hoja_superficie(h, d->sprite);
-        rdpq_tex_blit(&s, d->x, d->y, NULL);
+        rdpq_tex_blit(&s, d->x, d->y, &(rdpq_blitparms_t){.flip_x = espejo, .flip_y = boca_abajo});
         cargado = -1;
         st->cargas++;
         return;
     }
-    if (cargado != d->sprite) {
+    const int32_t clave = (int32_t)d->sheet << 16 | d->sprite;
+    if (cargado != clave) {
         surface_t s = hoja_superficie(h, d->sprite);
         rdpq_tex_upload(TILE0, &s, NULL);
-        cargado = d->sprite;
+        cargado = clave;
         st->cargas++;
     }
-    rdpq_texture_rectangle(TILE0, d->x, y0, d->x + e->ancho, y1, 0, y0 - d->y);
+    if (!espejo && !boca_abajo) {
+        rdpq_texture_rectangle(TILE0, d->x, y0, d->x + e->ancho, y1, 0, y0 - d->y);
+        return;
+    }
+    // Con las coordenadas de pantalla al revés, el RDP recorre la textura al revés.
+    int x0 = d->x, x1 = d->x + e->ancho, t0 = y0 - d->y, t1 = y1 - d->y;
+    if (espejo) {
+        x0 = x1;
+        x1 = d->x;
+    }
+    if (boca_abajo) {
+        int a = y0;
+        y0 = y1;
+        y1 = a;
+        a = t0;
+        t0 = e->alto - t1;
+        t1 = e->alto - a;
+    }
+    rdpq_texture_rectangle_scaled(TILE0, x0, y0, x1, y1, 0, t0, e->ancho, t1);
 }
 
-void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *bloques, const uint16_t *paleta, int ancho, int alto,
-                      mapa_n64_stats_t *st)
+void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS], const uint16_t *paleta, int ancho,
+                      int alto, mapa_n64_stats_t *st)
 {
     memset(st, 0, sizeof(*st));
     uint32_t t0 = get_ticks();
     cargado = -1;
     graficos_modo_sprites(paleta);
-    rdpq_set_prim_color(RGBA32(255, 255, 255, ALFA_SOMBRA));
 
     // 1. Suelos, un bloque cada vez, y sus sombras (bloques 74 y 75), por
     // tramos que terminan en cada suelo que se sale del rombo.
@@ -117,16 +146,16 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *bloques, const uint16_
             continue;
         int n = agrupar(l, ini, i, 0);
         for (int k = 0; k < n; k++)
-            dibujar(bloques, &l->items[orden[k]], ancho, alto, st);
+            dibujar(hojas, &l->items[orden[k]], ancho, alto, st);
         n = agrupar(l, ini, i, TH_DRAW_ALPHA25);
         if (n) {
-            modo_sombra();
+            modo_sombra(ALFA_25);
             for (int k = 0; k < n; k++)
-                dibujar(bloques, &l->items[orden[k]], ancho, alto, st);
+                dibujar(hojas, &l->items[orden[k]], ancho, alto, st);
             modo_opaco();
         }
         if (i < l->floor_count) {
-            dibujar(bloques, d, ancho, alto, st);
+            dibujar(hojas, d, ancho, alto, st);
             st->cortes++;
         }
         ini = i + 1;
@@ -135,21 +164,21 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *bloques, const uint16_
     uint32_t t1 = get_ticks();
     st->ticks_suelos = t1 - t0;
 
-    // 2. Paredes y sombras sobre las paredes, en el orden de la lista.
-    int sombra = 0;
+    // 2. Paredes, sombras sobre las paredes y entidades, en el orden de la lista.
+    int alfa = 255;
     for (int i = l->floor_count; i < l->count; i++) {
         const th_draw *d = &l->items[i];
-        int a = (d->flags & TH_DRAW_ALPHA25) != 0;
-        if (a != sombra) {
-            if (a)
-                modo_sombra();
+        int a = alfa_de(d);
+        if (a != alfa) {
+            if (a < 255)
+                modo_sombra(a);
             else
                 modo_opaco();
-            sombra = a;
+            alfa = a;
         }
-        dibujar(bloques, d, ancho, alto, st);
+        dibujar(hojas, d, ancho, alto, st);
     }
-    if (sombra)
+    if (alfa < 255)
         modo_opaco();
     st->ticks_paredes = get_ticks() - t1;
 }

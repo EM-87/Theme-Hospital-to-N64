@@ -3,15 +3,17 @@
 posición de cámara, píxel a píxel.
 
 Uso: python3 -I tools/oraculo_mapa/comparar.py <captura.png> <vista.ppm> [diferencias.png]
-     [--excluir x0,y0,x1,y1 ...] [--mezcla mezcla.pgm]
+     [--excluir x0,y0,x1,y1 ...] [--mezcla mezcla.pgm] [--entidades entidades.pgm]
 
 Cuenta los píxeles iguales, los que difieren en 2 o menos por componente (el
 redondeo de la mezcla de las sombras) y los distintos, y agrupa estos en
 rectángulos (componentes conexas) para ver qué los causa: objetos que el motor
 aún no dibuja (las puertas), el cursor, etc. Con --excluir se descuentan
 rectángulos conocidos. Con --mezcla (la que escribe th64sim vista) dice
-cuántas de las diferencias pequeñas caen en píxeles de sombra. Si se le da una ruta, guarda una imagen con los
-distintos en rojo sobre la captura atenuada.
+cuántas de las diferencias pequeñas caen en píxeles de sombra; con --entidades
+(la que escribe th64sim escena), cómo quedan los píxeles de las entidades del
+motor. Si se le da una ruta, guarda una imagen con los distintos en rojo sobre
+la captura atenuada.
 """
 import sys
 
@@ -50,10 +52,14 @@ def componentes(mascara, w, h):
 def main():
     args = sys.argv[1:]
     excluir = []
-    mezcla = None
+    mezcla = entidades = None
     if "--mezcla" in args:
         i = args.index("--mezcla")
         mezcla = Image.open(args[i + 1]).convert("L").tobytes()
+        del args[i:i + 2]
+    if "--entidades" in args:
+        i = args.index("--entidades")
+        entidades = Image.open(args[i + 1]).convert("L").tobytes()
         del args[i:i + 2]
     while "--excluir" in args:
         i = args.index("--excluir")
@@ -68,6 +74,8 @@ def main():
     w, h = a.size
     pa, pb = a.tobytes(), b.tobytes()
     iguales = cercanos = cercanos_sombra = excluidos = 0
+    ent = [0, 0, 0, 0]  # iguales, a 2 o menos, de 3 a 7, más de 7
+    ent_max = 0
     mascara = bytearray(w * h)
     for i in range(w * h):
         x, y = i % w, i // w
@@ -75,6 +83,9 @@ def main():
             excluidos += 1
             continue
         d = max(abs(pa[3 * i + k] - pb[3 * i + k]) for k in range(3))
+        if entidades and entidades[i]:
+            ent[0 if d == 0 else 1 if d <= 2 else 2 if d <= 7 else 3] += 1
+            ent_max = max(ent_max, d)
         if d == 0:
             iguales += 1
         elif d <= 2:
@@ -89,6 +100,9 @@ def main():
     if mezcla:
         print(f"  de los que difieren en 2 o menos, {cercanos_sombra} son de sombra "
               f"(de {sum(1 for v in mezcla if v)} píxeles de sombra)")
+    if entidades:
+        print(f"  píxeles de las entidades del motor: {sum(ent)}; {ent[0]} iguales, {ent[1]} a 2 o menos, "
+              f"{ent[2]} de 3 a 7, {ent[3]} a más de 7 (diferencia máxima {ent_max})")
     for n, x0, y0, x1, y1 in componentes(mascara, w, h)[:12]:
         print(f"  {n:6d} píxeles en ({x0},{y0})-({x1},{y1})")
     if len(args) == 3:

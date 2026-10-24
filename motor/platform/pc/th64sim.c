@@ -6,6 +6,8 @@
 //   compara casilla a casilla;
 // - caminos: repite con el A* del núcleo los caminos que pidió el oráculo de
 //   CorsixTH (bench/scenarios/caminos.lua) y los compara casilla a casilla;
+// - caminata: repite la caminata que volcó el oráculo de CorsixTH
+//   (bench/scenarios/caminata.lua) y la compara tick a tick;
 // - vista: dibuja con el rasterizador de referencia (vista/raster.c) lo que se
 //   ve del mapa desde una posición de cámara y lo guarda en PPM, para
 //   compararlo con una captura de CorsixTH (tools/oraculo_mapa).
@@ -16,6 +18,8 @@
 #include <string.h>
 
 #include "raster.h"
+#include "th/anim.h"
+#include "th/humanoid.h"
 #include "th/map.h"
 #include "th/path.h"
 #include "th/version.h"
@@ -25,6 +29,7 @@
 void (*th_test_log)(const char *fmt, ...) = NULL;
 
 static th_map mapa;
+static th_pathfinder buscador;
 
 static int uso(void)
 {
@@ -33,6 +38,9 @@ static int uso(void)
             "Uso: th64sim huella <semilla> <ticks>\n"
             "     th64sim mapa <nivel.tmp> <número de nivel> [mapa_nivelN.tsv]\n"
             "     th64sim caminos <nivel.tmp> <número de nivel> <caminos_nivelN.tsv>\n"
+            "     th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>\n"
+            "     th64sim escena <nivel.tmp> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> <unidad> <x> <y> "
+            "<ancho> <alto> <caminata.tsv> <tick> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
             "     th64sim vista <nivel.tmp> <número de nivel> <bloques.tsh> <paleta> <unidad> <x> <y> <ancho> <alto> "
             "<salida.ppm> [mezcla.pgm]\n"
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
@@ -197,56 +205,84 @@ static int cargar_paleta(const char *ruta, uint8_t pal[256][3])
     return 0;
 }
 
-static int orden_vista(int argc, char **argv)
+// Dibuja la escena con el rasterizador de referencia y la guarda en PPM (y la
+// máscara de píxeles semitransparentes en PGM, si se pide).
+static int dibujar_escena(const th_view *v, const th_scene *sc, uint8_t paleta[256][3], const char *ppm,
+                          const char *pgm, const char *pgm_entidades)
 {
-    if (cargar_mapa(argv[2], atoi(argv[3])))
-        return 1;
-    size_t len;
-    uint8_t *hoja = leer_fichero(argv[4], &len);
-    th_sheet bloques;
-    static uint8_t paleta[256][3];
-    if (!hoja || th_sheet_init(&bloques, hoja, len) != 0 || cargar_paleta(argv[5], paleta) != 0) {
-        fprintf(stderr, "no se pueden leer la hoja o la paleta\n");
-        return 1;
-    }
-    th_view v = {.unit = atoi(argv[6]), .x = atoi(argv[7]), .y = atoi(argv[8]), .w = atoi(argv[9]),
-                 .h = atoi(argv[10])};
     static th_draw elementos[8192];
     th_drawlist lista = {.items = elementos, .capacity = 8192};
-    if (th_view_map(&v, &mapa, &bloques, &lista) < 0) {
+    if (th_view_scene(v, sc, &lista) < 0) {
         fprintf(stderr, "la lista de dibujo no cabe\n");
         return 1;
     }
-    uint8_t *rgb = malloc((size_t)v.w * v.h * 3);
-    uint8_t *mezcla = malloc((size_t)v.w * v.h);
-    th_raster r = {.rgb = rgb, .mezcla = mezcla, .w = v.w, .h = v.h, .paleta = (const uint8_t(*)[3])paleta};
+    uint8_t *rgb = malloc((size_t)v->w * v->h * 3);
+    uint8_t *mezcla = malloc((size_t)v->w * v->h), *hoja = malloc((size_t)v->w * v->h);
+    th_raster r = {.rgb = rgb, .mezcla = mezcla, .hoja = hoja, .w = v->w, .h = v->h,
+                   .paleta = (const uint8_t(*)[3])paleta};
     th_raster_clear(&r, 0, 0, 0);
-    th_raster_draw(&r, &bloques, &lista);
-    FILE *f = fopen(argv[11], "wb");
+    th_raster_draw(&r, sc->sheets, &lista);
+    FILE *f = fopen(ppm, "wb");
     if (!f)
         return 1;
-    fprintf(f, "P6\n%d %d\n255\n", v.w, v.h);
-    fwrite(rgb, 3, (size_t)v.w * v.h, f);
+    fprintf(f, "P6\n%d %d\n255\n", v->w, v->h);
+    fwrite(rgb, 3, (size_t)v->w * v->h, f);
     fclose(f);
-    if (argc > 12 && (f = fopen(argv[12], "wb")) != NULL) {
-        for (int i = 0; i < v.w * v.h; i++)
+    if (pgm && (f = fopen(pgm, "wb")) != NULL) {
+        for (int i = 0; i < v->w * v->h; i++)
             mezcla[i] = mezcla[i] ? 255 : 0;
-        fprintf(f, "P5\n%d %d\n255\n", v.w, v.h);
-        fwrite(mezcla, 1, (size_t)v.w * v.h, f);
+        fprintf(f, "P5\n%d %d\n255\n", v->w, v->h);
+        fwrite(mezcla, 1, (size_t)v->w * v->h, f);
         fclose(f);
     }
-    int sombras = 0;
-    for (int i = 0; i < lista.count; i++)
+    if (pgm_entidades && (f = fopen(pgm_entidades, "wb")) != NULL) {
+        for (int i = 0; i < v->w * v->h; i++)
+            hoja[i] = hoja[i] == 1 + TH_SHEET_SPRITES ? 255 : 0;
+        fprintf(f, "P5\n%d %d\n255\n", v->w, v->h);
+        fwrite(hoja, 1, (size_t)v->w * v->h, f);
+        fclose(f);
+    }
+    int sombras = 0, entidades = 0;
+    for (int i = 0; i < lista.count; i++) {
         sombras += (lista.items[i].flags & TH_DRAW_ALPHA25) != 0;
-    printf("vista (%d, %d) %dx%d, unidad %d: %d sprites (%d de suelo y sombras, %d sombras)\n", v.x, v.y, v.w, v.h,
-           v.unit, lista.count, lista.floor_count, sombras);
+        entidades += lista.items[i].sheet == TH_SHEET_SPRITES;
+    }
+    printf("vista (%d, %d) %dx%d, unidad %d: %d sprites (%d de suelo y sombras, %d sombras, %d de entidades); "
+           "%d casillas redibujadas\n",
+           v->x, v->y, v->w, v->h, v->unit, lista.count, lista.floor_count, sombras, entidades, lista.redraws);
     free(rgb);
     free(mezcla);
     free(hoja);
     return 0;
 }
 
-static th_pathfinder buscador;
+static int cargar_hoja(const char *ruta, th_sheet *h, uint8_t **datos)
+{
+    size_t len;
+    *datos = leer_fichero(ruta, &len);
+    if (!*datos || th_sheet_init(h, *datos, len) != 0) {
+        fprintf(stderr, "no se puede leer la hoja %s\n", ruta);
+        return 1;
+    }
+    return 0;
+}
+
+static int orden_vista(int argc, char **argv)
+{
+    if (cargar_mapa(argv[2], atoi(argv[3])))
+        return 1;
+    uint8_t *hoja;
+    th_sheet bloques;
+    static uint8_t paleta[256][3];
+    if (cargar_hoja(argv[4], &bloques, &hoja) || cargar_paleta(argv[5], paleta) != 0)
+        return 1;
+    th_view v = {.unit = atoi(argv[6]), .x = atoi(argv[7]), .y = atoi(argv[8]), .w = atoi(argv[9]),
+                 .h = atoi(argv[10])};
+    th_scene sc = {.map = &mapa, .sheets = {&bloques, NULL}};
+    int r = dibujar_escena(&v, &sc, paleta, argv[11], argc > 12 ? argv[12] : NULL, NULL);
+    free(hoja);
+    return r;
+}
 
 static int orden_caminos(char **argv)
 {
@@ -305,6 +341,130 @@ static int orden_caminos(char **argv)
     return pares > 0 && mismo_camino == pares ? 0 : 1;
 }
 
+static th_humanoid humanoide;
+
+// Lee la cabecera de un volcado de bench/scenarios/caminata.lua, carga su
+// nivel y pone al humanoide como lo puso el oráculo: en la casilla de salida,
+// con las mismas capas y la orden de caminar.
+static int preparar_caminata(FILE *f, const char *ruta_tmp, th_world *w, th_humanoid *h, int ruta[4])
+{
+    int nivel, c0, c1, c2;
+    char linea[256];
+    if (fscanf(f, "# nivel %d ruta %d,%d;%d,%d capas 0=%d 1=%d 2=%d\n", &nivel, &ruta[0], &ruta[1], &ruta[2],
+               &ruta[3], &c0, &c1, &c2) != 8 ||
+        !fgets(linea, sizeof linea, f)) {
+        fprintf(stderr, "cabecera del volcado no reconocida\n");
+        return -1;
+    }
+    if (cargar_mapa(ruta_tmp, nivel))
+        return -1;
+    th_humanoid_init(w, h, th_walk_anims_find("Standard Male Patient"));
+    th_humanoid_set_layer(h, 0, c0);
+    th_humanoid_set_layer(h, 1, c1);
+    th_humanoid_set_layer(h, 2, c2);
+    th_humanoid_set_tile(w, h, ruta[0], ruta[1]);
+    th_humanoid_set_next_action(w, h, th_action_walk(ruta[2], ruta[3]));
+    th_humanoid_queue_action(h, th_action_idle());
+    return nivel;
+}
+
+static int cargar_anims(const char *ruta, th_anims *a, uint8_t **datos)
+{
+    size_t len;
+    *datos = leer_fichero(ruta, &len);
+    if (!*datos || th_anims_init(a, *datos, len) != 0) {
+        fprintf(stderr, "no se pueden leer las animaciones %s\n", ruta);
+        return 1;
+    }
+    return 0;
+}
+
+static int orden_caminata(char **argv)
+{
+    FILE *f = fopen(argv[4], "r");
+    if (!f) {
+        fprintf(stderr, "no se puede abrir %s\n", argv[4]);
+        return 1;
+    }
+    uint8_t *tan;
+    th_anims anims;
+    if (cargar_anims(argv[3], &anims, &tan)) {
+        fclose(f);
+        return 1;
+    }
+    th_world w = {.map = &mapa, .pf = &buscador, .anims = &anims};
+    th_humanoid *h = &humanoide;
+    int ruta[4];
+    int nivel = preparar_caminata(f, argv[2], &w, h, ruta);
+    if (nivel < 0) {
+        fclose(f);
+        return 1;
+    }
+    char linea[256];
+    int ticks = 0, iguales = 0, mostradas = 0;
+    long o[8];
+    while (fgets(linea, sizeof linea, f)) {
+        char *p = linea;
+        for (int i = 0; i < 8; i++)
+            o[i] = strtol(p, &p, 10);
+        for (; ticks < o[0]; ticks++)
+            th_humanoid_tick(&w, h);
+        long v[8] = {ticks, h->tile_x, h->tile_y, h->px, h->py, h->anim, (long)h->frame, h->anim_flags};
+        int igual = memcmp(o, v, sizeof o) == 0;
+        iguales += igual;
+        if (!igual && mostradas++ < 5)
+            printf("  tick %ld: th64 (%ld,%ld) %+ld%+ld anim %ld fot %ld band %ld; CorsixTH (%ld,%ld) %+ld%+ld anim %ld "
+                   "fot %ld band %ld\n",
+                   o[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], o[1], o[2], o[3], o[4], o[5], o[6], o[7]);
+    }
+    fclose(f);
+    free(tan);
+    printf("caminata del nivel %d de (%d,%d) a (%d,%d): %d de %d ticks iguales a CorsixTH\n", nivel, ruta[0], ruta[1],
+           ruta[2], ruta[3], iguales, ticks + 1);
+    return iguales == ticks + 1 ? 0 : 1;
+}
+
+// Repite la caminata de un volcado del oráculo hasta un tick y dibuja la
+// escena (mapa y humanoide) con las hojas y animaciones que se le den.
+static int orden_escena(int argc, char **argv)
+{
+    // escena <nivel.tmp> <bloques.tsh> <sprites.tsh> <anim.tan> <paleta> <unidad> <x> <y> <w> <h>
+    //        <caminata.tsv> <tick> <salida.ppm> [mezcla.pgm]
+    uint8_t *b_datos, *s_datos, *a_datos;
+    th_sheet bloques, sprites;
+    th_anims anims;
+    static uint8_t paleta[256][3];
+    if (cargar_hoja(argv[3], &bloques, &b_datos) || cargar_hoja(argv[4], &sprites, &s_datos) ||
+        cargar_anims(argv[5], &anims, &a_datos) || cargar_paleta(argv[6], paleta) != 0)
+        return 1;
+    FILE *f = fopen(argv[12], "r");
+    if (!f)
+        return 1;
+    th_world w = {.map = &mapa, .pf = &buscador, .anims = &anims};
+    th_humanoid *h = &humanoide;
+    int ruta[4];
+    int nivel = preparar_caminata(f, argv[2], &w, h, ruta);
+    fclose(f);
+    if (nivel < 0)
+        return 1;
+    const int tick = atoi(argv[13]);
+    for (int i = 0; i < tick; i++)
+        th_humanoid_tick(&w, h);
+    th_view_entity e = {.tile_x = h->tile_x, .tile_y = h->tile_y, .px = h->px, .py = h->py, .frame = h->frame,
+                        .anim = h->anim, .flags = h->anim_flags, .drawing_layer = h->drawing_layer,
+                        .attach_seq = h->attach_seq, .layers = h->layers};
+    printf("tick %d: humanoide en (%d,%d) %+d%+d, animación %u, fotograma %lu\n", tick, h->tile_x, h->tile_y, h->px,
+           h->py, h->anim, (unsigned long)h->frame);
+    th_view v = {.unit = atoi(argv[7]), .x = atoi(argv[8]), .y = atoi(argv[9]), .w = atoi(argv[10]),
+                 .h = atoi(argv[11])};
+    th_scene sc = {.map = &mapa, .sheets = {&bloques, &sprites}, .anims = &anims, .entities = &e, .entity_count = 1};
+    int r = dibujar_escena(&v, &sc, paleta, argv[14], argc > 15 ? argv[15] : NULL, argc > 16 ? argv[16] : NULL);
+    free(b_datos);
+    free(s_datos);
+    free(a_datos);
+    return r;
+}
+
 static int orden_mapa(int argc, char **argv)
 {
     if (cargar_mapa(argv[2], atoi(argv[3])))
@@ -330,6 +490,10 @@ int main(int argc, char **argv)
     }
     if ((argc == 4 || argc == 5) && strcmp(argv[1], "mapa") == 0)
         return orden_mapa(argc, argv);
+    if (argc >= 15 && argc <= 17 && strcmp(argv[1], "escena") == 0)
+        return orden_escena(argc, argv);
+    if (argc == 5 && strcmp(argv[1], "caminata") == 0)
+        return orden_caminata(argv);
     if (argc == 5 && strcmp(argv[1], "caminos") == 0)
         return orden_caminos(argv);
     if ((argc == 12 || argc == 13) && strcmp(argv[1], "vista") == 0)

@@ -22,9 +22,20 @@ cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && cte
 `th64sim` (en `motor/build/pc/`):
 - `th64sim huella <semilla> <ticks>`: huella de la simulación de referencia, la misma que en la ROM;
 - `th64sim mapa <nivel.tmp> <n> [mapa_nivelN.tsv]`: carga un nivel y lo compara casilla a casilla con el volcado de CorsixTH (`bench/scenarios/volcar_mapa.lua`);
-- `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia; la usa [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md).
+- `th64sim caminos <nivel.tmp> <n> <caminos_nivelN.tsv>`: repite con el A* del núcleo los caminos que pidió CorsixTH (`bench/scenarios/caminos.lua`) y los compara casilla a casilla;
+- `th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>`: repite con el núcleo la caminata de un humanoide que volcó CorsixTH (`bench/scenarios/caminata.lua`) y la compara tick a tick (casilla, desplazamiento, animación, fotograma y banderas);
+- `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia;
+- `th64sim escena ...`: lo mismo, con el humanoide de una caminata en un tick dado.
 
-La ROM normal abre el visor del mapa: el stick o la cruceta mueven la cámara, Z pasa al nivel siguiente, R oculta los datos y L mide el tiempo del RDP en cada fotograma (solo en la consola: ares no lo emula).
+Las dos últimas las usa [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md).
+
+La ROM normal abre el visor del mapa con un humanoide que pasea por él:
+- el stick o la cruceta mueven la cámara;
+- A sigue al primer humanoide o deja de seguirlo (mover la cámara también lo deja);
+- B añade 10 humanoides que pasean por casillas al azar;
+- Z pasa al nivel siguiente;
+- R oculta los datos;
+- L mide el tiempo del RDP en cada fotograma (solo en la consola: ares no lo emula).
 
 Reglas del núcleo:
 - solo tipos de `stdint`, sin `long` ni `int` sin tamaño en lo que se guarda;
