@@ -247,11 +247,17 @@ def paso_sonido(d, salida, vistas, resumen):
     presentes = sonidos.presets_sf2(sf2)
     # Un preset que no esté en el banco se toca con el programa 0 de su banco.
     quedan = {p if p in presentes else (p[0], 0) for p in usados}
-    banco, rs = sonidos.recortar_sf2(sf2, quedan)
+    banco, rs = sonidos.recortar_sf2(sf2, quedan, sonidos.ATENUACION_N64, sonidos.MARGEN_N64_CB)
     if sonidos.presets_sf2(banco) != quedan:
         sys.exit("ERROR: el SoundFont recortado no tiene los presets pedidos")
+    if vistas:
+        # El recorte sin el ajuste para la N64: con fluidsynth suena igual que el banco entero.
+        os.makedirs(vistas, exist_ok=True)
+        with open(os.path.join(vistas, "banco_recortado.sf2"), "wb") as f:
+            f.write(sonidos.recortar_sf2(sf2, quedan)[0])
     rs.update({"bytes": escribir(salida, "musica/banco.sf2", banco), "bytes_original": len(sf2),
-               "usados": sorted(usados), "sin_preset": sorted(usados - presentes)})
+               "usados": sorted(usados), "sin_preset": sorted(usados - presentes),
+               "atenuacion": sonidos.ATENUACION_N64, "margen_cb": sonidos.MARGEN_N64_CB})
     r["musica"] = {"piezas": piezas, "banco": rs}
     resumen["sonido"] = r
 

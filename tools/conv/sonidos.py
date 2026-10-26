@@ -30,6 +30,17 @@ import tempfile
 AQUI = os.path.dirname(os.path.abspath(__file__))
 IDIOMAS = {"english": 0, "spanish": 4}
 SOUNDFONT = "/usr/share/sounds/sf2/TimGM6mb.sf2"
+# El sintetizador SF64 de libdragon aplica la atenuación inicial de cada
+# instrumento entera, como dice la especificación SF2; fluidsynth (y el
+# hardware EMU de las Sound Blaster, para el que se hicieron casi todos los
+# bancos General MIDI) la multiplica por 0,4. Sin corregirlo, en la N64 los
+# instrumentos más atenuados de TimGM6mb (órganos, ondas cuadradas y de
+# sierra, cuerdas sintéticas) suenan hasta 12 dB más bajos que el resto.
+ATENUACION_N64 = 0.4
+# Con la atenuación a 0,4 el volumen sube y la pieza más fuerte (CANDY)
+# pasaría de 0 dBFS en casi 3 dB; con 6 dB menos, su pico queda en -4,2 dBFS
+# (medido en ares con n64/pruebas/musica).
+MARGEN_N64_CB = 60
 
 
 # Archivos de sonido -------------------------------------------------------------
@@ -209,9 +220,14 @@ def _registros(d, rango, tam):
     return [d[a + i:a + i + tam] for i in range(0, b - a, tam)]
 
 
-def recortar_sf2(sf2, usados):
+def recortar_sf2(sf2, usados, atenuacion=1.0, margen_cb=0):
     """SF2 nuevo con solo los presets (banco, programa) de usados, sus
-    instrumentos y sus muestras (y las que estas enlazan en estéreo)."""
+    instrumentos y sus muestras (y las que estas enlazan en estéreo).
+
+    atenuacion multiplica la atenuación inicial (generador 48) de cada zona de
+    instrumento, y margen_cb añade esa atenuación (en centibelios) a cada zona
+    de preset, que la suma a la de sus instrumentos. Para la N64 se usan
+    ATENUACION_N64 y MARGEN_N64_CB (ver ahí por qué)."""
     assert sf2[:4] == b"RIFF" and sf2[8:12] == b"sfbk"
     top = _trozos(sf2, 12, 8 + struct.unpack_from("<I", sf2, 4)[0])
     info, sdta, pdta = top[b"INFO"], top[b"sdta"], top[b"pdta"]
@@ -277,10 +293,24 @@ def recortar_sf2(sf2, usados):
                 n_bag.append(struct.pack("<HH", len(n_gen), len(n_mod)))
                 for m in range(u16(bag[b], 2), u16(bag[b + 1], 2)):
                     n_mod.append(mod[m])
-                for g in range(u16(bag[b], 0), u16(bag[b + 1], 0)):
-                    r2 = gen[g]
-                    if u16(r2, 0) == gen_ref:
+                zona = [gen[g] for g in range(u16(bag[b], 0), u16(bag[b + 1], 0))]
+                ops = [u16(r2, 0) for r2 in zona]
+                for r2 in zona:
+                    op = u16(r2, 0)
+                    if op == gen_ref:
+                        if gen_ref == 41 and margen_cb and 48 not in ops:
+                            n_gen.append(struct.pack("<Hh", 48, margen_cb))  # antes del instrumento
                         r2 = r2[:2] + struct.pack("<H", remap[u16(r2, 2)])
+                    elif op == 48:
+                        v = struct.unpack_from("<h", r2, 2)[0]
+                        if gen_ref == 41:
+                            # En la zona global del preset habría que repartir el margen
+                            # entre las zonas que la heredan; TimGM6mb no tiene ninguna.
+                            assert gen_ref in ops or not margen_cb, "atenuación en la zona global de un preset"
+                            v += margen_cb
+                        else:
+                            v = round(v * atenuacion)
+                        r2 = r2[:2] + struct.pack("<h", v)
                     n_gen.append(r2)
         fin = cabeceras[-1]
         n_cab.append(fin[:tam_nombre_bag] + struct.pack("<H", len(n_bag)) + fin[tam_nombre_bag + 2:])

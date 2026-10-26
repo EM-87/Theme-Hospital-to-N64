@@ -130,7 +130,7 @@ La ROM de pruebas carga las 5.
 - **Música.** Las 8 piezas XMI pasan a MIDI con el `xmi2mid.cpp` de CorsixTH, compilado aquí con `g++`; no hace falta compilar CorsixTH entero.
 - **Banco de instrumentos.** Se toca con TimGM6mb, como en la fase 4, recortado a lo que usan las piezas. Es un SF2 nuevo con solo esos presets, sus instrumentos y sus muestras: 28 de 136 presets, 43 instrumentos y 177 de 520 muestras.
   - Comprobación: fluidsynth sintetiza cada pieza con el banco entero y con el recortado, y en las 8 el audio sale idéntico byte a byte (120 MB de WAV a 22.050 Hz).
-  - `audioconv64` avisa de que el sintetizador de libdragon no tiene envolvente de modulación (3 instrumentos) ni vibrato (27). En la N64 sonará algo distinto que en fluidsynth.
+  - En la N64 suena casi igual que en fluidsynth, salvo por el filtro de los instrumentos. Al medirlo salió una diferencia mayor, que se corrige en el conversor: la N64 aplicaba la atenuación de los instrumentos entera, y fluidsynth la multiplica por 0,4. Ver [Música: la N64 frente a fluidsynth](#música-la-n64-frente-a-fluidsynth).
 
 | Qué | En la ROM | Estimación de la fase 2 |
 |---|---:|---:|
@@ -680,3 +680,109 @@ Dos medidas en ares con la ROM de pruebas y la semilla 1:
   - las salas con más personal;
   - el `isRoomInDemand` completo.
 - **El panel inferior.** El contador usa FONT100M de `QDATAM`; el panel de CorsixTH usa `Font05V` de `QDATA` y un gráfico con el símbolo del dólar. Llega con la interfaz.
+
+## Música: la N64 frente a fluidsynth
+
+La pregunta: ¿suena la música en la N64 como en el PC? La N64 la toca con MID64 y el sintetizador SF64 de libdragon. La referencia es fluidsynth 2.3.4 con el mismo banco (TimGM6mb). El sintetizador de libdragon no es el reproductor XM (`xm64`, libxm), que sí tiene vibrato y envolventes de volumen y panorama; la música de Theme Hospital es MIDI y va por SF64.
+
+### Cómo se mide
+
+- **La N64.** La ROM [`n64/pruebas/musica`](../n64/pruebas/musica) toca las 8 piezas con la configuración de sonido del motor:
+  - 22.050 Hz (la N64 da 22.047);
+  - 16 voces;
+  - modo GM1.
+
+  No suena por el altavoz: pide al mezclador cada bloque (`mixer_poll`) y lo vuelca en base64 por EMUX. La grabación es exactamente lo que mezcla la consola, aunque ares vaya más deprisa que el tiempo real (si va más deprisa, ares tira el audio que no cabe en la salida, y por eso la salida de audio de ares no sirvió).
+
+  Las 8 piezas son 1.336 s de audio, en 57.530 bloques de 512 muestras, sin que falte ninguno. ares tarda 4 min 15 s.
+- **fluidsynth**, a 48 kHz, de cuatro maneras:
+  - como en el PC;
+  - sin reverberación ni coro;
+  - además, sin filtro ni LFO ([`banco_n64.py`](../tools/musica/banco_n64.py)), lo más parecido a lo que hace SF64;
+  - además, con 16 voces.
+- **Las medidas** ([`comparar.py`](../tools/musica/comparar.py)), con la N64 pasada a 48 kHz:
+  - **distancia de timbre:** la diferencia media, en dB, del espectro a largo plazo por tercios de octava entre 100 Hz y 10 kHz, con el nivel igualado;
+  - **correlación de las envolventes** de 50 ms: si las notas suben y bajan a la vez y con el mismo peso;
+  - el centroide espectral, el desfase y la deriva.
+
+  Los pasos están en [`tools/musica`](../tools/musica/README.md).
+
+El tempo es exacto: en las 8 piezas el desfase es 0 ms y la deriva entre el principio y el final no pasa de 10 ms, que es el paso de la medida.
+
+### Lo que no hace el sintetizador SF64, en este banco
+
+| Qué | Instrumentos del banco recortado (43) | Detalle |
+|---|---:|---|
+| Filtro paso bajo | 30 | Corte entre ≈ 120 Hz (Synth Strings 10) y ≈ 5,6 kHz; 5 con resonancia de 1,3 a 2,5 dB |
+| Envolvente de modulación al filtro | 28 | Abre el filtro de +787 a +10.800 cents al empezar la nota |
+| LFO de modulación al volumen | 7 | Hasta 2,5 dB (Tenor Sax) |
+| LFO de modulación al tono | 3 | Mute Trumpet 10 cents, Organ 30 18, Tenor Sax 9–10 |
+| LFO de modulación al filtro | 2 | Organ 2 y Organ 30 |
+| LFO de vibrato | 1 | Tenor Sax, 9 cents |
+| Moduladores SF2 | 170 | Casi todos anulan los de por defecto o mandan a reverberación y coro. Solo 15 hacen algo más: la rueda de modulación y la presión de canal mueven de −50 a +10 cents los LFO de 5 instrumentos |
+| Reverberación y coro | — | La N64 no tiene. Solo `STEADY` los pide (10 controladores) |
+| Envolvente de modulación al tono | 10 | **Sí la hace** la N64 |
+
+- **Lo que dice `audioconv64`.** Cuenta presets, no instrumentos (28). Su aviso de «vibrato LFO (27)» incluye los LFO que tienen frecuencia pero profundidad cero: con profundidad, solo hay uno. La «modulation envelope (3)» es una envolvente sin destino, que no suena en ningún sintetizador.
+- **Lo que piden las piezas.** No hay *pitch bend*. La rueda de modulación (CC1, 22 veces en `ATLANTIS`) y la presión de canal (24 en `FORTUNE` y 4 en `MEND`) solo actuarían sobre esos LFO.
+
+Medido en fluidsynth:
+- el filtro y los LFO juntos cambian el timbre entre 0,1 y 1,3 dB según la pieza. Sin ellos, el centroide sube de 23 a 163 Hz;
+- la reverberación y el coro, entre 0,0 y 0,2 dB;
+- limitar a 16 voces, entre 0,0 y 0,2 dB.
+
+### Lo que sí cambiaba: la atenuación de los instrumentos
+
+La primera grabación (banco del hito 0) se apartaba de fluidsynth más de lo que explican el filtro y los LFO:
+- distancia de timbre de 0,6 a 3,0 dB;
+- correlación de envolventes de 0,740 a 0,988.
+
+`CANDY` era la peor. Tocada canal a canal ([`solo.py`](../tools/musica/solo.py)), el nivel de cada instrumento en la N64 frente a fluidsynth sin filtro ni LFO:
+
+| Canal | Instrumento | Atenuación en el banco (cB) | N64 − fluidsynth |
+|---:|---|---:|---:|
+| 1 | Synth Bass 1 | 30 | +9,1 dB |
+| 6 | Kalimba | 10–17 | +9,2 dB |
+| 7 y 8 | Mute Trumpet | 35–155 | +10,3 dB |
+| 9 | Percusión | 10–247 | +9,1 dB |
+| 2 | Organ 30 + Organ 31 | 245–258 y 112–189 | +2,2 dB |
+| 5 | Saw Wave | 132–177 | +1,6 dB |
+| 3 | Square Wave | 185–230 | −2,8 dB |
+
+Los instrumentos muy atenuados en el banco suenan de 7 a 12 dB más bajos en la N64 que el resto.
+
+**La causa.** SF64 aplica la atenuación inicial entera, como dice la especificación SF2. fluidsynth la multiplica por 0,4, como el hardware EMU de las Sound Blaster, para el que se hicieron casi todos los bancos General MIDI.
+
+**La comprobación.** Con el banco ya multiplicado por 0,4, la onda cuadrada sube 5,3 dB en fluidsynth. Si fluidsynth aplicara la atenuación entera, habría subido unos 12,6 dB; con su factor 0,4, la previsión es de unos 5,0 dB.
+
+**La corrección.** Está en el conversor ([`sonidos.py`](../tools/conv/sonidos.py), `ATENUACION_N64` y `MARGEN_N64_CB`):
+- la atenuación de cada instrumento se multiplica por 0,4;
+- cada preset suma 60 cB.
+
+El margen hace falta porque el volumen sube: sin él, `CANDY` pasaría de 0 dBFS en unos 3 dB (en la prueba se recortaron 144 muestras). El banco para fluidsynth no cambia: con `--vistas`, el conversor deja también el recorte sin ajustar, y sigue sonando igual que el banco entero. El SF64 pasa de 713.908 a 713.869 B.
+
+### Resultado
+
+| Pieza | Frente al PC, antes | Frente al PC, ahora | Frente a sin filtro ni LFO, ahora | Pico y nivel ahora |
+|---|---|---|---|---|
+| `ATLANTIS` | 1,2 dB · 0,969 | 1,1 dB · 0,987 | 0,4 dB · 0,990 | −5,4 · −26,1 dBFS |
+| `CANDY` | 3,0 dB · 0,740 | 1,6 dB · 0,938 | 0,4 dB · 0,954 | −4,2 · −21,5 dBFS |
+| `DOCTOR` | 1,1 dB · 0,988 | 0,5 dB · 0,995 | 0,3 dB · 0,995 | −7,5 · −25,0 dBFS |
+| `FORTUNE` | 1,8 dB · 0,833 | 0,6 dB · 0,953 | 0,2 dB · 0,963 | −5,7 · −25,2 dBFS |
+| `MEND` | 0,6 dB · 0,983 | 0,5 dB · 0,993 | 0,4 dB · 0,995 | −5,6 · −24,1 dBFS |
+| `NIGHTSH` | 1,2 dB · 0,947 | 0,7 dB · 0,976 | 0,4 dB · 0,982 | −7,7 · −28,2 dBFS |
+| `SIXSEVEN` | 0,6 dB · 0,899 | 0,5 dB · 0,951 | 0,4 dB · 0,953 | −5,7 · −24,5 dBFS |
+| `STEADY` | 1,8 dB · 0,890 | 0,5 dB · 0,973 | 0,2 dB · 0,977 | −6,1 · −25,9 dBFS |
+
+*Cada celda de comparación da la distancia de timbre y la correlación de envolventes. «PC» es fluidsynth con reverberación y coro. Antes, `SIXSEVEN` saturaba (pico de 32.767). Ahora ninguna pasa de −4,2 dBFS.*
+
+- **Frente a fluidsynth sin filtro ni LFO**, la N64 queda en 0,2–0,4 dB de timbre. Es decir, la síntesis de SF64 es la misma salvo por lo que no implementa.
+- **Lo que queda frente al PC** (0,5–1,6 dB) es sobre todo el filtro. En la N64 los instrumentos filtrados suenan más brillantes: hasta +186 Hz de centroide en `ATLANTIS`. El caso más claro es el Synth Bass 1 de `CANDY`: en fluidsynth el filtro parte de ≈ 134 Hz y la envolvente lo abre al atacar cada nota; en la N64 suena la muestra entera.
+- **La salida a 22.050 Hz** no deja nada por encima de 11 kHz. En fluidsynth esa banda tiene entre el 0,0 y el 0,6 % de la energía.
+- **El vibrato** no importa en esta música: lo usa un instrumento, con 9 cents.
+
+**Decisión: la música se queda en MID64 + SF64**, 0,75 MiB con el banco recortado. Opus estéreo serían 11,37 MiB ([`02_datos.md`](02_datos.md#música)) y no se gana nada que se oiga, salvo el filtro.
+
+Dos cosas se pueden proponer a libdragon:
+- una opción de `audioconv64` para la atenuación al estilo EMU (aquí se hace en el conversor);
+- un filtro paso bajo de un polo por voz, con la envolvente de modulación, que es lo siguiente que se oye.

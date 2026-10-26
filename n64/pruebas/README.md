@@ -15,7 +15,7 @@ make -C n64/pruebas/hilos
 ARES_SETTINGS="General/HomebrewMode=true" tools/run_ares.sh n64/pruebas/hilos/th64hilos.z64 out/hilos 60
 ```
 
-`ARES_SETTINGS="General/HomebrewMode=true"` hace falta en las ROMs que usan `debug_init_emulog()`, EMUX o `profile.h` (`calibracion`, `sim`, `depuracion`, `hilos`, `dso`, `guardado`, `rom_grande`). Con `--no-expansion`, ares arranca con 4 MiB.
+`ARES_SETTINGS="General/HomebrewMode=true"` hace falta en las ROMs que usan `debug_init_emulog()`, EMUX o `profile.h` (`calibracion`, `sim`, `depuracion`, `hilos`, `dso`, `guardado`, `rom_grande`, `musica`). Con `--no-expansion`, ares arranca con 4 MiB.
 
 ## Qué mide cada una
 
@@ -37,6 +37,7 @@ ARES_SETTINGS="General/HomebrewMode=true" tools/run_ares.sh n64/pruebas/hilos/th
 | `raton/` | Detección del ratón de N64 conectado en ares desde el menú (`run_mouse.sh` lo hace con `xdotool`) | Detectado en caliente como `JOYPAD_STYLE_MOUSE` |
 | `ram4/` | RAM libre con 4 MiB según framebuffers, z-buffer, frecuencia de audio y formato de la música. Variantes en `variantes.txt` (`make V=<nombre> DEFS="…"`) | De 2.668 a 3.268 KiB libres |
 | `bfs/` | Recorrido en anchura de 10.000 casillas, el peor caso de la comprobación de zonas bloqueadas | 19,0 ms; 9,0 ms con un mapa de bits |
+| `musica/` | (Fase 5) Las 8 piezas de música con el banco y la configuración de sonido del motor, volcadas por EMUX bloque a bloque para compararlas con fluidsynth ([`tools/musica`](../../tools/musica)). Usa `motor/filesystem/musica` | Ver [`docs/05_prototipo.md`](../../docs/05_prototipo.md#música-la-n64-frente-a-fluidsynth) |
 | `nucleo/` | Núcleo de ejemplo en C portable (pool, Q16.16, xorshift32) con 60.045 comprobaciones; `CMakeLists.txt` para el PC (`-DTH_SANITIZE=ON` para ASan y UBSan) y `Makefile.n64` para la ROM; `bugs/` con tres errores a propósito; `gen_ccdb.py` genera `compile_commands.json` | Misma huella en el PC y en la N64; coste por operación numérica |
 
 ## Ficheros de `filesystem/` que hay que generar

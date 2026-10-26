@@ -275,7 +275,7 @@ Tamaños en MiB.
 
 - Usan **27 programas** General MIDI y 22 notas de percusión; la polifonía máxima es de **15 notas** a la vez (`FORTUNE`; 7–15 según la pieza).
 - XMI: 102 KiB; MIDI: 192 KiB; **MID64: 77 KiB** (0,07 MiB).
-- Hace falta un SoundFont. Con TimGM6mb (General MIDI completo, 5,69 MiB, GPL-2, el paquete `timgm6mb-soundfont` de Ubuntu) el **SF64 ocupa 1,73 MiB**. `audioconv64` avisa de que ignora los LFO y las envolventes de modulación de la mayoría de instrumentos. Las muestras del SF64 se leen del cartucho al tocarlas (`sf64_load`), no se cargan en RAM.
+- Hace falta un SoundFont. Con TimGM6mb (General MIDI completo, 5,69 MiB, GPL-2, el paquete `timgm6mb-soundfont` de Ubuntu) el **SF64 ocupa 1,73 MiB**. `audioconv64` avisa de que ignora el filtro y los LFO de la mayoría de instrumentos (la fase 5 mide cuánto se nota: [`05_prototipo.md`](05_prototipo.md#música-la-n64-frente-a-fluidsynth)). Las muestras del SF64 se leen del cartucho al tocarlas (`sf64_load`), no se cargan en RAM.
 - **Total MIDI + SoundFont: 1,81 MiB.**
 
 La alternativa es grabar la música ya sintetizada (fluidsynth con el mismo SoundFont, 32 kHz):

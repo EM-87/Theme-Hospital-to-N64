@@ -58,12 +58,13 @@ Comprobaciones al convertir:
 
   Da las 5.524 cadenas inglesas y las 5.543 españolas iguales.
 - **Fuentes:** el conversor cuenta los caracteres de los textos que no tiene cada fuente.
-- **Sonido:** el SoundFont recortado tiene que tener exactamente los presets pedidos. Además, fuera del conversor, fluidsynth da el mismo audio con el banco recortado que con el entero:
+- **Sonido:** el SoundFont recortado tiene que tener exactamente los presets pedidos. El del motor lleva además la atenuación de los instrumentos a 0,4 y 6 dB de margen, para que la N64 suene como fluidsynth ([`docs/05_prototipo.md`](../../docs/05_prototipo.md#música-la-n64-frente-a-fluidsynth)). Con `--vistas`, el paso `sonido` deja también el recorte sin ese ajuste, y fuera del conversor fluidsynth da con él el mismo audio que con el banco entero:
 
   ```bash
+  python3 -I tools/conv/conv.py --vistas $TH64_WORK/resultados/hito0/vistas sonido
   for m in motor/assets/musica/*.mid; do
     fluidsynth -q -n -i -r 22050 -F /tmp/a.wav /usr/share/sounds/sf2/TimGM6mb.sf2 $m
-    fluidsynth -q -n -i -r 22050 -F /tmp/b.wav motor/assets/musica/banco.sf2 $m
+    fluidsynth -q -n -i -r 22050 -F /tmp/b.wav $TH64_WORK/resultados/hito0/vistas/banco_recortado.sf2 $m
     cmp /tmp/a.wav /tmp/b.wav && echo "$m igual"
   done
   ```
