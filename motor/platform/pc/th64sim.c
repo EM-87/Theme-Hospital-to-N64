@@ -49,6 +49,7 @@ static int uso(void)
             "     th64sim mapa <nivel.tmp> <número de nivel> [mapa_nivelN.tsv | --volcar celdas.tsv]\n"
             "     th64sim escenario <nivel.tmp> <escenario.trg> <celdas.tsv>\n"
             "     th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>\n"
+            "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
             "<unidad> <x> <y> <ancho> <alto> <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
             "     th64sim caminos <nivel.tmp> <número de nivel> <caminos_nivelN.tsv>\n"
@@ -735,6 +736,7 @@ static int orden_reglas(int argc, char **argv)
 }
 
 int th64sim_hito4(char **argv); // hito4.c
+int th64sim_carga(char **argv); // hito4.c
 th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
 
 // Dibuja el escenario del hito 4 tras unas horas de simulación: el mapa, los
@@ -773,6 +775,8 @@ int main(int argc, char **argv)
 {
     if (argc == 7 && strcmp(argv[1], "hito4") == 0)
         return th64sim_hito4(argv);
+    if (argc == 6 && strcmp(argv[1], "carga") == 0)
+        return th64sim_carga(argv);
     if (argc >= 16 && argc <= 18 && strcmp(argv[1], "escena4") == 0)
         return orden_escena4(argc, argv);
     if (argc == 4 && strcmp(argv[1], "huella") == 0) {

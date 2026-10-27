@@ -29,6 +29,8 @@ typedef struct th_pathfinder {
     uint16_t start, dest; // dest = TH_PATH_NONE si no hay camino
     uint16_t dest_x, dest_y;
     uint32_t expanded; // nodos sacados del montículo en la última búsqueda
+    // Desde el principio, para medir: búsquedas (de las cuatro clases) y nodos recorridos.
+    uint32_t total_searches, total_expanded;
 } th_pathfinder;
 
 // Busca el camino de (sx, sy) a (dx, dy), como World:getPath. Devuelve su

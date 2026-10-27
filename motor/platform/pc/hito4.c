@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "th/map.h"
 #include "th/rules.h"
@@ -370,5 +371,35 @@ int th64sim_hito4(char **argv)
     printf("hito4: %u pacientes en %d horas; saldo %ld (%+ld); reputación %ld; huella %08lx\n",
            (unsigned)sim.patients_spawned, horas, (long)sim.hosp.balance, (long)(sim.hosp.balance - saldo0),
            (long)sim.hosp.reputation, (unsigned long)th_sim_hash(&sim));
+    return 0;
+}
+
+// th64sim carga <assets> <escenario.trg> <semilla> <horas>: la carga de cada
+// tick (th_sim_load_count antes del tick), las casillas de temperatura que
+// recalcula, las búsquedas de camino y los nodos que recorren, y lo que tarda
+// el tick en el PC. Es lo mismo que escribe la
+// ROM de medida del hito 5 (make MEDIR=1), para juntar las dos por la hora.
+int th64sim_carga(char **argv)
+{
+    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], NULL, (uint32_t)strtoul(argv[4], NULL, 0));
+    if (!s)
+        return 1;
+    const int horas = atoi(argv[5]);
+    printf("hora\tpersonas\tpacientes\tandando\tcasillas_temp\tbusquedas\tnodos\tns_pc\n");
+    for (int h = 1; h <= horas; h++) {
+        th_sim_load l;
+        th_sim_load_count(s, &l);
+        const uint32_t b0 = s->w.pf->total_searches, n0 = s->w.pf->total_expanded, c0 = s->temp_cells_total;
+        struct timespec t0, t1;
+        clock_gettime(CLOCK_MONOTONIC, &t0);
+        th_sim_tick(s);
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        const long ns = (t1.tv_sec - t0.tv_sec) * 1000000000l + (t1.tv_nsec - t0.tv_nsec);
+        printf("%d\t%u\t%u\t%u\t%u\t%u\t%u\t%ld\n", h, l.people, l.patients, l.walking,
+               (unsigned)(s->temp_cells_total - c0),
+               (unsigned)(s->w.pf->total_searches - b0), (unsigned)(s->w.pf->total_expanded - n0), ns);
+    }
+    fprintf(stderr, "carga: %d horas; %u pacientes; huella %08lx\n", horas, (unsigned)s->patients_spawned,
+            (unsigned long)th_sim_hash(s));
     return 0;
 }

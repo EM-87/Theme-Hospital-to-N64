@@ -121,9 +121,8 @@ void th_sim_queue_unexpect(th_sim *s, int q, int who)
     if (q == TH_NONE)
         return;
     th_queue *qu = &s->queues[q];
-    const uint64_t bit = 1ull << who;
-    if (qu->expected & bit) {
-        qu->expected &= ~bit;
+    if (th_hset_has(&qu->expected, who)) {
+        th_hset_del(&qu->expected, who);
         if (s->hum[who].kind == TH_HUM_PATIENT)
             qu->expected_count--;
     }
@@ -132,9 +131,8 @@ void th_sim_queue_unexpect(th_sim *s, int q, int who)
 static void queue_expect(th_sim *s, int q, int who)
 {
     th_queue *qu = &s->queues[q];
-    const uint64_t bit = 1ull << who;
-    if (!(qu->expected & bit)) {
-        qu->expected |= bit;
+    if (!th_hset_has(&qu->expected, who)) {
+        th_hset_add(&qu->expected, who);
         if (s->hum[who].kind == TH_HUM_PATIENT)
             qu->expected_count++;
     }
@@ -210,7 +208,7 @@ static th_room *humanoid_room(th_sim *s, int who)
 
 static int in_room(const th_room *r, int who)
 {
-    return (r->humanoids >> who) & 1u;
+    return th_hset_has(&r->humanoids, who);
 }
 
 int th_sim_room_patient_count(const th_sim *s, const th_room *r)
@@ -750,7 +748,7 @@ void th_sim_room_on_enter(th_sim *s, th_room *r, int who)
     p->h.in_room = r->num;
     if (p->kind != TH_HUM_PATIENT)
         p->u.s.last_room = r->num;
-    r->humanoids |= 1ull << who;
+    th_hset_add(&r->humanoids, who);
     if (p->kind != TH_HUM_PATIENT) {
         if (p->u.s.on_call) // Staff:setCallCompleted
             checkpoint_completed(s, p->u.s.on_call, th_sim_room(s, p->u.s.on_call)->call_serial);
@@ -780,7 +778,7 @@ void th_sim_room_on_leave(th_sim *s, th_room *r, int who)
     p->h.in_room = 0;
     if (!in_room(r, who))
         return;
-    r->humanoids &= ~(1ull << who);
+    th_hset_del(&r->humanoids, who);
     th_sim_room_try_advance_queue(s, r);
 }
 

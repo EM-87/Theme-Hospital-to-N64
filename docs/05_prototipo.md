@@ -1,6 +1,6 @@
 # Fase 5 — Prototipos en N64
 
-Fecha de inicio: 2026-10-23. Estado: **en curso**. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
+Fecha de inicio: 2026-10-23. Estado: **hitos 0 a 5 hechos**. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
 
 ## Entorno del motor
 
@@ -680,6 +680,237 @@ Dos medidas en ares con la ROM de pruebas y la semilla 1:
   - las salas con más personal;
   - el `isRoomInDemand` completo.
 - **El panel inferior.** El contador usa FONT100M de `QDATAM`; el panel de CorsixTH usa `Font05V` de `QDATA` y un gráfico con el símbolo del dólar. Llega con la interfaz.
+
+## Hito 5 — Medición en la N64
+
+**Hecho.** El hospital del hito 4 con el triple de llegadas: 50 pacientes en el mapa en la hora 3.501 y 69 en la 9.000. Medido en ares con la ROM de medida ([`tools/hito5`](../tools/hito5/README.md)):
+- **30 fps sin saltos a velocidad Normal**, con 52 personas y la música sonando. El fotograma cuesta 19,3 ms de CPU de media (el 58 % de 33,3) y 28,2 en el percentil 99.
+- **Una hora de juego cuesta 7,5 ms de media**: el 14 % de los 54 ms que tiene a velocidad Normal. El 73 % es la temperatura del mapa.
+- **Por persona, 5,7 µs por hora** (537 ciclos). Es un 8 % de los 7.000 ciclos por humanoide que dejaba a la simulación la fase 4.
+- **Frente a CorsixTH en el mismo escenario y las mismas horas:** 158 veces menos tiempo en el PC. En la N64, 3,0 ms por hora frente a los unos 511 que estimaría la fase 1 para CorsixTH: unas 170 veces menos.
+- **Con 8 MiB sobran 3,83 MiB de heap** con todo cargado: todos los sprites y animaciones, las reglas, el hospital y la música.
+- **Lo que no llega:**
+  - la velocidad más alta («And then some more», 55,6 horas por segundo): salta 182 de 300 fotogramas, por la temperatura;
+  - los caminos largos: hasta 3.747 nodos en un tick, unos 40 ms.
+- **El modo demo sin Expansion Pak no cierra** con el código que se proyecta para el juego completo (ver «Tamaño del código y modo demo»).
+
+La N64 simula exactamente lo mismo que el PC: tras 9.000 horas, la misma huella (853ec05c).
+
+![El hospital del hito 5 en ares, con 53 personas](img/05_hito5.png)
+
+*La ROM normal con el escenario del hito 5 (`make HORAS=3600 ESCENARIO=hito5`), unos minutos de juego después: 53 personas, 594 sprites y 19,6 ms de CPU por fotograma a 30 fps. La cola de la recepción y los bancos llenos esperan a la consulta.*
+
+### El escenario
+
+Es el hospital del hito 4, creado en CorsixTH con 18 llegadas al mes en lugar de 6 (`--th64-ritmo=72`). Una consulta atiende unos 5 al mes, así que la gente se acumula en los bancos y en la cola. Las personas en el mapa (semilla 1):
+
+| Hora | 750 | 1.500 | 2.250 | 3.000 | 3.750 | 4.500 | 6.000 | 7.500 | 9.000 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Personas | 12 | 23 | 35 | 46 | 51 | 55 | 61 | 67 | 69 |
+
+Antes de medir la carga hay que comprobar que el motor se comporta como CorsixTH con ella. **Se compararon 10 semillas de 9.000 horas**, con 10 corridas del motor por semilla. Quedan dentro del azar 13 de las 15 cifras del hito 4:
+- **de la consulta a irse:** −16,8 %. Es lo mismo que en el hito 4 (vomitar y orinar, que el motor aún no tiene), con más peso porque hay más pacientes;
+- **las llegadas:** −5,2 %, con t = −2,15, en el límite. Con 15 cifras es esperable que alguna pase de 2 por azar.
+
+La semilla 4 no sirve: en su guardado queda una sala sin puerta, de un intento fallido de construir la consulta. Se usó la 11.
+
+**Lo que se arregló por el camino: el médico aprende con el uso.** La primera comparación, con una sola semilla, daba la mitad de visitas a la consulta que CorsixTH (13,7 frente a 28) y visitas el doble de largas (537 frente a 244 horas).
+- En la sonda del médico, los dos repartían igual el tiempo: mesa 54–55 %, andar 33–34 %. Lo distinto era la duración de cada visita.
+- La causa está en `Doctor:tick`: un médico gana 0,000003 de habilidad por hora mientras usa un objeto en una sala.
+- El de este escenario es junior, con habilidad 0,2479. Hacia la hora 2.179 pasa de `DoctorThreshold` (0,25), deja de ser junior y de ir a medio ritmo, y además despacha antes.
+- El motor no tenía ese aprendizaje. En el hito 4 no se notaba, porque el médico de la semilla 1 no era junior.
+
+Con el aprendizaje, la consulta pasa de −51 % a +2,8 %. Las 40 semillas del hito 4 siguen dando 14 de 15 cifras dentro del azar, y la huella de la semilla 1 a 3.000 horas no cambia (44923eae).
+
+**Hasta 128 personas.** La simulación tenía sitio para 64, y este escenario llega a 70. El límite no era la memoria sino dos máscaras de 64 bits: quién está en cada sala y quién va hacia cada cola. Ahora son conjuntos de 128 bits, el tope de la demo.
+
+### Cómo se mide
+
+- **La ROM de medida** (`make -C motor MEDIR=1`):
+  1. simula tan deprisa como puede hasta la hora 3.501, con 50 pacientes, y escribe una línea por tick con su carga: personas, casillas de temperatura recalculadas, búsquedas de camino y nodos que recorren;
+  2. con la música sonando, dibuja 900 fotogramas a velocidad Normal (18,5 horas por segundo), 300 a «Max speed» (27,8) y 300 a «And then some more» (55,6). La cámara se pone donde se ven más personas: 22, con 146 sprites de entidades por fotograma. La temperatura se reparte entre fotogramas, como en la ROM normal;
+  3. sigue hasta la hora 9.000 y escribe la huella.
+
+  Con 8 y con 4 MiB.
+- **El PC:** `th64sim carga` escribe lo mismo tick a tick. Las 7.611 horas simuladas a toda prisa tienen la misma carga en los dos lados.
+- **CorsixTH:** [`medir_hito5.lua`](../bench/scenarios/medir_hito5.lua), que es el `medir.lua` de la fase 1 con el mismo jugador que contesta los faxes. Con Tracy, 3 repeticiones de las horas 3.500 a 4.500, con Lua 5.4.
+
+### La simulación
+
+Las 7.611 horas a toda prisa (todas menos las de los fotogramas):
+
+| Dato | Valor |
+|---|---:|
+| Tick de media | 7,46 ms |
+| Mediana / p90 / p99 | 2,76 / 16,4 / 29,9 ms |
+| El tick más largo | 64,6 ms (hora 7.733: una pasada de temperatura entera y un camino de 3.626 nodos) |
+| Ticks de más de 33 ms | 56 |
+
+El tiempo de cada tick se explica con una regresión lineal (R² = 0,994):
+
+| Parte | Coste | En ciclos |
+|---|---:|---:|
+| Fijo por tick (mapa de bits de la temperatura, mostrador, faxes, colas) | 1,19 ms | 112.000 |
+| Por persona | 5,7 µs | 537 |
+| Por casilla de temperatura recalculada | 0,92 µs | 86 |
+| Por nodo de búsqueda de camino | 10,8 µs | 1.014 |
+| Por búsqueda (lo que cuesta empezarla) | 70 µs | 6.600 |
+
+- **La temperatura es el 73 % del tiempo.**
+  - Se recalculan 5.930 casillas por tick de media.
+  - En 1.913 ticks (el 25 %) es la pasada entera, con 16,8 ms de media por tick. Son las unas 440 horas que siguen a cada cambio de mes, cuando cambia el aire de fuera (hito 4).
+- **Los caminos son el 7 %.** Hay 4.389 búsquedas en 7.611 horas, con 79 nodos de media.
+  - 143 ticks recorren más de 1.000 nodos; esos ticks duran 32,9 ms de media.
+  - El que más, 3.747 nodos: unos 40 ms solo en el camino.
+- **Las personas, sin más,** cuestan 0,94 ms más 3,5 µs por persona en los 1.144 ticks sin temperatura ni caminos.
+- **La N64 frente al PC:** el mismo código tarda entre 310 y 345 veces más en ares que en el PC de medida, según la ejecución. La fase 1 suponía 227 veces para C.
+
+**Frente a CorsixTH y a la fase 1**, en el mismo escenario y las mismas horas (3.500 a 4.500, 49,6 pacientes de media):
+
+| | CorsixTH | Motor | Cociente |
+|---|---:|---:|---:|
+| PC de medida, por hora de juego | 1,28 ms | 8,1 µs | 158 |
+| N64, por hora de juego | ~511 ms, estimado como en la fase 1 (× 400; de 377 a 831 con su rango 295–650) | 3,0 ms medidos (1,24 del tick y 1,72 de temperatura entre fotogramas) | ~170 |
+| Estado de la simulación | Heap de Lua vivo: 13,9 MB; hasta 22,4 MB entre recolecciones | 199 KiB de simulación y 369 KiB de reglas, más el mapa (256 KiB) y el buscador (164 KiB) | — |
+
+La fase 1 estimaba para la partida `mediano` (53 pacientes y 16 empleados) 812 ms por hora en la N64, 16 veces la CPU entera. El motor hace este hospital con 3,0 ms por hora en esas horas y con 7,5 ms de media en las 9.000.
+
+### Los fotogramas
+
+| | Normal (18,5 h/s) | Max speed (27,8 h/s) | And then some more (55,6 h/s) |
+|---|---:|---:|---:|
+| Fotogramas | 900 | 300 | 300 |
+| CPU por fotograma, media | **19,3 ms** | 20,4 ms | 42,6 ms |
+| p99 / máximo | 28,2 / 44,4 ms | 34,9 / 53,6 ms | 70,8 / 89,5 ms |
+| Fotogramas que se saltan (más de 50 ms) | **0** | 2 | 182 |
+| Intervalo máximo | 44,7 ms | 54,0 ms | 89,8 ms |
+| Dibujo | 15,2 ms | 15,8 ms | 16,1 ms |
+| — la lista | 5,66 ms | 5,80 ms | 6,03 ms |
+| — suelos y sombras | 2,64 ms | 2,65 ms | 2,68 ms |
+| — paredes y entidades | 6,92 ms | 7,33 ms | 7,42 ms |
+| Simulación por fotograma | 0,76 ms | 1,22 ms | 22,9 ms |
+| Tick de media / el más largo | 1,24 / 26,6 ms | 1,32 / 36,3 ms | 12,4 / 54,7 ms |
+| Temperatura entre fotogramas | 1,06 ms | 0,68 ms | 0,21 ms |
+| Audio (`mixer_try_play`) | 1,73 ms | 2,19 ms | 2,84 ms |
+| Sprites (de entidades) | 551 (146) | 565 (161) | 571 (167) |
+| Cargas de textura | 231 | 245 | 251 |
+
+- **A velocidad Normal no salta ningún fotograma.** Seis de los 900 llegan tarde, entre 36,6 y 44,7 ms, cuando coincide un camino largo: se ven como un tirón, pero el ritmo de 30 fps no se pierde.
+- **«Max speed» salta 2** por la misma razón: ticks de 36 ms.
+- **«And then some more» no va.** Hay 1,85 ticks por fotograma, así que el tick siguiente llega antes de que acabe la pasada de temperatura y tiene que acabarla él: 12,4 ms por tick de media. Con 52 personas la simulación no es el problema; lo es la temperatura.
+- **Lo más caro del dibujo son las cargas de textura:** 25 µs cada una (2.400 ciclos), 5,9 ms por fotograma, el 39 % del dibujo. Cada elemento de entidad cuesta 24 µs al enviarlo, casi todo la carga.
+- **La lista cuesta 5,7 ms**, frente a 1,7 en el hito 2 con 379 sprites y sin entidades:
+  - pasar los objetos y las personas a entidades (`th_vista_sim`) son 0,56 ms;
+  - el resto son unos 23 µs por elemento de entidad. Con callgrind en el PC: el 37 % de las instrucciones es el recorrido de las casillas y el orden de las entidades, y un 33 % los elementos de las entidades. Cada fotograma de un humanoide recorre todos sus elementos, también los de capas que no lleva, y los decodifica de la tabla de animaciones de 470 KiB.
+- **El RDP** sigue sin poder medirse en ares. El relleno, unos 250.000 píxeles por fotograma, son unos 4 ms a un píxel por ciclo, más las 231 cargas.
+
+### Memoria
+
+Heap tras cada paso de la carga, en KiB:
+
+| Paso | Con 8 MiB | Con 4 MiB |
+|---|---:|---:|
+| Heap total (lo demás es código, datos y variables estáticas) | 6.865 | 2.769 |
+| Arranque: 3 framebuffers, RDP, mandos y fuentes | 600 | 600 |
+| `MSPR-0` entera | 1.786 | 1.786 |
+| `MBLK-0` | 1.974 | 1.974 |
+| Todas las animaciones | 2.443 | 2.443 |
+| Escenario | 2.455 | 2.455 |
+| `definiciones.trg` entero | 2.786 | **sin memoria** |
+| Reglas del nivel | 2.812 | — |
+| Música sonando (banco, sintetizador y FORTUNE) | 2.942 | — |
+| **Libre al final** | **3.923** | — |
+
+- **Fuera del heap** van 1,30 MiB: el código y los datos (0,48 MiB con el audio) y las variables estáticas (0,75 MiB).
+- **Lo estático del motor:**
+  - el mapa, 256 KiB;
+  - el buscador, 164 KiB;
+  - la simulación, 199 KiB: 96 KiB de temperatura y 128 personas de 736 B;
+  - la lista de dibujo, 64 KiB, y lo demás.
+- **Con 4 MiB**, la ROM de medida se queda sin memoria al cargar `definiciones.trg`. Era lo esperado: carga todos los sprites (1,16 MiB) y todas las animaciones (0,46 MiB), y la demo contaba con cargar solo los del nivel 1 (0,47 y 0,20).
+
+### Tamaño del código y modo demo
+
+Del mapa del enlazador de la ROM normal ([`codigo.py`](../tools/hito5/codigo.py)):
+
+| Parte | Código | Solo lectura | Datos y bss |
+|---|---:|---:|---:|
+| Motor | 103.936 B | 38.050 B | 768.580 B |
+| — de ello, la simulación (`sim`, `sim_rooms`, `humanoid`) | 70.208 B | | |
+| libdragon | 155.616 B (222.368 con el audio) | 7.075 B | 19.258 B |
+| libc, libm y libgcc | 72.980 B | 2.692 B | 2.204 B |
+
+**Cuánta lógica hay ya** ([`cobertura.py`](../tools/hito5/cobertura.py)):
+- las 69 funciones de CorsixTH que nombra el núcleo y las 10 acciones de humanoide suman 3.439 líneas de Lua;
+- son el 14 % de las 24.749 de lógica (fase 3);
+- la simulación ocupa 70.208 B para ellas: unos 20 B de código por línea de Lua.
+
+Es una cota gruesa: las funciones cuentan enteras aunque el motor haga solo una parte.
+
+**Proyección para el juego completo:**
+
+| Parte | Proyección |
+|---|---:|
+| Lógica (24.749 líneas) | 0,48 MiB de código y 0,17 de solo lectura, en la proporción del motor |
+| Interfaz (19.512 líneas de Lua en CorsixTH; aquí se rehace para mando y 320 × 240, se cuenta la mitad) | 0,19 MiB |
+| Vista, dibujo y capa de la N64 | 0,08 MiB |
+| **Código del juego** | **unos 0,9 MiB**; la fase 4 estimaba 0,75 para la demo y 1,00 para el juego |
+
+**Presupuesto de la demo con 4 MiB**, el de [`04_construccion.md`](04_construccion.md#modo-demo-sin-expansion-pak) con lo medido:
+
+| Concepto | Fase 4 | Ahora |
+|---|---:|---:|
+| libdragon y libc: código, datos y pila | 0,39 | 0,32 (medido, con el audio) y la pila |
+| Código del juego | 0,75 | ~0,9 (proyectado) |
+| Mapa, caminos, entidades y estado | 0,51 | 0,73 (medido: lo estático del motor, con la temperatura y 128 personas) |
+| Vídeo (2 framebuffers), RDP y audio | 0,44 | 0,44 |
+| Música y efectos | 0,17 | 0,13 (medido: banco, sintetizador y una pieza) |
+| Tablas de animación del nivel 1 | 0,20 | 0,20 |
+| Sprites y bloques del nivel 1 | 0,65 | 0,65 |
+| Reglas | — | 0,10 (recortadas al nivel; enteras son 0,33) |
+| Interfaz y textos | 0,55 | 0,55 |
+| **Total** | **3,66** | **~4,0** |
+
+**Recomendación: no hacer el modo demo sin Expansion Pak.**
+- Con lo medido, el margen de 0,34 MiB desaparece. Lo estático del motor ya ocupa 0,22 MiB más de lo previsto (sobre todo la temperatura, 96 KiB, que la fase 4 no contaba), y el código proyectado, unos 0,15 más.
+- Para meterla habría que partir el código en módulos cargables y rehacer partes del motor solo para ella, algo que la fase 4 ya descartaba («ni partir el juego en módulos cargables para ganar 0,1 MiB»).
+- El juego completo necesita el Expansion Pak de todos modos.
+
+### Hacia el hospital lleno
+
+La partida `lleno` de la fase 1 tiene 365 personas, 305 objetos y 36 salas. Con lo medido:
+- **las personas:** 365 × 5,7 µs son 2,1 ms por hora. En CorsixTH, cada persona del hospital lleno cuesta solo un 15 % más que en este escenario: 11,9 µs frente a 10,4 en el PC, descontando lo fijo de la partida `inicio`;
+- **los caminos:** si las búsquedas crecen con los pacientes (de 0,58 a unas 4 por hora) y son más largas (unos 150 nodos), son unos 6,8 ms por hora;
+- **la temperatura:** unos 5,4 ms de media, que no dependen de la gente;
+- **lo fijo:** 1,2 ms.
+
+En total, unos **15 ms por hora: el 28 % de los 54 ms de la velocidad Normal**, en un motor que todavía no tiene buena parte de la lógica. Con las mismas cuentas, «And then some more» (18 ms por hora) no llega.
+
+Lo que hay que resolver para el juego completo, por orden:
+1. **Los caminos largos.** Un camino de 3.000–4.000 nodos se come un fotograma entero, y en el hospital lleno habrá más. Opciones:
+   - repartir la búsqueda entre fotogramas. Cambia cuándo empieza a andar el paciente: habría que medir si se nota en la comparación con CorsixTH;
+   - abaratar el nodo (1.014 ciclos, casi todo fallos de caché sobre una tabla de 128 KiB) sin cambiar el orden de visita.
+2. **La temperatura a las velocidades altas.** Es un cálculo regular sobre 16.384 casillas: candidata al RSP, que hoy usan solo el RDP y el audio.
+3. **El dibujo con mucha gente en pantalla.**
+   - Cargas de textura: 2.400 ciclos cada una. La fase 4 medía unos 1.700 por elemento escribiendo los comandos a mano.
+   - Los elementos de entidad en la lista: guardar decodificados los fotogramas recientes.
+
+   Con 50 humanoides en pantalla (hito 3), el dibujo ya eran 23,7 ms.
+
+### Comprobaciones
+
+| Qué | Contra qué | Resultado |
+|---|---|---|
+| El escenario del hito 5: 10 semillas de 9.000 horas, 10 corridas del motor por semilla | La campaña de CorsixTH | **13 de 15 cifras con \|t\| < 2**; las otras dos, arriba |
+| El escenario del hito 4 con el aprendizaje del médico: 40 semillas | La campaña del hito 4 | **14 de 15**, como antes |
+| 9.000 horas del escenario del hito 5 en la N64 | `th64sim carga` | **La misma huella** (853ec05c) y la misma carga en las 7.611 horas comparables |
+| Pruebas del núcleo | — | 60.233 comprobaciones, 0 fallos en el PC, con ASan y UBSan, y en la N64 |
+
+### Pendiente
+
+- **Lo de «Hacia el hospital lleno»:** los caminos largos, la temperatura a velocidades altas y el coste del dibujo con mucha gente.
+- **Las necesidades de los pacientes** (del hito 4): con más pacientes pesan más en la salida (−16,8 %).
+- **Medir en la consola.** Todo es de ares. Con el flashcart hay que repetir esta medida: ares no emula los contadores del RDP, y sus ciclos de memoria pueden ser optimistas.
 
 ## Música: la N64 frente a fluidsynth
 

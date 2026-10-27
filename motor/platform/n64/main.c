@@ -185,6 +185,32 @@ static bool cargar_reglas_rom(const char *ruta, th_rules *r)
     return datos && th_rules_init(r, datos, (size_t)tam) == 0;
 }
 
+// Memoria: el heap tras cada paso de la carga (ROM de medida del hito 5).
+#ifdef TH_MEDIR
+static bool paso(const char *nombre, bool ok)
+{
+    heap_stats_t h;
+    sys_get_heap_stats(&h);
+    debugf("TH64 memoria: %s: heap usado %d KiB de %d KiB%s\n", nombre, h.used / 1024, h.total / 1024,
+           ok ? "" : " (FALLO)");
+    return ok;
+}
+#define PASO(nombre, expr) paso(nombre, (expr))
+#else
+#define PASO(nombre, expr) (expr)
+#endif
+// El escenario que abre la ROM: el del hito 4 o, en la ROM de medida, el del
+// hito 5 (el del hito 4 con 18 llegadas al mes; make ESCENARIO=hito5 para la
+// ROM normal).
+#ifndef TH_ESCENARIO
+#ifdef TH_MEDIR
+#define TH_ESCENARIO "hito5"
+#else
+#define TH_ESCENARIO "hito4"
+#endif
+#endif
+static const char *const escenario_rom = "rom:/escenarios/" TH_ESCENARIO ".trg";
+
 // Hito 4: el nivel del escenario con sus casillas y el hospital listo para
 // empezar (th_sim_init), con la semilla dada.
 static bool cargar_hospital(uint32_t semilla)
@@ -192,13 +218,14 @@ static bool cargar_hospital(uint32_t semilla)
     static th_rules defs, nivel_cfg, esc;
     static bool reglas = false;
     if (!reglas) {
-        if (!cargar_reglas_rom("rom:/escenarios/hito4.trg", &esc))
+        if (!PASO("escenario", cargar_reglas_rom(escenario_rom, &esc)))
             return false;
         char ruta[64];
         const char *dif = th_rules_str(&esc, th_rules_get(&esc, esc.root, "dificultad"), NULL);
         snprintf(ruta, sizeof ruta, "rom:/reglas/%s%02d.trg", dif ? dif : "full",
                  (int)th_rules_int(&esc, th_rules_get(&esc, esc.root, "nivel"), 1));
-        if (!cargar_reglas_rom("rom:/reglas/definiciones.trg", &defs) || !cargar_reglas_rom(ruta, &nivel_cfg))
+        if (!PASO("definiciones", cargar_reglas_rom("rom:/reglas/definiciones.trg", &defs)) ||
+            !PASO("reglas del nivel", cargar_reglas_rom(ruta, &nivel_cfg)))
             return false;
         reglas = true;
     }
@@ -348,6 +375,9 @@ static void tick_mundo(sim_t *s)
 typedef struct {
     uint32_t lista, rdp; // ticks de CPU: generar la lista y enviar los comandos
     mapa_n64_stats_t st;
+#ifdef TH_MEDIR
+    uint32_t vista_sim; // de lista: pasar los objetos y las personas a entidades (th_vista_sim)
+#endif
 } medida_t;
 
 // Dibuja el mapa y los humanoides en la pantalla ya enganchada a rdpq.
@@ -357,6 +387,9 @@ static void dibujar_escena(const th_view *v, medida_t *m)
     int n = 0;
     if (hospital) {
         n = th_vista_sim(&sim, entidades, (int)(sizeof entidades / sizeof entidades[0]));
+#ifdef TH_MEDIR
+        m->vista_sim = get_ticks() - t0;
+#endif
     } else {
         for (int i = 0; i < n_humanoides; i++) {
             const th_humanoid *h = &humanoides[i];
@@ -444,6 +477,9 @@ static int comprobar_vista(const char *hito, const th_view *v)
     return distintos;
 }
 
+#endif
+
+#if defined(TH_PRUEBAS) || defined(TH_MEDIR)
 typedef struct {
     uint64_t cpu, mapa, lista, suelos, paredes, intervalo, sprites, pixeles, cargas, entidades;
     uint32_t max_cpu, max_mapa, max_intervalo, max_sprites, max_pixeles, max_cargas;
@@ -501,6 +537,9 @@ static void informar(const char *hito, const char *nombre, const cuentas_t *c)
            (unsigned long)(c->cargas / n), (unsigned long)c->max_cargas, (unsigned long)(c->pixeles / n),
            (unsigned long)c->max_pixeles);
 }
+#endif
+
+#ifdef TH_PRUEBAS
 
 // Hito 2: la cámara sola recorre a 30 fps un rectángulo de 768 × 512 alrededor
 // del inicio, a 8 píxeles por fotograma. Con texto, dibuja además encima las
@@ -759,6 +798,168 @@ static bool comprobar_sonido(void)
 }
 #endif
 
+#ifdef TH_MEDIR
+// Hito 5 (make MEDIR=1; lo ejecuta y lo resume tools/hito5/medir.sh). Con el
+// escenario del hito 5 (el hospital del hito 4 con 18 llegadas al mes):
+//   1. simula tan deprisa como se pueda, con la pasada de temperatura en el
+//      tick, hasta que haya 50 pacientes en el mapa; una línea por tick con
+//      su carga (th_sim_load_count), las búsquedas de camino, los nodos que
+//      recorren y lo que tarda: «H5 t hora personas pacientes andando
+//      casillas_temp búsquedas nodos ticks»;
+//   2. con la música sonando, 900 fotogramas a velocidad Normal (18,5 horas
+//      por segundo), 300 a «Max speed» (27,8) y 300 a «And then some more»
+//      (55,6), con la cámara donde se ven más personas; la temperatura, entre
+//      fotogramas, como en la ROM normal; una línea por fotograma: «H5 f
+//      velocidad n cpu lista suelos paredes entidades cargas mundo temperatura
+//      audio ticks_del_mundo sprites de_entidades cargas intervalo vista_sim»
+//      (en ticks del reloj, salvo las cuentas);
+//   3. sigue tan deprisa como se pueda hasta la hora 9.000 y escribe la
+//      huella, que tiene que ser la de th64sim carga.
+static mid64player_t *musica;
+
+static void musica_empezar(void)
+{
+    audio_init(22050, AUDIO_DEFAULT_LATENCY);
+    mixer_init(32);
+    sf64_bank_t *banco = sf64_load("rom:/musica/banco.sf64");
+    sf64_synth_t *synth = sf64_synth_create(banco);
+    sf64_synth_set_mode(synth, SF64_MODE_GM1);
+    for (int i = 0; i < 16; i++)
+        mixer_ch_set_limits(i, 16, 96000, 0);
+    sf64_synth_set_channels(synth, 0, 16, MIXER_PRIORITY_MUSIC);
+    musica = mid64player_load("rom:/musica/fortune.mid64");
+    mid64player_set_loop(musica, true);
+    mid64player_play(musica, sf64_synth_midi_target(synth));
+}
+
+static int tick_medido(void)
+{
+    th_sim_load l;
+    th_sim_load_count(&sim, &l);
+    const uint32_t b0 = buscador.total_searches, n0 = buscador.total_expanded, c0 = sim.temp_cells_total;
+    const uint32_t t0 = get_ticks();
+    th_sim_tick(&sim);
+    const uint32_t d = get_ticks() - t0;
+    debugf("H5 t %lu %u %u %u %lu %lu %lu %lu\n", (unsigned long)sim.hours, l.people, l.patients, l.walking,
+           (unsigned long)(sim.temp_cells_total - c0), (unsigned long)(buscador.total_searches - b0), (unsigned long)(buscador.total_expanded - n0),
+           (unsigned long)d);
+    return l.patients;
+}
+
+// La cámara (centrada en una persona del mapa) que deja ver a más personas.
+static th_view vista_con_mas_gente(int *cuantas)
+{
+    th_view mejor = vista_hospital();
+    *cuantas = -1;
+    for (int k = 0; k < sim.n_order; k++) {
+        const th_humanoid *c = &sim.hum[sim.order[k]].h;
+        if (c->tile_x < 0)
+            continue;
+        const th_view v = vista_en(c->tile_x, c->tile_y);
+        int n = 0;
+        for (int j = 0; j < sim.n_order; j++) {
+            const th_humanoid *h = &sim.hum[sim.order[j]].h;
+            int sx, sy;
+            if (h->tile_x < 0)
+                continue;
+            th_view_tile(&v, h->tile_x, h->tile_y, &sx, &sy);
+            n += sx >= -UNIDAD && sx < ANCHO + UNIDAD && sy >= 0 && sy < ALTO + 3 * UNIDAD;
+        }
+        if (n > *cuantas) {
+            *cuantas = n;
+            mejor = v;
+        }
+    }
+    return mejor;
+}
+
+// 'fotogramas' a 'horas_por_s' (en décimas) con la cámara quieta en v.
+static void recorrido_medido(const char *nombre, th_view v, int fotogramas, int horas_por_s_x10)
+{
+    cuentas_t c = {0};
+    int ticks = 0, saltos_mundo = 0;
+    uint32_t cpu_sim = 0, max_sim = 0, cpu_temp = 0, cpu_audio = 0;
+    sim.temp_defer = 1;
+    for (int f = 1; f <= fotogramas; f++) {
+        surface_t *pantalla = display_get();
+        const uint32_t ahora = get_ticks();
+        const uint32_t a0 = get_ticks();
+        mixer_try_play();
+        const uint32_t audio = get_ticks() - a0;
+        // Los ticks que tocan hasta este fotograma, como en el juego: como
+        // mucho 4 × (horas por fotograma redondeadas hacia arriba) por fotograma.
+        const int objetivo = (int)((int64_t)f * horas_por_s_x10 / (10 * FPS));
+        int hechos = 0;
+        uint32_t t_sim = 0;
+        while (ticks < objetivo) {
+            const uint32_t t0 = get_ticks();
+            th_sim_tick(&sim);
+            const uint32_t d = get_ticks() - t0;
+            t_sim += d;
+            if (d > max_sim)
+                max_sim = d;
+            ticks++;
+            hechos++;
+        }
+        cpu_sim += t_sim;
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        medida_t m;
+        dibujar_escena(&v, &m);
+        dibujar_marcador();
+        rdpq_detach_show();
+        const uint32_t t_temp = temperatura_hasta(ahora + TICKS_FROM_MS(26));
+        cpu_temp += t_temp;
+        cpu_audio += audio;
+        const uint32_t fin = get_ticks();
+        debugf("H5 f %s %d %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %d %d %lu %lu\n", nombre, f,
+               (unsigned long)(fin - ahora), (unsigned long)m.lista, (unsigned long)m.st.ticks_suelos,
+               (unsigned long)m.st.ticks_paredes, (unsigned long)m.st.ticks_entidades,
+               (unsigned long)m.st.ticks_cargas, (unsigned long)t_sim, (unsigned long)t_temp, (unsigned long)audio,
+               hechos, m.st.sprites, m.st.entidades, m.st.cargas,
+               (unsigned long)(c.fotogramas ? ahora - c.anterior : 0), (unsigned long)m.vista_sim);
+        contar(&c, ahora, fin, &m);
+    }
+    th_sim_temperature_step(&sim, TH_SIM_TEMP_WORDS);
+    sim.temp_defer = 0;
+    informar("hito5", nombre, &c);
+    const float ms = 1000.0f / TICKS_PER_SECOND;
+    debugf("TH64 hito5: %s: %d ticks del mundo: %.3f ms de media, %.3f ms el mas largo; temperatura entre "
+           "fotogramas %.3f ms de media; audio %.3f ms por fotograma; %d personas\n",
+           nombre, ticks, cpu_sim * ms / (ticks ? ticks : 1), max_sim * ms, cpu_temp * ms / fotogramas,
+           cpu_audio * ms / fotogramas, sim.n_order);
+    (void)saltos_mundo;
+}
+
+static void medir_hito5(void)
+{
+    const int pacientes_objetivo = 50, horas_total = 9000;
+    debugf("TH64 hito5: simulacion %u KiB (%d humanoides de %u B), mapa %u KiB, buscador %u KiB, lista de dibujo "
+           "%u KiB\n",
+           (unsigned)(sizeof sim / 1024), TH_SIM_HUMANOIDS, (unsigned)sizeof(th_person),
+           (unsigned)(sizeof mapa / 1024), (unsigned)(sizeof buscador / 1024), (unsigned)(sizeof elementos / 1024));
+    int pacientes = 0;
+    while (pacientes < pacientes_objetivo && (int)sim.hours < horas_total)
+        pacientes = tick_medido();
+    int cuantas;
+    const th_view v = vista_con_mas_gente(&cuantas);
+    debugf("TH64 hito5: hora %lu: %d pacientes en el mapa, %d personas; la camara (%d,%d) ve a %d\n",
+           (unsigned long)sim.hours, pacientes, sim.n_order, v.x, v.y, cuantas);
+    musica_empezar();
+    PASO("con la música sonando", true);
+    recorrido_medido("normal", v, 900, 185);
+    recorrido_medido("max", v, 300, 278);
+    recorrido_medido("mas", v, 300, 556);
+    mixer_close(); // la música para: el resto no la necesita
+    while ((int)sim.hours < horas_total)
+        tick_medido();
+    debugf("TH64 hito5: %lu horas; %u pacientes; huella %08lx\n", (unsigned long)sim.hours,
+           (unsigned)sim.patients_spawned, (unsigned long)th_sim_hash(&sim));
+    debugf("TH64 hito5: fin\n");
+}
+#endif
+
 int main(void)
 {
     debug_init(DEBUG_FEATURE_LOG_USB | DEBUG_FEATURE_LOG_EMU);
@@ -785,12 +986,16 @@ int main(void)
     th_rng_seed(&azar, 64);
 
     int nivel = 1;
-    const bool assets = dfs_ok && paletas_cargar(&paletas, "rom:/paleta.tpl") &&
-                        hoja_cargar(&sprites, "rom:/datam/mspr-0.tsh") &&
-                        hoja_cargar(&bloques, "rom:/datam/mblk-0.tsh") &&
+#ifdef TH_MEDIR
+    paso("arranque (vídeo, RDP, mandos, fuentes)", true);
+#endif
+    const bool assets = dfs_ok && PASO("paleta", paletas_cargar(&paletas, "rom:/paleta.tpl")) &&
+                        PASO("MSPR-0", hoja_cargar(&sprites, "rom:/datam/mspr-0.tsh")) &&
+                        PASO("MBLK-0", hoja_cargar(&bloques, "rom:/datam/mblk-0.tsh")) &&
                         th_sheet_init(&sh_bloques, bloques.bloque, (size_t)bloques.tam) == 0 &&
                         th_sheet_init(&sh_sprites, sprites.bloque, (size_t)sprites.tam) == 0 &&
-                        cargar_anims("rom:/datam/animaciones.tan") && cargar_nivel(nivel);
+                        PASO("animaciones", cargar_anims("rom:/datam/animaciones.tan")) &&
+                        PASO("nivel", cargar_nivel(nivel));
     heap_stats_t heap;
     sys_get_heap_stats(&heap);
     debugf("TH64 motor: heap usado %d KiB de %d KiB; DFS %s; assets %s\n", heap.used / 1024, heap.total / 1024,
@@ -933,6 +1138,15 @@ int main(void)
         recorrido_hospital(c, 450);
     }
     debugf("TH64 pruebas: fin, %d fallos\n", fallos);
+    if (emux_detect(0))
+        emux_ioctl_exit();
+#endif
+
+#ifdef TH_MEDIR
+    if (assets && cargar_hospital(1)) {
+        PASO("hospital cargado", true);
+        medir_hito5();
+    }
     if (emux_detect(0))
         emux_ioctl_exit();
 #endif

@@ -37,7 +37,7 @@
 #include "th/rules.h"
 
 #define TH_MICRO 1000000
-#define TH_SIM_HUMANOIDS 64
+#define TH_SIM_HUMANOIDS 128 // el tope de la demo (docs/04_construccion.md)
 #define TH_SIM_OBJECTS 96
 #define TH_SIM_ROOMS 16
 #define TH_SIM_QUEUES 24
@@ -67,6 +67,23 @@ static inline int th_date_month_of_game(th_date d)
 
 // Clase de humanoide para la lógica.
 enum { TH_HUM_PATIENT, TH_HUM_DOCTOR, TH_HUM_NURSE, TH_HUM_HANDYMAN, TH_HUM_RECEPTIONIST };
+
+// Conjunto de humanoides (índices en th_sim.hum), un bit por humanoide.
+typedef struct th_hset {
+    uint32_t w[TH_SIM_HUMANOIDS / 32];
+} th_hset;
+static inline int th_hset_has(const th_hset *c, int i)
+{
+    return c->w[i >> 5] >> (i & 31) & 1u;
+}
+static inline void th_hset_add(th_hset *c, int i)
+{
+    c->w[i >> 5] |= 1u << (i & 31);
+}
+static inline void th_hset_del(th_hset *c, int i)
+{
+    c->w[i >> 5] &= ~(1u << (i & 31));
+}
 
 // Tipos de objeto que la lógica distingue; los demás son TH_OBJ_OTHER.
 enum {
@@ -100,7 +117,7 @@ typedef struct th_queue {
     uint8_t door; // puerta: prioridad para quien sale de su sala (TH_NONE en los mostradores)
     uint8_t expected_count;
     uint16_t visitor_count;
-    uint64_t expected; // humanoides que vienen hacia la cola
+    th_hset expected; // humanoides que vienen hacia la cola
 } th_queue;
 
 typedef struct th_room {
@@ -119,7 +136,7 @@ typedef struct th_room {
     uint8_t call_staff;  // quién la atiende (TH_NONE = nadie aún)
     uint8_t call_serial; // identidad de la llamada (la de CallCheckPointAction)
     int32_t happiness_factor; // millonésimas
-    uint64_t humanoids;       // quién está dentro
+    th_hset humanoids;        // quién está dentro
 } th_room;
 
 // Una enfermedad de las definiciones, con lo que usa la lógica.
@@ -252,6 +269,7 @@ typedef struct th_sim {
     const char *room_types[TH_SIM_ROOM_TYPES]; // claves de «salas», en orden
     // Configuración del nivel.
     int32_t very_tired, crackup_tired; // en milésimas de cansancio, como gbv
+    int32_t doctor_threshold, consultant_threshold; // habilidad, en millonésimas (gbv, en milésimas)
     int32_t alloc_delay, hold_visual_months, hold_visual_peeps, max_salary, salary_ability_div;
     int32_t salary_add[8];
     int32_t min_salary[4];
@@ -284,6 +302,7 @@ typedef struct th_sim {
     uint8_t temp_pending; // hay una pasada a medias
     uint16_t temp_word;   // siguiente palabra de temp_need
     uint16_t temp_air, temp_radiator;
+    uint32_t temp_cells_total; // casillas recalculadas desde el principio, para medir
     struct {
         uint16_t t[2]; // las dos memorias
         uint16_t cell; // pesos de los vecinos, tipo de mezcla y suma de pesos
@@ -313,6 +332,15 @@ void th_sim_tick(th_sim *s);
 // Huella del estado: la misma en el PC y en la N64. Con la pasada de
 // temperatura acabada (th_sim_temperature_step).
 uint32_t th_sim_hash(const th_sim *s);
+
+// La carga de la simulación antes de un tick, para medir (th64sim carga y la
+// ROM de medida del hito 5): personas en el mapa, pacientes y cuántas caminan.
+// Las casillas de temperatura recalculadas van en temp_cells_total y las
+// búsquedas de camino, en el buscador (total_searches, total_expanded).
+typedef struct th_sim_load {
+    uint16_t people, patients, walking;
+} th_sim_load;
+void th_sim_load_count(const th_sim *s, th_sim_load *l);
 // level_map::update_temperatures: una pasada con el aire y el radiador dados
 // (de 0 a 65.535). Da lo mismo que recorrer el mapa entero, pero solo
 // recalcula las casillas que pueden cambiar. th_sim_temperature_prepare

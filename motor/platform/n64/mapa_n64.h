@@ -22,6 +22,11 @@ typedef struct {
     int cortes;   // suelos que se salen del rombo y cortan la agrupación
     int entidades; // sprites de entidades (hoja de sprites)
     uint32_t ticks_suelos, ticks_paredes; // CPU de cada pasada (get_ticks); las entidades van con las paredes
+#ifdef TH_MEDIR
+    // Hito 5: de ticks_paredes, lo que se van en los elementos de entidades
+    // y, de todo, lo que se va en las cargas de textura (rdpq_tex_upload).
+    uint32_t ticks_entidades, ticks_cargas;
+#endif
 } mapa_n64_stats_t;
 
 // Mira qué bloques se salen del rombo de una casilla (el del bloque 1, el

@@ -362,7 +362,7 @@ void th_sim_destroy(th_sim *s, int who)
     }
     for (int i = 0; i < s->n_rooms; i++) {
         th_room *r = &s->rooms[i];
-        r->humanoids &= ~(1ull << who);
+        th_hset_del(&r->humanoids, who);
         if (r->staff_member == who)
             r->staff_member = TH_NONE;
         if (r->just_dealt_with == who)
@@ -668,6 +668,21 @@ static void staff_tick(th_sim *s, int who)
     }
     p->h.speed = (uint8_t)(level >= 3 ? 2 : level <= 1 ? 0 : 1);
     p->h.slow_animation = level <= 1;
+    // Doctor:tick: el médico aprende con el uso (isLearningOnTheJob) mientras
+    // usa un objeto en una sala que no sea de formación, de personal ni aseos.
+    // Con la habilidad cambian junior y consultor (parseSkillLevel); un junior
+    // que pasa de DoctorThreshold deja de ir a medio ritmo.
+    if (p->kind == TH_HUM_DOCTOR && room && p->h.queue_len && p->h.queue[0].kind == TH_ACTION_USE_OBJECT) {
+        const char *id = s->room_types[room->type];
+        if (strcmp(id, "training") && strcmp(id, "staff_room") && strcmp(id, "toilets") &&
+            p->u.s.skill < TH_MICRO) {
+            p->u.s.skill += 3; // 0,000003
+            if (p->u.s.skill > TH_MICRO)
+                p->u.s.skill = TH_MICRO;
+            p->u.s.junior = p->u.s.skill <= s->doctor_threshold;
+            p->u.s.consultant = p->u.s.skill >= s->consultant_threshold;
+        }
+    }
 }
 
 static uint16_t temperature_at(const th_sim *s, int x, int y)
@@ -961,6 +976,7 @@ int th_sim_temperature_step(th_sim *s, int palabras)
     for (; w < fin; w++) {
         uint32_t bits = s->temp_need[w], changed = 0;
         uint8_t *p = base + 6 * 32 * w;
+        s->temp_cells_total += bits == 0xFFFFFFFFu ? 32 : (uint32_t)__builtin_popcount(bits);
         if (bits == 0xFFFFFFFFu) {
             for (int b = 0; b < 32; b++, p += 6)
                 changed |= temperature_tile(p, nuevo, air, radiator) << b;
@@ -1165,6 +1181,8 @@ static int load_level(th_sim *s)
     th_rnode gbv = get(l, l->root, "gbv");
     s->very_tired = th_rules_int(l, get(l, gbv, "VeryTired"), 700);
     s->crackup_tired = th_rules_int(l, get(l, gbv, "CrackUpTired"), 800);
+    s->doctor_threshold = th_rules_int(l, get(l, gbv, "DoctorThreshold"), 250) * 1000;
+    s->consultant_threshold = th_rules_int(l, get(l, gbv, "ConsultantThreshold"), 900) * 1000;
     s->alloc_delay = th_rules_int(l, get(l, gbv, "AllocDelay"), 3);
     s->hold_visual_months = th_rules_int(l, get(l, gbv, "HoldVisualMonths"), -1);
     s->hold_visual_peeps = th_rules_int(l, get(l, gbv, "HoldVisualPeepCount"), -1);
@@ -1458,6 +1476,19 @@ static uint32_t fnv(uint32_t h, uint32_t v)
         h *= 16777619u;
     }
     return h;
+}
+
+void th_sim_load_count(const th_sim *s, th_sim_load *l)
+{
+    memset(l, 0, sizeof *l);
+    for (int k = 0; k < s->n_order; k++) {
+        const th_person *p = &s->hum[s->order[k]];
+        if (!p->alive || p->h.tile_x < 0)
+            continue;
+        l->people++;
+        l->patients += p->kind == TH_HUM_PATIENT;
+        l->walking += p->h.queue_len && p->h.queue[0].kind == TH_ACTION_WALK;
+    }
 }
 
 uint32_t th_sim_hash(const th_sim *s)

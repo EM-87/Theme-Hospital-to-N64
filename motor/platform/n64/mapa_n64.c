@@ -111,10 +111,16 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
     }
     const int32_t clave = (int32_t)d->sheet << 16 | d->sprite;
     if (cargado != clave) {
+#ifdef TH_MEDIR
+        const uint32_t c0 = get_ticks();
+#endif
         surface_t s = hoja_superficie(h, d->sprite);
         rdpq_tex_upload(TILE0, &s, NULL);
         cargado = clave;
         st->cargas++;
+#ifdef TH_MEDIR
+        st->ticks_cargas += get_ticks() - c0;
+#endif
     }
     if (!espejo && !boca_abajo) {
         rdpq_texture_rectangle(TILE0, cx0, y0, cx1, y1, cx0 - d->x, y0 - d->y);
@@ -188,7 +194,14 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
                 modo_opaco();
             alfa = a;
         }
+#ifdef TH_MEDIR
+        const uint32_t e0 = get_ticks();
         dibujar(hojas, d, ancho, alto, st);
+        if (d->sheet == TH_SHEET_SPRITES)
+            st->ticks_entidades += get_ticks() - e0;
+#else
+        dibujar(hojas, d, ancho, alto, st);
+#endif
     }
     if (alfa < 255)
         modo_opaco();

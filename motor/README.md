@@ -17,6 +17,8 @@ tools/motor_check.sh        # todo: PC, PC con sanitizers, pruebas en ares, ROM
 make -C motor               # ROM: motor/th64.z64
 make -C motor PRUEBAS=1     # ROM con las pruebas del núcleo: motor/th64_pruebas.z64
 make -C motor HORAS=4900    # ROM normal con el hospital 4.900 horas adelantado: motor/th64_horas.z64
+make -C motor MEDIR=1       # ROM de medida del hito 5: motor/th64_medir.z64 (tools/hito5/medir.sh)
+make -C motor ESCENARIO=hito5  # con make o make HORAS=N: abrir el escenario del hito 5 (por defecto, hito4)
 cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && ctest --test-dir motor/build/pc
 ```
 
@@ -27,6 +29,7 @@ cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && cte
 - `th64sim caminos <nivel.tmp> <n> <caminos_nivelN.tsv>`: repite con el A* del núcleo los caminos que pidió CorsixTH (`bench/scenarios/caminos.lua`) y los compara casilla a casilla;
 - `th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>`: repite con el núcleo la caminata de un humanoide que volcó CorsixTH (`bench/scenarios/caminata.lua`) y la compara tick a tick (casilla, desplazamiento, animación, fotograma y banderas);
 - `th64sim reglas <reglas.trg> [ruta]`: vuelca un fichero de reglas, o una parte («objetos.bench.orientations.north»), en el JSON canónico del conversor, y su huella;
+- `th64sim carga <assets> <escenario.trg> <semilla> <horas>`: la carga de cada tick (personas, pacientes, cuántas caminan, casillas de temperatura recalculadas, búsquedas de camino y nodos) y lo que tarda en el PC, como la ROM de medida del hito 5 (`tools/hito5`);
 - `th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir>`: simula el hospital del escenario y escribe las trazas de `bench/scenarios/traza_hito4.lua` (`pacientes.tsv`, `dinero.tsv`, `dias.tsv`, `acciones.tsv`) y la huella. Con `TH64_SONDA_GP=<dir>`, además lo que escribe `bench/scenarios/sonda_gp.lua`; con `TH64_DEPURAR=<id>`, la cola de acciones de ese paciente tras cada hora;
 - `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia;
 - `th64sim escena ...`: lo mismo, con el humanoide de una caminata en un tick dado;
