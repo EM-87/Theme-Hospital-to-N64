@@ -7,6 +7,7 @@ Fecha: 2026-10-27. Estado: **plan**. Eduardo dejó elegir el orden ([abajo](#el-
 - Se construye, se contrata y se cura.
 - Se gana o se pierde con los objetivos del nivel.
 - Con el mando de N64 o el ratón, en inglés y en español, y guardando la partida.
+- Con las cuatro vistas, como en RollerCoaster Tycoon, y salas de cualquier forma. Eduardo pidió adelantar estos dos deseos a esta fase (2026-10-27).
 
 Las reglas siguen siendo las de CorsixTH v0.70.1, con las 6 excepciones de la fase 4 ([`04_construccion.md`](04_construccion.md#fidelidad-corsixth-frente-al-original)).
 
@@ -50,7 +51,7 @@ Había dos órdenes posibles:
 
 Se elige **A**:
 - **los controles son lo último del diseño sin probar.** El puntero con el stick y los botones de la fase 4 solo se pueden juzgar jugando;
-- **la ROM se puede jugar pronto.** Desde el hito 6.3, Eduardo puede probarla en un emulador con mando, sin flashcart;
+- **la ROM se puede jugar pronto.** Desde el hito 6.4, Eduardo puede probarla en un emulador con mando, sin flashcart;
 - **la simulación no pierde nada.** Se sigue comparando con CorsixTH en el PC, con escenarios creados con el constructor del arnés, como en los hitos 4 y 5.
 
 Esto cambia el orden que proponía la fase 4 ([`04_construccion.md`](04_construccion.md#orden-de-trabajo)), que dejaba las ventanas de gestión para el final.
@@ -62,6 +63,45 @@ Esto cambia el orden que proponía la fase 4 ([`04_construccion.md`](04_construc
 - **las pruebas pueden jugar solas:** una lista de órdenes escrita a mano juega una partida en el PC y en la ROM;
 - **las mismas órdenes se pueden dar en CorsixTH** con el constructor del arnés ([`bench/lib/builder.lua`](../bench/lib/builder.lua)), que pasa por las mismas validaciones que su interfaz. Así se comparan una a una las que se aceptan y las que se rechazan.
 
+## Las cuatro vistas
+
+Eduardo eligió girar con sustitutos donde falta arte (2026-10-27). Lo que hay en los datos (inventario con [`orientaciones.lua`](../bench/scenarios/orientaciones.lua)):
+
+| Qué | Al girar |
+|---|---|
+| Personas | Ya andan en las cuatro direcciones en el juego original: dos dibujadas y dos en espejo. Sirven en todas las vistas |
+| Paredes de las salas | Van por bordes, con cara interior y exterior. En cada vista se eligen igual que en la original |
+| Objetos que se colocan en las cuatro orientaciones (13): bancos, sillas, mesas, camas, sofás, la recepción, el radiador, el extintor, la planta, la máquina de bebidas… | Tienen dibujo de frente y de espaldas. Sirven en todas las vistas |
+| Objetos que solo se colocan de cara a la cámara (40) | Su espalda nunca se dibujó, ni la de la gente usándolos: 406 animaciones de uso con 6.584 fotogramas, más 92 fotogramas en reposo. En las 8 salas del nivel 1 son 13 objetos, con 129 animaciones y 2.613 fotogramas: el váter, el lavabo, el diván y el sillón del psiquiatra, la máquina de hinchar, el armario de la farmacia, el carro de paradas, el biombo, la mesa de billar… |
+| Suelos y decorado del mapa | El nivel 1 usa 37 suelos distintos y 31 piezas en las capas de pared: 12 son paredes exteriores, con sus caras y sus ventanas, y 19 son decorado (setos, vallas…). Los que tienen dirección, como bordillos o líneas, necesitan su pieza girada. Hay que clasificarlos uno a uno |
+| Sombras | CorsixTH las calcula a partir de las paredes, así que se recalculan en cada vista |
+
+**Cómo se hace.** El núcleo no sabe nada de la cámara, como se decidió en la fase 4. La vista gira el mundo antes de dibujar: cada casilla, cada pared (con su cara) y cada objeto (con su orientación) pasan a la vista girada, y desde ahí se dibuja con el mismo orden que CorsixTH. El puntero hace el camino inverso para saber qué casilla señala.
+
+**Los sustitutos.**
+- Un objeto que quedaría de espaldas se dibuja de frente, y quien lo usa, con la animación de frente: puede verse en el lado equivocado del objeto.
+- El conversor aceptará hojas de sprites propias, como ya preveía la fase 4. Si alguien dibuja las espaldas, se añaden sin tocar el motor.
+- El inventario da la lista exacta de lo que falta.
+
+**Cómo se comprueba.**
+- La vista original sigue igual píxel a píxel: las comparaciones de `motor_check.sh`.
+- Una vista girada es el mismo hospital girado, y se puede montar en CorsixTH: el mapa con las casillas, las paredes y los objetos girados, donde exista esa orientación. Su captura se compara píxel a píxel con la del motor.
+- Donde hay sustitutos no hay con qué comparar: capturas para Eduardo.
+
+## Salas de cualquier forma
+
+La regla es de Eduardo (2026-10-27): **una sala vale si tiene al menos tantas casillas como el cuadrado mínimo de su tipo, con la forma que se quiera.** En el nivel 1 son:
+- 16 casillas (4 × 4): la consulta, la sala de hinchado, la farmacia, los aseos y la sala de personal;
+- 25 (5 × 5): la psiquiatría y la sala de diagnóstico;
+- 36 (6 × 6): la enfermería.
+
+Además:
+- **No hace falta arte nuevo.** En CorsixTH, con las paredes azules, una sala en L quitando cualquiera de sus cuatro cuadrantes tiene las esquinas bien casadas ([`salas_en_l.lua`](../bench/scenarios/salas_en_l.lua)). Quedan por mirar los otros 3 colores de pared, las ventanas y las puertas junto a una esquina.
+- **El precio no cambia.** En CorsixTH una sala cuesta lo mismo sea del tamaño que sea: el precio de su tipo más el de sus objetos.
+- **Tiene que ser de una sola pieza y sin huecos.** Un hueco sería un trozo de pasillo encerrado al que no se puede llegar.
+- **En el núcleo, la sala pasa a ser un conjunto de casillas** (una máscara sobre su rectángulo), como preveía la fase 4. Lo que en CorsixTH usa el ancho y el alto pasa a contar casillas o a mirar la máscara.
+- **Las salas rectangulares siguen siendo exactamente las de CorsixTH**, con los mismos números aleatorios: para ellas, la máscara no cambia nada. Las demás formas no tienen con qué compararse.
+
 ## Hitos
 
 Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifras en `docs/06_juego_base.md`.
@@ -69,13 +109,14 @@ Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifr
 | Hito | Qué | Cómo se comprueba |
 |---|---|---|
 | **6.1** Puntero y panel | Puntero con el stick (con aceleración, y Z para ir rápido), A y B como clics, la vista con los botones C, y el ratón de N64. La base de ventanas y el panel inferior de `DATAM`: botones, dinero, fecha, mensajes y descripciones de los botones | Capturas iguales píxel a píxel al rasterizador de referencia, como el mapa. El panel y el puntero cuestan como mucho 1,5 ms por fotograma |
-| **6.2** Construir | Amueblar el pasillo, el plano de una sala (arrastrar, puertas y ventanas), colocar y girar objetos, editar y vender. Las validaciones de CorsixTH, con el bloqueo de zonas en el modo 2 | Una batería de órdenes de construir, aceptadas y rechazadas igual que en CorsixTH, una a una. Las banderas de las 16.384 casillas iguales después de construir. Lo cobrado, igual al dólar |
-| **6.3** Personal y avisos: la primera ROM jugable | Contratar y colocar personal, cogerlo y soltarlo. Las ventanas de persona y de cola, los faxes, los mensajes y el consejero, la pausa y las velocidades | Construir a mano, desde la ROM, el hospital del hito 4 y jugarlo. Grabar las órdenes y repetirlas en el PC con la misma huella |
-| **6.4** Las salas del nivel 1 | Las 7 salas que faltan, el diagnóstico completo, la curación y la muerte. La enfermera y el bedel (limpiar, regar y reparar), los aseos, la máquina de bebidas y las plantas | Un escenario del nivel 1 completo, creado en CorsixTH: 20 semillas, con el criterio acordado (±15 % en curados y ±7,5 % en saldo), más reputación y muertes |
-| **6.5** Economía, gestión y objetivos | El banco, la política del hospital, la gestión de personal, el libro de casos (precios), el mapa de la ciudad, los informes, el valor del hospital, ganar y perder, VIP y epidemias | Las fórmulas de interés, valor y precios, exactas. El resto, estadístico, con las mismas 20 semillas. Legibilidad a 320 × 240: capturas para Eduardo |
-| **6.6** Guardar y cargar | Formato propio, solo con el estado de la partida: ≤ 32 KiB si es posible (SRAM o Controller Pak) y ≤ 128 KiB como mucho (FlashRAM) | Guardar, cargar y seguir da la misma huella que no guardar. El tamaño se mide con el hospital del hito 5 |
-| **6.7** Menús, opciones y sonido | Menú principal, partida nueva, las opciones acordadas en la fase 4, inglés y español, el locutor con subtítulos y los efectos de sonido en la partida | Los textos de los dos idiomas, sin cadenas que falten. Las opciones, en la partida guardada |
-| **6.8** El nivel 1 entero | Jugar el nivel 1 hasta ganarlo, con una lista de órdenes y en la ROM | Gana en la ROM y en el PC con la misma huella. Memoria, CPU y fotogramas con el hospital lleno del final, frente a los presupuestos de la fase 4 |
+| **6.2** Las cuatro vistas | Girar la cámara con la cruceta (izquierda y derecha), que hasta ahora solo desplazaba la vista. Girar el mapa, las paredes, las sombras, los objetos y las personas, y el puntero en las cuatro vistas. Clasificar los suelos y el decorado, y poner los sustitutos | La vista original, igual píxel a píxel. Las giradas, contra el mismo hospital girado montado en CorsixTH. Girar no puede encarecer la lista de dibujo: hoy cuesta 4,7 ms por fotograma a velocidad Normal |
+| **6.3** Construir | Amueblar el pasillo, el plano de una sala (arrastrar, puertas y ventanas), colocar y girar objetos, editar y vender, en las cuatro vistas. Las salas de cualquier forma: el plano se amplía o se recorta por rectángulos. Las validaciones de CorsixTH, con el bloqueo de zonas en el modo 2 | Una batería de órdenes de construir, aceptadas y rechazadas igual que en CorsixTH, una a una, con las salas rectangulares. Las banderas de las 16.384 casillas iguales después de construir. Lo cobrado, igual al dólar. Las demás formas, con pruebas de la regla de Eduardo |
+| **6.4** Personal y avisos: la primera ROM jugable | Contratar y colocar personal, cogerlo y soltarlo. Las ventanas de persona y de cola, los faxes, los mensajes y el consejero, la pausa y las velocidades | Construir a mano, desde la ROM, el hospital del hito 4 y jugarlo. Grabar las órdenes y repetirlas en el PC con la misma huella |
+| **6.5** Las salas del nivel 1 | Las 7 salas que faltan, el diagnóstico completo, la curación y la muerte. La enfermera y el bedel (limpiar, regar y reparar), los aseos, la máquina de bebidas y las plantas | Un escenario del nivel 1 completo, creado en CorsixTH: 20 semillas, con el criterio acordado (±15 % en curados y ±7,5 % en saldo), más reputación y muertes |
+| **6.6** Economía, gestión y objetivos | El banco, la política del hospital, la gestión de personal, el libro de casos (precios), el mapa de la ciudad, los informes, el valor del hospital, ganar y perder, VIP y epidemias | Las fórmulas de interés, valor y precios, exactas. El resto, estadístico, con las mismas 20 semillas. Legibilidad a 320 × 240: capturas para Eduardo |
+| **6.7** Guardar y cargar | Formato propio, solo con el estado de la partida: ≤ 32 KiB si es posible (SRAM o Controller Pak) y ≤ 128 KiB como mucho (FlashRAM) | Guardar, cargar y seguir da la misma huella que no guardar. El tamaño se mide con el hospital del hito 5 |
+| **6.8** Menús, opciones y sonido | Menú principal, partida nueva, las opciones acordadas en la fase 4, inglés y español, el locutor con subtítulos y los efectos de sonido en la partida | Los textos de los dos idiomas, sin cadenas que falten. Las opciones, en la partida guardada |
+| **6.9** El nivel 1 entero | Jugar el nivel 1 hasta ganarlo, con una lista de órdenes y en la ROM | Gana en la ROM y en el PC con la misma huella. Memoria, CPU y fotogramas con el hospital lleno del final, frente a los presupuestos de la fase 4 |
 
 **Presupuestos:**
 - **CPU.** A velocidad Normal y con el hospital del hito 5, el fotograma cuesta hoy 14,1 ms de los 33,3. Con una ventana de gestión abierta tiene que seguir a 30 fps sin saltos.
@@ -88,20 +129,24 @@ Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifr
 - **Lo que se dejó para el final:**
   - los cambios en libdragon;
   - el modo demo sin Expansion Pak;
-  - los deseos de Eduardo: girar la cámara, salas con esquinas interiores, pediatría y maternidad.
+  - el último deseo de Eduardo: pediatría y maternidad, con arte nuevo.
 
 ## Riesgos
 
 | Riesgo | Cómo se reduce | Cuándo se sabe |
 |---|---|---|
-| **El puntero con el stick resulta incómodo** | Aceleración ajustable, atajos con la cruceta y los botones, y el ratón de N64. Eduardo lo prueba en un emulador con mando | Hito 6.3 |
-| **Las ventanas de gestión no se leen a 320 × 240** | Las ventanas de `QDATA` reducidas a la mitad; si no se leen, se rehace la maquetación, como hizo la PS1 | Hito 6.5 |
-| **La partida guardada no cabe en 32 KiB** | Guardar solo el estado. La temperatura (96 KiB en RAM) cambia despacio de una casilla a otra y debería comprimirse bien | Hito 6.6 |
+| **El puntero con el stick resulta incómodo** | Aceleración ajustable, atajos con los botones, y el ratón de N64. Eduardo lo prueba en un emulador con mando | Hito 6.4 |
+| **Los sustitutos de las vistas giradas se notan demasiado** | Lista exacta del arte que falta; el conversor admite sprites nuevos para cambiarlos sin tocar el motor | Hito 6.2 |
+| **Suelos y decorado sin pieza girada** | Clasificarlos uno a uno: los que no tienen dirección valen tal cual; para los demás, la pieza más parecida o arte nuevo | Hito 6.2 |
+| **Las salas de forma libre no tienen con qué compararse** | Las rectangulares siguen exactas frente a CorsixTH; para las demás, pruebas de la regla y partidas largas sin atascos | Hito 6.3 |
+| **Las ventanas de gestión no se leen a 320 × 240** | Las ventanas de `QDATA` reducidas a la mitad; si no se leen, se rehace la maquetación, como hizo la PS1 | Hito 6.6 |
+| **La partida guardada no cabe en 32 KiB** | Guardar solo el estado. La temperatura (96 KiB en RAM) cambia despacio de una casilla a otra y debería comprimirse bien | Hito 6.7 |
 | **El esfuerzo:** unas 14.700 líneas de interfaz y 4.500 de lógica | Se avanza por lo que pide el nivel 1, no por pantallas sueltas | A lo largo de la fase |
 | **ares frente a la consola real:** todo sigue medido en ares | Las ROM de medida escriben en pantalla. Se prueban en la consola cuando llegue el flashcart | Cuando llegue |
 
 ## Lo que hará falta de Eduardo
 
-- **En el hito 6.3:** probar la ROM en un emulador con mando y decir qué tal va el puntero. Además, decidir si «acciones en pausa» y «recordar el contenido de las salas» vienen activadas por defecto (pendiente de la fase 4).
-- **En el hito 6.5:** mirar las capturas de las ventanas de gestión y decir si se leen.
+- **En el hito 6.2:** mirar capturas de las vistas giradas y decir si los sustitutos se pueden aceptar.
+- **En el hito 6.4:** probar la ROM en un emulador con mando y decir qué tal va el puntero. Además, decidir si «acciones en pausa» y «recordar el contenido de las salas» vienen activadas por defecto (pendiente de la fase 4).
+- **En el hito 6.6:** mirar las capturas de las ventanas de gestión y decir si se leen.
 - **Cuando llegue el flashcart:** pasar las ROM de pruebas, de medida y normal en la consola.

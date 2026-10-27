@@ -105,16 +105,16 @@ Cada hito se cierra con un commit, una captura de ares y una nota en `docs/05_pr
 
 ## Fase 6 — Juego base: el nivel 1 jugable
 
-El nivel 1 de principio a fin en la ROM: construir, contratar, curar y ganar o perder con sus objetivos, con el mando o el ratón, en inglés y español, y guardando la partida. La interfaz va primero, porque es casi todo el trabajo y porque los controles solo se pueden juzgar jugando. Hitos, comprobaciones y riesgos en [`06_plan.md`](06_plan.md); las cifras de cada hito, en `06_juego_base.md`.
+El nivel 1 de principio a fin en la ROM: construir, contratar, curar y ganar o perder con sus objetivos, con el mando o el ratón, en inglés y español, y guardando la partida. Con las cuatro vistas y salas de cualquier forma. La interfaz va primero, porque es casi todo el trabajo y porque los controles solo se pueden juzgar jugando. Hitos, comprobaciones y riesgos en [`06_plan.md`](06_plan.md); las cifras de cada hito, en `06_juego_base.md`.
 
 ---
 
 ## Al final, cuando el juego base funcione
 
 Deseos de Eduardo (fase 4), con su valoración en [`04_decision.md`](04_decision.md#deseos-para-el-final):
-- girar la cámara en 4 vistas, como en RollerCoaster Tycoon;
-- salas con esquinas interiores;
 - ampliaciones como pediatría y maternidad, con arte nuevo.
+
+Los otros dos deseos, girar la cámara en 4 vistas como en RollerCoaster Tycoon y las salas con esquinas interiores, pasan a la fase 6 a petición de Eduardo.
 
 ## Fuera de alcance por ahora
 
