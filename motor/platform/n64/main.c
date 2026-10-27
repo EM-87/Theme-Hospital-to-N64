@@ -1000,7 +1000,7 @@ static void medir_lista(th_view v)
     const int n = th_vista_sim(&sim, entidades, (int)(sizeof entidades / sizeof entidades[0]));
     th_scene sc = {.map = &mapa, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = entidades,
                    .entity_count = n};
-    uint32_t t[2];
+    uint32_t t[2], huella = 0;
     int sprites[2], de_entidades = 0;
     for (int k = 0; k < 2; k++) {
         sc.entity_count = k ? 0 : n;
@@ -1009,9 +1009,11 @@ static void medir_lista(th_view v)
             th_view_scene(&v, &sc, &lista);
         t[k] = (get_ticks() - t0) / VECES;
         sprites[k] = lista.count;
-        if (!k)
+        if (!k) {
             for (int i = 0; i < lista.count; i++)
                 de_entidades += lista.items[i].sheet == TH_SHEET_SPRITES;
+            huella = th_drawlist_hash(&lista);
+        }
     }
     // Los elementos de los fotogramas de todas las entidades, leídos como add_entity.
     uint32_t elementos = 0, suma = 0;
@@ -1028,9 +1030,9 @@ static void medir_lista(th_view v)
                 elementos++;
             }
     const uint32_t t_elem = get_ticks() - t0;
-    debugf("TH64 hito5: lista de dibujo: %lu us con %d entidades (%d sprites, %d de entidades), %lu us sin ellas "
-           "(%d sprites); sus fotogramas tienen %lu elementos, %lu ciclos cada uno en leerlos (%lu)\n",
-           (unsigned long)TICKS_TO_US(t[0]), n, sprites[0], de_entidades,
+    debugf("TH64 hito5: lista de dibujo: %lu us con %d entidades (%d sprites, %d de entidades, huella %08lx), %lu us "
+           "sin ellas (%d sprites); sus fotogramas tienen %lu elementos, %lu ciclos cada uno en leerlos (%lu)\n",
+           (unsigned long)TICKS_TO_US(t[0]), n, sprites[0], de_entidades, (unsigned long)huella,
            (unsigned long)TICKS_TO_US(t[1]), sprites[1], (unsigned long)(elementos / VECES),
            (unsigned long)(t_elem * 2 / (elementos ? elementos : 1)), (unsigned long)suma);
 }

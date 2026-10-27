@@ -143,8 +143,8 @@ def main():
             print(f"   memoria: {nombre}: {usado} KiB de {total} (libres {total - usado}){' FALLO' if fallo else ''}")
         if log["aserto"]:
             print(f"   se para: {log['aserto']}")
-        huella = next((re.search(r"huella (\w+)", l)[1] for l in log["texto"] if "TH64 hito5:" in l and "huella" in l),
-                      None)
+        huella = next((re.search(r"huella (\w+)", l)[1] for l in log["texto"]
+                       if "TH64 hito5:" in l and "pacientes; huella" in l), None)
         if huella:
             r["huella"] = huella
             print(f"   huella N64 {huella}; PC {huella_pc[1] if huella_pc else '?'}: "

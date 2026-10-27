@@ -49,9 +49,36 @@ unsigned th_anims_length(const th_anims *a, unsigned anim);
 int th_anims_is_multi_frame(const th_anims *a, unsigned anim);
 
 // Elementos de un fotograma: th_anims_list_entry(a, i) para i desde
-// th_anims_frame_list(a, frame) hasta que devuelva TH_ANIM_LIST_END.
-uint32_t th_anims_frame_list(const th_anims *a, uint32_t frame);
-uint16_t th_anims_list_entry(const th_anims *a, uint32_t i);
-void th_anims_element(const th_anims *a, uint16_t e, th_anim_element *out);
+// th_anims_frame_list(a, frame) hasta que devuelva TH_ANIM_LIST_END. En
+// línea: la vista los lee para cada entidad en cada fotograma.
+static inline uint32_t th_anims_frame_list(const th_anims *a, uint32_t frame)
+{
+    if (frame >= a->frames)
+        return a->list_len - 1;
+    const uint8_t *p = a->data + a->off_frame + 8 * frame;
+    return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3];
+}
+
+static inline uint16_t th_anims_list_entry(const th_anims *a, uint32_t i)
+{
+    if (i >= a->list_len)
+        return TH_ANIM_LIST_END;
+    const uint8_t *p = a->data + a->off_list + 2 * i;
+    return (uint16_t)(p[0] << 8 | p[1]);
+}
+
+static inline void th_anims_element(const th_anims *a, uint16_t e, th_anim_element *out)
+{
+    const uint8_t *p = a->data + a->off_elem + 6u * e;
+    out->sprite = (uint16_t)(p[0] << 8 | p[1]);
+    out->x = p[2];
+    out->y = p[3];
+    out->layer = p[4] >> 4;
+    out->flags = p[4] & 0xF;
+    out->layer_id = p[5];
+    // Como CorsixTH: en la capa 13 o más no vive nada; pasan a la 6.
+    if (out->layer >= TH_ANIM_LAYERS)
+        out->layer = 6;
+}
 
 #endif

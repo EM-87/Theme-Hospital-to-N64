@@ -918,11 +918,11 @@ Lo que hay que resolver para el juego completo, por orden (lo hecho después, en
 
 **Hecho en parte.** El hito 5 dejaba tres riesgos de CPU para el juego completo («Hacia el hospital lleno»): los caminos largos, la temperatura a las velocidades altas y el dibujo con mucha gente. Medido con la ROM de medida del hito 5, en el mismo escenario y desde las mismas horas:
 - **Ningún fotograma salta ni llega tarde a ninguna de las tres velocidades.** La simulación va en una corrutina repartida entre fotogramas. Antes había 2 saltos a «Max speed» y 182 a «And then some more».
-- **Los caminos largos ya no se notan:** la búsqueda se suspende cada 128 nodos y sigue en el fotograma siguiente. Lo que se simula no cambia, porque el dibujo enseña el último tick acabado: el paciente echa a andar en el mismo tick que antes. El nodo cuesta lo mismo (1.014 ciclos).
+- **Los caminos largos ya no se notan:** la búsqueda se suspende cada 128 nodos y sigue en el fotograma siguiente. Lo que se simula no cambia, porque el dibujo enseña el último tick acabado: el paciente echa a andar en el mismo tick que antes. El nodo cuesta lo mismo, unos 1.000 ciclos: son fallos de caché al leer las casillas, y un montículo que no lee los nodos no lo mejora.
 - **Las cargas de textura cuestan un 80 % menos:** 6,8 µs frente a 34,6, cargando con `LOAD_BLOCK` sin pasar por `rdpq_tex_upload`. El dibujo a velocidad Normal baja de 18,1 a 10,3 ms por fotograma, con los mismos píxeles.
-- **El fotograma a velocidad Normal cuesta 15,1 ms de CPU**, frente a 19,3 en el hito 5: el 45 % de 33,3.
-- **La temperatura sigue limitando la velocidad más alta.** «And then some more» va a 30 fps, pero la simulación avanza 34,6 horas por segundo de las 55,6 que tocan: el 62 %. La fase 4 ya aceptaba limitar las dos velocidades más altas si la CPU no llegaba ([`04_decision.md`](04_decision.md)). Abaratarla de verdad pide el RSP.
-- **La lista de dibujo es ahora lo más caro del dibujo:** 5,3 ms por fotograma. Queda pendiente.
+- **La lista de dibujo cuesta un 23 % menos:** 4,0 ms por fotograma a velocidad Normal, frente a 5,3, con las mismas listas.
+- **El fotograma a velocidad Normal cuesta 13,7 ms de CPU**, frente a 19,3 en el hito 5: el 41 % de 33,3.
+- **La temperatura sigue limitando la velocidad más alta.** «And then some more» va a 30 fps, pero la simulación avanza 36,2 horas por segundo de las 55,6 que tocan: el 65 %. La fase 4 ya aceptaba limitar las dos velocidades más altas si la CPU no llegaba ([`04_decision.md`](04_decision.md)). Abaratarla de verdad pide el RSP.
 
 La simulación sigue siendo la misma: tras 9.000 horas, la misma huella que el PC (853ec05c), y las pruebas y las comparaciones de píxeles de `motor_check.sh` dan lo mismo que antes.
 
@@ -993,13 +993,44 @@ Con 11 palabras de 64 bits por fila o más, el `LOAD_BLOCK` pierde precisión en
 
 ### La lista de dibujo
 
-Con la carga nueva, la lista (`th_view_scene`) es lo más caro del dibujo: 5,3 ms de 10,3 a velocidad Normal. Medido aparte, con la cámara del hito 5:
-- **con las 58 entidades del hospital, 4,77 ms**, con 528 sprites, 123 de ellos de entidades;
-- **sin ellas, 2,22 ms**, con 403 sprites;
-- **cada sprite de entidad añade unos 20,7 µs** (1.940 ciclos);
-- **leer los elementos de los fotogramas cuesta 100 ciclos por elemento.** Los fotogramas de las 58 entidades tienen 1.106 elementos, contando los de capas que la entidad no lleva, así que leerlos cuesta como mucho 1,2 ms de los 2,55 que añaden las entidades. El resto es recorrer más casillas (con entidades, la vista mira 64 píxeles a cada lado de la pantalla en lugar de 32), ordenar las entidades y redibujar lo que tapa a las animadas.
+Con la carga nueva, la lista (`th_view_scene`) pasó a ser lo más caro del dibujo: 5,3 ms de 10,3 a velocidad Normal.
 
-Lo siguiente sería guardar, por fotograma de animación, solo los elementos que se dibujan con cada juego de capas. No está hecho.
+[`th64sim lista`](../motor/README.md) hace en el PC la misma lista que la ROM de medida (la hora 3.501 y la misma cámara) y escribe su huella, la misma en los dos. Con callgrind, cada lista eran 200.800 instrucciones:
+- el 37 % `th_view_scene`: el bucle de las casillas y el orden de las entidades;
+- el 14 % `add_layer`;
+- el 14 % la búsqueda de las entidades de cada casilla, que se llamaba en todas;
+- el 23 % los elementos de animación de las entidades.
+
+Cambios, sin que cambie la lista:
+- **los tamaños de los bloques se leen una vez por hoja,** no 256 veces en cada lista;
+- **los suelos y las paredes, que no llevan recortes ni banderas, van por un camino corto** (`add_block`);
+- **antes de buscar las entidades de una casilla se mira su bit** en el mapa de casillas con entidades;
+- **los elementos de animación se leen en línea** ([`anim.h`](../motor/core/include/th/anim.h)), y el tamaño de su sprite también;
+- **cada entidad lleva su casilla en una tabla aparte** para ordenarlas y buscarlas.
+
+| | Antes | Ahora |
+|---|---:|---:|
+| Instrucciones por lista en el PC (callgrind) | 200.800 | 139.400 |
+| N64, con las 58 entidades del hospital (528 sprites, 123 de entidades) | 4,77 ms | 4,23 ms |
+| N64, sin ellas (403 sprites) | 2,22 ms | 1,51 ms |
+| N64, lista por fotograma a velocidad Normal, repartida | 5,25 ms | **4,03 ms** |
+| N64, leer un elemento de animación (con la caché caliente) | 100 ciclos | 36 ciclos |
+| Recorrido del hito 3 con 50 humanoides en pantalla: lista / dibujo | 6,89 / 13,50 ms | 5,13 / 11,86 ms |
+
+- **Las mismas listas.** Las 658 listas de [`huellas_lista.sh`](../tools/hito5/huellas_lista.sh) dan las mismas huellas antes y después: una rejilla de cámaras y horas de los escenarios de los hitos 4 y 5, 344 de ellas con entidades. Las comparaciones de píxeles de `motor_check.sh` siguen dando 0 distintos.
+- **Las entidades siguen añadiendo unos 2,7 ms en la N64:** 22 µs por sprite de entidad.
+  - En el PC son unas 75.000 instrucciones por lista: unas 31.600 en recorrer los elementos, unas 11.000 en un 17 % más de casillas (con entidades, la vista mira 64 píxeles a cada lado de la pantalla en lugar de 32), 8.300 en añadir sus sprites, y el resto en ordenarlas, buscarlas y redibujar lo que tapa a las animadas.
+  - Guardar los elementos ya filtrados por fotograma de animación ayudaría poco: cada persona cambia de fotograma en cada tick, que a velocidad Normal llega cada 1,6 fotogramas.
+
+### Los caminos
+
+Una búsqueda cuesta unos 1.000 ciclos por nodo en la N64 (10,7 µs). En el PC son unas 312 instrucciones por nodo (callgrind, 3.000 horas del escenario del hito 5): el resto son fallos de caché.
+
+- **Se probó guardar el valor de cada nodo en su entrada del montículo,** para no leer los nodos al ordenarlo.
+  - Da los mismos caminos: los 12.000 de CorsixTH del hito 3, y las mismas huellas.
+  - Pero el montículo es pequeño: 2 niveles de media al sacar un nodo y 0,66 al meterlo.
+  - Las búsquedas de las 7.611 horas pasaron de 4,03 a 4,10 s, así que no mejora nada. **Descartado**, y ahorra 32 KiB.
+- **Lo que cuesta es leer las casillas:** 16 B cada una, y las vecinas de arriba y de abajo están a 2 KiB. Un mapa aparte con las banderas de paso, 1 B por casilla (16 KiB), cabría mejor en la caché, pero hay que tenerlo al día cada vez que cambia el mapa. No está hecho.
 
 ### La temperatura
 
@@ -1018,20 +1049,23 @@ No se hace por ahora: a velocidad Normal y a «Max speed» la temperatura ya cab
 
 ### Los fotogramas ahora
 
+Con la simulación repartida, la carga de texturas nueva y la lista nueva (la última medida):
+
 | | Normal (18,5 h/s) | Max speed (27,8 h/s) | And then some more (55,6 h/s) |
 |---|---:|---:|---:|
-| CPU por fotograma: hito 5 → ahora | 19,3 → **15,1 ms** | 20,4 → **15,5 ms** | 42,6 → **25,4 ms** |
-| p99 | 28,2 → 27,1 ms | 34,9 → 28,4 ms | 70,8 → 29,0 ms |
+| CPU por fotograma: hito 5 → ahora | 19,3 → **13,7 ms** | 20,4 → **14,1 ms** | 42,6 → **25,0 ms** |
+| p99 | 28,2 → 26,1 ms | 34,9 → 28,3 ms | 70,8 → 28,8 ms |
 | Fotogramas que se saltan | 0 → **0** | 2 → **0** | 182 → **0** |
-| Horas de juego por segundo | 18,5 → 18,5 | 27,8 → 27,8 | 40,2 (a tirones) → 34,6 |
-| Dibujo | 15,2 → 10,3 ms | 15,8 → 10,6 ms | 16,1 → 10,8 ms |
+| Horas de juego por segundo | 18,5 → 18,5 | 27,8 → 27,8 | 40,2 (a tirones) → 36,2 |
+| Dibujo | 15,2 → 9,0 ms | 15,8 → 9,3 ms | 16,1 → 9,5 ms |
+| — la lista | 5,66 → 4,03 ms | 5,80 → 4,13 ms | 6,03 → 4,23 ms |
 
-La memoria apenas cambia: la simulación ocupa 4 KiB más (las máscaras de la temperatura). En la ROM de medida, con 8 MiB, quedan 3.855 KiB de heap libres con la música sonando, frente a 3.923. El heap es 30 KiB menor (código, relleno y las máscaras), y la propia medida usa 38 KiB más, unos 31 de ellos para los comandos de `rdpq_exec`.
+La memoria apenas cambia: la simulación ocupa 4 KiB más (las máscaras de la temperatura). En la ROM de medida, con 8 MiB, quedan 3.854 KiB de heap libres con la música sonando, frente a 3.923. El heap es 31 KiB menor (código, relleno y las máscaras), y la propia medida usa 38 KiB más, unos 31 de ellos para los comandos de `rdpq_exec`.
 
 ### Pendiente
 
-- **La lista de dibujo:** guardar por fotograma de animación los elementos que se dibujan con cada juego de capas.
-- **Los caminos en el hospital lleno:** ya no se notan, pero cuestan lo mismo; abaratar el nodo (1.014 ciclos).
+- **Las entidades en la lista:** unos 2,7 ms con 123 sprites de entidades.
+- **Los caminos en el hospital lleno:** ya no se notan, pero cuestan lo mismo. Lo siguiente sería un mapa compacto de banderas de paso.
 - **La temperatura en el RSP,** si hacen falta las velocidades altas.
 - **En la consola:** medir el RDP y probar `rdpq_exec`, que ares no puede juzgar.
 

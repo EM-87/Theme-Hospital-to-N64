@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "raster.h"
 #include "th/anim.h"
@@ -52,6 +53,8 @@ static int uso(void)
             "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
             "<unidad> <x> <y> <ancho> <alto> <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
+            "     th64sim lista <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <unidad> <x> <y> "
+            "<ancho> <alto> <horas> <veces>\n"
             "     th64sim caminos <nivel.tmp> <número de nivel> <caminos_nivelN.tsv>\n"
             "     th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>\n"
             "     th64sim escena <nivel.tmp> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> <unidad> <x> <y> "
@@ -771,12 +774,56 @@ static int orden_escena4(int argc, char **argv)
     return r;
 }
 
+// La lista de dibujo de un escenario tras unas horas, hecha 'veces' veces:
+// lo que tarda cada una y su huella (la misma que escribe la ROM de medida).
+static int orden_lista(char **argv)
+{
+    // lista <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <anim.tan> <unidad> <x> <y> <w> <h> <horas> <veces>
+    uint8_t *b_datos, *s_datos;
+    th_sheet bloques, sprites;
+    if (cargar_hoja(argv[4], &bloques, &b_datos) || cargar_hoja(argv[5], &sprites, &s_datos))
+        return 1;
+    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], argv[6], 1);
+    if (!s)
+        return 1;
+    const int horas = atoi(argv[12]), veces = atoi(argv[13]);
+    for (int i = 0; i < horas; i++)
+        th_sim_tick(s);
+    static th_view_entity ents[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+    const int n = th_vista_sim(s, ents, (int)(sizeof ents / sizeof ents[0]));
+    th_view v = {.unit = atoi(argv[7]), .x = atoi(argv[8]), .y = atoi(argv[9]), .w = atoi(argv[10]),
+                 .h = atoi(argv[11])};
+    th_scene sc = {.map = s->w.map, .sheets = {&bloques, &sprites}, .anims = s->w.anims, .entities = ents,
+                   .entity_count = n};
+    static th_draw elementos[4096];
+    th_drawlist l = {.items = elementos, .capacity = 4096};
+    struct timespec t0, t1;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+    for (int i = 0; i < veces; i++)
+        if (th_view_scene(&v, &sc, &l) < 0)
+            return 1;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    const double ns = ((t1.tv_sec - t0.tv_sec) * 1e9 + (t1.tv_nsec - t0.tv_nsec)) / (veces ? veces : 1);
+    int de_entidades = 0;
+    for (int i = 0; i < l.count; i++)
+        de_entidades += l.items[i].sheet == TH_SHEET_SPRITES;
+    printf("lista: hora %lu, %d entidades, %d sprites (%d de entidades, %d suelos, %d redibujados); %.1f us; "
+           "huella %08lx\n",
+           (unsigned long)s->hours, n, l.count, de_entidades, l.floor_count, l.redraws, ns / 1000,
+           (unsigned long)th_drawlist_hash(&l));
+    free(b_datos);
+    free(s_datos);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 7 && strcmp(argv[1], "hito4") == 0)
         return th64sim_hito4(argv);
     if (argc == 6 && strcmp(argv[1], "carga") == 0)
         return th64sim_carga(argv);
+    if (argc == 14 && strcmp(argv[1], "lista") == 0)
+        return orden_lista(argv);
     if (argc >= 16 && argc <= 18 && strcmp(argv[1], "escena4") == 0)
         return orden_escena4(argc, argv);
     if (argc == 4 && strcmp(argv[1], "huella") == 0) {

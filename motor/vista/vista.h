@@ -125,4 +125,8 @@ int th_view_map(const th_view *v, const th_map *m, const th_sheet *blocks, th_dr
 // Limita la cámara para que el centro de la pantalla no salga del rombo del mapa.
 void th_view_clamp(th_view *v);
 
+// Huella de una lista de dibujo (FNV-1a de todos sus campos), para comprobar
+// que dos formas de hacerla dan la misma.
+uint32_t th_drawlist_hash(const th_drawlist *l);
+
 #endif

@@ -25,6 +25,7 @@ python3 -I tools/hito5/cobertura.py motor/core $TH64_WORK/src/CorsixTH/CorsixTH/
 |---|---|
 | `medir.sh [dir]` | Compila la ROM de medida (`make -C motor MEDIR=1`), comprueba la caché de instrucciones, corre `th64sim carga` en el PC y la ROM en ares con 8 y 4 MiB, y resume con `analizar.py` |
 | `analizar.py <dir>` | La memoria tras cada paso de la carga, la huella (N64 frente a PC), el coste por tick con su regresión (personas, casillas de temperatura recalculadas, nodos y búsquedas de camino), por tramos de personas, lo que cuesta cada carga de textura (`H5 c`) y los fotogramas a cada velocidad, con el atraso de la simulación repartida. Escribe `resumen.json` |
+| `huellas_lista.sh` | Las huellas de 658 listas de dibujo (`th64sim lista`), en una rejilla de cámaras y horas de los escenarios de los hitos 4 y 5. Se corre antes y después de cambiar la vista y se comparan con `diff` |
 | `codigo.py <rom.map>` | Código, datos de solo lectura, datos y bss del motor (por fichero), libdragon (por módulo) y las bibliotecas de C, del mapa del enlazador |
 | `cobertura.py <motor/core> <CorsixTH/Lua>` | Las funciones de CorsixTH que el núcleo nombra en sus comentarios y las acciones de humanoide, en líneas de Lua: una cota de cuánta lógica hay ya en el motor |
 | [`bench/scenarios/medir_hito5.lua`](../../bench/scenarios/medir_hito5.lua) | `medir.lua` de la fase 1 con el jugador de la traza del hito 4 (abre los faxes y los contesta igual), para que la partida sea la de la campaña |

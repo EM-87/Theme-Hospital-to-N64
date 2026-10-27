@@ -34,7 +34,7 @@ int th_sheet_init(th_sheet *s, const uint8_t *data, size_t len)
     return 0;
 }
 
-void th_sheet_size(const th_sheet *s, int i, int *w, int *h)
+static inline void sheet_size(const th_sheet *s, int i, int *w, int *h)
 {
     if (i < 0 || i >= s->count) {
         *w = *h = 0;
@@ -45,6 +45,11 @@ void th_sheet_size(const th_sheet *s, int i, int *w, int *h)
     *h = rd16(e + 6);
     if (!*w || !*h)
         *w = *h = 0;
+}
+
+void th_sheet_size(const th_sheet *s, int i, int *w, int *h)
+{
+    sheet_size(s, i, w, h);
 }
 
 const uint8_t *th_sheet_pixels(const th_sheet *s, int i)
@@ -59,11 +64,14 @@ typedef struct {
     th_drawlist *l;
     const th_view *v;
     const th_scene *sc;
+    int vw, vh;             // tamaño de la pantalla (v->w, v->h)
     int f, b;               // siguiente hueco de suelo (sube) y de pared (baja)
-    int16_t w[256], h[256]; // tamaños de los bloques, leídos una vez por vista
+    const uint8_t *wh_de;   // los datos de la hoja de bloques de w y h (se reconoce por ellos)
+    int16_t w[256], h[256]; // tamaños de los bloques, leídos una vez por hoja
     // Entidades cerca de la pantalla, ordenadas por casilla y orden de dibujo,
     // y un bit por casilla con alguna (para no buscar en las vacías).
     uint16_t ent[TH_VIEW_MAX_ENTITIES];
+    uint16_t key[TH_VIEW_MAX_ENTITIES]; // la casilla de cada una (tile_key)
     int n_ent;
     uint32_t occupied[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
 } builder;
@@ -93,7 +101,7 @@ static int add_sprite_crop(builder *bd, int wall, int sheet, int sprite, int w, 
         if (clip_x1 < x1)
             x1 = clip_x1;
     }
-    if (x0 >= bd->v->w || x1 <= 0 || x0 >= x1 || y0 >= bd->v->h || y1 <= 0 || y0 >= y1)
+    if (x0 >= bd->vw || x1 <= 0 || x0 >= x1 || y0 >= bd->vh || y1 <= 0 || y0 >= y1)
         return 0;
     if (bd->f > bd->b)
         return -1;
@@ -121,13 +129,27 @@ static int add(builder *bd, int wall, int block, int x, int y, int flags, int cl
     return add_sprite(bd, wall, TH_SHEET_BLOCKS, block, bd->w[block], bd->h[block], x, y, flags, clip_y0, clip_y1);
 }
 
+// add sin banderas ni recortes, para los suelos y las paredes: lo mismo con
+// menos trabajo (es lo que más se llama).
+static inline int add_block(builder *bd, int wall, int block, int x, int y)
+{
+    const int w = bd->w[block], h = bd->h[block];
+    if (!w || x >= bd->vw || x + w <= 0 || y >= bd->vh || y + h <= 0)
+        return 0;
+    if (bd->f > bd->b)
+        return -1;
+    th_draw *d = wall ? &bd->l->items[bd->b--] : &bd->l->items[bd->f++];
+    *d = (th_draw){.sprite = (uint16_t)block, .sheet = TH_SHEET_BLOCKS, .x = (int16_t)x, .y = (int16_t)y};
+    return 0;
+}
+
 // Sprite de una capa a la altura que le toca: el pie del sprite queda a la
 // altura del pie del rombo de la casilla.
-static int add_layer(builder *bd, int wall, int block, int sx, int sy)
+static inline int add_layer(builder *bd, int wall, int block, int sx, int sy)
 {
     if (!block)
         return 0;
-    return add(bd, wall, block, sx - bd->v->unit, sy - bd->h[block] + bd->v->unit, 0, 0, 0);
+    return add_block(bd, wall, block, sx - bd->v->unit, sy - bd->h[block] + bd->v->unit);
 }
 
 // draw_north_wall: la pared norte y, si hay, la sombra sobre ella recortada a
@@ -182,7 +204,7 @@ static int add_entity(builder *bd, const th_view_entity *e, int sx, int sy)
         if ((f & (TH_ANIM_ALPHA50 | TH_ANIM_ALPHA75)) == (TH_ANIM_ALPHA50 | TH_ANIM_ALPHA75))
             continue;
         int w, h;
-        th_sheet_size(sh, el.sprite, &w, &h);
+        sheet_size(sh, el.sprite, &w, &h);
         // Desplazamientos crudos con origen en (141, 186), a la escala de la hoja.
         const int ex = ((int)el.x - 141) * u / 32, ey = ((int)el.y - 186) * u / 32;
         int px;
@@ -205,12 +227,10 @@ static int tile_key(const th_view_entity *e)
     return e->tile_y * TH_MAP_WIDTH + e->tile_x;
 }
 
-// ¿Va a antes que b en la lista de su casilla? Por casilla, luego por capa de
-// dibujo y, con la misma capa, la que llegó después primero (attach_to_tile).
-static int before(const th_view_entity *a, const th_view_entity *b)
+// En la misma casilla, ¿va a antes que b en su lista? Por capa de dibujo y,
+// con la misma capa, la que llegó después primero (attach_to_tile).
+static int before_in_tile(const th_view_entity *a, const th_view_entity *b)
 {
-    if (tile_key(a) != tile_key(b))
-        return tile_key(a) < tile_key(b);
     if (a->drawing_layer != b->drawing_layer)
         return a->drawing_layer < b->drawing_layer;
     return a->attach_seq > b->attach_seq;
@@ -223,7 +243,7 @@ static int first_entity(const builder *bd, int x, int y)
     int lo = 0, hi = bd->n_ent;
     while (lo < hi) {
         int mid = (lo + hi) / 2;
-        if (tile_key(&bd->sc->entities[bd->ent[mid]]) < key)
+        if (bd->key[mid] < key)
             lo = mid + 1;
         else
             hi = mid;
@@ -240,10 +260,8 @@ static int add_tile_entities_list(builder *bd, int x, int y, int sx, int sy, int
         return 0;
     const int key = y * TH_MAP_WIDTH + x;
     int n = 0;
-    for (int i = first_entity(bd, x, y); i < bd->n_ent; i++) {
+    for (int i = first_entity(bd, x, y); i < bd->n_ent && bd->key[i] == key; i++) {
         const th_view_entity *e = &bd->sc->entities[bd->ent[i]];
-        if (tile_key(e) != key)
-            break;
         if ((layer >= 0 && e->drawing_layer != layer) || e->early != early)
             continue;
         if (add_entity(bd, e, sx, sy) < 0)
@@ -292,14 +310,19 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
     static builder bd;
     bd.l = out;
     bd.v = v;
+    bd.vw = v->w;
+    bd.vh = v->h;
     bd.sc = sc;
     bd.f = 0;
     bd.b = out->capacity - 1;
-    for (int i = 0; i < 256; i++) {
-        int w, h;
-        th_sheet_size(blocks, i, &w, &h);
-        bd.w[i] = (int16_t)w;
-        bd.h[i] = (int16_t)h;
+    if (bd.wh_de != blocks->data) {
+        for (int i = 0; i < 256; i++) {
+            int w, h;
+            th_sheet_size(blocks, i, &w, &h);
+            bd.w[i] = (int16_t)w;
+            bd.h[i] = (int16_t)h;
+        }
+        bd.wh_de = blocks->data;
     }
     // Líneas cuyo rombo (sy a sy + u) o sprite más alto pueden tocar la
     // pantalla; con entidades, hasta 150 píxeles de 640 × 480 por debajo.
@@ -316,7 +339,8 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
     if (s1 > TH_MAP_WIDTH + TH_MAP_HEIGHT - 2)
         s1 = TH_MAP_WIDTH + TH_MAP_HEIGHT - 2;
 
-    // Las entidades de esas líneas, ordenadas (por inserción: son pocas).
+    // Las entidades de esas líneas, ordenadas por casilla y, en cada una, por
+    // before_in_tile (por inserción: son pocas).
     bd.n_ent = 0;
     out->redraws = 0;
     memset(bd.occupied, 0, sizeof bd.occupied);
@@ -325,14 +349,17 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
         int s = e->tile_x + e->tile_y;
         if (e->tile_x < 0 || s < s0 || s > s1)
             continue;
+        const int k = tile_key(e);
         int j = bd.n_ent++;
-        while (j > 0 && before(e, &sc->entities[bd.ent[j - 1]])) {
+        while (j > 0 && (k < bd.key[j - 1] ||
+                         (k == bd.key[j - 1] && before_in_tile(e, &sc->entities[bd.ent[j - 1]])))) {
             bd.ent[j] = bd.ent[j - 1];
+            bd.key[j] = bd.key[j - 1];
             j--;
         }
         bd.ent[j] = (uint16_t)i;
-        const unsigned k = (unsigned)tile_key(e);
-        bd.occupied[k >> 5] |= 1u << (k & 31);
+        bd.key[j] = (uint16_t)k;
+        bd.occupied[(unsigned)k >> 5] |= 1u << (k & 31);
     }
 
     int first = 1;
@@ -360,7 +387,8 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
         // Paredes norte de derecha a izquierda, cada una con las entidades de
         // la lista temprana de su casilla.
         for (x = x1, t = t0 + (x1 - x0) * paso, sx = sx0 + 2 * u * (x1 - x0); x >= x0; x--, t -= paso, sx -= 2 * u)
-            if (add_north_wall(&bd, t, sx, sy) < 0 || add_tile_entities_list(&bd, x, s - x, sx, sy, -1, 1) < 0)
+            if (add_north_wall(&bd, t, sx, sy) < 0 ||
+                (bd.n_ent && has_entities(&bd, x, s - x) && add_tile_entities_list(&bd, x, s - x, sx, sy, -1, 1) < 0))
                 return -1;
         // De izquierda a derecha: la pared oeste y las entidades de la casilla.
         int prev_needs_redraw = 0;
@@ -372,10 +400,8 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
             int animated = 0;
             if (bd.n_ent && has_entities(&bd, x, y)) {
                 const int key = y * TH_MAP_WIDTH + x;
-                for (int i = first_entity(&bd, x, y); i < bd.n_ent; i++) {
+                for (int i = first_entity(&bd, x, y); i < bd.n_ent && bd.key[i] == key; i++) {
                     const th_view_entity *e = &sc->entities[bd.ent[i]];
-                    if (tile_key(e) != key)
-                        break;
                     if (e->early) {
                         needs_redraw = 1;
                         continue;
@@ -451,4 +477,30 @@ void th_view_clamp(th_view *v)
         cy = cy_max;
     v->x = cx - v->w / 2;
     v->y = cy - v->h / 2;
+}
+
+uint32_t th_drawlist_hash(const th_drawlist *l)
+{
+    uint32_t h = 2166136261u;
+    const uint32_t cab[3] = {(uint32_t)l->count, (uint32_t)l->floor_count, (uint32_t)l->redraws};
+    for (int i = 0; i < 3 + l->count * 6; i++) {
+        uint32_t v;
+        if (i < 3) {
+            v = cab[i];
+        } else {
+            const th_draw *d = &l->items[(i - 3) / 6];
+            switch ((i - 3) % 6) {
+            case 0: v = (uint32_t)d->sprite << 16 | (uint32_t)d->sheet << 8 | d->flags; break;
+            case 1: v = (uint32_t)(uint16_t)d->x << 16 | (uint16_t)d->y; break;
+            case 2: v = (uint32_t)(uint16_t)d->clip_y0 << 16 | (uint16_t)d->clip_y1; break;
+            case 3: v = (uint32_t)(uint16_t)d->clip_x0 << 16 | (uint16_t)d->clip_x1; break;
+            default: continue;
+            }
+        }
+        for (int k = 0; k < 4; k++) {
+            h ^= (v >> (8 * k)) & 0xFF;
+            h *= 16777619u;
+        }
+    }
+    return h;
 }
