@@ -1,6 +1,6 @@
 # Fase 5 — Prototipos en N64
 
-Fecha de inicio: 2026-10-23. Estado: **hitos 0 a 5 hechos**, y después, en parte, los riesgos de CPU que dejó el hito 5 y las necesidades de los pacientes. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
+Fecha de inicio: 2026-10-23. Estado: **cerrada**. Hitos 0 a 5 hechos, y después, en parte, los riesgos de CPU que dejó el hito 5 y las necesidades de los pacientes. Sigue la fase 6: [`06_plan.md`](06_plan.md). Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
 
 ## Entorno del motor
 

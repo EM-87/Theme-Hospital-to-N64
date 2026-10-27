@@ -103,6 +103,10 @@ Hitos pequeños y verificables en ares, en este orden:
 
 Cada hito se cierra con un commit, una captura de ares y una nota en `docs/05_prototipo.md` con las cifras.
 
+## Fase 6 — Juego base: el nivel 1 jugable
+
+El nivel 1 de principio a fin en la ROM: construir, contratar, curar y ganar o perder con sus objetivos, con el mando o el ratón, en inglés y español, y guardando la partida. La interfaz va primero, porque es casi todo el trabajo y porque los controles solo se pueden juzgar jugando. Hitos, comprobaciones y riesgos en [`06_plan.md`](06_plan.md); las cifras de cada hito, en `06_juego_base.md`.
+
 ---
 
 ## Al final, cuando el juego base funcione
