@@ -36,11 +36,14 @@
 enum { TH_DIR_NORTH, TH_DIR_EAST, TH_DIR_SOUTH, TH_DIR_WEST };
 
 // Animaciones de una clase de humanoide: caminar y quieto (walk_anims de
-// humanoid.lua) y las de las puertas (door_animations); 0 = no tiene.
+// humanoid.lua), las de las puertas (door_animations) y, de los pacientes, las
+// de vomitar, orinar, bostezar, dar golpecitos con el pie y mirar el reloj
+// (vomit_anim, pee_anim...); 0 = no tiene.
 typedef struct th_walk_anims {
     const char *name;
     uint16_t walk_north, walk_east, idle_north, idle_east;
     uint16_t door_leaving, door_entering, knock_north, knock_east, swing_leaving, swing_entering;
+    uint16_t vomit, pee, yawn, tap_foot, check_watch;
 } th_walk_anims;
 
 const th_walk_anims *th_walk_anims_find(const char *humanoid_class);
@@ -60,6 +63,13 @@ enum {
     TH_ACTION_STAFF_RECEPTION,
     TH_ACTION_CALL_CHECKPOINT, // obj: sala; val: identidad de la llamada
     TH_ACTION_ANSWER_CALL,
+    // Una animación entera y se acaba (vomit.lua, pee.lua, yawn.lua,
+    // tap_foot.lua, check_watch.lua); vomitar y orinar dejan basura.
+    TH_ACTION_VOMIT,
+    TH_ACTION_PEE,
+    TH_ACTION_YAWN,
+    TH_ACTION_TAP_FOOT,
+    TH_ACTION_CHECK_WATCH,
 };
 
 // Banderas de una acción (flags): las que pone quien la crea.
@@ -89,6 +99,8 @@ enum {
     TH_AS_DIAG_ROOM = 1u << 10,  // seek_room: diagnosis_room puesto
     TH_AS_NOTIFY = 1u << 11,     // walk: on_next_tile_set pendiente (paso de puerta)
     TH_AS_NO_PROLONG = 1u << 12, // use_object: prolonged_usage == false
+    TH_AS_MSG_SENT = 1u << 13,   // seek_room: message_sent (el fax ya se mandó)
+    TH_AS_RESTARTED = 1u << 14,  // walk: saved_must_happen ~= nil (se ha vuelto a empezar)
 };
 
 typedef struct th_action {
@@ -169,6 +181,10 @@ void th_humanoid_set_layer(th_humanoid *h, int layer, int id);
 void th_humanoid_set_next_action_p(th_world *w, th_humanoid *h, th_action a, int high);
 void th_humanoid_queue_action_at(th_world *w, th_humanoid *h, th_action a, int pos);
 void th_humanoid_finish_action(th_world *w, th_humanoid *h);
+// Patient:interruptAndRequeueAction(current, pos): vuelve a poner en la
+// posición pos la acción en curso, rehecha (quieto, caminar o, si no, buscar
+// sala), y la interrumpe.
+void th_humanoid_interrupt_and_requeue(th_world *w, th_humanoid *h, int pos);
 // Entity:tick.
 void th_humanoid_tick(th_world *w, th_humanoid *h);
 // Entity:setTimer: con slow_animation, el doble de ticks.

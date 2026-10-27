@@ -2,7 +2,7 @@
 
 RAM libre, coste por tick y fotogramas con 50 pacientes en la N64, y lo mismo en CorsixTH para compararlo con la estimación de la fase 1. Los resultados están en [`docs/05_prototipo.md`](../../docs/05_prototipo.md#hito-5--medición-en-la-n64).
 
-El escenario es el del hito 4 con 18 llegadas al mes en lugar de 6 (`--th64-ritmo=72`): en la hora 3.501 hay 50 pacientes en el mapa, y 69 en la 9.000.
+El escenario es el del hito 4 con 18 llegadas al mes en lugar de 6 (`--th64-ritmo=72`). La ROM de medida y `th64sim carga` usan la semilla 5: hay 50 pacientes en el mapa en la hora 3.833, y han llegado 97 en la 9.000. Hasta las necesidades de los pacientes se usaba la 1, que daba 50 en la hora 3.501; con ellas, la 1 no junta 50 antes de la hora 9.000.
 
 ```bash
 source tools/env.sh

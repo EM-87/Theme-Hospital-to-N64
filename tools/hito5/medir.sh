@@ -13,7 +13,8 @@ export TH64_WORK
 O=$(mkdir -p "${1:-$TH64_WORK/resultados/hito5/medida}" && cd "${1:-$TH64_WORK/resultados/hito5/medida}" && pwd)
 make -C "$REPO_DIR/motor" MEDIR=1 -j8 > /dev/null
 python3 -I "$REPO_DIR/tools/cache_instrucciones.py" "$N64_INST/bin/mips64-elf-nm" "$REPO_DIR/motor/build/n64_medir/th64_medir.elf" --relleno || echo "AVISO: choques en la caché de instrucciones (motor/platform/n64/relleno_cache.c)"
-"$REPO_DIR/motor/build/pc/th64sim" carga "$REPO_DIR/motor/assets" "$REPO_DIR/motor/assets/escenarios/hito5.trg" 1 9000 \
+# La semilla 5, la misma que la ROM de medida (cargar_hospital en main.c).
+"$REPO_DIR/motor/build/pc/th64sim" carga "$REPO_DIR/motor/assets" "$REPO_DIR/motor/assets/escenarios/hito5.trg" 5 9000 \
   > "$O/carga_pc.tsv" 2> "$O/carga_pc.txt"
 for ram in 8 4; do
   opc=""

@@ -1,6 +1,6 @@
 # Fase 5 — Prototipos en N64
 
-Fecha de inicio: 2026-10-23. Estado: **hitos 0 a 5 hechos**, y después, en parte, los riesgos de CPU que dejó el hito 5. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
+Fecha de inicio: 2026-10-23. Estado: **hitos 0 a 5 hechos**, y después, en parte, los riesgos de CPU que dejó el hito 5 y las necesidades de los pacientes. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
 
 ## Entorno del motor
 
@@ -459,7 +459,7 @@ Lo que el motor tiene que hacer:
 - volver al borde y desaparecer;
 - los sueldos de fin de mes y las subidas de sueldo: hubo 24 en las 10 semillas, unas 2 por semilla.
 
-Lo que queda fuera, porque pesa menos del 0,2 %: vomitar, orinar y la basura que dejan. La comparación del hito 4 enseñó que, aun así, vomitar y orinar retrasan al 7,5 % de los pacientes en su salida (ver [«De la consulta a irse»](#comparación-con-corsixth)).
+Lo que queda fuera, porque pesa menos del 0,2 %: vomitar, orinar y la basura que dejan. La comparación del hito 4 enseñó que, aun así, vomitar y orinar retrasan al 7,5 % de los pacientes en su salida (ver [«De la consulta a irse»](#comparación-con-corsixth)). Entraron después: ver [«Las necesidades de los pacientes»](#las-necesidades-de-los-pacientes).
 
 ## Hito 4 — Bucle mínimo
 
@@ -578,7 +578,7 @@ La sonda de un paciente ([`sonda_paciente.lua`](../bench/scenarios/sonda_pacient
 - el jugador arriesga el diagnóstico en la 3.050, pero la acción nueva espera detrás del vómito, que dura hasta la 3.076;
 - después el paciente acaba de caminar, busca sala de tratamiento y, con el segundo fax, se va en la 3.093: 51 horas en lugar de 24.
 
-En las 40 semillas, vomitar y orinar suman 1.455 horas-paciente entre la consulta y la salida, y la cola, 2.192 horas de más. El resto es lo que esas acciones interrumpen y repiten (`interruptAndRequeueAction`) y el fax que llega más tarde. El escenario las dejó fuera porque pesan menos del 0,2 % del tiempo de los pacientes, pero retrasan al 7,5 % de ellos en esta fase. Entran con la basura y el bedel.
+En las 40 semillas, vomitar y orinar suman 1.455 horas-paciente entre la consulta y la salida, y la cola, 2.192 horas de más. El resto es lo que esas acciones interrumpen y repiten (`interruptAndRequeueAction`) y el fax que llega más tarde. El escenario las dejó fuera porque pesan menos del 0,2 % del tiempo de los pacientes, pero retrasan al 7,5 % de ellos en esta fase. Ya están en el motor, con la basura y sin el bedel: con ellas, esta cifra queda en +1,8 % (t = 0,75), ver [«Las necesidades de los pacientes»](#las-necesidades-de-los-pacientes).
 
 **El médico llegaba a la consulta antes.** La primera comparación tenía 5 cifras con \|t\| ≥ 2:
 - pasan por la consulta, −5,7 % (t = −2,85);
@@ -670,7 +670,7 @@ Dos medidas en ares con la ROM de pruebas y la semilla 1:
 
 ### Pendiente
 
-- **Las necesidades de los pacientes** (`Patient:tickDay`): vomitar, orinar, bostezar, la basura, la sed y la salud. Es lo único que separa al motor de CorsixTH en la comparación (ver «De la consulta a irse»). Con la basura llegan el bedel y sus llamadas.
+- **Las necesidades de los pacientes** (`Patient:tickDay`): hechas después, sin el bedel, que llega con sus llamadas: ver [«Las necesidades de los pacientes»](#las-necesidades-de-los-pacientes).
 - **Los caminos largos.** Un A* de un paciente que se va puede costar unos 28 ms en la N64. Hay que repartirlos o acotarlos. Se mide en el hospital lleno, en el hito 5.
 - **La temperatura a velocidades altas.** A ×8, en las horas tras un cambio de mes, se saltan fotogramas. La pasada es un cálculo regular sobre el mapa entero: se podría llevar al RSP.
 - **La memoria de cada humanoide.** Con la cola de acciones, 684 B. Con 384 humanoides serían 257 KiB, frente a los 96 KiB del presupuesto de la fase 4. Hay que compactar la acción, que tiene campos que solo usa un tipo.
@@ -711,7 +711,7 @@ Es el hospital del hito 4, creado en CorsixTH con 18 llegadas al mes en lugar de
 | Personas | 12 | 23 | 35 | 46 | 51 | 55 | 61 | 67 | 69 |
 
 Antes de medir la carga hay que comprobar que el motor se comporta como CorsixTH con ella. **Se compararon 10 semillas de 9.000 horas**, con 10 corridas del motor por semilla. Quedan dentro del azar 13 de las 15 cifras del hito 4:
-- **de la consulta a irse:** −16,8 %. Es lo mismo que en el hito 4 (vomitar y orinar, que el motor aún no tiene), con más peso porque hay más pacientes;
+- **de la consulta a irse:** −16,8 %. Es lo mismo que en el hito 4 (vomitar y orinar, que el motor aún no tenía), con más peso porque hay más pacientes. Con las necesidades, −3,4 % (ver [«Las necesidades de los pacientes»](#las-necesidades-de-los-pacientes));
 - **las llegadas:** −5,2 %, con t = −2,15, en el límite. Con 15 cifras es esperable que alguna pase de 2 por azar.
 
 La semilla 4 no sirve: en su guardado queda una sala sin puerta, de un intento fallido de construir la consulta. Se usó la 11.
@@ -911,7 +911,7 @@ Lo que hay que resolver para el juego completo, por orden (lo hecho después, en
 ### Pendiente
 
 - **Lo de «Hacia el hospital lleno»:** los caminos largos, la temperatura a velocidades altas y el coste del dibujo con mucha gente. Hecho en parte después: ver «Después del hito 5».
-- **Las necesidades de los pacientes** (del hito 4): con más pacientes pesan más en la salida (−16,8 %).
+- **Las necesidades de los pacientes** (del hito 4): hechas después, ver [«Las necesidades de los pacientes»](#las-necesidades-de-los-pacientes).
 - **Medir en la consola.** Todo es de ares. Con el flashcart hay que repetir esta medida: ares no emula los contadores del RDP, y sus ciclos de memoria pueden ser optimistas.
 
 ## Después del hito 5: los riesgos de CPU
@@ -1068,6 +1068,149 @@ La memoria apenas cambia: la simulación ocupa 4 KiB más (las máscaras de la t
 - **Los caminos en el hospital lleno:** ya no se notan, pero cuestan lo mismo. Lo siguiente sería un mapa compacto de banderas de paso.
 - **La temperatura en el RSP,** si hacen falta las velocidades altas.
 - **En la consola:** medir el RDP y probar `rdpq_exec`, que ares no puede juzgar.
+
+## Las necesidades de los pacientes
+
+**Hecho.** Los pacientes vomitan, orinan en el suelo, bostezan, se impacientan mientras esperan y tiran basura, como en `Patient:tickDay` y `Patient:setTile` de CorsixTH. Era lo único que separaba al motor de CorsixTH en las comparaciones de los hitos 4 y 5 (ver [«De la consulta a irse»](#comparación-con-corsixth)). Con ellas:
+- **Escenario del hito 4, 40 semillas: ninguna de las 17 cifras tiene \|t\| ≥ 2.** De la consulta a irse pasa de −10,2 % (t = −4,48) a +1,8 % (t = 0,75).
+- **Escenario del hito 5, 10 semillas: 1 de 17.** Son las llegadas (−5,3 %, t = −2,24), que ya estaban así antes (−5,2 %). De la consulta a irse pasa de −16,8 % a −3,4 % (t = −0,56).
+- **Cuestan un 1,7 % más por persona y hora**, sin contar la temperatura y con la misma semilla, en el PC.
+- **Ocupan 5 KiB más en la simulación** (208 KiB) y 12 B más por humanoide (748 B). Con la basura en la lista de entidades, la ROM de medida tiene 45 KiB menos de heap libre: 3.809 KiB con la música sonando.
+- **La N64 sigue simulando lo mismo que el PC.** Dan la misma huella las 9.000 horas del escenario del hito 5 con la semilla 5 (b5d2aeee) y las 3.000 del hito 4 con la semilla 1 (8fefaa13).
+
+### Qué hacen
+
+Cada día de juego, cada paciente (`patient_tick_day` en [`sim.c`](../motor/core/src/sim.c)):
+
+| Necesidad | Qué hace | Lo que falta |
+|---|---|---|
+| Salud | Empieza entre 0,80 y 1,00 y baja 0,004 al día. Por debajo de 0,22, el paciente se pone moribundo, y la primera vez tiene 1 posibilidad entre 30 de irse harto | Morir (`DieAction`). En 500 corridas de 9.000 horas, ningún paciente llega a salud 0 |
+| Náusea | Con la salud en 0,8 o menos, o la felicidad por debajo de 0,6, vomita si `random() < (1 − salud) × 0,003 + 0,5`: casi uno de cada dos días. Solo en el pasillo, en una casilla del hospital, y una vez al día como mucho mientras espera | — |
+| Ganas de orinar | Suben entre 0,002 y 0,008 al día (entre 0,008 y 0,026 con las enfermedades `more_loo_use`). Por encima de 0,75, el 40 % de los días orina en el suelo | Los aseos. Sin aseos, el paciente apunta que no los hay y deja de buscarlos |
+| Sed | Sube con el calor de su casilla. Por encima de 0,7, quita 0,002 de felicidad al día | Las máquinas de bebidas. No encuentra ninguna y vuelve a mirar al cabo de 2 a 4 días |
+| Esperar | Cuando le quedan 30, 20 y 10 días de paciencia: mira el reloj, bosteza y golpea el suelo con el pie | — |
+| Bostezar | 1 de cada 10 días, con las enfermedades `yawn` | — |
+| Objetos cerca | Sentado en un banco o yendo a sentarse, +0,00002 de felicidad al día; si no, −0,00002. Con un extintor a 2 casillas o menos, +0,0002 | Las plantas, que dependen de si están regadas |
+| Basura | Al pisar el hospital, lleva basura que tira entre 20 y 100 casillas después, y luego cada 30 a 150. Solo en el pasillo y en una casilla sin objetos | Las papeleras y el bedel que limpia |
+
+- **Vomitar y orinar van delante de lo que hacía el paciente**, que vuelve a empezar después (`interruptAndRequeueAction`, en [`humanoid.c`](../motor/core/src/humanoid.c)). Si andaba, vuelve a buscar el camino; si buscaba sala, la vuelve a buscar. Por eso retrasan la salida: si el fax llega durante el vómito, la acción nueva espera detrás.
+- **Cada clase de humanoide tiene sus animaciones** de vomitar, orinar, bostezar, golpear el suelo y mirar el reloj, y 10 clases tienen al menos una. Por ejemplo, el hombre normal vomita en 27 fotogramas y la mujer normal en 9.
+- **Los charcos y la basura se dibujan** en la capa 0 de la casilla. Se ven en la ROM normal junto a la recepción y los bancos.
+
+**La basura no da asco en CorsixTH.** `_dailyObjectHappinessEffects` quita felicidad por cada basura a 2 casillas, y `_calculateNausea` multiplica la náusea por cada charco de vómito cerca. Pero las dos la buscan con `findObjectsInSquare`, que mira el `entity_map`, y `EntityMap:addEntity` solo apunta humanoides y objetos. `Litter` es una `Entity`, así que no la encuentra nunca. En CorsixTH, la basura solo sirve para:
+- impedir tirar otra en la misma casilla (`World:getObjects`);
+- dibujarse.
+
+El motor hace lo mismo.
+
+### Frente a CorsixTH
+
+Las mismas campañas de CorsixTH de los hitos 4 y 5. Las trazas de CorsixTH ya tenían las horas de cada acción, y `resumen.py` cuenta ahora las de vomitar y orinar (`h_vomit`, `h_pee`).
+
+| Cifra | Hito 4: CorsixTH | Motor | t | Hito 5: CorsixTH | Motor | t |
+|---|---:|---:|---:|---:|---:|---:|
+| Pacientes que llegan | 28,9 | 28,2 (−2,5 %) | −1,88 | 92,1 | 87,2 (−5,3 %) | **−2,24** |
+| Esperar la consulta (h) | 322 | 280 (−13,1 %) | −0,73 | 2.316 | 2.155 (−7,0 %) | −1,00 |
+| **De la consulta a irse (h)** | 23,5 | **23,9 (+1,8 %)** | 0,75 | 26,2 | **25,3 (−3,4 %)** | −0,56 |
+| — antes de las necesidades | | 21,1 (−10,2 %) | **−4,48** | | 21,8 (−16,8 %) | |
+| Volver andando al borde (h) | 1.464 | 1.440 (−1,7 %) | −1,67 | 1.477 | 1.455 (−1,5 %) | −0,78 |
+| Saldo al final ($) | +734 | +705 (−3,9 %) | −0,48 | +1.416 | +1.468 (+3,6 %) | 0,24 |
+| Horas-paciente vomitando | 131,4 | 140,5 (+7,0 %) | 0,60 | 1.265 | 1.206 (−4,7 %) | −1,00 |
+| Horas-paciente orinando | 2,9 | 1,8 (−38 %) | −0,98 | 153,9 | 137,6 (−10,6 %) | −0,64 |
+
+Las demás cifras, como antes: todas con \|t\| < 2. Las llegadas del hito 5 ya estaban en −5,2 % (t = −2,15) sin las necesidades. De media no cambian (87,3 antes y 87,2 ahora), así que no vienen de esto.
+
+**La cola de la salida.** En el hito 4, el 7,5 % de los pacientes de CorsixTH tardaban más de 28 horas desde la consulta hasta irse, y en el motor no había ninguno. Ahora:
+
+| Más de 28 horas de la consulta a irse | CorsixTH | Motor |
+|---|---:|---:|
+| Hito 4 | 7,5 % (52,8 h de media) | 8,5 % (56,2 h) |
+| Hito 5 | 11,3 % (57,1 h) | 11,2 % (52,6 h) |
+
+Sin esa cola, las medias son 21,04 y 20,87 horas en el hito 4 y 21,15 y 21,42 en el hito 5.
+
+**Dónde vomitan.** Horas-paciente vomitando por semilla, según la fase del paciente:
+
+| Fase | Hito 4: CorsixTH | Motor | Hito 5: CorsixTH | Motor |
+|---|---:|---:|---:|---:|
+| Llegando | 23,1 | 26,0 | 147,4 | 127,6 |
+| En la cola de la recepción | 23,4 | 24,1 | 189,7 | 233,3 |
+| Esperando la consulta | 30,3 | 25,0 | 825,4 | 735,8 |
+| En la consulta | 0,7 | 0 | 1,6 | 0 |
+| Diagnosticado, antes de irse | 34,7 | 40,5 | 78,1 | 68,1 |
+| Yéndose a casa | 19,1 | 24,8 | 23,1 | 40,9 |
+
+- En el hito 5, dos tercios de los vómitos son de pacientes que esperan la consulta. Esperan unas 2.300 horas, y la salud baja de 0,8 en, como mucho, 50 días.
+- CorsixTH tiene unas pocas horas de vómito durante la consulta, y el motor ninguna. Tampoco se ha mirado por qué el motor tiene más horas de vómito en los pacientes que se van (40,9 frente a 23,1 en el hito 5). Son el 1–2 % de las horas, y volver andando al borde no cambia (t = −0,78).
+
+**Cuántos.** Por corrida de 9.000 horas, el motor cuenta:
+
+| | Hito 4 (400 corridas) | Hito 5 (100 corridas) |
+|---|---:|---:|
+| Vómitos, de media (mín.–máx.) | 7,3 (0–25) | 63,5 (45–85) |
+| Veces que orinan en el suelo | 0,2 (0–3) | 17,5 (5–38) |
+| Charcos y basura en el suelo al final | 8,3 (0–26) | 81,9 (55–113) |
+| Pacientes con la salud a 0 | 0 | 0 |
+
+La basura que tiran es poca, menos de una por corrida: la mayoría de los pacientes se van antes de andar 20 casillas dentro del hospital. Esto no se compara con CorsixTH, porque su traza no la cuenta. Tampoco cambia nada de la simulación: nadie la mira.
+
+### Coste y memoria
+
+**En el PC**, con la misma semilla (la 5) y 9.000 horas del escenario del hito 5 (callgrind):
+
+| | Antes | Con las necesidades |
+|---|---:|---:|
+| Pacientes que llegan | 80 | 97 |
+| Horas-persona | 316.122 | 394.035 |
+| Búsquedas de camino | 3.958 | 5.327 |
+| Instrucciones del tick sin la temperatura | 171,4 M | 217,3 M |
+| — por hora-persona | 542 | **551 (+1,7 %)** |
+| Las funciones de las necesidades | — | 3,9 M (el 0,16 % de todo) |
+
+- La partida diverge porque las necesidades gastan números aleatorios. Con esta semilla, llegan 97 pacientes en lugar de 80.
+- Por hora-persona, lo que más sube son las búsquedas de camino: 0,0135 frente a 0,0125 (+8 %), porque un paciente que vomita andando vuelve a buscar el camino.
+- **La basura en la lista de dibujo:** con la cámara y la hora de la ROM de medida, las 14 piezas que se ven suben la lista de 131.134 a 141.901 instrucciones en el PC (+8,2 %). Son unos 770 por pieza, unos 21 µs en la N64.
+
+**En la N64** (ROM de medida, 8 MiB):
+
+| Dato | Antes | Ahora |
+|---|---:|---:|
+| Simulación (`th_sim`) | 203 KiB | 208 KiB (512 piezas de basura de 8 B) |
+| Humanoide | 736 B | 748 B |
+| Entidades de la vista (`entidades` y `foto`) | — | +28 KiB (512 de 28 B cada una) |
+| Heap libre con la música sonando | 3.854 KiB | 3.809 KiB |
+
+**La medida del hito 5 pasa a la semilla 5.** Con las necesidades, la semilla 1 no junta 50 pacientes en el mapa antes de la hora 9.000. La 5 los junta en la hora 3.833, con 52 personas, y la cámara ve a 19. La N64 da la misma huella que `th64sim carga` (b5d2aeee) y la misma lista que `th64sim lista` (b86f9f85). Los fotogramas de esta medida no se pueden comparar uno a uno con los de [«Los fotogramas ahora»](#los-fotogramas-ahora), porque cambian la cámara, las personas que se ven y las horas en las que cae el cambio de mes:
+
+| Repartida | Normal | Max speed | And then some more |
+|---|---:|---:|---:|
+| CPU por fotograma | 14,1 ms | 23,3 ms | 28,3 ms |
+| Dibujo (la lista) | 9,7 ms (4,7) | 10,9 ms (5,2) | 11,4 ms (5,5) |
+| Sprites por fotograma (de entidades) | 562 (148) | 603 (189) | 619 (205) |
+| Temperatura por fotograma | 0,5 ms | 8,4 ms | 12,7 ms |
+| Fotogramas que se saltan | 0 | 0 | 0 |
+| Horas de juego por segundo (las que tocan) | 18,5 (18,5) | 26,3 (27,8) | 24,1 (55,6) |
+
+- **No salta ningún fotograma a ninguna velocidad.**
+- **«Max speed» ya no va al día del todo:** se queda como mucho 15 ticks atrás. Desde la hora 3.833, el cambio de mes cae dentro de los 300 fotogramas: la temperatura cuesta 8,4 ms por fotograma, frente a 0,6 desde la hora 3.501 con la semilla 1.
+- **El tick, regresión de las 7.611 horas a toda prisa:** 1,17 ms fijos, 6,5 µs por persona, 0,92 µs por casilla de temperatura y 10,6 µs por nodo de camino (R² = 0,994). Con la semilla 1, por persona eran 5,7 µs, pero con otras horas y otra gente, y la búsqueda pasa de 117 a 59 µs: las dos se reparten lo mismo. La comparación justa es la del PC, con la misma semilla.
+
+### Comprobaciones
+
+| Qué | Contra qué | Resultado |
+|---|---|---|
+| Escenario del hito 4: 40 semillas, 10 corridas del motor por semilla | La campaña de CorsixTH | **17 de 17 cifras con \|t\| < 2** |
+| Escenario del hito 5: 10 semillas, 10 corridas por semilla | La campaña de CorsixTH | **16 de 17**; las llegadas ya estaban así |
+| 9.000 horas del escenario del hito 5 en la N64, semilla 5 | `th64sim carga` | **La misma huella** (b5d2aeee) |
+| La lista de dibujo de la ROM de medida | `th64sim lista ... 3833 1 5` | **La misma huella** (b86f9f85) |
+| `tools/motor_check.sh` | Pruebas, huellas y píxeles | Todo bien: 60.233 comprobaciones y 0 fallos en el PC y en la N64. Hito 4, semilla 1, 3.000 horas: 8fefaa13 en los dos. Comparaciones de píxeles: 0 distintos |
+| ASan y UBSan | 9.000 horas del escenario del hito 5 | Sin errores |
+
+### Pendiente
+
+- **Lo que falta de cada necesidad** (la tabla de arriba): los aseos, las máquinas de bebidas, las plantas, las papeleras, el bedel que limpia y la muerte. Entran con esas salas, esos objetos y ese personal. En estos escenarios no cambian nada: no hay ninguno, y nadie llega a salud 0.
+- **Los iconos de humor y los consejos** (`setMood`, «ha orinado en el suelo»): llegan con la interfaz.
+- **La basura se acumula:** sin bedel, el hito 5 acaba con hasta 113 piezas. El tope es de 512; las que no caben se cuentan (`litter_lost`) y no se dibujan.
 
 ## Música: la N64 frente a fluidsynth
 

@@ -102,11 +102,23 @@ static int add_object(const th_sim *s, int i, th_view_entity *out, int max)
     return 1;
 }
 
+// litter_types de objects/litter.lua, en el orden de TH_LITTER_*.
+static const uint16_t litter_anims[] = {2248, 2060, 1894, 1896, 1898, 1900};
+
 int th_vista_sim(const th_sim *s, th_view_entity *out, int max)
 {
     int n = 0;
     for (int i = 0; i < s->n_obj && n < max; i++)
         n += add_object(s, i, out + n, max - n);
+    // La basura, en la capa del suelo (DrawingLayers.Litter = 0).
+    for (int i = 0; i < s->n_litter && n < max; i++) {
+        const th_litter *l = &s->litter[i];
+        const unsigned anim = litter_anims[l->type];
+        out[n++] = (th_view_entity){.tile_x = l->x, .tile_y = l->y, .frame = th_anims_first_frame(s->w.anims, anim),
+                                    .anim = (uint16_t)anim, .flags = (uint8_t)(l->mirror ? TH_ANIM_FLIP_H : 0),
+                                    .drawing_layer = 0, .attach_seq = l->attach_seq, .layers = no_layers,
+                                    .crop = TH_VIEW_NO_CROP};
+    }
     for (int k = 0; k < s->n_order && n < max; k++) {
         const th_person *p = &s->hum[s->order[k]];
         const th_humanoid *h = &p->h;

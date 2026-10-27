@@ -42,7 +42,8 @@ static const char *const fases[N_FASES] = {"llegando", "cola_recepcion", "tras_r
                                            "consulta", "diagnosticado",  "a_casa"};
 static const char *const acciones[] = {"-",           "idle",  "walk",       "spawn",      "seek_reception",
                                        "queue",       "use_object", "knock_door", "meander", "seek_room",
-                                       "staff_reception", "call_checkpoint", "answer_call"};
+                                       "staff_reception", "call_checkpoint", "answer_call", "vomit",
+                                       "pee",         "yawn",       "tap_foot",   "check_watch"};
 static long horas_accion[N_FASES][sizeof acciones / sizeof acciones[0]];
 
 static uint8_t *leer(const char *ruta, size_t *len)
@@ -368,9 +369,11 @@ int th64sim_hito4(char **argv)
             if (horas_accion[i][a])
                 fprintf(f, "%s\t%s\t%ld\n", fases[i], acciones[a], horas_accion[i][a]);
     fclose(f);
-    printf("hito4: %u pacientes en %d horas; saldo %ld (%+ld); reputación %ld; huella %08lx\n",
+    printf("hito4: %u pacientes en %d horas; saldo %ld (%+ld); reputación %ld; huella %08lx; %lu vómitos, %lu "
+           "orinadas, %u basuras en el suelo, %u con la salud a 0\n",
            (unsigned)sim.patients_spawned, horas, (long)sim.hosp.balance, (long)(sim.hosp.balance - saldo0),
-           (long)sim.hosp.reputation, (unsigned long)th_sim_hash(&sim));
+           (long)sim.hosp.reputation, (unsigned long)th_sim_hash(&sim), (unsigned long)sim.n_vomit,
+           (unsigned long)sim.n_pee, (unsigned)sim.n_litter, (unsigned)sim.would_die);
     return 0;
 }
 

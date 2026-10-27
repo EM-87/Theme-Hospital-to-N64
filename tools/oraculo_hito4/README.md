@@ -16,7 +16,7 @@ tools/oraculo_hito4/campana.sh "1 2 3" 3000 /tmp/x  # semillas, horas y director
 | [`bench/scenarios/exportar_escenario.lua`](../../bench/scenarios/exportar_escenario.lua) | Exporta una partida guardada para el motor: las 16.384 casillas (`celdas.tsv`) y el resto (`escenario.json`: fecha, llegadas, dinero, objetos, salas y personal) |
 | `escenario.py <dir_exportado> <motor.tsv> <salida.trg>` | Pasa lo exportado a TRG1 para el motor, con solo las casillas que difieren del nivel recién cargado (`th64sim mapa ... --volcar motor.tsv`) |
 | `campana.sh` | Crea y traza el escenario para cada semilla, y resume |
-| `resumen.py <dir>...` | Cifras de cada semilla, con su media y su desviación típica |
+| `resumen.py <dir>...` | Cifras de cada semilla, con su media y su desviación típica. Incluye las horas-paciente vomitando y orinando (`h_vomit`, `h_pee`, de `acciones.tsv`) |
 | `motor.sh [semillas] [horas] [repeticiones] [dir] [nombre]` | El motor contra CorsixTH: para cada semilla de la campaña exporta la partida, comprueba las 16.384 casillas y corre `th64sim hito4` con varias semillas propias (por defecto 10). Copia el escenario de la primera semilla a `motor/assets/escenarios/<nombre>.trg` (por defecto `hito4`, el que llevan las ROM; `hito5` es el de [`tools/hito5`](../hito5/README.md); con `-` no copia nada) y acaba con `comparar.py` |
 | `comparar.py <corsixth.json> <motor.json>` | Compara las cifras de los dos lados con la t de Welch y marca las que tienen \|t\| ≥ 2 |
 | [`bench/scenarios/captura_escenario.lua`](../../bench/scenarios/captura_escenario.lua) | Captura de 640 × 480 de la partida, parada y sin personas, para comparar el dibujo de los objetos con `th64sim escena4` |

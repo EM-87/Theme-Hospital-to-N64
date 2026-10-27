@@ -54,7 +54,7 @@ static int uso(void)
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
             "<unidad> <x> <y> <ancho> <alto> <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
             "     th64sim lista <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <unidad> <x> <y> "
-            "<ancho> <alto> <horas> <veces>\n"
+            "<ancho> <alto> <horas> <veces> [semilla]\n"
             "     th64sim caminos <nivel.tmp> <número de nivel> <caminos_nivelN.tsv>\n"
             "     th64sim caminata <nivel.tmp> <animaciones.tan> <caminata.tsv>\n"
             "     th64sim escena <nivel.tmp> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> <unidad> <x> <y> "
@@ -760,7 +760,7 @@ static int orden_escena4(int argc, char **argv)
     const int horas = atoi(argv[13]);
     for (int i = 0; i < horas; i++)
         th_sim_tick(s);
-    static th_view_entity ents[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+    static th_view_entity ents[TH_VISTA_SIM_MAX];
     int n = th_vista_sim(s, ents, (int)(sizeof ents / sizeof ents[0]));
     if (!atoi(argv[14]))
         n -= s->n_order; // sin las personas (van al final)
@@ -776,20 +776,22 @@ static int orden_escena4(int argc, char **argv)
 
 // La lista de dibujo de un escenario tras unas horas, hecha 'veces' veces:
 // lo que tarda cada una y su huella (la misma que escribe la ROM de medida).
-static int orden_lista(char **argv)
+static int orden_lista(int argc, char **argv)
 {
     // lista <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <anim.tan> <unidad> <x> <y> <w> <h> <horas> <veces>
+    //       [semilla]
     uint8_t *b_datos, *s_datos;
     th_sheet bloques, sprites;
     if (cargar_hoja(argv[4], &bloques, &b_datos) || cargar_hoja(argv[5], &sprites, &s_datos))
         return 1;
-    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], argv[6], 1);
+    const uint32_t semilla = argc == 15 ? (uint32_t)strtoul(argv[14], NULL, 0) : 1;
+    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], argv[6], semilla);
     if (!s)
         return 1;
     const int horas = atoi(argv[12]), veces = atoi(argv[13]);
     for (int i = 0; i < horas; i++)
         th_sim_tick(s);
-    static th_view_entity ents[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+    static th_view_entity ents[TH_VISTA_SIM_MAX];
     const int n = th_vista_sim(s, ents, (int)(sizeof ents / sizeof ents[0]));
     th_view v = {.unit = atoi(argv[7]), .x = atoi(argv[8]), .y = atoi(argv[9]), .w = atoi(argv[10]),
                  .h = atoi(argv[11])};
@@ -822,8 +824,8 @@ int main(int argc, char **argv)
         return th64sim_hito4(argv);
     if (argc == 6 && strcmp(argv[1], "carga") == 0)
         return th64sim_carga(argv);
-    if (argc == 14 && strcmp(argv[1], "lista") == 0)
-        return orden_lista(argv);
+    if ((argc == 14 || argc == 15) && strcmp(argv[1], "lista") == 0)
+        return orden_lista(argc, argv);
     if (argc >= 16 && argc <= 18 && strcmp(argv[1], "escena4") == 0)
         return orden_escena4(argc, argv);
     if (argc == 4 && strcmp(argv[1], "huella") == 0) {

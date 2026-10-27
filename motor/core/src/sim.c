@@ -398,8 +398,12 @@ static int new_person(th_sim *s, int kind, const th_walk_anims *walk)
     p->kind = (uint8_t)kind;
     p->happiness = TH_MICRO;
     p->warmth = 290000;
+    // Humanoid:Humanoid: «patients should be not be fully well when they come
+    // to your hospital and if it is staff there is no harm done!»
+    p->health = th_rng_range(&s->rng, 80, 100) * 10000;
     if (kind == TH_HUM_PATIENT) {
         p->u.p.waiting = -1;
+        p->u.p.litter_countdown = -1;
     } else {
         p->u.s.timer_until_raise = -1;
         p->u.s.quitting_in = -1;
@@ -535,6 +539,11 @@ static void spawn_patient(th_sim *s)
     memcpy(p->u.p.diag, d->diag, sizeof p->u.p.diag);
     if (th_rng_range(&s->rng, 1, 4) == 1)
         p->u.p.insurance = (uint8_t)th_rng_range(&s->rng, 1, 3);
+    // Patient:setDisease: la sed y las ganas de ir al baño, al azar.
+    if (!d->only_emergency) {
+        p->u.p.thirst = th_sim_random_micro(s) / 5;
+        p->u.p.toilet_need = th_sim_random_micro(s) / 5;
+    }
     p->u.p.id = ++s->patients_spawned;
     th_action sp = th_action_new(TH_ACTION_SPAWN);
     sp.dir = 0;
@@ -727,16 +736,278 @@ static void staff_tick_day(th_sim *s, int who)
         change_happiness(s, p, r->happiness_factor);
 }
 
+// ---------------------------------------------------------------------------
+// Necesidades de los pacientes (Patient:tickDay y Patient:setTile)
+
+// Patient:atFullyEmptyTile: dónde se puede vomitar u orinar. CorsixTH
+// también acepta la acción de hacer cola, pero nunca es la acción en curso en
+// tickDay: la cola pone delante una de estar quieto.
+static int at_fully_empty_tile(th_sim *s, th_person *p)
+{
+    const th_action *a = th_humanoid_action(&p->h);
+    if (!a || !(a->kind == TH_ACTION_WALK || a->kind == TH_ACTION_IDLE || a->kind == TH_ACTION_SEEK_ROOM))
+        return 0;
+    if (p->u.p.going_home || p->h.tile_x < 0)
+        return 0;
+    const th_tile *t = th_map_tile_c(s->w.map, p->h.tile_x, p->h.tile_y);
+    if (!(t->flags & TH_TILE_BUILDABLE) || !(t->flags & TH_TILE_HOSPITAL))
+        return 0;
+    return t->parcel != 0 && th_map_parcel_owner(s->w.map, t->parcel) == 1;
+}
+
+static int entering_or_leaving(const th_person *p)
+{
+    const th_action *a = p->h.queue_len ? &p->h.queue[0] : NULL;
+    return a && (a->flags & (TH_AF_IS_ENTERING | TH_AF_IS_LEAVING));
+}
+
+// Patient:vomit y Patient:pee: la acción va delante y la que hacía se repite después.
+static void need_action(th_sim *s, int who, int kind)
+{
+    th_person *p = &s->hum[who];
+    th_action a = th_action_new(kind);
+    a.flags |= TH_AF_MUST_HAPPEN;
+    th_humanoid_queue_action_at(&s->w, &p->h, a, 1);
+    th_humanoid_interrupt_and_requeue(&s->w, &p->h, 2);
+    change_happiness(s, p, -20000);
+}
+
+static void patient_vomit(th_sim *s, int who)
+{
+    th_person *p = &s->hum[who];
+    if (!at_fully_empty_tile(s, p) || p->u.p.has_vomitted)
+        return;
+    need_action(s, who, TH_ACTION_VOMIT);
+    p->u.p.has_vomitted++;
+    s->n_vomit++;
+}
+
+static void patient_pee(th_sim *s, int who)
+{
+    if (!at_fully_empty_tile(s, &s->hum[who]))
+        return;
+    need_action(s, who, TH_ACTION_PEE);
+    s->n_pee++;
+}
+
+// Patient:yawn, tapFoot y checkWatch: la animación delante de la acción en
+// curso, que vuelve a empezar al acabar.
+static void patient_wait_anim(th_sim *s, int who, int kind)
+{
+    th_person *p = &s->hum[who];
+    const th_walk_anims *wa = p->h.walk;
+    const unsigned anim = kind == TH_ACTION_YAWN ? wa->yawn : kind == TH_ACTION_TAP_FOOT ? wa->tap_foot : wa->check_watch;
+    const th_action *a = th_humanoid_action(&p->h);
+    if (!anim || !a || !(a->kind == TH_ACTION_IDLE || a->kind == TH_ACTION_SEEK_ROOM) || (a->flags & TH_AF_IS_LEAVING))
+        return;
+    th_action n = th_action_new(kind);
+    n.flags |= TH_AF_MUST_HAPPEN;
+    th_humanoid_queue_action_at(&s->w, &p->h, n, 0);
+}
+
+// Patient:_checkIfCureRoom
+static int is_cure_room(const th_sim *s, const th_person *p, const th_room *r)
+{
+    const th_disease *d = &s->dis[p->u.p.disease];
+    return r && p->u.p.diagnosed && d->n_treat && d->treat[d->n_treat - 1] == r->type;
+}
+
+// Patient:_dailyHealthChecks: por debajo de 0,22, los moods de moribundo y,
+// en el primer tramo, una de 30 de irse harto. Con la salud a 0 el paciente
+// se moriría (setToDying), pero aún no hay DieAction: se cuenta en would_die.
+// Devuelve la salud de antes.
+static int32_t daily_health_checks(th_sim *s, int who)
+{
+    th_person *p = &s->hum[who];
+    const int32_t health = p->health;
+    if (health < 10000) {
+        if (health == 0) {
+            if (p->u.p.dying_mood != 6)
+                s->would_die++;
+            p->u.p.dying_mood = 6;
+        } else {
+            p->health = 0;
+        }
+        return health;
+    }
+    // health_treshold_rangemap con alt_mode: el primer tramo cuyo tope supera la salud.
+    static const int32_t upper[5] = {60000, 100000, 140000, 180000, 220000};
+    int band = 5;
+    for (int i = 0; i < 5; i++)
+        if (upper[i] > health) {
+            band = i;
+            break;
+        }
+    if (band == 5)
+        return health;
+    p->u.p.dying_mood = (uint8_t)(5 - band);
+    if (band == 4) {
+        change_happiness(s, p, -200);
+        if (!is_cure_room(s, p, person_room(s, p)) && th_rng_range(&s->rng, 1, 30) == 1) {
+            p->u.p.dying_mood = 0;
+            th_sim_go_home(s, who, TH_HOME_KICKED);
+        }
+    }
+    return health;
+}
+
+// Humanoid:goingToUseObject: alguna acción de la cola usa un objeto de ese tipo.
+static int going_to_use(const th_person *p, const th_sim *s, int type)
+{
+    for (int i = 0; i < p->h.queue_len; i++) {
+        const th_action *a = &p->h.queue[i];
+        if (a->kind == TH_ACTION_USE_OBJECT && a->obj != TH_NONE && s->obj[a->obj].type == type)
+            return 1;
+    }
+    return 0;
+}
+
+static int object_is(const th_sim *s, int i, const char *id)
+{
+    const char *o = th_rules_str(s->defs, get(s->defs, s->obj[i].def, "id"), NULL);
+    return o && !strcmp(o, id);
+}
+
+// Patient:_dailyObjectHappinessEffects. Las plantas aún no están (dependen de
+// si están regadas). La basura no cuenta: en CorsixTH es una Entity y no un
+// Object, así que findObjectsInSquare no la encuentra nunca.
+static void daily_object_effects(th_sim *s, int who)
+{
+    th_person *p = &s->hum[who];
+    const th_map *m = s->w.map;
+    const int px = p->h.tile_x, py = p->h.tile_y, room = th_map_tile_c(m, px, py)->room;
+    int extinguishers = 0;
+    for (int i = 0; i < s->n_obj; i++) {
+        const th_object *o = &s->obj[i];
+        if (o->x >= px - 2 && o->x <= px + 2 && o->y >= py - 2 && o->y <= py + 2 &&
+            th_map_tile_c(m, o->x, o->y)->room == room && object_is(s, i, "extinguisher"))
+            extinguishers++;
+    }
+    if (extinguishers) {
+        th_rng_range(&s->rng, 1, extinguishers); // getRandomEntryFromArray
+        change_happiness(s, p, 200);
+    }
+    change_happiness(s, p, going_to_use(p, s, TH_OBJ_BENCH) ? 20 : -20);
+}
+
+// Patient:handleToiletNeed: el 40 % de los días, en el suelo; si no, a buscar
+// los aseos. Aún no hay aseos en el motor: si los hubiera, no hace nada.
+static void handle_toilet_need(th_sim *s, int who)
+{
+    th_person *p = &s->hum[who];
+    if (th_rng_range(&s->rng, 1, 10) < 5) {
+        patient_pee(s, who);
+        change_attr(&p->u.p.toilet_need, -(500000 + (int64_t)th_sim_random_micro(s) * 15 / 100));
+        p->u.p.going_to_toilet = TH_TOILET_NO;
+    } else if (p->u.p.going_to_toilet == TH_TOILET_NO && p->u.p.waiting < 0) {
+        if (th_sim_find_room_near(s, who, th_sim_room_type(s, "toilets")) == TH_NONE)
+            p->u.p.going_to_toilet = TH_TOILET_NO_TOILETS;
+    }
+}
+
+// Patient:_handleExcessThirst. Aún no hay máquinas de bebidas: el paciente no
+// encuentra ninguna y vuelve a mirar dentro de 2 a 4 días.
+static void handle_excess_thirst(th_sim *s, int who)
+{
+    th_person *p = &s->hum[who];
+    change_happiness(s, p, -2000);
+    if (p->u.p.going_to_toilet != TH_TOILET_NO)
+        return;
+    if (p->u.p.thirst_timeout > 0) {
+        p->u.p.thirst_timeout--;
+        return;
+    }
+    if (person_room(s, p) || entering_or_leaving(p) || p->u.p.going_home)
+        return;
+    p->u.p.thirst_timeout = (int8_t)th_rng_range(&s->rng, 2, 4);
+}
+
+// Patient:tickDay
 static void patient_tick_day(th_sim *s, int who)
 {
     th_person *p = &s->hum[who];
-    if (p->u.p.waiting >= 0) {
-        if (--p->u.p.waiting == 0) {
-            th_sim_go_home(s, who, TH_HOME_KICKED);
-            return;
+    th_patient *pp = &p->u.p;
+    const th_disease *d = &s->dis[pp->disease];
+    if (pp->waiting >= 0) {
+        // _dailyWaitChecks: waiting_events.
+        switch (--pp->waiting) {
+        case 0: th_sim_go_home(s, who, TH_HOME_KICKED); break;
+        case 10: patient_wait_anim(s, who, TH_ACTION_TAP_FOOT); break;
+        case 20: patient_wait_anim(s, who, TH_ACTION_YAWN); break;
+        case 30: patient_wait_anim(s, who, TH_ACTION_CHECK_WATCH); break;
+        default: break;
+        }
+        pp->has_vomitted = 0;
+    }
+    if (!humanoid_tick_day(s, p))
+        return;
+    if (daily_health_checks(s, who) == 0)
+        return;
+    if (!person_room(s, p) && !entering_or_leaving(p) && p->h.tile_x >= 0) {
+        daily_object_effects(s, who);
+        // _calculateNausea: sin vómito cerca (la basura no cuenta, ver arriba).
+        if (p->h.walk->vomit && (p->health <= 800000 || p->happiness < 600000)) {
+            const int32_t nausea = (int32_t)((int64_t)(TH_MICRO - p->health) * 3 / 1000);
+            if (th_sim_random_micro(s) < nausea + 500000)
+                patient_vomit(s, who);
         }
     }
-    humanoid_tick_day(s, p);
+    change_attr(&p->health, -4000);
+    change_attr(&pp->thirst, (int64_t)p->warmth * 2 / 100 + (int64_t)th_sim_random_micro(s) * 4 / 1000 + 4000);
+    // _dailyBowelChecks
+    if (d->more_loo_use)
+        change_attr(&pp->toilet_need, (int64_t)th_sim_random_micro(s) * 18 / 1000 + 8000);
+    else
+        change_attr(&pp->toilet_need, (int64_t)th_sim_random_micro(s) * 6 / 1000 + 2000);
+    if (pp->toilet_need > 750000 && p->h.walk->pee && !person_room(s, p) && !entering_or_leaving(p))
+        handle_toilet_need(s, who);
+    if (pp->thirst > 700000)
+        handle_excess_thirst(s, who);
+    if (d->yawn && pp->waiting != 20 && th_rng_range(&s->rng, 1, 10) == 5)
+        patient_wait_anim(s, who, TH_ACTION_YAWN);
+}
+
+// Patient:setTile: al pisar el hospital por primera vez, recibe basura que
+// tirar dentro de 20 a 100 casillas; después, cada 30 a 150. Solo la tira en
+// el pasillo, en una casilla del hospital sin objetos. Aún no hay papeleras.
+void th_sim_patient_set_tile(th_sim *s, int who, int x, int y)
+{
+    th_person *p = &s->hum[who];
+    th_patient *pp = &p->u.p;
+    const th_map *m = s->w.map;
+    if (pp->litter_countdown < 0) {
+        if (x >= 0 && (th_map_tile_c(m, x, y)->flags & TH_TILE_BUILDABLE))
+            pp->litter_countdown = (int16_t)th_rng_range(&s->rng, 20, 100);
+        return;
+    }
+    if (pp->going_home || --pp->litter_countdown != 0)
+        return;
+    if (x >= 0 && !person_room(s, p)) {
+        const th_tile *t = th_map_tile_c(m, x, y);
+        int objects = 0;
+        for (int i = 0; i < s->n_obj && !objects; i++)
+            objects = s->obj[i].x == x && s->obj[i].y == y;
+        for (int i = 0; i < s->n_litter && !objects; i++)
+            objects = s->litter[i].x == x && s->litter[i].y == y;
+        if (!objects && (t->flags & TH_TILE_BUILDABLE) && (t->flags & TH_TILE_HOSPITAL) &&
+            th_map_parcel_owner(m, t->parcel) == 1) {
+            const int trash = th_rng_range(&s->rng, 1, 4);
+            th_sim_add_litter(s, x, y, TH_LITTER_SODA_CAN + trash - 1, th_rng_range(&s->rng, 0, 1));
+        }
+    }
+    pp->litter_countdown = (int16_t)th_rng_range(&s->rng, 30, 150);
+}
+
+void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror)
+{
+    if (x < 0)
+        return;
+    if (s->n_litter >= TH_SIM_LITTER) {
+        s->litter_lost++;
+        return;
+    }
+    s->litter[s->n_litter++] =
+        (th_litter){(uint8_t)x, (uint8_t)y, (uint8_t)type, (uint8_t)mirror, ++s->w.attach_seq};
 }
 
 // ---------------------------------------------------------------------------
@@ -1156,6 +1427,8 @@ static int load_definitions(th_sim *s)
         d->non_visuals_id = (int8_t)th_rules_int(r, get(r, n, "non_visuals_id"), -1);
         d->only_emergency = (uint8_t)th_rules_bool(r, get(r, n, "only_emergency"), 0);
         d->must_stand = (uint8_t)th_rules_bool(r, get(r, n, "must_stand"), 0);
+        d->more_loo_use = (uint8_t)th_rules_bool(r, get(r, n, "more_loo_use"), 0);
+        d->yawn = (uint8_t)th_rules_bool(r, get(r, n, "yawn"), 0);
         d->expertise_id = (uint8_t)th_rules_int(r, get(r, n, "expertise_id"), 1);
         th_rnode dr = get(r, n, "diagnosis_rooms"), tr = get(r, n, "treatment_rooms");
         d->n_diag = d->n_treat = 0;
@@ -1527,9 +1800,13 @@ uint32_t th_sim_hash(const th_sim *s)
         h = fnv(h, (uint32_t)p->happiness);
         for (int i = 0; i < u->queue_len; i++)
             h = fnv(h, (uint32_t)u->queue[i].kind << 24 | (uint32_t)u->queue[i].flags << 16 | u->queue[i].state);
-        if (p->kind == TH_HUM_PATIENT)
+        h = fnv(h, (uint32_t)p->health);
+        if (p->kind == TH_HUM_PATIENT) {
             h = fnv(h, (uint32_t)p->u.p.diagnosis_progress);
-        else
+            h = fnv(h, (uint32_t)p->u.p.thirst ^ (uint32_t)p->u.p.toilet_need << 8);
+            h = fnv(h, (uint32_t)(uint16_t)p->u.p.litter_countdown << 16 | (uint32_t)p->u.p.has_vomitted << 8 |
+                           p->u.p.going_to_toilet);
+        } else
             h = fnv(h, (uint32_t)p->u.s.fatigue ^ (uint32_t)p->u.s.wage << 20 ^ (uint32_t)p->u.s.on_call << 12);
     }
     for (int i = 0; i < s->n_rooms; i++)
@@ -1540,6 +1817,10 @@ uint32_t th_sim_hash(const th_sim *s)
     for (int q = 0; q < s->n_queues; q++)
         for (int i = 0; i < s->queues[q].size; i++)
             h = fnv(h, (uint32_t)q << 8 | s->queues[q].member[i]);
+    for (int i = 0; i < s->n_litter; i++) {
+        const th_litter *l = &s->litter[i];
+        h = fnv(h, (uint32_t)l->x << 24 | (uint32_t)l->y << 16 | (uint32_t)l->type << 8 | l->mirror);
+    }
     uint32_t t = 0;
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
         t = t * 31u + s->temp[i].t[s->temp_idx];

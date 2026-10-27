@@ -8,35 +8,37 @@
 // quieto mirando al norte y al este, y las puertas: salir y entrar, llamar
 // (norte y este) y las puertas batientes. El sur y el oeste son los mismos en
 // espejo. th_sim_init comprueba que coinciden con las reglas (caminar, puertas).
+// Los pacientes llevan además vomit_anim, pee_anim, yawn_anim, tap_foot_anim y
+// check_watch_anim (las mismas tablas de humanoid.lua).
 static const th_walk_anims walk_table[] = {
-    {"Standard Male Patient", 16, 18, 24, 26, 182, 184, 286, 288, 2040, 2042},
-    {"Gowned Male Patient", 406, 408, 414, 416, 0, 0, 0, 0, 0, 0},
-    {"Stripped Male Patient", 818, 820, 826, 828, 0, 0, 0, 0, 0, 0},
-    {"Stripped Male Patient 2", 818, 820, 826, 828, 0, 0, 0, 0, 0, 0},
-    {"Stripped Male Patient 3", 818, 820, 826, 828, 0, 0, 0, 0, 0, 0},
-    {"Alternate Male Patient", 2704, 2706, 2712, 2714, 2748, 2750, 2764, 2766, 0, 0},
-    {"Slack Male Patient", 1484, 1486, 1492, 1494, 1524, 1526, 2764, 1494, 0, 0},
-    {"Slack Female Patient", 0, 2, 8, 10, 258, 260, 294, 296, 2864, 2866},
-    {"Transparent Male Patient", 1064, 1066, 1072, 1074, 1104, 1106, 1120, 1074, 0, 0},
-    {"Standard Female Patient", 0, 2, 8, 10, 258, 260, 294, 296, 2864, 2866},
-    {"Gowned Female Patient", 2876, 2878, 2884, 2886, 0, 0, 0, 0, 0, 0},
-    {"Stripped Female Patient", 834, 836, 842, 844, 0, 0, 0, 0, 0, 0},
-    {"Stripped Female Patient 2", 834, 836, 842, 844, 0, 0, 0, 0, 0, 0},
-    {"Stripped Female Patient 3", 834, 836, 842, 844, 0, 0, 0, 0, 0, 0},
-    {"Transparent Female Patient", 3012, 3014, 3020, 3022, 3052, 3054, 3068, 3070, 0, 0},
-    {"Chewbacca Patient", 858, 860, 866, 868, 3526, 3528, 4150, 4152, 0, 0},
-    {"Elvis Patient", 978, 980, 986, 988, 3634, 3636, 4868, 4870, 0, 0},
-    {"Invisible Patient", 1642, 1644, 1840, 1842, 1796, 1798, 4192, 4194, 0, 0},
-    {"Alien Male Patient", 3598, 3600, 3606, 3608, 182, 184, 286, 288, 3626, 3628},
-    {"Alien Female Patient", 3598, 3600, 3606, 3608, 258, 260, 294, 296, 3626, 3628},
-    {"Doctor", 32, 34, 40, 42, 670, 672, 0, 0, 4750, 4752},
-    {"Surgeon", 2288, 2290, 2296, 2298, 0, 0, 0, 0, 0, 0},
-    {"Nurse", 1206, 1208, 1650, 1652, 3264, 3266, 0, 0, 3272, 3274},
-    {"Handyman", 1858, 1860, 1866, 1868, 3286, 3288, 0, 0, 3518, 3520},
-    {"Receptionist", 3668, 3670, 3676, 3678, 0, 0, 0, 0, 0, 0},
-    {"VIP", 266, 268, 274, 276, 0, 0, 0, 0, 0, 0},
-    {"Inspector", 266, 268, 274, 276, 0, 0, 0, 0, 0, 0},
-    {"Grim Reaper", 994, 996, 1002, 1004, 0, 0, 0, 0, 0, 0},
+    {"Standard Male Patient", 16, 18, 24, 26, 182, 184, 286, 288, 2040, 2042, 2056, 2244, 368, 2960, 2964},
+    {"Gowned Male Patient", 406, 408, 414, 416, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Stripped Male Patient", 818, 820, 826, 828, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Stripped Male Patient 2", 818, 820, 826, 828, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Stripped Male Patient 3", 818, 820, 826, 828, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Alternate Male Patient", 2704, 2706, 2712, 2714, 2748, 2750, 2764, 2766, 0, 0, 4476, 4472, 0, 360, 364},
+    {"Slack Male Patient", 1484, 1486, 1492, 1494, 1524, 1526, 2764, 1494, 0, 0, 4324, 4328, 0, 0, 4060},
+    {"Slack Female Patient", 0, 2, 8, 10, 258, 260, 294, 296, 2864, 2866, 0, 4744, 0, 0, 0},
+    {"Transparent Male Patient", 1064, 1066, 1072, 1074, 1104, 1106, 1120, 1074, 0, 0, 4384, 4848, 0, 0, 0},
+    {"Standard Female Patient", 0, 2, 8, 10, 258, 260, 294, 296, 2864, 2866, 3184, 4744, 4864, 4464, 4468},
+    {"Gowned Female Patient", 2876, 2878, 2884, 2886, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Stripped Female Patient", 834, 836, 842, 844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Stripped Female Patient 2", 834, 836, 842, 844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Stripped Female Patient 3", 834, 836, 842, 844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Transparent Female Patient", 3012, 3014, 3020, 3022, 3052, 3054, 3068, 3070, 0, 0, 4452, 4852, 0, 0, 0},
+    {"Chewbacca Patient", 858, 860, 866, 868, 3526, 3528, 4150, 4152, 0, 0, 4138, 4178, 0, 0, 0},
+    {"Elvis Patient", 978, 980, 986, 988, 3634, 3636, 4868, 4870, 0, 0, 1034, 970, 0, 0, 0},
+    {"Invisible Patient", 1642, 1644, 1840, 1842, 1796, 1798, 4192, 4194, 0, 0, 4204, 4208, 0, 0, 0},
+    {"Alien Male Patient", 3598, 3600, 3606, 3608, 182, 184, 286, 288, 3626, 3628, 0, 0, 0, 0, 0},
+    {"Alien Female Patient", 3598, 3600, 3606, 3608, 258, 260, 294, 296, 3626, 3628, 0, 0, 0, 0, 0},
+    {"Doctor", 32, 34, 40, 42, 670, 672, 0, 0, 4750, 4752, 0, 0, 0, 0, 0},
+    {"Surgeon", 2288, 2290, 2296, 2298, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Nurse", 1206, 1208, 1650, 1652, 3264, 3266, 0, 0, 3272, 3274, 0, 0, 0, 0, 0},
+    {"Handyman", 1858, 1860, 1866, 1868, 3286, 3288, 0, 0, 3518, 3520, 0, 0, 0, 0, 0},
+    {"Receptionist", 3668, 3670, 3676, 3678, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"VIP", 266, 268, 274, 276, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Inspector", 266, 268, 274, 276, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"Grim Reaper", 994, 996, 1002, 1004, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
 // Funciones del temporizador (las que Lua pasa a setTimer).
@@ -51,6 +53,7 @@ enum {
     TIMER_DESPAWN,        // action_spawn_despawn
     TIMER_RECEPTION_IDLE, // action_staff_reception_idle_phase
     TIMER_RECEPTION_LEFT, // final del paso al dejar el mostrador
+    TIMER_NEED_END,       // action_vomit_end, action_pee_end, action_yawn_end...
 };
 
 // Manejadores on_interrupt.
@@ -99,6 +102,9 @@ static void set_animation(th_world *w, th_humanoid *h, unsigned anim, unsigned f
 
 void th_humanoid_set_tile(th_world *w, th_humanoid *h, int x, int y)
 {
+    // Patient:setTile: la basura que tiran por el camino.
+    if (w->sim && th_sim_person(w->sim, h)->kind == TH_HUM_PATIENT)
+        th_sim_patient_set_tile(w->sim, th_sim_index(w->sim, h), x, y);
     h->tile_x = (int16_t)x;
     h->tile_y = (int16_t)y;
     h->attach_seq = ++w->attach_seq;
@@ -486,6 +492,7 @@ static void walk_start(th_world *w, th_humanoid *h)
             a->state |= TH_AS_SAVED_MH;
         else
             a->state &= (uint16_t)~TH_AS_SAVED_MH;
+        a->state |= TH_AS_RESTARTED;
     }
     a->state |= TH_AS_STARTED;
     a->flags |= TH_AF_MUST_HAPPEN;
@@ -1361,7 +1368,9 @@ static void seek_room_start(th_world *w, th_humanoid *h, th_action *a)
     }
     if (!(a->state & TH_AS_DONE_WALK)) {
         int valid = 1;
-        if (p->u.p.diagnosed) {
+        if (a->state & TH_AS_MSG_SENT) {
+            // message_sent: la rehízo interruptAndRequeueAction, el fax ya se mandó.
+        } else if (p->u.p.diagnosed) {
             th_sim_send_fax(s, who(w, h), TH_FAX_NO_TREATMENT);
             p->u.p.waiting = 60;
         } else if (a->room_type == th_sim_room_type(s, "gp")) {
@@ -1440,6 +1449,66 @@ static void reception_start(th_world *w, th_humanoid *h, th_action *a)
     walk_raw(w, h, h->tile_x, h->tile_y, desk->x, desk->y, 0, TIMER_RECEPTION_IDLE);
     a->flags |= TH_AF_MUST_HAPPEN;
     a->interrupt = INT_RECEPTION_EARLY;
+}
+
+// ---------------------------------------------------------------------------
+// Vomitar, orinar, bostezar, dar golpecitos con el pie y mirar el reloj
+// (vomit.lua, pee.lua, yawn.lua, tap_foot.lua y check_watch.lua): la
+// animación entera, que tiene que acabar. Menos el bostezo, miran al este o
+// al sur al azar. Vomitar y orinar dejan basura donde están.
+
+static void need_start(th_world *w, th_humanoid *h, th_action *a)
+{
+    const th_walk_anims *wa = h->walk;
+    const unsigned anim = a->kind == TH_ACTION_VOMIT  ? wa->vomit
+                          : a->kind == TH_ACTION_PEE  ? wa->pee
+                          : a->kind == TH_ACTION_YAWN ? wa->yawn
+                          : a->kind == TH_ACTION_TAP_FOOT ? wa->tap_foot
+                                                          : wa->check_watch;
+    if (a->kind != TH_ACTION_YAWN)
+        h->last_dir = th_rng_range(&w->sim->rng, 0, 1) == 1 ? TH_DIR_EAST : TH_DIR_SOUTH;
+    a->flags |= TH_AF_MUST_HAPPEN;
+    set_animation(w, h, anim, h->last_dir == TH_DIR_EAST ? 0 : TH_ANIM_FLIP_H);
+    th_humanoid_set_timer(h, (unsigned)th_sim_anim_length(w->sim, anim), TIMER_NEED_END);
+}
+
+static void need_end(th_world *w, th_humanoid *h)
+{
+    const th_action *a = &h->queue[0];
+    if (a->kind == TH_ACTION_VOMIT || a->kind == TH_ACTION_PEE)
+        th_sim_add_litter(w->sim, h->tile_x, h->tile_y, a->kind == TH_ACTION_VOMIT ? TH_LITTER_PUKE : TH_LITTER_PEE,
+                          h->last_dir != TH_DIR_SOUTH);
+    th_humanoid_finish_action(w, h);
+}
+
+void th_humanoid_interrupt_and_requeue(th_world *w, th_humanoid *h, int pos)
+{
+    const th_action *cur = &h->queue[0];
+    th_action r;
+    if (cur->kind == TH_ACTION_IDLE) {
+        r = th_action_idle();
+        r.flags |= cur->flags & TH_AF_MUST_HAPPEN;
+        r.dir = cur->dir;
+    } else if (cur->kind == TH_ACTION_WALK) {
+        r = th_action_walk(cur->x, cur->y);
+        // setMustHappen(must_happen) y, si se volvió a empezar, saved_must_happen.
+        const int mh = cur->state & TH_AS_RESTARTED ? (cur->state & TH_AS_SAVED_MH) != 0
+                                                    : (cur->flags & TH_AF_MUST_HAPPEN) != 0;
+        r.flags |= (uint8_t)(mh ? TH_AF_MUST_HAPPEN : 0) | (cur->flags & TH_AF_IS_ENTERING);
+        r.aux = cur->aux; // reserve_on_resume
+    } else {
+        // Buscando sala: se vuelve a empezar, sin must_happen y sin volver a mandar el fax.
+        r = th_action_new(TH_ACTION_SEEK_ROOM);
+        r.room_type = cur->room_type;
+        r.diag_idx = cur->diag_idx;
+        r.state |= (uint16_t)((cur->state & (TH_AS_TREATMENT | TH_AS_DIAG_ROOM)) | TH_AS_MSG_SENT);
+    }
+    th_humanoid_queue_action_at(w, h, r, pos);
+    th_action *a = &h->queue[0];
+    if (a->interrupt)
+        call_interrupt(w, h, a, 0);
+    else
+        th_humanoid_finish_action(w, h);
 }
 
 // ---------------------------------------------------------------------------
@@ -1529,6 +1598,11 @@ static void start_action(th_world *w, th_humanoid *h)
         a->flags |= TH_AF_MUST_HAPPEN;
         th_sim_answer_call_action(w->sim, who(w, h));
         break;
+    case TH_ACTION_VOMIT:
+    case TH_ACTION_PEE:
+    case TH_ACTION_YAWN:
+    case TH_ACTION_TAP_FOOT:
+    case TH_ACTION_CHECK_WATCH: need_start(w, h, a); break;
     default: idle_start(w, h, a); break;
     }
     // Si la acción estaba marcada para interrumpirla, se interrumpe ahora.
@@ -1595,6 +1669,7 @@ void th_humanoid_tick(th_world *w, th_humanoid *h)
             th_humanoid_finish_action(w, h);
             break;
         }
+        case TIMER_NEED_END: need_end(w, h); break;
         default: break;
         }
     }

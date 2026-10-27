@@ -145,6 +145,7 @@ typedef struct th_disease {
     th_rnode def;
     int8_t visuals_id, non_visuals_id; // -1 = no tiene
     uint8_t only_emergency, must_stand;
+    uint8_t more_loo_use, yawn; // van más al baño (gut_rot, the_squits); bostezan (sleeping_illness)
     uint8_t expertise_id;
     uint8_t n_diag, n_treat;
     uint8_t diag[TH_SIM_DIAG_ROOMS]; // salas de diagnóstico (tipo)
@@ -176,7 +177,16 @@ typedef struct th_patient {
     int32_t diagnosis_progress; // millonésimas
     int32_t pay_amount;
     uint16_t id;          // número de llegada (1, 2, ...): para las trazas
+    // Necesidades (Patient:tickDay).
+    int32_t thirst, toilet_need; // millonésimas
+    uint8_t has_vomitted;
+    uint8_t going_to_toilet;  // TH_TOILET_*
+    uint8_t dying_mood;       // el mood dying1..5 activo (0 = ninguno)
+    int8_t thirst_timeout;    // Patient.timeout: días hasta volver a buscar una máquina de bebidas
+    int16_t litter_countdown; // casillas hasta tirar basura; -1 = nil (aún no ha pisado el hospital)
 } th_patient;
+
+enum { TH_TOILET_NO, TH_TOILET_YES, TH_TOILET_NO_TOILETS }; // going_to_toilet
 
 typedef struct th_staff {
     int32_t skill, attention;     // millonésimas
@@ -198,7 +208,7 @@ typedef struct th_person {
     th_humanoid h;
     uint8_t alive;
     uint8_t kind; // TH_HUM_*
-    int32_t happiness, warmth; // millonésimas
+    int32_t happiness, warmth, health; // millonésimas
     union {
         th_patient p;
         th_staff s;
@@ -220,6 +230,22 @@ typedef struct th_hospital {
     uint16_t num_cured, not_cured;
     int32_t money_in, money_out;
 } th_hospital;
+
+// Basura en el suelo (objects/litter.lua): lo que dejan vomitar y orinar y lo
+// que tiran los pacientes por el camino. No la recoge nadie: aún no hay bedeles.
+#define TH_SIM_LITTER 512
+enum {
+    TH_LITTER_PEE,
+    TH_LITTER_PUKE,
+    TH_LITTER_SODA_CAN, // los cuatro de litter_types[1..4], en este orden
+    TH_LITTER_BANANA,
+    TH_LITTER_PAPER,
+    TH_LITTER_BOTTLE,
+};
+typedef struct th_litter {
+    uint8_t x, y, type, mirror;
+    uint32_t attach_seq; // cuándo se puso en la casilla (el orden de dibujo)
+} th_litter;
 
 // Sucesos para las trazas (th64sim hito4); punteros nulos = sin traza.
 enum {
@@ -322,6 +348,12 @@ typedef struct th_sim {
     } fax[TH_SIM_FAXES], shown[5];
     uint8_t door_closed, door_delay;
     uint8_t answer; // TH_ANSWER_*
+    // Basura, y cuántas veces se ha vomitado y orinado (para las trazas).
+    uint16_t n_litter;
+    th_litter litter[TH_SIM_LITTER];
+    uint16_t litter_lost;      // basura que no cupo (no debería pasar)
+    uint16_t would_die;        // pacientes con la salud a 0: aún no se mueren (no hay DieAction)
+    uint32_t n_vomit, n_pee;
     th_sim_events ev;
 } th_sim;
 
@@ -380,6 +412,10 @@ int th_sim_anim_length(const th_sim *s, unsigned anim); // getAnimLength con las
 th_room *th_sim_room_at(th_sim *s, int x, int y);
 int th_sim_room_type(const th_sim *s, const char *id);
 const th_casebook *th_sim_casebook(const th_sim *s, const char *id);
+// Necesidades de los pacientes (sim.c): Patient:setTile (la basura del
+// camino) y la basura que dejan vomitar y orinar.
+void th_sim_patient_set_tile(th_sim *s, int who, int x, int y);
+void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror);
 // Objetos.
 int th_sim_object_at(const th_sim *s, int x, int y, int type); // TH_NONE si no hay
 int th_sim_use_tile(const th_sim *s, int obj, int secondary, int *x, int *y);

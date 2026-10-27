@@ -10,7 +10,8 @@ Por semilla:
     llegaron a cada paso (a_casa: que se fueron por cualquier motivo);
   cobros_gp: cobros de la consulta (directos o por seguro), dinero_gp: su
     importe; sueldos: lo pagado en sueldos; saldo: saldo final menos inicial;
-  t_*: horas medias de cada fase, de los pacientes que la completaron.
+  t_*: horas medias de cada fase, de los pacientes que la completaron;
+  h_vomit, h_pee: horas-paciente vomitando y orinando (acciones.tsv).
 """
 import csv
 import json
@@ -52,6 +53,12 @@ def semilla(d):
     out["cobros_gp"], out["dinero_gp"], out["sueldos"] = cobros, dinero, sueldos
     dias = list(csv.DictReader(open(os.path.join(d, "dias.tsv")), delimiter="\t"))
     out["saldo"] = int(dias[-1]["saldo"]) - int(dias[0]["saldo"])
+    out["h_vomit"] = out["h_pee"] = 0
+    ruta = os.path.join(d, "acciones.tsv")
+    if os.path.exists(ruta):
+        for r in csv.DictReader(open(ruta), delimiter="\t"):
+            if r["accion"] in ("vomit", "pee"):
+                out["h_" + r["accion"]] += int(r["horas_paciente"])
     return out
 
 

@@ -79,10 +79,10 @@ static th_pathfinder buscador;
 static th_anims anims;
 static th_world mundo = {.map = &mapa, .pf = &buscador, .anims = &anims};
 static th_humanoid humanoides[MAX_HUMANOIDES];
-static th_view_entity entidades[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+static th_view_entity entidades[TH_VISTA_SIM_MAX];
 // Con la simulación repartida entre fotogramas (simulacion.h), el dibujo y el
 // marcador leen la instantánea del último tick acabado, no la simulación.
-static th_view_entity foto[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+static th_view_entity foto[TH_VISTA_SIM_MAX];
 static bool repartida;
 // Hito 4: el hospital del escenario (rom:/escenarios/hito4.trg), si lo hay.
 static th_sim sim;
@@ -1309,7 +1309,9 @@ int main(void)
 #endif
 
 #ifdef TH_MEDIR
-    if (assets && cargar_hospital(1)) {
+    // La semilla 5: con las necesidades de los pacientes, la 1 ya no junta 50
+    // pacientes antes de la hora 9.000 (tools/hito5/medir.sh usa la misma).
+    if (assets && cargar_hospital(5)) {
         PASO("hospital cargado", true);
         medir_hito5();
     }
