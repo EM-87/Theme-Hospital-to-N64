@@ -309,6 +309,10 @@ typedef struct th_sim {
     } temp[TH_MAP_WIDTH * TH_MAP_HEIGHT];
     uint32_t temp_changed[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
     uint32_t temp_need[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32]; // lo que recalcula la pasada en curso
+    // Las casillas que se mezclan con el aire y con el radiador: las que hay
+    // que recalcular si cambia uno de los dos (th_sim_temperature_prepare).
+    uint32_t temp_air_mask[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
+    uint32_t temp_rad_mask[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
     // Faxes y subidas de sueldo: los que esperan en la cola del panel inferior
     // y los que ya enseña (message_windows), con la puerta de los mensajes
     // (UIBottomPanel:_messageDoorTick).

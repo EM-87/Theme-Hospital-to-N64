@@ -5,11 +5,13 @@
 // tools/cache_instrucciones.py dice si chocan y cuánto relleno lo evita; el
 // fichero tiene que enlazarse después de mapa_n64.c.
 #if defined(TH_PRUEBAS)
-#define RELLENO "2400"
+#define RELLENO "5728"
 #elif defined(TH_HOSPITAL_HORAS)
-#define RELLENO "192"
+#define RELLENO "3520"
+#elif defined(TH_MEDIR)
+#define RELLENO "5216"
 #else
-#define RELLENO "192"
+#define RELLENO "3520"
 #endif
 
 // Una función (main la llama una vez) para que --gc-sections no lo quite;

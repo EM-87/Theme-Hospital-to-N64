@@ -1,5 +1,7 @@
 #include "th/path.h"
 
+#include "th/pausa.h"
+
 #include <string.h>
 
 static int is_seen(const th_pathfinder *pf, unsigned i)
@@ -125,6 +127,7 @@ int th_path_find(th_pathfinder *pf, const th_map *m, int sx, int sy, int dx, int
     pf->dest = TH_PATH_NONE;
     pf->expanded = 0;
     pf->total_searches++;
+    th_pausar();
     if (dx < 0 || dy < 0 || dx >= TH_MAP_WIDTH || dy >= TH_MAP_HEIGHT || sx < 0 || sy < 0 ||
         sx >= TH_MAP_WIDTH || sy >= TH_MAP_HEIGHT)
         return -1;
@@ -149,6 +152,8 @@ int th_path_find(th_pathfinder *pf, const th_map *m, int sx, int sy, int dx, int
         }
         pf->expanded++;
         pf->total_expanded++;
+        if ((pf->expanded & 127) == 0)
+            th_pausar();
         // search_neighbours: oeste, este, norte y sur. Las banderas de
         // tránsito ya impiden salir del mapa y atravesar paredes.
         const uint32_t f = m->tiles[n].flags;
@@ -176,6 +181,7 @@ void th_path_distances(th_pathfinder *pf, const th_map *m, int sx, int sy)
     pf->dest = TH_PATH_NONE;
     pf->expanded = 0;
     pf->total_searches++;
+    th_pausar();
     memset(pf->seen, 0, sizeof(pf->seen));
     memset(pf->visited, 0, sizeof(pf->visited));
     if (sx < 0 || sy < 0 || sx >= TH_MAP_WIDTH || sy >= TH_MAP_HEIGHT)
@@ -193,6 +199,8 @@ void th_path_distances(th_pathfinder *pf, const th_map *m, int sx, int sy)
         n = pf->heap[head++];
         pf->expanded++;
         pf->total_expanded++;
+        if ((pf->expanded & 127) == 0)
+            th_pausar();
         const uint32_t f = m->tiles[n].flags;
         const int passable = (f & TH_TILE_PASSABLE) != 0;
         for (int k = 0; k < 4; k++) {
@@ -226,6 +234,7 @@ static unsigned init_search(th_pathfinder *pf, int sx, int sy)
     pf->dest_x = pf->dest_y = TH_PATH_NONE;
     pf->expanded = 0;
     pf->total_searches++;
+    th_pausar();
     memset(pf->seen, 0, sizeof(pf->seen));
     memset(pf->visited, 0, sizeof(pf->visited));
     pf->heap_size = 0;
@@ -274,6 +283,8 @@ int th_path_idle_tile(th_pathfinder *pf, const th_map *m, int sx, int sy, int n,
     for (;;) {
         set_visited(pf, node);
         pf->total_expanded++;
+        if ((++pf->expanded & 127) == 0)
+            th_pausar();
         const uint32_t f = m->tiles[node].flags;
         if (!(f & TH_TILE_DO_NOT_IDLE) && (f & TH_TILE_PASSABLE) && (f & TH_TILE_HOSPITAL)) {
             if (n == 0) {
@@ -327,6 +338,8 @@ int th_path_visit_objects(th_pathfinder *pf, const th_map *m, int sx, int sy, in
     for (;;) {
         set_visited(pf, node);
         pf->total_expanded++;
+        if ((++pf->expanded & 127) == 0)
+            th_pausar();
         const uint32_t f = m->tiles[node].flags;
         for (int k = 0; k < 4; k++) {
             const int d = search_order[k];

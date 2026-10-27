@@ -9,6 +9,9 @@
 // rombo (7 en MBLK-0) cortan la agrupación: se pinta todo lo anterior, luego
 // ese bloque, y se sigue. Así el resultado es el mismo que pintar en el orden
 // de CorsixTH (lo comprueba la ROM de pruebas contra vista/raster.c).
+//
+// Las texturas se cargan con LOAD_BLOCK directamente (mapa_n64.c, cargar),
+// sin rdpq_tex_upload, y solo cuando cambia el sprite.
 #ifndef TH64_MAPA_N64_H
 #define TH64_MAPA_N64_H
 
@@ -40,5 +43,16 @@ void relleno_cache(void);
 // hojas[TH_SHEET_*]: los bloques del mapa y los sprites de las entidades.
 void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS], const uint16_t *paleta, int ancho,
                       int alto, mapa_n64_stats_t *st);
+
+#ifdef TH_MEDIR
+// Hito 5: cómo se cargan los sprites en la TMEM. La normal es la directa
+// (LOAD_BLOCK); las otras dos son para comparar: rdpq_tex_upload, la de antes,
+// y los comandos ya hechos de cada sprite con rdpq_exec.
+enum { MAPA_N64_CARGA_DIRECTA, MAPA_N64_CARGA_RDPQ_TEX, MAPA_N64_CARGA_EXEC };
+extern int mapa_n64_modo_carga;
+// Lo que cuesta cargar y dibujar sprites de la hoja h de las tres formas, con
+// el RDP libre al empezar. Escribe líneas «H5 c».
+void mapa_n64_medir_cargas(const hoja_t *h, const uint16_t *paleta);
+#endif
 
 #endif

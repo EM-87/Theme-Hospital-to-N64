@@ -1,6 +1,6 @@
 # Fase 5 — Prototipos en N64
 
-Fecha de inicio: 2026-10-23. Estado: **hitos 0 a 5 hechos**. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
+Fecha de inicio: 2026-10-23. Estado: **hitos 0 a 5 hechos**, y después, en parte, los riesgos de CPU que dejó el hito 5. Plan: [`PLAN.md`](PLAN.md#fase-5--prototipos-en-n64-solo-tras-aprobar-la-fase-4), con los cambios de [`04_decision.md`](04_decision.md#cambios-al-plan-de-la-fase-5). Cada hito se cierra con un commit, una captura de ares y sus cifras aquí.
 
 ## Entorno del motor
 
@@ -694,6 +694,8 @@ Dos medidas en ares con la ROM de pruebas y la semilla 1:
   - los caminos largos: hasta 3.747 nodos en un tick, unos 40 ms.
 - **El modo demo sin Expansion Pak no cierra** con el código que se proyecta para el juego completo (ver «Tamaño del código y modo demo»).
 
+Lo que vino después (la simulación repartida entre fotogramas y las cargas de textura nuevas) está en [«Después del hito 5»](#después-del-hito-5-los-riesgos-de-cpu): ya no salta ningún fotograma a ninguna velocidad.
+
 La N64 simula exactamente lo mismo que el PC: tras 9.000 horas, la misma huella (853ec05c).
 
 ![El hospital del hito 5 en ares, con 53 personas](img/05_hito5.png)
@@ -886,7 +888,7 @@ La partida `lleno` de la fase 1 tiene 365 personas, 305 objetos y 36 salas. Con 
 
 En total, unos **15 ms por hora: el 28 % de los 54 ms de la velocidad Normal**, en un motor que todavía no tiene buena parte de la lógica. Con las mismas cuentas, «And then some more» (18 ms por hora) no llega.
 
-Lo que hay que resolver para el juego completo, por orden:
+Lo que hay que resolver para el juego completo, por orden (lo hecho después, en [«Después del hito 5»](#después-del-hito-5-los-riesgos-de-cpu)):
 1. **Los caminos largos.** Un camino de 3.000–4.000 nodos se come un fotograma entero, y en el hospital lleno habrá más. Opciones:
    - repartir la búsqueda entre fotogramas. Cambia cuándo empieza a andar el paciente: habría que medir si se nota en la comparación con CorsixTH;
    - abaratar el nodo (1.014 ciclos, casi todo fallos de caché sobre una tabla de 128 KiB) sin cambiar el orden de visita.
@@ -908,9 +910,130 @@ Lo que hay que resolver para el juego completo, por orden:
 
 ### Pendiente
 
-- **Lo de «Hacia el hospital lleno»:** los caminos largos, la temperatura a velocidades altas y el coste del dibujo con mucha gente.
+- **Lo de «Hacia el hospital lleno»:** los caminos largos, la temperatura a velocidades altas y el coste del dibujo con mucha gente. Hecho en parte después: ver «Después del hito 5».
 - **Las necesidades de los pacientes** (del hito 4): con más pacientes pesan más en la salida (−16,8 %).
 - **Medir en la consola.** Todo es de ares. Con el flashcart hay que repetir esta medida: ares no emula los contadores del RDP, y sus ciclos de memoria pueden ser optimistas.
+
+## Después del hito 5: los riesgos de CPU
+
+**Hecho en parte.** El hito 5 dejaba tres riesgos de CPU para el juego completo («Hacia el hospital lleno»): los caminos largos, la temperatura a las velocidades altas y el dibujo con mucha gente. Medido con la ROM de medida del hito 5, en el mismo escenario y desde las mismas horas:
+- **Ningún fotograma salta ni llega tarde a ninguna de las tres velocidades.** La simulación va en una corrutina repartida entre fotogramas. Antes había 2 saltos a «Max speed» y 182 a «And then some more».
+- **Los caminos largos ya no se notan:** la búsqueda se suspende cada 128 nodos y sigue en el fotograma siguiente. Lo que se simula no cambia, porque el dibujo enseña el último tick acabado: el paciente echa a andar en el mismo tick que antes. El nodo cuesta lo mismo (1.014 ciclos).
+- **Las cargas de textura cuestan un 80 % menos:** 6,8 µs frente a 34,6, cargando con `LOAD_BLOCK` sin pasar por `rdpq_tex_upload`. El dibujo a velocidad Normal baja de 18,1 a 10,3 ms por fotograma, con los mismos píxeles.
+- **El fotograma a velocidad Normal cuesta 15,1 ms de CPU**, frente a 19,3 en el hito 5: el 45 % de 33,3.
+- **La temperatura sigue limitando la velocidad más alta.** «And then some more» va a 30 fps, pero la simulación avanza 34,6 horas por segundo de las 55,6 que tocan: el 62 %. La fase 4 ya aceptaba limitar las dos velocidades más altas si la CPU no llegaba ([`04_decision.md`](04_decision.md)). Abaratarla de verdad pide el RSP.
+- **La lista de dibujo es ahora lo más caro del dibujo:** 5,3 ms por fotograma. Queda pendiente.
+
+La simulación sigue siendo la misma: tras 9.000 horas, la misma huella que el PC (853ec05c), y las pruebas y las comparaciones de píxeles de `motor_check.sh` dan lo mismo que antes.
+
+### La simulación repartida entre fotogramas
+
+En el hito 5, los ticks que tocaban se hacían enteros antes de dibujar. Un tick con un camino de 3.000 nodos (unos 30 ms) o con la pasada de temperatura entera (unos 15 ms) no cabía en el fotograma, y se veía un tirón.
+
+Ahora ([`simulacion.c`](../motor/platform/n64/simulacion.c)):
+- **la simulación va en una corrutina** (`coroutine.h` de libdragon). El bucle principal le pide los ticks que tocan por el reloj, dibuja y le da el tiempo que sobra hasta 28 ms después de empezar el fotograma. Lo que no le da tiempo a hacer lo sigue en el fotograma siguiente;
+- **el núcleo tiene puntos de pausa** ([`th/pausa.h`](../motor/core/include/th/pausa.h)): después de cada humanoide, al empezar cada búsqueda de camino y cada 128 nodos. Un punto de pausa llama a un gancho que en el PC no existe, así que la simulación es la misma (la huella no cambia);
+- **el dibujo no lee la simulación**, que puede estar a medio tick, sino una instantánea de cada tick acabado: las entidades de `th_vista_sim`, el dinero y la fecha. La pasada de temperatura de cada tick se hace después de la instantánea, de 16 en 16 palabras, y siempre antes del tick siguiente.
+
+Cada velocidad dos veces desde la misma hora (la 3.501, con 52 personas), con la carga de texturas nueva:
+
+| | Normal, sin repartir | Normal, repartida | Max speed, sin repartir | Max speed, repartida | And then some more, sin repartir | And then some more, repartida |
+|---|---:|---:|---:|---:|---:|---:|
+| Fotogramas | 900 | 900 | 300 | 300 | 300 | 300 |
+| CPU por fotograma, media | 15,0 ms | 15,1 ms | 15,9 ms | 15,5 ms | 36,5 ms | 25,4 ms |
+| p99 / máximo | 25,0 / 39,8 ms | 27,1 / 28,8 ms | 29,2 / 54,7 ms | 28,4 / 29,2 ms | 69,3 / 89,4 ms | 29,0 / 29,2 ms |
+| Fotogramas tarde (más de 34 ms) | 3 | **0** | 3 | **0** | 184 | **0** |
+| Fotogramas que se saltan (más de 50 ms) | 0 | **0** | 1 | **0** | 12 | **0** |
+| Intervalo máximo | 40,1 ms | 33,5 ms | 55,0 ms | 33,5 ms | 89,7 ms | 33,5 ms |
+| Horas de juego por segundo (las que tocan) | 18,5 (18,5) | 18,5 | 27,8 (27,8) | 27,8 | 44,5 (55,6) | 34,6 |
+| Ticks pendientes, como mucho | — | 1 | — | 2 | — | 212 |
+
+- **A velocidad Normal y a «Max speed» la simulación va al día:** como mucho 1 o 2 ticks por hacer. Se suspende 8 veces en 900 fotogramas a velocidad Normal y 7 en 300 a «Max speed», cuando un tick no cabe en lo que queda del fotograma.
+- **El tramo más largo sin un punto de pausa es de 2,0 a 2,5 ms:** lo que, como mucho, un fotograma se puede pasar de los 28 ms.
+  - El primero que se midió, de 7,4 ms, era el cambio de mes: al cambiar el aire de fuera, `th_sim_temperature_begin` recorría las 16.384 casillas para marcar las de aire.
+  - Ahora combina 512 palabras con dos máscaras, la del aire y la del radiador, que se calculan junto con los pesos de cada casilla. Ocupan 4 KiB más: la simulación pasa a 203 KiB.
+- **A «And then some more», repartida, no salta ningún fotograma, pero la simulación se queda atrás:** 344 ticks en 300 fotogramas, 34,6 horas por segundo de las 55,6. Sin repartir hacía más horas (44,5 por segundo), pero a tirones: 184 fotogramas tarde y 12 saltos. Cada fotograma se va en el dibujo (10,8 ms), la temperatura (10,0), la simulación (2,3) y el audio (1,8).
+- **Antes de la carga de texturas nueva**, la misma prueba repartida llegaba a 25,7 horas por segundo: 256 ticks.
+
+### Las cargas de textura
+
+`rdpq_tex_upload` manda 5 comandos por carga (`SET_TEXTURE_IMAGE`, dos `SET_TILE`, `LOAD_BLOCK` o `LOAD_TILE` y `SET_TILE_SIZE`), más los `SYNC` que añade rdpq porque el rectángulo anterior usaba la TMEM y el tile, y antes calcula cómo cargar. En ares, cada comando de rdpq cuesta unos 145 ciclos de CPU: la carga nueva son unos 580 ciclos para 4 comandos con sus `SYNC`.
+
+La carga nueva ([`mapa_n64.c`](../motor/platform/n64/mapa_n64.c), `cargar`) aprovecha cómo están los sprites en la hoja:
+- **sube el bloque entero del sprite con un `LOAD_BLOCK` de texeles de 16 bits.** Cada fila tiene `ROUND_UP(ancho, 8)` bytes y el relleno es el índice transparente, así que sobra el `LOAD_TILE` que `rdpq_tex_upload` usa cuando el ancho no es múltiplo de 8: el 89 % de los sprites de `MSPR-0` y el 5 % de los bloques de `MBLK-0`;
+- **`TILE0` se configura solo cuando cambia el paso**, y su tamaño es el máximo desde el principio del fotograma. Un rectángulo solo lee los texeles de su sprite y, como mucho, la columna de relleno, que es transparente;
+- **quedan 2 comandos por carga** (`SET_TEXTURE_IMAGE` y `LOAD_BLOCK`), y un `SET_TILE` cuando cambia el paso.
+
+Con 11 palabras de 64 bits por fila o más, el `LOAD_BLOCK` pierde precisión en las filas impares (el DXT; ver `rdpq_tex.c`). Esos sprites van por `rdpq_tex_upload`, pero en `MBLK-0` y `MSPR-0` no hay ninguno. Los 29 que no caben en la TMEM siguen con `rdpq_tex_blit`.
+
+**Ciclos de CPU por sprite, cargando y dibujando un rectángulo de 8 × 1** (256 sprites de `MSPR-0`, con el RDP libre al empezar):
+
+| Carga | CPU | Hasta que acaban el RSP y el RDP |
+|---|---:|---:|
+| `rdpq_tex_upload` (antes) | 2.705 | 2.789 |
+| Directa (ahora) | **1.044** | 1.170 |
+| Los comandos ya hechos de cada sprite, con `rdpq_exec` | 600 | 633 |
+| Solo el rectángulo | 464 | 480 |
+
+**En el fotograma, velocidad Normal repartida** (900 fotogramas, 231 cargas y 146 sprites de entidades por fotograma):
+
+| | `rdpq_tex_upload` | Directa | `rdpq_exec` |
+|---|---:|---:|---:|
+| CPU por fotograma | 22,7 ms | **15,1 ms** | 14,2 ms |
+| Dibujo | 18,1 ms | **10,3 ms** | 9,4 ms |
+| — suelos y sombras | 2,82 ms | 2,03 ms | 1,98 ms |
+| — paredes y entidades | 10,05 ms | 2,97 ms | 2,14 ms |
+| Cargas | 8,0 ms (34,6 µs cada una) | **1,57 ms (6,8 µs)** | 0,61 ms (2,6 µs) |
+| Por sprite de entidad, sin la lista | 41,8 µs | 12,4 µs | 8,3 µs |
+
+- **Los mismos píxeles.** Las tres cargas dan el mismo fotograma (0 píxeles distintos de 76.800, con 209 cargas). Las comparaciones de `motor_check.sh` con el rasterizador de referencia siguen dando 0 píxeles distintos en los hitos 2, 3 y 4.
+- **En el fotograma se gana más de lo que dice la prueba aislada:** 27,8 µs por carga frente a 1.660 ciclos (17,7 µs). No se ha medido por qué.
+- **`rdpq_exec` no es la carga normal**, aunque gana otros 0,9 ms. Con él, el RSP espera a que el RDP haya empezado el búfer anterior en cada carga (`RSPQCmd_RdpSetBuffer`), y ares no lo puede decir: ejecuta los comandos del RDP al instante, así que esa espera no aparece en la medida. Queda en la ROM de medida para probarlo en la consola. Un comando propio en el RSP que cargue y dibuje un sprite sería lo siguiente, si hiciera falta.
+- **La caché de instrucciones.** [`cache_instrucciones.py`](../tools/cache_instrucciones.py) mira ahora también `cargar` y las funciones de rdpq que llama en cada carga. Al mirarlas, las ROM normal, de pruebas y de horas chocaban con ellas en 1 a 10 líneas. El relleno pasa a 3.520 B en la normal y en la de horas, a 5.728 en la de pruebas y a 5.216 en la de medida. Con la carga nueva, el recorrido del hito 3 con 50 humanoides en pantalla dibuja en 17,4 ms con el choque y en 13,5 sin él; en el hito 3 eran 23,7.
+
+### La lista de dibujo
+
+Con la carga nueva, la lista (`th_view_scene`) es lo más caro del dibujo: 5,3 ms de 10,3 a velocidad Normal. Medido aparte, con la cámara del hito 5:
+- **con las 58 entidades del hospital, 4,77 ms**, con 528 sprites, 123 de ellos de entidades;
+- **sin ellas, 2,22 ms**, con 403 sprites;
+- **cada sprite de entidad añade unos 20,7 µs** (1.940 ciclos);
+- **leer los elementos de los fotogramas cuesta 100 ciclos por elemento.** Los fotogramas de las 58 entidades tienen 1.106 elementos, contando los de capas que la entidad no lleva, así que leerlos cuesta como mucho 1,2 ms de los 2,55 que añaden las entidades. El resto es recorrer más casillas (con entidades, la vista mira 64 píxeles a cada lado de la pantalla en lugar de 32), ordenar las entidades y redibujar lo que tapa a las animadas.
+
+Lo siguiente sería guardar, por fotograma de animación, solo los elementos que se dibujan con cada juego de capas. No está hecho.
+
+### La temperatura
+
+Cuesta 0,92 µs por casilla recalculada (86 ciclos): 15,1 ms la pasada entera de 16.384 casillas. A velocidad Normal son 1,1 ms por fotograma de media; a «And then some more», con la simulación repartida, 10,0 ms, lo que más gasta.
+
+Lo que se ha probado en la CPU:
+- **calcular una vez las palabras uniformes.** Una palabra de 32 casillas de aire en la que la casilla y sus cuatro vecinas valen lo mismo da el mismo resultado en las 32. En las 9.000 horas del escenario son 174.218 de 1.398.130 palabras de pasadas enteras: un 12,5 %. **Descartado.**
+- **separar los valores y los pesos en tres tablas de 32 KiB** en lugar de una de 96 KiB con casillas de 6 B. Con el coste de ares (40 ciclos por fallo de caché de datos y 40 más si la línea expulsada está modificada), la memoria pasaría de unos 30 a unos 20 ciclos por casilla, de 86. **Descartado.**
+- **el cambio de mes,** que recorría las 16.384 casillas sin pausas: ahora son dos máscaras (ver arriba).
+
+Queda el RSP. Es un cálculo regular sobre valores de 16 bits, 8 casillas por instrucción, y hoy el RSP solo lo usan el RDP y el audio. Para hacerlo hay que:
+- dar exactamente los mismos enteros que la CPU, porque la huella tiene que seguir igual. Las divisiones entre 100, 1.000 y la suma de pesos se hacen con multiplicaciones, y hay que comprobar todos los valores posibles;
+- coordinarlo con la corrutina de la simulación.
+
+No se hace por ahora: a velocidad Normal y a «Max speed» la temperatura ya cabe.
+
+### Los fotogramas ahora
+
+| | Normal (18,5 h/s) | Max speed (27,8 h/s) | And then some more (55,6 h/s) |
+|---|---:|---:|---:|
+| CPU por fotograma: hito 5 → ahora | 19,3 → **15,1 ms** | 20,4 → **15,5 ms** | 42,6 → **25,4 ms** |
+| p99 | 28,2 → 27,1 ms | 34,9 → 28,4 ms | 70,8 → 29,0 ms |
+| Fotogramas que se saltan | 0 → **0** | 2 → **0** | 182 → **0** |
+| Horas de juego por segundo | 18,5 → 18,5 | 27,8 → 27,8 | 40,2 (a tirones) → 34,6 |
+| Dibujo | 15,2 → 10,3 ms | 15,8 → 10,6 ms | 16,1 → 10,8 ms |
+
+La memoria apenas cambia: la simulación ocupa 4 KiB más (las máscaras de la temperatura). En la ROM de medida, con 8 MiB, quedan 3.855 KiB de heap libres con la música sonando, frente a 3.923. El heap es 30 KiB menor (código, relleno y las máscaras), y la propia medida usa 38 KiB más, unos 31 de ellos para los comandos de `rdpq_exec`.
+
+### Pendiente
+
+- **La lista de dibujo:** guardar por fotograma de animación los elementos que se dibujan con cada juego de capas.
+- **Los caminos en el hospital lleno:** ya no se notan, pero cuestan lo mismo; abaratar el nodo (1.014 ciclos).
+- **La temperatura en el RSP,** si hacen falta las velocidades altas.
+- **En la consola:** medir el RDP y probar `rdpq_exec`, que ares no puede juzgar.
 
 ## Música: la N64 frente a fluidsynth
 

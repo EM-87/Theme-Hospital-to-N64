@@ -9,6 +9,7 @@
 
 static uint16_t orden[MAX_ORDEN];
 static int32_t cargado;      // hoja << 16 | sprite en la TMEM; -1 = ninguno o desconocido
+static int paso_tile0;       // el paso con que está configurado TILE0; -1 = desconocido
 static uint8_t se_sale[256]; // 1 = el bloque no cabe en el rombo de su casilla
 
 void mapa_n64_preparar(const hoja_t *bloques, int unidad)
@@ -73,6 +74,61 @@ static int agrupar(const th_drawlist *l, int ini, int fin, int alfa)
     return n;
 }
 
+// TILE1 es el de las cargas (texeles de 16 bits, sin paso: LOAD_BLOCK) y
+// TILE0 el de dibujar, con el tamaño máximo para no tener que cambiarlo en
+// cada sprite: los rectángulos solo leen texeles del sprite y, como mucho,
+// la columna de relleno, que es transparente.
+static void preparar_tiles(void)
+{
+    rdpq_set_tile(TILE1, FMT_RGBA16, 0, 0, NULL);
+    rdpq_set_tile_size(TILE0, 0, 0, 1024, 1024);
+    paso_tile0 = -1;
+    cargado = -1;
+}
+
+#ifdef TH_MEDIR
+int mapa_n64_modo_carga;
+static void cargar_exec(const hoja_t *h, int sprite);
+#endif
+
+// Carga un sprite que cabe en la TMEM: el bloque entero (paso × alto bytes,
+// con el relleno transparente de cada fila) con un LOAD_BLOCK de texeles de
+// 16 bits. Son 2 comandos, más SET_TILE si cambia el paso, frente a los 5 de
+// rdpq_tex_upload, y menos SYNC: un 80 % menos de CPU por carga (hito 5).
+// Con 11 palabras de 64 bits por fila o más, el LOAD_BLOCK pierde precisión
+// en las filas impares (el DXT de rdpq_tex.c): esos van por rdpq_tex_upload
+// (en MBLK-0 y MSPR-0 no hay ninguno).
+static void cargar(const hoja_t *h, int sprite)
+{
+    const hoja_entrada_t *e = &h->tabla[sprite];
+    const int paso = th_sheet_stride(e->ancho);
+#ifdef TH_MEDIR
+    if (mapa_n64_modo_carga == MAPA_N64_CARGA_RDPQ_TEX) {
+        surface_t s = hoja_superficie(h, sprite);
+        rdpq_tex_upload(TILE0, &s, NULL);
+        return;
+    }
+    if (mapa_n64_modo_carga == MAPA_N64_CARGA_EXEC && paso < 11 * 8) {
+        cargar_exec(h, sprite);
+        paso_tile0 = paso;
+        return;
+    }
+#endif
+    if (paso >= 11 * 8) {
+        surface_t s = hoja_superficie(h, sprite);
+        rdpq_tex_upload(TILE0, &s, NULL);
+        rdpq_set_tile_size(TILE0, 0, 0, 1024, 1024);
+        paso_tile0 = paso;
+        return;
+    }
+    rdpq_set_texture_image_raw(0, PhysicalAddr(h->pixeles + e->desplazamiento), FMT_RGBA16, paso / 2, e->alto);
+    rdpq_load_block(TILE1, 0, 0, paso * e->alto / 2, paso);
+    if (paso != paso_tile0) {
+        rdpq_set_tile(TILE0, FMT_CI8, 0, paso, NULL);
+        paso_tile0 = paso;
+    }
+}
+
 static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int ancho, int alto,
                     mapa_n64_stats_t *st)
 {
@@ -105,7 +161,7 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
         // mapa y 29 sprites de MSPR-0; ninguno de estos lleva recorte).
         surface_t s = hoja_superficie(h, d->sprite);
         rdpq_tex_blit(&s, d->x, d->y, &(rdpq_blitparms_t){.flip_x = espejo, .flip_y = boca_abajo});
-        cargado = -1;
+        preparar_tiles();
         st->cargas++;
         return;
     }
@@ -114,8 +170,7 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
 #ifdef TH_MEDIR
         const uint32_t c0 = get_ticks();
 #endif
-        surface_t s = hoja_superficie(h, d->sprite);
-        rdpq_tex_upload(TILE0, &s, NULL);
+        cargar(h, d->sprite);
         cargado = clave;
         st->cargas++;
 #ifdef TH_MEDIR
@@ -152,8 +207,8 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
 {
     memset(st, 0, sizeof(*st));
     uint32_t t0 = get_ticks();
-    cargado = -1;
     graficos_modo_sprites(paleta);
+    preparar_tiles();
 
     // 1. Suelos, un bloque cada vez, y sus sombras (bloques 74 y 75), por
     // tramos que terminan en cada suelo que se sale del rombo.
@@ -207,3 +262,93 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
         modo_opaco();
     st->ticks_paredes = get_ticks() - t1;
 }
+
+#ifdef TH_MEDIR
+// Hito 5: la carga con los comandos del RDP ya hechos (rdpq_exec), uno por
+// sprite, preparados la primera vez que se dibuja: SYNC_PIPE, SYNC_LOAD,
+// SYNC_TILE, SET_TEXTURE_IMAGE, LOAD_BLOCK y SET_TILE (TILE0, CI8). La CPU
+// envía un solo comando por carga, pero no es la carga normal: en cada uno,
+// el RSP espera a que el RDP haya empezado el búfer anterior
+// (RSPQCmd_RdpSetBuffer), y ares no lo puede decir, porque ejecuta los
+// comandos del RDP al instante.
+#define CMD(id, w0, w1) (((uint64_t)((uint32_t)(id) << 24 | (w0)) << 32) | (uint32_t)(w1))
+enum { EXEC_COMANDOS = 6 };
+static const hoja_t *exec_hoja[TH_SHEETS];
+static uint64_t **exec_tabla[TH_SHEETS]; // por sprite, en el heap la primera vez (no cuenta en la memoria del arranque)
+
+static uint64_t *preparar_exec(const hoja_t *h, int sprite)
+{
+    const hoja_entrada_t *e = &h->tabla[sprite];
+    const uint32_t paso = th_sheet_stride(e->ancho), dir = PhysicalAddr(h->pixeles + e->desplazamiento);
+    const uint32_t texeles = paso * e->alto / 2, palabras = paso / 8, dxt = (2048 + palabras - 1) / palabras;
+    uint64_t *c = malloc(EXEC_COMANDOS * sizeof(uint64_t));
+    assertf(c && ((uintptr_t)c & 7) == 0, "sin memoria para los comandos de carga");
+    c[0] = CMD(0xE7, 0, 0);                                          // SYNC_PIPE
+    c[1] = CMD(0xE6, 0, 0);                                          // SYNC_LOAD
+    c[2] = CMD(0xE8, 0, 0);                                          // SYNC_TILE
+    c[3] = CMD(0xFD, (2u << 19) | (paso / 2 - 1), dir);              // SET_TEXTURE_IMAGE, RGBA16
+    c[4] = CMD(0xF3, 0, (1u << 24) | ((texeles - 1) << 12) | dxt);   // LOAD_BLOCK con TILE1
+    c[5] = CMD(0xF5, (2u << 21) | (1u << 19) | (palabras << 9), 0);  // SET_TILE TILE0, CI8
+    data_cache_hit_writeback(c, EXEC_COMANDOS * sizeof(uint64_t));
+    return c;
+}
+
+static void cargar_exec(const hoja_t *h, int sprite)
+{
+    int k = 0;
+    while (exec_hoja[k] && exec_hoja[k] != h)
+        k++;
+    if (!exec_hoja[k]) {
+        exec_hoja[k] = h;
+        exec_tabla[k] = calloc(h->num, sizeof(uint64_t *));
+        assertf(exec_tabla[k], "sin memoria para los comandos de carga");
+    }
+    uint64_t **c = &exec_tabla[k][sprite];
+    if (!*c)
+        *c = preparar_exec(h, sprite);
+    rdpq_exec(*c, EXEC_COMANDOS * sizeof(uint64_t));
+}
+
+// Lo que cuesta cargar cada sprite de la hoja h que cabe en la TMEM y dibujar
+// un rectángulo pequeño con él, con las tres cargas, con el RDP libre al
+// empezar. Escribe líneas «H5 c».
+void mapa_n64_medir_cargas(const hoja_t *h, const uint16_t *paleta)
+{
+    enum { N = 256 };
+    static uint16_t cuales[N];
+    int n = 0;
+    for (int i = 0; i < h->num && n < N; i++) {
+        const hoja_entrada_t *e = &h->tabla[i];
+        if (e->ancho && th_sheet_stride(e->ancho) * e->alto <= TMEM_TEXELES && th_sheet_stride(e->ancho) < 11 * 8)
+            cuales[n++] = (uint16_t)i;
+    }
+    rdpq_attach(display_get(), NULL);
+    graficos_modo_sprites(paleta);
+    static const char *const nombres[] = {"directa", "rdpq_tex_upload", "exec"};
+    for (int prueba = 0; prueba < 5; prueba++) {
+        mapa_n64_modo_carga = prueba < 3 ? prueba : MAPA_N64_CARGA_DIRECTA;
+        for (int rep = 0; rep < 2; rep++) {
+            preparar_tiles();
+            for (int k = 0; k < n; k++) // los comandos de exec, preparados antes
+                cargar(h, cuales[k]);
+            rspq_wait();
+            const uint32_t t0 = get_ticks();
+            for (int k = 0; k < n; k++) {
+                const hoja_entrada_t *e = &h->tabla[cuales[k]];
+                if (prueba < 3)
+                    cargar(h, cuales[k]);
+                if (prueba < 4)
+                    rdpq_texture_rectangle(TILE0, 0, 0, e->ancho < 8 ? e->ancho : 8, 1, 0, 0);
+            }
+            const uint32_t t1 = get_ticks();
+            rspq_wait();
+            const uint32_t t2 = get_ticks();
+            debugf("H5 c %s %d: %d sprites; CPU %lu ciclos por sprite; hasta que acaban el RSP y el RDP, %lu\n",
+                   prueba < 3 ? nombres[prueba] : prueba == 3 ? "solo_rectangulo" : "nada", rep, n,
+                   (unsigned long)((t1 - t0) * 2 / n), (unsigned long)((t2 - t0) * 2 / n));
+        }
+    }
+    mapa_n64_modo_carga = MAPA_N64_CARGA_DIRECTA;
+    rdpq_detach_show();
+}
+#endif

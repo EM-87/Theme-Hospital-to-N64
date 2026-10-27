@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Resume la medida del hito 5 (tools/hito5/medir.sh): la memoria con 8 y 4
 MiB, la huella (N64 frente a PC), el coste de cada tick de la simulación con
-su regresión por personas, casillas de temperatura y nodos de búsqueda, y los
-fotogramas a cada velocidad.
+su regresión por personas, casillas de temperatura y nodos de búsqueda, lo
+que cuesta cada carga de textura y los fotogramas a cada velocidad.
 
 Uso: python3 -I tools/hito5/analizar.py <dir>
   <dir>/carga_pc.tsv, carga_pc.txt      th64sim carga
@@ -26,7 +26,7 @@ def leer_log(ruta):
         lineas = open(ruta, "rb").read().decode("utf-8", "replace").splitlines()
     except FileNotFoundError:
         return None
-    r = {"memoria": [], "ticks": [], "fotogramas": [], "texto": [], "aserto": None}
+    r = {"memoria": [], "ticks": [], "fotogramas": [], "texto": [], "cargas": [], "aserto": None}
     for l in lineas:
         if l.startswith("TH64 memoria: "):
             m = re.match(r"TH64 memoria: (.*): heap usado (\d+) KiB de (\d+) KiB( \(FALLO\))?", l)
@@ -34,6 +34,11 @@ def leer_log(ruta):
                 r["memoria"].append((m[1], int(m[2]), int(m[3]), bool(m[4])))
         elif l.startswith("H5 t "):
             r["ticks"].append([int(x) for x in l.split()[2:]])
+        elif l.startswith("H5 c "):
+            m = re.match(r"H5 c (\S+) (\d): (\d+) sprites; CPU (\d+) ciclos por sprite; hasta que acaban el RSP y el "
+                         r"RDP, (\d+)", l)
+            if m:
+                r["cargas"].append((m[1], int(m[2]), int(m[3]), int(m[4]), int(m[5])))
         elif l.startswith("H5 f "):
             p = l.split()
             r["fotogramas"].append([p[2]] + [int(x) for x in p[3:]])
@@ -98,6 +103,7 @@ def resumen_fotogramas(f):
         a = np.array([r[2:] for r in f if r[0] == vel], dtype=np.float64)
         cpu, lista, suelos, paredes, ent, cargas, mundo, temp, audio, ticks, sprites, ents, ncargas, intervalo = a.T[:14]
         vista_sim = a.T[14] if a.shape[1] > 14 else np.zeros(len(a))
+        atraso = a.T[15] if a.shape[1] > 15 else np.zeros(len(a))
         dibujo = lista + suelos + paredes
         iv = intervalo[1:]
         out[vel] = {
@@ -114,6 +120,8 @@ def resumen_fotogramas(f):
             "us_por_carga": float(ms(cargas.sum()) * 1000 / max(1, ncargas.sum())),
             "intervalo_ms": float(ms(iv.mean())), "intervalo_max_ms": float(ms(iv.max())),
             "saltos": int((iv > TICKS_POR_MS * 50).sum()),
+            "tarde": int((iv > TICKS_POR_MS * 34).sum()),
+            "atraso_max": int(atraso.max()), "fotogramas_con_atraso": int((atraso > 1).sum()),
         }
     return out
 
@@ -144,6 +152,15 @@ def main():
         for l in log["texto"]:
             if l.startswith("TH64 hito5:"):
                 print("   " + l)
+        if log["cargas"]:
+            # Cargar y dibujar un sprite, con el RDP libre al empezar: la mejor de las dos repeticiones.
+            r["cargas_ciclos"] = {}
+            for modo in dict.fromkeys(c[0] for c in log["cargas"]):
+                filas = [c for c in log["cargas"] if c[0] == modo]
+                r["cargas_ciclos"][modo] = {"cpu": min(c[3] for c in filas), "con_rsp_y_rdp": min(c[4] for c in filas),
+                                            "sprites": filas[0][2]}
+            print("   cargar y dibujar un sprite (ciclos de CPU; hasta que acaban el RSP y el RDP): " +
+                  "; ".join(f"{k} {v['cpu']} ({v['con_rsp_y_rdp']})" for k, v in r["cargas_ciclos"].items()))
         if log["ticks"]:
             r["ticks"] = resumen_ticks(log["ticks"], pc)
             t = r["ticks"]

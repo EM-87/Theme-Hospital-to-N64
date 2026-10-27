@@ -3,6 +3,8 @@
 // las colas están en sim_rooms.c; las acciones, en humanoid.c.
 #include "th/sim.h"
 
+#include "th/pausa.h"
+
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -870,6 +872,15 @@ void th_sim_temperature_prepare(th_sim *s)
         if (f & TH_TILE_HOSPITAL)
             type = s->radiator_thob >= 0 && tiles[i].object == s->radiator_thob ? TEMP_RADIATOR : TEMP_HOSPITAL;
         s->temp[i].cell = (uint16_t)(code | type << 8 | count << 10);
+        const uint32_t bit = 1u << (i & 31);
+        if (type == TEMP_AIR)
+            s->temp_air_mask[i >> 5] |= bit;
+        else
+            s->temp_air_mask[i >> 5] &= ~bit;
+        if (type == TEMP_RADIATOR)
+            s->temp_rad_mask[i >> 5] |= bit;
+        else
+            s->temp_rad_mask[i >> 5] &= ~bit;
     }
     s->temp_all = 1;
 }
@@ -946,11 +957,8 @@ void th_sim_temperature_begin(th_sim *s, uint16_t air, uint16_t radiator)
     }
     const int air_changed = air != s->temp_air, rad_changed = radiator != s->temp_radiator;
     if (!all && (air_changed || rad_changed))
-        for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
-            const unsigned type = s->temp[i].cell >> 8 & 3;
-            if ((type == TEMP_AIR && air_changed) || (type == TEMP_RADIATOR && rad_changed))
-                s->temp_need[i >> 5] |= 1u << (i & 31);
-        }
+        for (int w = 0; w < WORDS; w++)
+            s->temp_need[w] |= (air_changed ? s->temp_air_mask[w] : 0) | (rad_changed ? s->temp_rad_mask[w] : 0);
     s->temp_air = air;
     s->temp_radiator = radiator;
     s->temp_all = 0;
@@ -1118,6 +1126,7 @@ void th_sim_tick(th_sim *s)
         th_humanoid_tick(&s->w, &p->h);
         if (p->alive && p->kind != TH_HUM_PATIENT)
             staff_tick(s, who);
+        th_pausar();
     }
     th_sim_temperature_begin(s, outside[s->date.month - 1], (uint16_t)(400000ll * 65535 / TH_MICRO));
     if (!s->temp_defer)

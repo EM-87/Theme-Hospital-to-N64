@@ -10,7 +10,7 @@ source tools/env.sh
 #    (La semilla 4 no se puede exportar: en el guardado queda una sala sin puerta. Se usa la 11.)
 tools/oraculo_hito4/campana.sh "1 2 3 5 6 7 8 9 10 11" 9000 $TH64_WORK/resultados/hito5/campana --th64-ritmo=72
 tools/oraculo_hito4/motor.sh "1 2 3 5 6 7 8 9 10 11" 9000 10 $TH64_WORK/resultados/hito5/campana hito5
-# 2. La N64 (ares, con y sin Expansion Pak) y el PC: unos 2 min.
+# 2. La N64 (ares, con y sin Expansion Pak) y el PC: unos 6 min.
 tools/hito5/medir.sh
 # 3. CorsixTH en el mismo escenario, horas 3.500 a 4.500, con Tracy (como la fase 1): unos 3 min por repetición.
 CORSIXTH_SAVES=$TH64_WORK/resultados/hito5/campana/saves tools/bench_run.sh --tracy --lua 5.4 \
@@ -24,12 +24,16 @@ python3 -I tools/hito5/cobertura.py motor/core $TH64_WORK/src/CorsixTH/CorsixTH/
 | Fichero | Qué hace |
 |---|---|
 | `medir.sh [dir]` | Compila la ROM de medida (`make -C motor MEDIR=1`), comprueba la caché de instrucciones, corre `th64sim carga` en el PC y la ROM en ares con 8 y 4 MiB, y resume con `analizar.py` |
-| `analizar.py <dir>` | La memoria tras cada paso de la carga, la huella (N64 frente a PC), el coste por tick con su regresión (personas, casillas de temperatura recalculadas, nodos y búsquedas de camino), por tramos de personas, y los fotogramas a cada velocidad. Escribe `resumen.json` |
+| `analizar.py <dir>` | La memoria tras cada paso de la carga, la huella (N64 frente a PC), el coste por tick con su regresión (personas, casillas de temperatura recalculadas, nodos y búsquedas de camino), por tramos de personas, lo que cuesta cada carga de textura (`H5 c`) y los fotogramas a cada velocidad, con el atraso de la simulación repartida. Escribe `resumen.json` |
 | `codigo.py <rom.map>` | Código, datos de solo lectura, datos y bss del motor (por fichero), libdragon (por módulo) y las bibliotecas de C, del mapa del enlazador |
 | `cobertura.py <motor/core> <CorsixTH/Lua>` | Las funciones de CorsixTH que el núcleo nombra en sus comentarios y las acciones de humanoide, en líneas de Lua: una cota de cuánta lógica hay ya en el motor |
 | [`bench/scenarios/medir_hito5.lua`](../../bench/scenarios/medir_hito5.lua) | `medir.lua` de la fase 1 con el jugador de la traza del hito 4 (abre los faxes y los contesta igual), para que la partida sea la de la campaña |
 
 La ROM de medida (`motor/platform/n64/main.c`, `TH_MEDIR`):
 1. simula tan deprisa como puede hasta que hay 50 pacientes en el mapa, con una línea por tick (`H5 t`);
-2. con la música sonando, dibuja 900 fotogramas a velocidad Normal, 300 a «Max speed» y 300 a «And then some more», con la cámara donde se ven más personas. Escribe una línea por fotograma (`H5 f`);
-3. sigue hasta la hora 9.000 y escribe la huella, que tiene que ser la de `th64sim carga`.
+2. con la cámara donde se ven más personas:
+   - mide lo que cuesta cargar y dibujar 256 sprites con cada una de las tres cargas de textura de `mapa_n64.c` (la directa, `rdpq_tex_upload` y `rdpq_exec`), con el RDP libre al empezar (`H5 c`);
+   - dibuja el mismo fotograma con las tres y cuenta los píxeles distintos;
+   - mide la lista de dibujo con y sin las entidades, y lo que cuesta leer los elementos de sus fotogramas;
+3. con la música sonando, dibuja cada velocidad dos veces desde las mismas horas: la simulación entre fotogramas, como en el hito 4 (`normal`, `max`, `mas`), y repartida en la corrutina de `simulacion.c`, como la ROM normal (`normal_rep`, `max_rep`, `mas_rep`). A velocidad Normal, además, repartida con las otras dos cargas (`normal_rdpq_tex`, `normal_exec`). Son 900 fotogramas a velocidad Normal y 300 a «Max speed» y a «And then some more». Escribe una línea por fotograma (`H5 f`);
+4. sigue hasta la hora 9.000 y escribe la huella, que tiene que ser la de `th64sim carga`.

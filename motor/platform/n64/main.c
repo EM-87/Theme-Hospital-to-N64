@@ -30,6 +30,7 @@
 #include "graficos.h"
 #include "mapa_n64.h"
 #include "raster.h"
+#include "simulacion.h"
 #include "th/anim.h"
 #include "th/humanoid.h"
 #include "th/map.h"
@@ -79,6 +80,10 @@ static th_anims anims;
 static th_world mundo = {.map = &mapa, .pf = &buscador, .anims = &anims};
 static th_humanoid humanoides[MAX_HUMANOIDES];
 static th_view_entity entidades[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+// Con la simulación repartida entre fotogramas (simulacion.h), el dibujo y el
+// marcador leen la instantánea del último tick acabado, no la simulación.
+static th_view_entity foto[TH_SIM_OBJECTS * 3 + TH_SIM_HUMANOIDS];
+static bool repartida;
 // Hito 4: el hospital del escenario (rom:/escenarios/hito4.trg), si lo hay.
 static th_sim sim;
 static bool hospital;
@@ -268,13 +273,17 @@ static int ultimo_paciente(void)
 // CorsixTH, el dinero va sin símbolo.
 static void dibujar_marcador(void)
 {
-    rdpq_text_printf(NULL, FUENTE_DINERO, 8, ALTO - 8, "%ld", (long)sim.hosp.balance);
-    rdpq_text_printf(NULL, FUENTE_DINERO, ANCHO - 72, ALTO - 8, "%02d-%02d-%d", sim.date.day, sim.date.month,
-                     sim.date.year);
+    const instantanea_t *f = simulacion_instantanea();
+    const int32_t saldo = repartida ? f->saldo : sim.hosp.balance;
+    const th_date fecha = repartida ? f->fecha : sim.date;
+    rdpq_text_printf(NULL, FUENTE_DINERO, 8, ALTO - 8, "%ld", (long)saldo);
+    rdpq_text_printf(NULL, FUENTE_DINERO, ANCHO - 72, ALTO - 8, "%02d-%02d-%d", fecha.day, fecha.month, fecha.year);
 }
 
-// La pasada de temperatura pendiente (sim.temp_defer), hasta el instante
-// límite (en ticks del reloj) o hasta acabarla. Devuelve el tiempo gastado.
+#if defined(TH_PRUEBAS) || defined(TH_MEDIR)
+// Sin repartir la simulación (como en el hito 4): la pasada de temperatura
+// pendiente (sim.temp_defer), hasta el instante límite (en ticks del reloj) o
+// hasta acabarla. Devuelve el tiempo gastado.
 static uint32_t temperatura_hasta(uint32_t limite)
 {
     const uint32_t t0 = get_ticks();
@@ -282,6 +291,7 @@ static uint32_t temperatura_hasta(uint32_t limite)
         th_sim_temperature_step(&sim, 16);
     return get_ticks() - t0;
 }
+#endif
 
 // Cámara con la casilla (x, y) en el centro de la pantalla.
 static th_view vista_en(int x, int y)
@@ -385,7 +395,15 @@ static void dibujar_escena(const th_view *v, medida_t *m)
 {
     uint32_t t0 = get_ticks();
     int n = 0;
-    if (hospital) {
+    const th_view_entity *ents = entidades;
+    if (hospital && repartida) {
+        const instantanea_t *f = simulacion_instantanea();
+        ents = f->entidades;
+        n = f->n_entidades;
+#ifdef TH_MEDIR
+        m->vista_sim = 0;
+#endif
+    } else if (hospital) {
         n = th_vista_sim(&sim, entidades, (int)(sizeof entidades / sizeof entidades[0]));
 #ifdef TH_MEDIR
         m->vista_sim = get_ticks() - t0;
@@ -399,7 +417,7 @@ static void dibujar_escena(const th_view *v, medida_t *m)
                                               .layers = h->layers, .crop = TH_VIEW_NO_CROP};
         }
     }
-    th_scene sc = {.map = &mapa, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = entidades,
+    th_scene sc = {.map = &mapa, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = ents,
                    .entity_count = n};
     n = th_view_scene(v, &sc, &lista);
     assertf(n >= 0, "la lista de dibujo no cabe");
@@ -806,14 +824,18 @@ static bool comprobar_sonido(void)
 //      su carga (th_sim_load_count), las búsquedas de camino, los nodos que
 //      recorren y lo que tarda: «H5 t hora personas pacientes andando
 //      casillas_temp búsquedas nodos ticks»;
-//   2. con la música sonando, 900 fotogramas a velocidad Normal (18,5 horas
+//   2. con la cámara donde se ven más personas, lo que cuesta cargar y
+//      dibujar un sprite con cada carga de textura de mapa_n64.c («H5 c»), si
+//      las tres dan el mismo fotograma y lo que cuesta la lista de dibujo con
+//      y sin las entidades;
+//   3. con la música sonando, 900 fotogramas a velocidad Normal (18,5 horas
 //      por segundo), 300 a «Max speed» (27,8) y 300 a «And then some more»
-//      (55,6), con la cámara donde se ven más personas; la temperatura, entre
-//      fotogramas, como en la ROM normal; una línea por fotograma: «H5 f
-//      velocidad n cpu lista suelos paredes entidades cargas mundo temperatura
-//      audio ticks_del_mundo sprites de_entidades cargas intervalo vista_sim»
-//      (en ticks del reloj, salvo las cuentas);
-//   3. sigue tan deprisa como se pueda hasta la hora 9.000 y escribe la
+//      (55,6), cada velocidad sin repartir y repartida (par_de_recorridos);
+//      una línea por fotograma: «H5 f velocidad n cpu lista suelos paredes
+//      entidades cargas mundo temperatura audio ticks_del_mundo sprites
+//      de_entidades cargas intervalo vista_sim pendientes» (en ticks del
+//      reloj, salvo las cuentas);
+//   4. sigue tan deprisa como se pueda hasta la hora 9.000 y escribe la
 //      huella, que tiene que ser la de th64sim carga.
 static mid64player_t *musica;
 
@@ -873,35 +895,47 @@ static th_view vista_con_mas_gente(int *cuantas)
     return mejor;
 }
 
-// 'fotogramas' a 'horas_por_s' (en décimas) con la cámara quieta en v.
-static void recorrido_medido(const char *nombre, th_view v, int fotogramas, int horas_por_s_x10)
+// 'fotogramas' a 'horas_por_s' (en décimas) con la cámara quieta en v. Sin
+// repartir, como en el hito 4: los ticks que tocan antes de dibujar y la
+// temperatura entre fotogramas. Repartida (simulacion.h): primero se dibuja
+// la instantánea y después la simulación sigue hasta 28 ms después de
+// empezar el fotograma; lo que no le dé tiempo, en el siguiente.
+static void recorrido_medido(const char *nombre, th_view v, int fotogramas, int horas_por_s_x10, bool repartir)
 {
     cuentas_t c = {0};
-    int ticks = 0, saltos_mundo = 0;
+    int ticks = 0, pedidos = 0, max_atraso = 0, con_atraso = 0;
     uint32_t cpu_sim = 0, max_sim = 0, cpu_temp = 0, cpu_audio = 0;
     sim.temp_defer = 1;
+    if (repartir) {
+        simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
+        repartida = true;
+    }
+    const simulacion_stats_t *ss = simulacion_stats();
     for (int f = 1; f <= fotogramas; f++) {
         surface_t *pantalla = display_get();
         const uint32_t ahora = get_ticks();
         const uint32_t a0 = get_ticks();
         mixer_try_play();
         const uint32_t audio = get_ticks() - a0;
-        // Los ticks que tocan hasta este fotograma, como en el juego: como
-        // mucho 4 × (horas por fotograma redondeadas hacia arriba) por fotograma.
+        // Los ticks que tocan hasta este fotograma.
         const int objetivo = (int)((int64_t)f * horas_por_s_x10 / (10 * FPS));
         int hechos = 0;
-        uint32_t t_sim = 0;
-        while (ticks < objetivo) {
-            const uint32_t t0 = get_ticks();
-            th_sim_tick(&sim);
-            const uint32_t d = get_ticks() - t0;
-            t_sim += d;
-            if (d > max_sim)
-                max_sim = d;
-            ticks++;
-            hechos++;
+        uint32_t t_sim = 0, t_temp = 0;
+        if (!repartir) {
+            while (ticks < objetivo) {
+                const uint32_t t0 = get_ticks();
+                th_sim_tick(&sim);
+                const uint32_t d = get_ticks() - t0;
+                t_sim += d;
+                if (d > max_sim)
+                    max_sim = d;
+                ticks++;
+                hechos++;
+            }
+        } else {
+            simulacion_pedir(objetivo - pedidos);
+            pedidos = objetivo;
         }
-        cpu_sim += t_sim;
         rdpq_attach(pantalla, NULL);
         rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
         rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
@@ -909,27 +943,152 @@ static void recorrido_medido(const char *nombre, th_view v, int fotogramas, int 
         dibujar_escena(&v, &m);
         dibujar_marcador();
         rdpq_detach_show();
-        const uint32_t t_temp = temperatura_hasta(ahora + TICKS_FROM_MS(26));
+        if (!repartir) {
+            t_temp = temperatura_hasta(ahora + TICKS_FROM_MS(26));
+        } else {
+            const uint32_t cpu0 = ss->cpu, temp0 = ss->cpu_temperatura, ticks0 = ss->ticks;
+            simulacion_avanzar(ahora + TICKS_FROM_MS(28));
+            t_temp = ss->cpu_temperatura - temp0;
+            t_sim = ss->cpu - cpu0 - t_temp;
+            hechos = (int)(ss->ticks - ticks0);
+            ticks += hechos;
+            const int atraso = simulacion_pendientes();
+            con_atraso += atraso > 1;
+            if (atraso > max_atraso)
+                max_atraso = atraso;
+        }
+        cpu_sim += t_sim;
         cpu_temp += t_temp;
         cpu_audio += audio;
         const uint32_t fin = get_ticks();
-        debugf("H5 f %s %d %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %d %d %lu %lu\n", nombre, f,
+        debugf("H5 f %s %d %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %d %d %lu %lu %d\n", nombre, f,
                (unsigned long)(fin - ahora), (unsigned long)m.lista, (unsigned long)m.st.ticks_suelos,
                (unsigned long)m.st.ticks_paredes, (unsigned long)m.st.ticks_entidades,
                (unsigned long)m.st.ticks_cargas, (unsigned long)t_sim, (unsigned long)t_temp, (unsigned long)audio,
                hechos, m.st.sprites, m.st.entidades, m.st.cargas,
-               (unsigned long)(c.fotogramas ? ahora - c.anterior : 0), (unsigned long)m.vista_sim);
+               (unsigned long)(c.fotogramas ? ahora - c.anterior : 0), (unsigned long)m.vista_sim,
+               repartir ? simulacion_pendientes() : 0);
         contar(&c, ahora, fin, &m);
     }
-    th_sim_temperature_step(&sim, TH_SIM_TEMP_WORDS);
+    if (repartir) {
+        simulacion_terminar();
+        max_sim = ss->tick_mas_largo;
+        repartida = false;
+    } else {
+        th_sim_temperature_step(&sim, TH_SIM_TEMP_WORDS);
+    }
     sim.temp_defer = 0;
     informar("hito5", nombre, &c);
     const float ms = 1000.0f / TICKS_PER_SECOND;
-    debugf("TH64 hito5: %s: %d ticks del mundo: %.3f ms de media, %.3f ms el mas largo; temperatura entre "
-           "fotogramas %.3f ms de media; audio %.3f ms por fotograma; %d personas\n",
+    debugf("TH64 hito5: %s: %d ticks del mundo: %.3f ms de media, %.3f ms el mas largo; temperatura %.3f ms por "
+           "fotograma; audio %.3f ms por fotograma; %d personas",
            nombre, ticks, cpu_sim * ms / (ticks ? ticks : 1), max_sim * ms, cpu_temp * ms / fotogramas,
            cpu_audio * ms / fotogramas, sim.n_order);
-    (void)saltos_mundo;
+    if (repartir)
+        debugf("; atraso de mas de 1 tick en %d fotogramas, como mucho %d; %lu pausas; el tramo sin pausas mas "
+               "largo, %.3f ms (etapa %d, hora %lu)",
+               con_atraso, max_atraso, (unsigned long)ss->pausas, ss->tramo_mas_largo * ms, ss->etapa_tramo,
+               (unsigned long)ss->hora_tramo);
+    debugf("\n");
+}
+
+// Lo que cuesta la lista de dibujo (th_view_scene) con y sin las entidades y
+// lo que cuesta solo recorrer los elementos de sus fotogramas.
+static void medir_lista(th_view v)
+{
+    enum { VECES = 20 };
+    const int n = th_vista_sim(&sim, entidades, (int)(sizeof entidades / sizeof entidades[0]));
+    th_scene sc = {.map = &mapa, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = entidades,
+                   .entity_count = n};
+    uint32_t t[2];
+    int sprites[2], de_entidades = 0;
+    for (int k = 0; k < 2; k++) {
+        sc.entity_count = k ? 0 : n;
+        const uint32_t t0 = get_ticks();
+        for (int r = 0; r < VECES; r++)
+            th_view_scene(&v, &sc, &lista);
+        t[k] = (get_ticks() - t0) / VECES;
+        sprites[k] = lista.count;
+        if (!k)
+            for (int i = 0; i < lista.count; i++)
+                de_entidades += lista.items[i].sheet == TH_SHEET_SPRITES;
+    }
+    // Los elementos de los fotogramas de todas las entidades, leídos como add_entity.
+    uint32_t elementos = 0, suma = 0;
+    const uint32_t t0 = get_ticks();
+    for (int r = 0; r < VECES; r++)
+        for (int i = 0; i < n; i++)
+            for (uint32_t j = th_anims_frame_list(&anims, entidades[i].frame);; j++) {
+                const uint16_t e = th_anims_list_entry(&anims, j);
+                if (e == TH_ANIM_LIST_END || e >= anims.elements)
+                    break;
+                th_anim_element el;
+                th_anims_element(&anims, e, &el);
+                suma += el.sprite + el.layer_id;
+                elementos++;
+            }
+    const uint32_t t_elem = get_ticks() - t0;
+    debugf("TH64 hito5: lista de dibujo: %lu us con %d entidades (%d sprites, %d de entidades), %lu us sin ellas "
+           "(%d sprites); sus fotogramas tienen %lu elementos, %lu ciclos cada uno en leerlos (%lu)\n",
+           (unsigned long)TICKS_TO_US(t[0]), n, sprites[0], de_entidades,
+           (unsigned long)TICKS_TO_US(t[1]), sprites[1], (unsigned long)(elementos / VECES),
+           (unsigned long)(t_elem * 2 / (elementos ? elementos : 1)), (unsigned long)suma);
+}
+
+// Una velocidad dos veces, sin repartir y repartida, con las mismas horas:
+// se guarda la simulación antes y se vuelve a ella (el núcleo no tiene más
+// estado que th_sim, y los ticks no tocan el mapa). Con 'cargas', además, la
+// repartida con las otras dos cargas de textura (mapa_n64.h).
+static void par_de_recorridos(const char *nombre, th_view v, int fotogramas, int horas_por_s_x10, bool cargas)
+{
+    static th_sim *copia;
+    if (!copia)
+        copia = malloc(sizeof sim);
+    assertf(copia, "sin memoria para la copia de la simulación");
+    memcpy(copia, &sim, sizeof sim);
+    recorrido_medido(nombre, v, fotogramas, horas_por_s_x10, false);
+    char rep[32];
+    for (int modo = cargas ? MAPA_N64_CARGA_EXEC : MAPA_N64_CARGA_DIRECTA; modo >= MAPA_N64_CARGA_DIRECTA; modo--) {
+        static const char *const sufijo[] = {"rep", "rdpq_tex", "exec"};
+        snprintf(rep, sizeof rep, "%s_%s", nombre, sufijo[modo]);
+        memcpy(&sim, copia, sizeof sim);
+        mapa_n64_modo_carga = modo;
+        recorrido_medido(rep, v, fotogramas, horas_por_s_x10, true);
+    }
+    mapa_n64_modo_carga = MAPA_N64_CARGA_DIRECTA;
+}
+
+// Píxeles distintos entre el fotograma con la carga directa y con las otras dos.
+static void comparar_cargas(th_view v)
+{
+    uint16_t *ref = malloc(ANCHO * ALTO * sizeof(uint16_t));
+    assertf(ref, "sin memoria para comparar las cargas");
+    for (int modo = MAPA_N64_CARGA_DIRECTA; modo <= MAPA_N64_CARGA_EXEC; modo++) {
+        mapa_n64_modo_carga = modo;
+        surface_t *pantalla = display_get();
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        medida_t m;
+        dibujar_escena(&v, &m);
+        rdpq_detach_wait();
+        const uint16_t *px = pantalla->buffer;
+        int distintos = 0;
+        for (int y = 0; y < ALTO; y++)
+            for (int x = 0; x < ANCHO; x++) {
+                const uint16_t c = px[y * (pantalla->stride / 2) + x];
+                if (modo == MAPA_N64_CARGA_DIRECTA)
+                    ref[y * ANCHO + x] = c;
+                else
+                    distintos += c != ref[y * ANCHO + x];
+            }
+        display_show(pantalla);
+        if (modo != MAPA_N64_CARGA_DIRECTA)
+            debugf("TH64 hito5: carga %s frente a la directa: %d pixeles distintos de %d (%d cargas)\n",
+                   modo == MAPA_N64_CARGA_RDPQ_TEX ? "rdpq_tex_upload" : "exec", distintos, ANCHO * ALTO, m.st.cargas);
+    }
+    free(ref);
+    mapa_n64_modo_carga = MAPA_N64_CARGA_DIRECTA;
 }
 
 static void medir_hito5(void)
@@ -946,11 +1105,16 @@ static void medir_hito5(void)
     const th_view v = vista_con_mas_gente(&cuantas);
     debugf("TH64 hito5: hora %lu: %d pacientes en el mapa, %d personas; la camara (%d,%d) ve a %d\n",
            (unsigned long)sim.hours, pacientes, sim.n_order, v.x, v.y, cuantas);
+    mapa_n64_medir_cargas(&sprites, paletas.colores[PALETA_NORMAL]);
+    comparar_cargas(v);
+    medir_lista(v);
     musica_empezar();
     PASO("con la música sonando", true);
-    recorrido_medido("normal", v, 900, 185);
-    recorrido_medido("max", v, 300, 278);
-    recorrido_medido("mas", v, 300, 556);
+    // Cada velocidad sin repartir y repartida (simulacion.h), con las mismas
+    // horas; la Normal, también con las otras dos cargas de textura.
+    par_de_recorridos("normal", v, 900, 185, true);
+    par_de_recorridos("max", v, 300, 278, false);
+    par_de_recorridos("mas", v, 300, 556, false);
     mixer_close(); // la música para: el resto no la necesita
     while ((int)sim.hours < horas_total)
         tick_medido();
@@ -1155,7 +1319,9 @@ int main(void)
     if (assets && cargar_hospital(1)) {
         for (int i = 0; i < TH_HOSPITAL_HORAS; i++)
             th_sim_tick(&sim);
-        sim.temp_defer = 1; // la pasada de temperatura, entre fotogramas
+        // La simulación, repartida entre fotogramas (simulacion.h).
+        simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
+        repartida = true;
         v = vista_hospital();
         int plantilla = 0;
         for (int k = 0; k < sim.n_order; k++)
@@ -1176,7 +1342,7 @@ int main(void)
     float cpu_ms = 0, lista_ms = 0, sim_ms = 0, rdp_buf_ms = 0, rdp_pipe_ms = 0;
     mapa_n64_stats_t st = {0};
     sim_t s = {0};
-    uint32_t reloj = get_ticks(), acumulado = 0, t_temp = 0;
+    uint32_t reloj = get_ticks(), acumulado = 0, t_rep = 0;
     const uint32_t por_tick = TICKS_PER_SECOND / 1000 * MS_POR_TICK;
     for (;;) {
         joypad_poll();
@@ -1220,23 +1386,25 @@ int main(void)
 
         surface_t *pantalla = display_get();
         uint32_t t0 = get_ticks();
-        // El mundo avanza un tick cada 54 ms de reloj (como mucho 4 por fotograma).
+        // El mundo avanza un tick cada 54 ms de reloj (como mucho 4 por
+        // fotograma). El hospital pide los ticks a la simulación repartida, que
+        // los hace después de dibujar; si va atrasada más de dos fotogramas de
+        // ticks, no se piden más: el juego va más despacio, sin saltar fotogramas.
         acumulado += t0 - reloj;
         reloj = t0;
-        uint32_t sim0 = s.cpu_ticks + s.cpu_caminos, t_sim = 0;
+        uint32_t sim0 = s.cpu_ticks + s.cpu_caminos;
         for (int k = 0; assets && acumulado * velocidad >= por_tick && k < 4 * velocidad; k++) {
             acumulado -= por_tick / velocidad;
             if (hospital) {
-                const uint32_t t = get_ticks();
-                th_sim_tick(&sim);
-                t_sim += get_ticks() - t;
+                if (simulacion_pendientes() <= 2 * velocidad)
+                    simulacion_pedir(1);
             } else {
                 tick_mundo(&s);
             }
         }
         if (acumulado >= por_tick)
             acumulado = 0;
-        uint32_t sim_cpu = s.cpu_ticks + s.cpu_caminos - sim0 + t_sim + t_temp;
+        uint32_t sim_cpu = s.cpu_ticks + s.cpu_caminos - sim0 + t_rep;
         if (hospital && seguir) {
             const int p = ultimo_paciente();
             if (p >= 0)
@@ -1296,6 +1464,10 @@ int main(void)
         if (hospital)
             dibujar_marcador();
         rdpq_detach_show();
-        t_temp = hospital ? temperatura_hasta(t0 + TICKS_FROM_MS(26)) : 0;
+        if (hospital) {
+            const uint32_t cpu0 = simulacion_stats()->cpu;
+            simulacion_avanzar(t0 + TICKS_FROM_MS(28));
+            t_rep = simulacion_stats()->cpu - cpu0;
+        }
     }
 }

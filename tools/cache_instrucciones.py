@@ -23,10 +23,13 @@ CACHE, LINEA = 16384, 32
 # libdragon. Solo se miran los choques entre unas y otras, que son los que
 # cambian al crecer el motor (los de libdragon entre sí no los mueve nada).
 GRUPOS = {
-    # Un rectángulo por sprite: suelos, paredes y entidades.
-    "dibujo": (["dibujar", "mapa_n64_dibujar"],
+    # Un rectángulo por sprite (suelos, paredes y entidades) y, en casi cada
+    # uno, la carga de su textura (cargar, si no está dentro de dibujar).
+    "dibujo": (["dibujar", "mapa_n64_dibujar", "cargar"],
                ["__rdpq_texture_rectangle", "__rdpq_texture_rectangle_offline",
-                "__rdpq_texture_rectangle_scaled_offline"]),
+                "__rdpq_texture_rectangle_scaled_offline", "__rdpq_fixup_write8_syncchange",
+                "__rdpq_write8_syncchangeuse", "__rdpq_write8_syncchange", "__rdpq_autosync_change",
+                "__rdpq_write8"]),
 }
 
 

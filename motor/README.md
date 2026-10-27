@@ -6,7 +6,7 @@ Motor propio en C sobre libdragon (fase 5). La lógica de CorsixTH v0.70.1 sirve
 |---|---|
 | `core/` | Núcleo de la simulación en C portable (gnu17): sin libdragon, solo enteros y coma fija Q16.16, pools de tamaño fijo. Compila igual en el PC y en la N64 |
 | `vista/` | La vista del mapa en C portable: proyección isométrica, lista de sprites en el orden de dibujo de CorsixTH y un rasterizador por software que sirve de referencia. La usan la N64 y `th64sim` |
-| `platform/n64/` | Capa de la consola: vídeo, RDP, mandos, sonido, ficheros |
+| `platform/n64/` | Capa de la consola: vídeo, RDP, mandos, sonido, ficheros. La simulación va en una corrutina repartida entre fotogramas (`simulacion.c`), y el dibujo con el RDP está en `mapa_n64.c` |
 | `platform/pc/` | `th64sim`, el núcleo en el PC sin pantalla |
 | `tests/` | Pruebas del núcleo (`th_test.h`), las mismas en el PC y en la ROM |
 | `filesystem/` | Assets de la ROM. Los genera el conversor a partir de los datos del juego de cada usuario; no están en el repositorio |
@@ -40,7 +40,7 @@ Las tres últimas las usan [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.
 Con el escenario del hito 4 en `assets/escenarios/hito4.trg` (lo copia `tools/oraculo_hito4/motor.sh`), la ROM normal abre el hospital en marcha, con el dinero y la fecha abajo:
 - el stick o la cruceta mueven la cámara;
 - A sigue al último paciente que ha llegado o deja de seguirlo;
-- Z alterna entre velocidad Normal (un tick, una hora de juego, cada 54 ms) y 8 veces más deprisa;
+- Z alterna entre velocidad Normal (un tick, una hora de juego, cada 54 ms) y 8 veces más deprisa. La simulación avanza en el tiempo que le sobra a cada fotograma: si no le da tiempo, el juego va más despacio, pero sin saltar fotogramas;
 - R oculta los datos; L mide el tiempo del RDP.
 
 Sin el escenario, la ROM normal abre el visor del mapa con un humanoide que pasea por él:
