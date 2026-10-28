@@ -70,7 +70,8 @@ static int uso(void)
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
             "       mezcla.pgm: 255 donde el último sprite pintado era semitransparente (sombras)\n"
             "       --giro=r (vista, escena4 y lista): la cámara girada r × 90°, con el mismo centro; con\n"
-            "         --camara-girada, x e y son ya las de la vista girada\n",
+            "         --camara-girada, x e y son ya las de la vista girada\n"
+            "       --sin-sombras (vista, escena4 y lista): sin las sombras del mapa\n",
             TH64_VERSION);
     return 2;
 }
@@ -416,12 +417,15 @@ static int cargar_hoja(const char *ruta, th_sheet *h, uint8_t **datos)
 }
 
 // --giro=r: la cámara girada r veces 90° (hito 6.2), con el mismo punto
-// del mundo en el centro de la pantalla.
-static int giro, camara_girada;
+// del mundo en el centro de la pantalla. --sin-sombras: sin las sombras del
+// mapa, para comparar las vistas giradas con CorsixTH, que las dibuja con la
+// luz girada (hito 6.2b).
+static int giro, camara_girada, sin_sombras;
 static th_rot_map mapa_girado;
 
 static void aplicar_giro(th_view *v, th_scene *sc)
 {
+    sc->no_shadows = sin_sombras;
     if (!giro)
         return;
     if (!camara_girada) { // --camara-girada: x e y ya son de la vista girada
@@ -429,7 +433,7 @@ static void aplicar_giro(th_view *v, th_scene *sc)
         th_view_clamp(v); // como la ROM (girar_camara)
     }
     th_rot_map_update(&mapa_girado, sc->map, giro);
-    sc->rot_tiles = mapa_girado.tiles;
+    sc->rot = &mapa_girado;
 }
 
 static int orden_vista(int argc, char **argv)
@@ -975,8 +979,9 @@ static int orden_lista(int argc, char **argv)
 }
 
 // Las tablas de piezas giradas (girar.h), para el oráculo de las vistas
-// (bench/scenarios/captura_girada.lua): «giro bloque suelo capa», con las
-// banderas TH_ROT_* en los números.
+// (bench/scenarios/captura_girada.lua): «giro bloque suelo capa pareja», con
+// las banderas TH_ROT_* en los números; la pareja es la de la pared en espejo
+// (th_wall_mirror), que es la misma en todos los giros.
 static int orden_tabla_giro(char **argv)
 {
     FILE *f = fopen(argv[2], "w");
@@ -984,7 +989,7 @@ static int orden_tabla_giro(char **argv)
         return 1;
     for (int r = 1; r <= 3; r++)
         for (int b = 0; b < 256; b++)
-            fprintf(f, "%d\t%d\t%u\t%u\n", r, b, th_rot_floor(r, b), th_rot_layer(r, b));
+            fprintf(f, "%d\t%d\t%u\t%u\t%d\n", r, b, th_rot_floor(r, b), th_rot_layer(r, b), th_wall_mirror(b));
     fclose(f);
     return 0;
 }
@@ -993,11 +998,14 @@ int main(int argc, char **argv)
 {
     // Opciones que valen para cualquier orden: se quitan de argv.
     for (int i = 1; i < argc; i++)
-        if (strncmp(argv[i], "--giro=", 7) == 0 || strcmp(argv[i], "--camara-girada") == 0) {
+        if (strncmp(argv[i], "--giro=", 7) == 0 || strcmp(argv[i], "--camara-girada") == 0 ||
+            strcmp(argv[i], "--sin-sombras") == 0) {
             if (argv[i][2] == 'g')
                 giro = atoi(argv[i] + 7) & 3;
-            else
+            else if (argv[i][2] == 'c')
                 camara_girada = 1;
+            else
+                sin_sombras = 1;
             memmove(&argv[i], &argv[i + 1], (size_t)(argc - i) * sizeof argv[0]);
             argc--;
             i--;

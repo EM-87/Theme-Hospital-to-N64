@@ -82,6 +82,8 @@ def paso_graficos(d, salida, vistas, resumen):
         except FileNotFoundError:
             continue
         sprites = hojas.leer(tab, dat, hojas.es_compleja(n))
+        if n == "MBLK-0":  # más la sombra sobre una pared oeste de las vistas giradas
+            sprites = hojas.con_sombra_oeste(sprites, 16)
         tsh = hojas.escribir(sprites)
         # Comprobación de ida y vuelta: el fichero escrito devuelve los mismos píxeles.
         if hojas.leer_tsh(tsh) != sprites:

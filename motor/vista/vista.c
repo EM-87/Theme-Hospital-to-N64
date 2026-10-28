@@ -68,6 +68,9 @@ typedef struct {
     int f, b;               // siguiente hueco de suelo (sube) y de pared (baja)
     const uint8_t *wh_de;   // los datos de la hoja de bloques de w y h (se reconoce por ellos)
     int16_t w[256], h[256]; // tamaños de los bloques, leídos una vez por hoja
+    int flip_dx;            // corrección de los suelos y el decorado en espejo (ver espejo_suelo)
+    int rot;                // la rotación de la cámara (0 sin mapa girado)
+    int no_shadows;
     // Entidades cerca de la pantalla, ordenadas por casilla y orden de dibujo,
     // y un bit por casilla con alguna (para no buscar en las vacías).
     uint16_t ent[TH_VIEW_MAX_ENTITIES];
@@ -152,30 +155,97 @@ static inline int add_layer(builder *bd, int wall, int block, int sx, int sy)
     return add_block(bd, wall, block, sx - bd->v->unit, sy - bd->h[block] + bd->v->unit);
 }
 
-// Lo mismo, en espejo si flip (las piezas sustitutas de las vistas giradas).
-static inline int add_layer_flip(builder *bd, int wall, int block, int sx, int sy, int flip)
+// Lo mismo, en espejo si flip (las piezas sustitutas de las vistas giradas):
+// los suelos y el decorado, con la corrección de flip_dx; las paredes, sin
+// ella, porque la pareja en espejo de una pared tiene su forma tal cual
+// (girar.h).
+static inline int add_layer_flip_dx(builder *bd, int wall, int block, int sx, int sy, int flip, int dx)
 {
     if (!flip)
         return add_layer(bd, wall, block, sx, sy);
-    return add_sprite(bd, wall, TH_SHEET_BLOCKS, block, bd->w[block], bd->h[block], sx - bd->v->unit,
+    return add_sprite(bd, wall, TH_SHEET_BLOCKS, block, bd->w[block], bd->h[block], sx - bd->v->unit + dx,
                       sy - bd->h[block] + bd->v->unit, TH_DRAW_FLIP_H, 0, 0);
 }
 
-// draw_north_wall: la pared norte y, si hay, la sombra sobre ella recortada a
-// su altura. En las vistas giradas, después, el decorado de la capa norte.
-// vflags son las banderas TH_VT_* de la casilla.
-static int add_north_wall(builder *bd, int wall_n, int sc_n, int vflags, int sx, int sy)
+static inline int add_layer_flip(builder *bd, int wall, int block, int sx, int sy, int flip)
+{
+    return add_layer_flip_dx(bd, wall, block, sx, sy, flip, bd->flip_dx);
+}
+
+// El espejo de un sprite le da la vuelta dentro de su rectángulo: la columna
+// c pasa a la w − 1 − c. El rombo de una casilla, en cambio, es simétrico
+// respecto a la columna de su vértice norte. En DATA (u = 32) el rombo ocupa
+// las columnas 1 a 62 de 64 y las dos cosas coinciden; en DATAM (u = 16)
+// ocupa de la 1 a la 31 de 32, y el espejo del sprite queda una columna a la
+// izquierda de donde estaría el espejo del rombo (los suelos y los setos en
+// espejo de las vistas giradas casan con su pareja dibujada una columna a la
+// derecha). Se mide en el bloque 74, la sombra de toda la casilla.
+static int espejo_suelo(const th_sheet *blocks)
+{
+    int w, h;
+    th_sheet_size(blocks, TH_BLOCK_SHADOW_FULL, &w, &h);
+    if (!w)
+        return 0;
+    const uint8_t *px = th_sheet_pixels(blocks, TH_BLOCK_SHADOW_FULL);
+    int c0 = w, c1 = -1;
+    for (int y = 0; y < h; y++, px += th_sheet_stride(w))
+        for (int x = 0; x < w; x++)
+            if (px[x] != TH_TRANSPARENT) {
+                c0 = x < c0 ? x : c0;
+                c1 = x > c1 ? x : c1;
+            }
+    return c1 < c0 ? 0 : c0 + c1 - (w - 1);
+}
+
+// La sombra del suelo de una casilla: toda (el bloque 74) o media. La media
+// es, en el mundo, el triángulo de las esquinas noroeste, suroeste y noreste
+// (el bloque 75: la mitad de arriba del rombo). Con la cámara girada, ese
+// triángulo es otra mitad del rombo: la derecha (rot 1), la de abajo (2) o
+// la izquierda (3). Se dibuja el bloque 74 recortado a esa mitad.
+static int add_floor_shadow(builder *bd, int vflags, int sx, int sy)
 {
     const int u = bd->v->unit;
-    if (add_layer(bd, 1, wall_n, sx, sy) < 0)
+    if (vflags & TH_VT_SHADOW_FULL)
+        return add(bd, 0, TH_BLOCK_SHADOW_FULL, sx - u, sy, TH_DRAW_ALPHA25, 0, 0);
+    if (!(vflags & TH_VT_SHADOW_HALF))
+        return 0;
+    const int b = TH_BLOCK_SHADOW_FULL, w = bd->w[b], h = bd->h[b];
+    switch (bd->rot) {
+    case 1:
+        return add_sprite_crop(bd, 0, TH_SHEET_BLOCKS, b, w, h, sx - u, sy, TH_DRAW_ALPHA25 | TH_DRAW_CROP, 0, 0, sx,
+                               sx + u);
+    case 2:
+        return add_sprite(bd, 0, TH_SHEET_BLOCKS, b, w, h, sx - u, sy, TH_DRAW_ALPHA25 | TH_DRAW_CLIP, sy + u / 2,
+                          sy + u);
+    case 3:
+        return add_sprite_crop(bd, 0, TH_SHEET_BLOCKS, b, w, h, sx - u, sy, TH_DRAW_ALPHA25 | TH_DRAW_CROP, 0, 0,
+                               sx - u, sx);
+    default:
+        return add(bd, 0, TH_BLOCK_SHADOW_HALF, sx - u, sy, TH_DRAW_ALPHA25, 0, 0);
+    }
+}
+
+// La sombra sobre una pared de altura h (draw_north_wall): recortada a la
+// altura de la pared.
+static int add_wall_shadow(builder *bd, int block, int h, int sx, int sy)
+{
+    const int u = bd->v->unit;
+    const int c0 = sy - h + u + u / 8;
+    return add(bd, 1, block, sx - u, sy - 56 * u / 32, TH_DRAW_ALPHA25 | TH_DRAW_CLIP, c0, c0 + 82 * u / 32);
+}
+
+// draw_north_wall: la pared norte y, si hay, la sombra sobre ella recortada a
+// su altura. En las vistas giradas, la pared va en espejo si lo pide la luz
+// (th_rot_wall_flip) y, después, el decorado de la capa norte. vflags son las
+// banderas TH_VT_* de la casilla.
+static int add_north_wall(builder *bd, int wall_n, int sc_n, int vflags, int sx, int sy)
+{
+    if (add_layer_flip_dx(bd, 1, wall_n, sx, sy, wall_n && th_rot_wall_flip(bd->rot, 0), 0) < 0)
         return -1;
     const int h = bd->h[wall_n];
-    if (wall_n && h > 0 && (vflags & TH_VT_SHADOW_WALL)) {
-        int c0 = sy - h + u + u / 8;
-        if (add(bd, 1, TH_BLOCK_SHADOW_WALL, sx - u, sy - 56 * u / 32, TH_DRAW_ALPHA25 | TH_DRAW_CLIP, c0,
-                c0 + 82 * u / 32) < 0)
-            return -1;
-    }
+    if (wall_n && h > 0 && (vflags & TH_VT_SHADOW_WALL) && !bd->no_shadows &&
+        add_wall_shadow(bd, TH_BLOCK_SHADOW_WALL, h, sx, sy) < 0)
+        return -1;
     if (sc_n && add_layer_flip(bd, 1, sc_n, sx, sy, vflags & TH_VT_FLIP_SC_N) < 0)
         return -1;
     return 0;
@@ -322,7 +392,9 @@ static int line_range(const th_view *v, int s, int margin, int *x0, int *x1)
 #define T_WALL_W(i) (g ? gt[(i) * paso].wall_w : mt[(i) * paso].wall_w)
 #define T_SC_N(i) (g ? gt[(i) * paso].sc_n : 0)
 #define T_SC_W(i) (g ? gt[(i) * paso].sc_w : 0)
-#define T_FLAGS(i) (g ? gt[(i) * paso].flags : (int)((mt[(i) * paso].flags >> 11) & 7)) // TH_TILE_SHADOW_* → TH_VT_*
+// Las banderas TH_VT_*: las del mapa girado o, en el mapa, las de sombra
+// (TH_TILE_SHADOW_*, que están en el mismo orden).
+#define T_FLAGS(i) (g ? gt[(i) * paso].flags : (int)((mt[(i) * paso].flags >> 11) & 7))
 
 // Una línea de casillas (x + y = s) de x0 a x1. Se compila dos veces, una
 // para el mapa y otra para el mapa girado: la vista original no paga nada.
@@ -334,7 +406,7 @@ static inline __attribute__((always_inline)) int scene_line(builder *bd, int s, 
     const int u = v->unit, half = v->unit / 2;
     const int paso = 1 - TH_MAP_WIDTH; // x + 1, y − 1
     const th_tile *mt = g ? NULL : th_map_tile_c(sc->map, x0, s - x0);
-    const th_vtile *gt = g ? sc->rot_tiles + (s - x0) * TH_MAP_WIDTH + x0 : NULL;
+    const th_vtile *gt = g ? sc->rot->tiles + (s - x0) * TH_MAP_WIDTH + x0 : NULL;
     // En la línea s, la casilla x está en (u·(2x − s) − v->x, u/2·s − v->y).
     const int sy = half * s - v->y;
     const int sx0 = u * (2 * x0 - s) - v->x;
@@ -343,10 +415,8 @@ static inline __attribute__((always_inline)) int scene_line(builder *bd, int s, 
     // Suelos y sombras del suelo (draw_floor), de izquierda a derecha.
     for (i = 0, sx = sx0; i <= n; i++, sx += 2 * u) {
         const int fl = T_FLAGS(i);
-        if (add_layer_flip(bd, 0, T_FLOOR(i), sx, sy, fl & TH_VT_FLIP_FLOOR) < 0)
-            return -1;
-        int sombra = fl & TH_VT_SHADOW_FULL ? TH_BLOCK_SHADOW_FULL : fl & TH_VT_SHADOW_HALF ? TH_BLOCK_SHADOW_HALF : 0;
-        if (sombra && add(bd, 0, sombra, sx - u, sy, TH_DRAW_ALPHA25, 0, 0) < 0)
+        if (add_layer_flip(bd, 0, T_FLOOR(i), sx, sy, fl & TH_VT_FLIP_FLOOR) < 0 ||
+            (!bd->no_shadows && add_floor_shadow(bd, fl, sx, sy) < 0))
             return -1;
     }
     // Paredes norte de derecha a izquierda, cada una con las entidades de
@@ -361,9 +431,15 @@ static inline __attribute__((always_inline)) int scene_line(builder *bd, int s, 
     int prev_needs_redraw = 0;
     for (i = 0, sx = sx0; i <= n; i++, sx += 2 * u) {
         const int x = x0 + i, y = s - x;
-        const int wall_n = T_WALL_N(i), sc_n = T_SC_N(i), sc_w = T_SC_W(i);
-        if (add_layer(bd, 1, T_WALL_W(i), sx, sy) < 0 ||
-            (sc_w && add_layer_flip(bd, 1, sc_w, sx, sy, T_FLAGS(i) & TH_VT_FLIP_SC_W) < 0))
+        const int wall_n = T_WALL_N(i), wall_w = T_WALL_W(i), sc_n = T_SC_N(i), sc_w = T_SC_W(i);
+        if (add_layer_flip_dx(bd, 1, wall_w, sx, sy, g && wall_w && th_rot_wall_flip(bd->rot, 1), 0) < 0)
+            return -1;
+        // Con la cámara girada 3 veces, la sombra de la pared norte del mundo
+        // cae en una pared oeste de la vista (el bloque 226).
+        if (g && (T_FLAGS(i) & TH_VT_SHADOW_WALL_W) && wall_w && bd->h[wall_w] > 0 && !bd->no_shadows &&
+            add_wall_shadow(bd, TH_BLOCK_SHADOW_WALL_W, bd->h[wall_w], sx, sy) < 0)
+            return -1;
+        if (sc_w && add_layer_flip(bd, 1, sc_w, sx, sy, T_FLAGS(i) & TH_VT_FLIP_SC_W) < 0)
             return -1;
         int needs_redraw = (wall_n && bd->h[wall_n] > 0) || (sc_n && bd->h[sc_n] > 0);
         int animated = 0;
@@ -432,8 +508,11 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
             bd.w[i] = (int16_t)w;
             bd.h[i] = (int16_t)h;
         }
+        bd.flip_dx = espejo_suelo(blocks);
         bd.wh_de = blocks->data;
     }
+    bd.rot = sc->rot ? sc->rot->rot : 0;
+    bd.no_shadows = sc->no_shadows;
     // Líneas cuyo rombo (sy a sy + u) o sprite más alto pueden tocar la
     // pantalla; con entidades, hasta 150 píxeles de 640 × 480 por debajo.
     int below = blocks->max_height, margin = 2 * u;
@@ -478,7 +557,7 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
         int x0, x1;
         if (!line_range(v, s, margin, &x0, &x1))
             continue;
-        if ((sc->rot_tiles ? scene_line(&bd, s, x0, x1, first, 1) : scene_line(&bd, s, x0, x1, first, 0)) < 0)
+        if ((sc->rot ? scene_line(&bd, s, x0, x1, first, 1) : scene_line(&bd, s, x0, x1, first, 0)) < 0)
             return -1;
         first = 0;
     }

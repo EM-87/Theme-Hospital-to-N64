@@ -8,8 +8,10 @@
 //   - las paredes van por bordes y pasan al borde girado, con la cara que ve
 //     la cámara (la interior o la exterior de la sala) y, en las ventanas de
 //     dos casillas y las puertas dobles, la mitad que toca;
-//   - las sombras se recalculan con las paredes giradas, como las calcula
-//     CorsixTH (th_map_update_shadows).
+//   - el sol no gira (hito 6.2b): las sombras son las del mundo
+//     (th_map_update_shadows), con su forma girada, y cada pared se dibuja con
+//     la pieza normal o con la de su pareja en espejo, según la cara que ve la
+//     cámara esté al sol o a la sombra (th_rot_wall_flip).
 // El núcleo no sabe nada de esto: solo se lee el mapa.
 //
 // La rotación r lleva la casilla (x, y) del mundo a la casilla de la vista:
@@ -31,18 +33,19 @@ typedef struct th_vtile {
 } th_vtile;
 
 enum {
-    TH_VT_SHADOW_HALF = 1, // como TH_TILE_SHADOW_*, en la vista
-    TH_VT_SHADOW_FULL = 2,
-    TH_VT_SHADOW_WALL = 4,
-    TH_VT_FLIP_FLOOR = 8, // suelo en espejo
-    TH_VT_FLIP_SC_N = 16, // decorado en espejo
+    TH_VT_SHADOW_HALF = 1, // como TH_TILE_SHADOW_*: media sombra en el suelo (su forma depende de la vista)
+    TH_VT_SHADOW_FULL = 2, // sombra en todo el suelo
+    TH_VT_SHADOW_WALL = 4, // sombra sobre la pared norte (solo en la vista original)
+    TH_VT_FLIP_FLOOR = 8,  // suelo en espejo
+    TH_VT_FLIP_SC_N = 16,  // decorado en espejo
     TH_VT_FLIP_SC_W = 32,
-    TH_VT_TALL_N = 64, // objeto alto junto al borde (como TH_TILE_TALL_*), para las sombras
-    TH_VT_TALL_W = 128,
+    TH_VT_SHADOW_WALL_W = 64, // sombra sobre la pared oeste (con la cámara girada 3 veces)
 };
 
 // El mapa visto con la cámara girada (rot de 1 a 3). Son 96 KiB: solo hace
-// falta mientras la vista está girada.
+// falta mientras la vista está girada. Las paredes ya van con la luz de la
+// vista: wall_n y wall_w son la pieza que se dibuja, en espejo si lo dice
+// th_rot_wall_flip.
 typedef struct th_rot_map {
     th_vtile tiles[TH_MAP_WIDTH * TH_MAP_HEIGHT]; // por filas de la vista
     const th_map *map;                            // de qué mapa
@@ -62,6 +65,24 @@ static inline int th_rot_dir(int rot, int dir)
 {
     return (dir + rot) & 3;
 }
+
+// El sol de TH está al suroeste: las paredes de borde norte (su cara sur) están
+// pintadas al sol y las de borde oeste (su cara este), a la sombra. La cámara
+// ve, de cada pared, la cara que mira al sur o al este de la vista; en el
+// mundo es la que mira al sur o al este menos rot. Si esa cara no tiene la
+// luz de la pieza, la pared se dibuja con la pieza de su pareja (la del otro
+// borde, th_wall_mirror) en espejo, que tiene la misma forma y la otra luz:
+//   rot 0: como TH;  1: todas a la sombra;  2: al revés;  3: todas al sol.
+static inline int th_rot_wall_flip(int rot, int west)
+{
+    rot &= 3;
+    return west ? rot == 2 || rot == 3 : rot == 1 || rot == 2;
+}
+
+// La pareja de una pared en espejo: la misma pieza en el otro borde (norte u
+// oeste), con la mitad de pantalla cambiada (en espejo, la izquierda pasa a
+// la derecha). Si no es una pared, el mismo bloque.
+int th_wall_mirror(int block);
 
 // Un desplazamiento en píxeles de pantalla (de 640 × 480: px = 32·(dx − dy),
 // py = 16·(dx + dy) para un desplazamiento (dx, dy) en casillas) girado.

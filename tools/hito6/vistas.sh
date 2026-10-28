@@ -10,7 +10,11 @@
 #   4. para cada zona y cada vista, la captura de CorsixTH con el hospital
 #      girado (bench/scenarios/captura_girada.lua), lo mismo con el motor
 #      (th64sim escena4 --giro, con la cámara de la captura) y la comparación
-#      (comparar_giro.py).
+#      (comparar_giro.py). Desde el hito 6.2b, sin sombras en los dos: el sol
+#      del motor no gira y CorsixTH solo sabe dibujarlas con la luz girada
+#      (las del motor se comprueban en motor/tests/test_vista.c). El motor
+#      escribe además la vista con sombras (motor_<zona>_<vista>_sombras.ppm),
+#      para mirarla.
 #
 # Uso: tools/hito6/vistas.sh [zonas] [dir]
 #   zonas: casillas del mundo en el centro, «x,y» separadas por espacios; por
@@ -26,7 +30,11 @@ ALTA=$TH64_WORK/resultados/alta
 SIM=$REPO_DIR/motor/build/pc/th64sim
 A=$REPO_DIR/motor/assets
 TRG=$A/escenarios/vistas.trg
-[ -f "$ALTA/vblk-0.tsh" ] || python3 -I "$REPO_DIR/tools/oraculo_mapa/alta.py" "$ALTA" > /dev/null
+# Los gráficos de alta resolución, si no están o si son de antes del hito 6.2b
+# (sin el bloque 226).
+if [ ! -f "$ALTA/vblk-0.tsh" ] || [ "$(od -An -j4 -N2 -tu1 "$ALTA/vblk-0.tsh" | tr -s ' ')" != " 0 227" ]; then
+  python3 -I "$REPO_DIR/tools/oraculo_mapa/alta.py" "$ALTA" > /dev/null
+fi
 mkdir -p "$V/saves" "$V/oraculo"
 
 if [ ! -f "$V/saves/vistas.sav" ]; then
@@ -54,7 +62,9 @@ for c in $ZONAS; do
     read -r _ x y _ sustitutos < "$O/captura_$n.png.txt"
     "$SIM" escena4 "$REPO_DIR/motor/assets" "$TRG" "$ALTA/vblk-0.tsh" "$ALTA/vspr-0.tsh" "$ALTA/animaciones.tan" \
       "$ALTA/mpalette.dat" 32 "$x" "$y" 640 480 0 0 "$O/motor_$n.ppm" "$O/motor_${n}_mezcla.pgm" \
-      "$O/motor_${n}_ent.pgm" --giro=$g --camara-girada > /dev/null
+      "$O/motor_${n}_ent.pgm" --giro=$g --camara-girada --sin-sombras > /dev/null
+    "$SIM" escena4 "$REPO_DIR/motor/assets" "$TRG" "$ALTA/vblk-0.tsh" "$ALTA/vspr-0.tsh" "$ALTA/animaciones.tan" \
+      "$ALTA/mpalette.dat" 32 "$x" "$y" 640 480 0 0 "$O/motor_${n}_sombras.ppm" --giro=$g --camara-girada > /dev/null
     echo "zona $c, vista $g ($sustitutos objetos sustitutos):"
     python3 -I "$REPO_DIR/tools/hito6/comparar_giro.py" "$O/captura_$n.png" "$O/motor_$n.ppm" \
       "$O/motor_${n}_ent.pgm" "$O/motor_${n}_mezcla.pgm" "$O/dif_$n.png" | sed 's/^/   /' || malas=$((malas + 1))

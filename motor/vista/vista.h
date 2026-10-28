@@ -39,8 +39,15 @@ static inline int th_sheet_stride(int w)
 
 #define TH_TRANSPARENT 255 // índice de color transparente
 
-// Bloques especiales de la hoja de bloques del mapa (MBLK / VBLK).
-enum { TH_BLOCK_SHADOW_FULL = 74, TH_BLOCK_SHADOW_HALF = 75, TH_BLOCK_SHADOW_WALL = 156 };
+// Bloques especiales de la hoja de bloques del mapa (MBLK / VBLK). El 226 no
+// está en los datos: lo añade el conversor (tools/conv/hojas.py) para las
+// vistas giradas, y es la sombra del 156 sobre la cara de una pared oeste.
+enum {
+    TH_BLOCK_SHADOW_FULL = 74,
+    TH_BLOCK_SHADOW_HALF = 75,
+    TH_BLOCK_SHADOW_WALL = 156,
+    TH_BLOCK_SHADOW_WALL_W = 226,
+};
 
 // Hojas de las que sale cada sprite de la lista: las del mapa y las de la
 // interfaz (ui/), cada una de alta resolución (CorsixTH) o baja (la N64).
@@ -111,11 +118,13 @@ typedef struct th_view_entity {
 #define TH_VIEW_MAX_ENTITIES 512 // entidades que pueden caer cerca de la pantalla
 
 // Todo lo que se dibuja: el mapa, sus hojas y las entidades. Con la cámara
-// girada, rot_tiles es el mapa girado (th_rot_map) y las entidades van en
-// casillas de la vista; si es NULL, se dibuja el mapa tal cual.
+// girada, rot es el mapa girado y las entidades van en casillas de la vista;
+// si es NULL, se dibuja el mapa tal cual. Con no_shadows, sin sombras (para
+// comparar las vistas giradas con CorsixTH, que no sabe dibujarlas).
 typedef struct th_scene {
     const th_map *map;
-    const th_vtile *rot_tiles;
+    const th_rot_map *rot;
+    int no_shadows;
     const th_sheet *sheets[TH_SHEETS];
     const th_anims *anims;
     const th_view_entity *entities;

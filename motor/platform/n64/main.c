@@ -486,12 +486,12 @@ static void dibujar_escena(const th_view *v, medida_t *m)
             entidades[n++] = entidad_de(&humanoides[i]);
     }
     // Con la cámara girada, el mapa girado (al día: el mapa puede cambiar).
-    const th_vtile *giradas = NULL;
+    const th_rot_map *giradas = NULL;
     if (giro && mapa_girado) {
         th_rot_map_update(mapa_girado, &mapa, giro);
-        giradas = mapa_girado->tiles;
+        giradas = mapa_girado;
     }
-    th_scene sc = {.map = &mapa, .rot_tiles = giradas, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims,
+    th_scene sc = {.map = &mapa, .rot = giradas, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims,
                    .entities = ents, .entity_count = n};
     n = th_view_scene(v, &sc, &lista);
     assertf(n >= 0, "la lista de dibujo no cabe");
@@ -1186,7 +1186,7 @@ static void medir_lista(th_view v)
         for (int k = 0; k < VECES; k++)
             ne = th_vista_sim_rot(&sim, r, entidades, (int)(sizeof entidades / sizeof entidades[0]));
         const uint32_t m2 = get_ticks();
-        th_scene sg = {.map = &mapa, .rot_tiles = r ? mapa_girado->tiles : NULL,
+        th_scene sg = {.map = &mapa, .rot = r ? mapa_girado : NULL,
                        .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims, .entities = entidades,
                        .entity_count = ne};
         for (int k = 0; k < VECES; k++)

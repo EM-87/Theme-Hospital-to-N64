@@ -11,7 +11,7 @@ Este repositorio **no contiene datos del juego**. Cada usuario aporta los suyos,
 - Fase 3, arquitectura de CorsixTH y reutilización: [`docs/03_arquitectura.md`](docs/03_arquitectura.md)
 - Fase 4, decisión (camino, RAM, recortes, controles, riesgos): [`docs/04_decision.md`](docs/04_decision.md), y cómo se construye el motor (herramientas, APIs, método, fidelidad, modo demo): [`docs/04_construccion.md`](docs/04_construccion.md)
 - Fase 5, prototipos en N64: [`docs/05_prototipo.md`](docs/05_prototipo.md). El hospital mínimo (recepción, consulta, cobro y salida) funciona en la ROM con la misma simulación que en el PC, comparado con CorsixTH, y con 50 pacientes a 30 fps
-- Fase 6, juego base (el nivel 1 jugable), en curso: plan en [`docs/06_plan.md`](docs/06_plan.md) y cifras de cada hito en [`docs/06_juego_base.md`](docs/06_juego_base.md). Hasta ahora, el panel inferior y el puntero (hito 6.1), y las cuatro vistas y el menú de la ROM de prueba (hito 6.2)
+- Fase 6, juego base (el nivel 1 jugable), en curso: plan en [`docs/06_plan.md`](docs/06_plan.md) y cifras de cada hito en [`docs/06_juego_base.md`](docs/06_juego_base.md). Hasta ahora, el panel inferior y el puntero (hito 6.1), las cuatro vistas y el menú de la ROM de prueba (hito 6.2), y el sol fijo en las cuatro vistas (hito 6.2b)
 
 ```bash
 tools/setup.sh          # instala todo (Ubuntu 24.04); necesita TH_DATA_URL o TH_DATA_ZIP para los datos

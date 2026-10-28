@@ -3,6 +3,6 @@
 #ifndef TH_VERSION_H
 #define TH_VERSION_H
 
-#define TH64_VERSION "0.6.2-hito6.2"
+#define TH64_VERSION "0.6.2b-hito6.2b"
 
 #endif

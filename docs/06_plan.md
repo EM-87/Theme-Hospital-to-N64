@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1 y 6.2 hechos ([`06_juego_base.md`](06_juego_base.md)); el siguiente es el 6.2b, el sol fijo. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
+Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos ([`06_juego_base.md`](06_juego_base.md)); el siguiente es el 6.3, construir. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
 
 **Objetivo: el nivel 1 de Theme Hospital, de principio a fin, en la ROM.**
 - Se empieza con el edificio vacío y 40.000 $.

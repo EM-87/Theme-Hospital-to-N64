@@ -287,7 +287,17 @@ static int girar_pared(const pared *p, int r)
     return b ? b : p->block;
 }
 
+// La pareja en espejo de p (th_wall_mirror): la misma pieza en el otro
+// borde, con la mitad de pantalla cambiada.
+static int pareja(const pared *p)
+{
+    const int lado = p->lado == LADO_IZQUIERDO ? LADO_DERECHO : p->lado == LADO_DERECHO ? LADO_IZQUIERDO : LADO_NINGUNO;
+    const int b = buscar_pared(p->juego, p->cara, p->clase, p->borde == NORTE ? OESTE : NORTE, lado);
+    return b ? b : p->block;
+}
+
 static uint16_t tabla_suelo[3][256], tabla_capa[3][256];
+static uint8_t tabla_espejo[256];
 static int tablas_hechas;
 
 static void preparar_tablas(void)
@@ -295,6 +305,10 @@ static void preparar_tablas(void)
     if (tablas_hechas)
         return;
     preparar_paredes();
+    for (int b = 0; b < 256; b++)
+        tabla_espejo[b] = (uint8_t)b;
+    for (int i = 0; i < n_paredes; i++)
+        tabla_espejo[paredes[i].block] = (uint8_t)pareja(&paredes[i]);
     for (int r = 1; r <= 3; r++) {
         uint16_t *ts = tabla_suelo[r - 1], *tc = tabla_capa[r - 1];
         for (int b = 0; b < 256; b++) {
@@ -330,6 +344,14 @@ uint16_t th_rot_floor(int rot, int block)
     return tabla_suelo[(rot & 3) - 1][block];
 }
 
+int th_wall_mirror(int block)
+{
+    if (block < 0 || block > 255)
+        return block;
+    preparar_tablas();
+    return tabla_espejo[block];
+}
+
 uint16_t th_rot_layer(int rot, int block)
 {
     if (block < 0 || block > 255)
@@ -342,12 +364,6 @@ uint16_t th_rot_layer(int rot, int block)
 
 // --- El mapa girado -----------------------------------------------------
 
-// Como is_wall de th_map_update_shadows.
-static int es_pared(uint8_t block, int alto)
-{
-    return alto || (block >= 82 && block <= 164);
-}
-
 int th_rot_map_update(th_rot_map *g, const th_map *m, int rot)
 {
     rot &= 3;
@@ -358,18 +374,25 @@ int th_rot_map_update(th_rot_map *g, const th_map *m, int rot)
     // Los bordes norte y oeste de la vista son, en el mundo, el borde
     // (D − rot) de la casilla: el norte o el oeste de la propia casilla, o el
     // norte o el oeste de la vecina del sur o del este. Es lo mismo para todo
-    // el mapa: se mira una vez.
+    // el mapa: se mira una vez. La pieza de cada borde ya va con la luz de la
+    // vista (th_rot_wall_flip): si toca, la de su pareja en espejo.
     struct {
         int norte;  // en la capa norte (si no, en la oeste)
         int vecina; // 0, la del sur (+W) o la del este (+1)
-        uint32_t alto;
+        int espejo; // la pareja en espejo
     } borde[2];
     for (int k = 0; k < 2; k++) {
         const int d = ((k ? OESTE : NORTE) - rot) & 3;
         borde[k].norte = d == NORTE || d == SUR;
         borde[k].vecina = d == SUR ? LADO : d == ESTE ? 1 : 0;
-        borde[k].alto = borde[k].norte ? TH_TILE_TALL_N : TH_TILE_TALL_W;
+        borde[k].espejo = th_rot_wall_flip(rot, k);
     }
+    // Las sombras son las del mundo (el sol no gira). La media sombra se
+    // dibuja con la forma girada (vista.c); la de la pared cae en la cara sur
+    // de la pared norte, que solo se ve con la cámara girada 3 veces, como
+    // pared oeste.
+    const uint8_t sombras = TH_VT_SHADOW_HALF | TH_VT_SHADOW_FULL;
+    const int sombra_pared = rot == 3;
     // Al avanzar una casilla en la vista (vx + 1), la del mundo avanza paso_x.
     int x0, y0, x1, y1;
     th_rot_tile_inv(rot, 0, 0, &x0, &y0);
@@ -382,7 +405,11 @@ int th_rot_map_update(th_rot_map *g, const th_map *m, int rot)
         const th_tile *t = th_map_tile_c(m, x, y);
         for (int vx = 0; vx < LADO; vx++, v++, t += paso_x, x += dx, y += dy) {
             const uint16_t f = ts[t->floor];
-            uint8_t flags = f & TH_ROT_FLIP ? TH_VT_FLIP_FLOOR : 0;
+            uint8_t flags = (uint8_t)((t->flags >> 11) & sombras); // TH_TILE_SHADOW_* → TH_VT_*
+            if (sombra_pared && (t->flags & TH_TILE_SHADOW_WALL))
+                flags |= TH_VT_SHADOW_WALL_W;
+            if (f & TH_ROT_FLIP)
+                flags |= TH_VT_FLIP_FLOOR;
             uint8_t capas[2] = {0, 0}, deco[2] = {0, 0};
             // El decorado de la casilla sigue en la capa en la que estaba.
             uint16_t c = tc[t->wall_n];
@@ -402,30 +429,10 @@ int th_rot_map_update(th_rot_map *g, const th_map *m, int rot)
                 const uint8_t b = borde[k].norte ? o->wall_n : o->wall_w;
                 c = tc[b];
                 if (b && !(c & TH_ROT_TILE))
-                    capas[k] = (uint8_t)c;
-                if (o->flags & borde[k].alto)
-                    flags |= k ? TH_VT_TALL_W : TH_VT_TALL_N;
+                    capas[k] = borde[k].espejo ? tabla_espejo[c & 0xFF] : (uint8_t)c;
             }
             *v = (th_vtile){.floor = (uint8_t)f, .wall_n = capas[0], .wall_w = capas[1], .sc_n = deco[0],
                             .sc_w = deco[1], .flags = flags};
-        }
-    }
-    // Las sombras, como th_map_update_shadows con las paredes de la vista.
-    v = g->tiles;
-    for (int vy = 0; vy < LADO; vy++) {
-        for (int vx = 0; vx < LADO; vx++, v++) {
-            const int alto_o = (v->flags & TH_VT_TALL_W) != 0;
-            if (!es_pared(v->wall_w, alto_o))
-                continue;
-            v->flags |= TH_VT_SHADOW_HALF;
-            if (es_pared(v->wall_n, (v->flags & TH_VT_TALL_N) != 0)) {
-                v->flags |= TH_VT_SHADOW_WALL;
-            } else if (vy != 0) {
-                th_vtile *n = v - LADO;
-                n->flags |= TH_VT_SHADOW_FULL;
-                if (vx != 0 && !es_pared(n->wall_w, alto_o))
-                    n[-1].flags |= TH_VT_SHADOW_FULL;
-            }
         }
     }
     g->map = m;

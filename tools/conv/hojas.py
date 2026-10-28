@@ -38,6 +38,41 @@ def leer(tab, dat, compleja):
     return sprites
 
 
+# Bloques de la hoja del mapa (MBLK-0 / VBLK-0) para las vistas giradas.
+SOMBRA_PARED = 156  # la sombra de una pared oeste sobre la cara sur de la pared norte
+SOMBRA_PARED_OESTE = 226  # generado: la misma sombra sobre la cara este de una pared oeste
+
+
+def con_sombra_oeste(sprites, u):
+    """La hoja de bloques del mapa con el bloque 226 al final: la sombra del
+    156 sobre la cara de una pared oeste, para la vista con la cámara girada
+    3 veces (motor/vista/girar.h), donde la cara sur de una pared norte del
+    mundo se ve como pared oeste. El 156 ocupa las columnas u a 2u − 1 (la
+    cara de la pared norte, de la esquina hacia la derecha, con el pie
+    bajando media fila por columna); la cara de la pared oeste va de la
+    columna 0 a la u − 1, con el pie subiendo media fila por columna y la
+    esquina a la izquierda. Cada columna d de la sombra pasa de la u + d a la
+    d y baja u/2 − d filas: la misma altura sobre el pie y la misma distancia
+    a la esquina. u es 16 en DATAM y 32 en DATA."""
+    if len(sprites) != SOMBRA_PARED_OESTE:
+        raise ValueError(f"la hoja de bloques tiene {len(sprites)} sprites y se esperaban {SOMBRA_PARED_OESTE}")
+    w, h, px = sprites[SOMBRA_PARED]
+    if w != 2 * u:
+        raise ValueError(f"el bloque {SOMBRA_PARED} mide {w} de ancho y se esperaba {2 * u}")
+    alto = h + u // 2
+    out = bytearray([255]) * (w * alto)
+    for y in range(h):
+        for x in range(w):
+            c = px[y * w + x]
+            if c == 255:
+                continue
+            if x < u:
+                raise ValueError(f"el bloque {SOMBRA_PARED} tiene píxeles a la izquierda de la esquina")
+            d = x - u
+            out[(y + u // 2 - d) * w + d] = c
+    return list(sprites) + [(w, alto, bytes(out))]
+
+
 def paso(w):
     return (w + 7) // 8 * 8
 

@@ -11,12 +11,18 @@
 --     hace lo contrario: busca, para cada casilla de la vista, lo que le toca);
 --   - las paredes: con las tablas de walls/*.lua de CorsixTH
 --     (getWallSetFromBlockId y compañía), la cara y la mitad que tocan;
+--   - la luz de las paredes (hito 6.2b): el sol no gira, así que la pared cuya
+--     cara se ve está al sol o a la sombra según la vista; si la pieza tiene
+--     la otra luz, va la de su pareja (el mismo nombre en el otro borde, con
+--     la mitad cambiada) en espejo;
 --   - los objetos: World:newObject en la casilla y con la orientación girada
---     (la opuesta si no se puede, el sustituto); CorsixTH los dibuja solo;
---   - las sombras: las calcula CorsixTH con las paredes nuevas.
+--     (la opuesta si no se puede, el sustituto); CorsixTH los dibuja solo.
+-- Sin sombras: CorsixTH las calcularía con las paredes de la vista, con la
+-- luz girada. Las del motor se comprueban aparte (motor/tests/test_vista.c),
+-- y el motor se compara con estas capturas con th64sim --sin-sombras.
 -- Lo que no se puede sacar de CorsixTH viene de la tabla del motor
 -- (th64sim tabla_giro): la pieza girada de los suelos y del decorado, y los
--- pilares de las paredes de fuera.
+-- pilares de las paredes de fuera y su pareja.
 --
 -- Opciones: --load=partida.sav, --th64-png=ruta, --th64-giro=0..3,
 --           --th64-tabla=tabla_giro.tsv, --th64-centro="x,y" (casilla del
@@ -37,18 +43,23 @@ world:setSpeed("Pause")
 th64.autorun_speed = nil
 TheApp.video:setBlueFilterActive(false)
 
--- La tabla del motor: suelo[b] y capa[b] para este giro.
-local suelo, capa = {}, {}
+-- La tabla del motor: suelo[b] y capa[b] para este giro, y la pareja en
+-- espejo de cada pared.
+local suelo, capa, pareja = {}, {}, {}
 for b = 0, 255 do
   suelo[b] = b
   capa[b] = (b >= 82 and b <= 164) and b or (b | TILE)
+  pareja[b] = b
 end
 if giro ~= 0 then
   local f = assert(io.open(assert(th64.opts.tabla, "falta --th64-tabla="), "r"))
-  for r, b, s, c in f:read("a"):gmatch("(%d+)\t(%d+)\t(%d+)\t(%d+)") do
+  for linea in f:read("a"):gmatch("[^\n]+") do
+    local r, b, s, c, p = linea:match("^(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)$")
+    b = tonumber(b)
     if tonumber(r) == giro then
-      suelo[tonumber(b)], capa[tonumber(b)] = tonumber(s), tonumber(c)
+      suelo[b], capa[b] = tonumber(s), tonumber(c)
     end
+    pareja[b] = tonumber(p)
   end
   f:close()
 end
@@ -99,6 +110,27 @@ local function girar_pared(b, d0)
   return e, t[nombre_d .. resto] or t[nombre_d] or b
 end
 
+-- La luz (hito 6.2b): la cara que se ve de una pared de borde norte de la
+-- vista mira al sur de la vista, y la de una de borde oeste, al este; en el
+-- mundo, a esa dirección menos el giro. Con el sol al suroeste, están al sol
+-- las que miran al sur o al oeste. La pieza norte está pintada al sol y la
+-- oeste a la sombra: si no casa, va la pareja en espejo (bandera 1 de dibujo,
+-- en el byte alto de la capa).
+local function con_luz(b, D)
+  local cara = ((D == N and S or E) - giro) % 4
+  local al_sol = cara == S or cara == O
+  if al_sol == (D == N) then return b end
+  local p = por_bloque[b]
+  local otra = pareja[b]
+  if p then
+    local base, resto = p.nombre:match("^(%a+)(.*)$")
+    local cambio = {_window_1 = "_window_2", _window_2 = "_window_1", _left = "_right", _right = "_left"}
+    otra = TheApp.walls[p.tipo][p.juego][(base == "north" and "west" or "north") .. (cambio[resto] or resto)]
+    assert(otra, "sin pareja: " .. p.nombre)
+  end
+  return otra | 256
+end
+
 -- 1. Las casillas giradas.
 local viejas = {}
 for y = 0, W - 1 do
@@ -140,7 +172,8 @@ for y = 0, W - 1 do
           local tx, ty = vx, vy
           if e == S then ty = ty + 1 elseif e == E then tx = tx + 1 end
           if tx < W and ty < W then
-            poner((e == N or e == S) and nn or no, ty * W + tx, b2, true)
+            local D = (e == N or e == S) and N or O
+            poner(D == N and nn or no, ty * W + tx, con_luz(b2, D), true)
           end
         end
       end
@@ -205,7 +238,26 @@ for _, o in ipairs(objetos) do
   world:newObject(o.tipo.id, vx + 1, vy + 1, nombres[d + 1])
   th64.log("objeto %s (%d,%d) %s -> (%d,%d) %s", o.tipo.id, o.x, o.y, o.dir, vx, vy, nombres[d + 1])
 end
+-- Sin sombras: las puertas las recalculan al crearse. Se quitan las paredes y
+-- lo alto, se recalculan (ninguna) y se vuelven a poner, sin recalcular.
+local guardadas = {}
+for y = 0, W - 1 do
+  for x = 0, W - 1 do
+    local f, n, o = th:getCell(x + 1, y + 1)
+    local fl = th:getCellFlags(x + 1, y + 1)
+    guardadas[y * W + x] = {f, n, o, fl.tallNorth, fl.tallWest}
+    th:setCell(x + 1, y + 1, f, 0, 0, 0)
+    th:setCellFlags(x + 1, y + 1, {tallNorth = false, tallWest = false})
+  end
+end
 th:updateShadows()
+for y = 0, W - 1 do
+  for x = 0, W - 1 do
+    local c = guardadas[y * W + x]
+    th:setCell(x + 1, y + 1, c[1], c[2], c[3], 0)
+    th:setCellFlags(x + 1, y + 1, {tallNorth = c[4], tallWest = c[5]})
+  end
+end
 
 -- 4. La captura, con el mismo punto del mundo en el centro.
 local function girar_punto(a, b)

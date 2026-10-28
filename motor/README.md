@@ -56,7 +56,7 @@ En un hospital, con el panel inferior de Theme Hospital y un puntero (hito 6.1):
 - el stick mueve el puntero, con aceleración; Z mantenido lo hace ir más deprisa. El ratón de N64 también lo mueve;
 - A y B son los botones izquierdo y derecho del ratón. Los botones del panel se hunden, pero todavía no abren nada;
 - los botones C y la cruceta arriba y abajo desplazan la vista, y también el puntero al tocar un borde de la pantalla;
-- la cruceta izquierda y derecha gira la vista 90° (hito 6.2);
+- la cruceta izquierda y derecha gira la vista 90° (hito 6.2), con el sol quieto en el mundo (hito 6.2b);
 - con el puntero un momento sobre un botón del panel, sale su descripción;
 - Start pausa (el panel dice «Pause»); en pausa, Z vuelve al menú;
 - L alterna entre velocidad Normal (un tick, una hora de juego, cada 54 ms) y 8 veces más deprisa. La simulación avanza en el tiempo que le sobra a cada fotograma: si no le da tiempo, el juego va más despacio, pero sin saltar fotogramas;

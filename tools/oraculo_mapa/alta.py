@@ -7,7 +7,8 @@ tools/conv/conv.py.
 Uso: python3 -I tools/oraculo_mapa/alta.py <dir_salida>   (lee $TH_DATA_DIR)
 
 Escribe en dir_salida:
-  vblk-0.tsh       bloques del mapa (VBLK-0)
+  vblk-0.tsh       bloques del mapa (VBLK-0), más el 226 de las vistas giradas
+                   (hojas.con_sombra_oeste)
   vspr-0.tsh       sprites de personas y objetos (VSPR-0)
   animaciones.tan  tablas de animación (VSTART/VFRA/VLIST/VELE-1)
   mpalette.dat     DATA/MPALETTE.DAT descomprimido (768 B, 6 bits por
@@ -31,6 +32,8 @@ import hojas  # noqa: E402
 def hoja(d, nombre, directorio="DATA"):
     sprites = hojas.leer(d.leer(directorio, nombre + ".TAB"), d.leer(directorio, nombre + ".DAT"),
                          hojas.es_compleja(nombre))
+    if nombre == "VBLK-0":  # más la sombra sobre una pared oeste de las vistas giradas (motor/vista/girar.h)
+        sprites = hojas.con_sombra_oeste(sprites, 32)
     tsh = hojas.escribir(sprites)
     if hojas.leer_tsh(tsh) != sprites:
         sys.exit(f"ERROR: la hoja {nombre} no se lee igual que se escribió")
