@@ -102,6 +102,31 @@ Además:
 - **En el núcleo, la sala pasa a ser un conjunto de casillas** (una máscara sobre su rectángulo), como preveía la fase 4. Lo que en CorsixTH usa el ancho y el alto pasa a contar casillas o a mirar la máscara.
 - **Las salas rectangulares siguen siendo exactamente las de CorsixTH**, con los mismos números aleatorios: para ellas, la máscara no cambia nada. Las demás formas no tienen con qué compararse.
 
+## Lo que pidió Eduardo el 2026-10-28
+
+**Un menú en la ROM de prueba.** Hoy la ROM abre directamente el hospital del escenario. El menú dejará elegir qué abrir y, durante la partida, volver a él:
+- el hospital del hito 4 o el del hito 5;
+- el visor de niveles;
+- las vistas.
+
+Va con el hito 6.2, para poder probar las vistas giradas. El menú principal del juego sigue en el hito 6.8.
+
+**El modo sin Expansion Pak se mantiene**, aunque sea a costa de recortar. El hito 5 recomendaba no hacerlo: con lo medido y el código proyectado, la demo con 4 MiB sumaba unos 4,0 MiB ([`05_prototipo.md`](05_prototipo.md#tamaño-del-código-y-modo-demo)). Hoy, con 4 MiB, la ROM se para al cargar las reglas: tras las hojas y las animaciones quedan 250 KiB de heap, y las definiciones piden 331 KiB. Eduardo acepta estos recortes en la demo:
+
+| Recorte | Lo que ahorraría, a primera vista |
+|---|---:|
+| Un modelo de temperatura más barato que el de CorsixTH, por sala o a menos resolución | Unos 100 KiB: hoy son 96 KiB por casilla y 4 KiB de máscaras |
+| Sin música | Unos 130 KiB: el banco, el sintetizador y una pieza (hito 5) |
+| Menos texto: solo las cadenas que se usan y menos fuentes | Unos 150 KiB: los textos en inglés ocupan hoy 257 KiB, frente a los 100 de la fase 4 |
+| **Total** | **unos 0,38 MiB**: de unos 4,0 a unos 3,6 MiB |
+
+A eso se suman las reglas recortadas al nivel 1 (0,10 MiB en lugar de 0,33) y las hojas y animaciones solo del nivel 1, que ya contaba el hito 5.
+
+**Cómo se hace:**
+- desde el hito 6.2, cada hito apunta cuánta memoria pide con 8 MiB y cuánto pediría la demo;
+- el trabajo de que quepa va en un hito propio al final de la fase (el 6.10), antes de los cambios en libdragon;
+- los recortes van solo en la demo: el juego con Expansion Pak sigue como CorsixTH.
+
 ## Hitos
 
 Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifras en `docs/06_juego_base.md`.
@@ -109,7 +134,7 @@ Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifr
 | Hito | Qué | Cómo se comprueba |
 |---|---|---|
 | **6.1** Puntero y panel | Puntero con el stick (con aceleración, y Z para ir rápido), A y B como clics, la vista con los botones C, y el ratón de N64. La base de ventanas y el panel inferior de `DATAM`: botones, dinero, fecha, mensajes y descripciones de los botones | Capturas iguales píxel a píxel al rasterizador de referencia, como el mapa. El panel y el puntero cuestan como mucho 1,5 ms por fotograma |
-| **6.2** Las cuatro vistas | Girar la cámara con la cruceta (izquierda y derecha), que hasta ahora solo desplazaba la vista. Girar el mapa, las paredes, las sombras, los objetos y las personas, y el puntero en las cuatro vistas. Clasificar los suelos y el decorado, y poner los sustitutos | La vista original, igual píxel a píxel. Las giradas, contra el mismo hospital girado montado en CorsixTH. Girar no puede encarecer la lista de dibujo: hoy cuesta 4,7 ms por fotograma a velocidad Normal |
+| **6.2** Las cuatro vistas | Girar la cámara con la cruceta (izquierda y derecha), que hasta ahora solo desplazaba la vista. Girar el mapa, las paredes, las sombras, los objetos y las personas, y el puntero en las cuatro vistas. Clasificar los suelos y el decorado, y poner los sustitutos. El menú de la ROM de prueba | La vista original, igual píxel a píxel. Las giradas, contra el mismo hospital girado montado en CorsixTH. Girar no puede encarecer la lista de dibujo: hoy cuesta 4,7 ms por fotograma a velocidad Normal |
 | **6.3** Construir | Amueblar el pasillo, el plano de una sala (arrastrar, puertas y ventanas), colocar y girar objetos, editar y vender, en las cuatro vistas. Las salas de cualquier forma: el plano se amplía o se recorta por rectángulos. Las validaciones de CorsixTH, con el bloqueo de zonas en el modo 2 | Una batería de órdenes de construir, aceptadas y rechazadas igual que en CorsixTH, una a una, con las salas rectangulares. Las banderas de las 16.384 casillas iguales después de construir. Lo cobrado, igual al dólar. Las demás formas, con pruebas de la regla de Eduardo |
 | **6.4** Personal y avisos: la primera ROM jugable | Contratar y colocar personal, cogerlo y soltarlo. Las ventanas de persona y de cola, los faxes, los mensajes y el consejero, la pausa y las velocidades | Construir a mano, desde la ROM, el hospital del hito 4 y jugarlo. Grabar las órdenes y repetirlas en el PC con la misma huella |
 | **6.5** Las salas del nivel 1 | Las 7 salas que faltan, el diagnóstico completo, la curación y la muerte. La enfermera y el bedel (limpiar, regar y reparar), los aseos, la máquina de bebidas y las plantas | Un escenario del nivel 1 completo, creado en CorsixTH: 20 semillas, con el criterio acordado (±15 % en curados y ±7,5 % en saldo), más reputación y muertes |
@@ -117,6 +142,7 @@ Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifr
 | **6.7** Guardar y cargar | Formato propio, solo con el estado de la partida: ≤ 32 KiB si es posible (SRAM o Controller Pak) y ≤ 128 KiB como mucho (FlashRAM) | Guardar, cargar y seguir da la misma huella que no guardar. El tamaño se mide con el hospital del hito 5 |
 | **6.8** Menús, opciones y sonido | Menú principal, partida nueva, las opciones acordadas en la fase 4, inglés y español, el locutor con subtítulos y los efectos de sonido en la partida | Los textos de los dos idiomas, sin cadenas que falten. Las opciones, en la partida guardada |
 | **6.9** El nivel 1 entero | Jugar el nivel 1 hasta ganarlo, con una lista de órdenes y en la ROM | Gana en la ROM y en el PC con la misma huella. Memoria, CPU y fotogramas con el hospital lleno del final, frente a los presupuestos de la fase 4 |
+| **6.10** Sin Expansion Pak | El nivel 1 con 4 MiB, con los recortes que acepta Eduardo: temperatura más barata, sin música y menos texto. Solo las hojas, las animaciones y las reglas del nivel 1 | La ROM juega el nivel 1 con 4 MiB en ares, sin quedarse sin memoria. Lo que se recorta cambia la simulación (la temperatura), así que la demo tiene su propia huella y su propia comparación con CorsixTH |
 
 **Presupuestos:**
 - **CPU.** A velocidad Normal y con el hospital del hito 5, el fotograma cuesta hoy 14,1 ms de los 33,3. Con una ventana de gestión abierta tiene que seguir a 30 fps sin saltos.
@@ -128,7 +154,6 @@ Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifr
 - **Los vídeos.** Van fuera de la partida, así que pueden esperar a la fase siguiente.
 - **Lo que se dejó para el final:**
   - los cambios en libdragon;
-  - el modo demo sin Expansion Pak;
   - el último deseo de Eduardo: pediatría y maternidad, con arte nuevo.
 
 ## Riesgos
@@ -142,6 +167,7 @@ Cada hito se cierra como en la fase 5: un commit, una captura de ares y sus cifr
 | **Las ventanas de gestión no se leen a 320 × 240** | Las ventanas de `QDATA` reducidas a la mitad; si no se leen, se rehace la maquetación, como hizo la PS1 | Hito 6.6 |
 | **La partida guardada no cabe en 32 KiB** | Guardar solo el estado. La temperatura (96 KiB en RAM) cambia despacio de una casilla a otra y debería comprimirse bien | Hito 6.7 |
 | **El esfuerzo:** unas 14.700 líneas de interfaz y 4.500 de lógica | Se avanza por lo que pide el nivel 1, no por pantallas sueltas | A lo largo de la fase |
+| **La demo no cabe en 4 MiB ni con los recortes** | Medir la memoria en cada hito, no solo al final. Si no llega, se recortan más cosas, con Eduardo | Hito 6.10, pero se ve venir antes |
 | **ares frente a la consola real:** todo sigue medido en ares | Las ROM de medida escriben en pantalla. Se prueban en la consola cuando llegue el flashcart | Cuando llegue |
 
 ## Lo que hará falta de Eduardo
