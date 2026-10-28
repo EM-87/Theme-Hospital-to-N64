@@ -6,7 +6,8 @@ Motor propio en C sobre libdragon (fase 5). La lógica de CorsixTH v0.70.1 sirve
 |---|---|
 | `core/` | Núcleo de la simulación en C portable (gnu17): sin libdragon, solo enteros y coma fija Q16.16, pools de tamaño fijo. Compila igual en el PC y en la N64 |
 | `vista/` | La vista del mapa en C portable: proyección isométrica, lista de sprites en el orden de dibujo de CorsixTH y un rasterizador por software que sirve de referencia. La usan la N64 y `th64sim` |
-| `platform/n64/` | Capa de la consola: vídeo, RDP, mandos, sonido, ficheros. La simulación va en una corrutina repartida entre fotogramas (`simulacion.c`), y el dibujo con el RDP está en `mapa_n64.c` |
+| `ui/` | La interfaz en C portable (fase 6): ventanas, paneles y botones como los de `window.lua`, el texto con las fuentes de mapa de bits (`bitmap_font`) y el formato de las cadenas de CorsixTH, el panel inferior (`UIBottomPanel`) y el puntero que mueve el stick. Se dibuja en la misma lista que el mapa |
+| `platform/n64/` | Capa de la consola: vídeo, RDP, mandos, sonido, ficheros. La simulación va en una corrutina repartida entre fotogramas (`simulacion.c`), el dibujo con el RDP está en `mapa_n64.c` y la interfaz de la partida, con los mandos leídos en cada barrido, en `interfaz.c` |
 | `platform/pc/` | `th64sim`, el núcleo en el PC sin pantalla |
 | `tests/` | Pruebas del núcleo (`th_test.h`), las mismas en el PC y en la ROM |
 | `filesystem/` | Assets de la ROM. Los genera el conversor a partir de los datos del juego de cada usuario; no están en el repositorio |
@@ -34,15 +35,19 @@ cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc && cte
 - `th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir>`: simula el hospital del escenario y escribe las trazas de `bench/scenarios/traza_hito4.lua` (`pacientes.tsv`, `dinero.tsv`, `dias.tsv`, `acciones.tsv`) y la huella. Con `TH64_SONDA_GP=<dir>`, además lo que escribe `bench/scenarios/sonda_gp.lua`; con `TH64_DEPURAR=<id>`, la cola de acciones de ese paciente tras cada hora;
 - `th64sim vista ...`: dibuja una vista del mapa en PPM con el rasterizador de referencia;
 - `th64sim escena ...`: lo mismo, con el humanoide de una caminata en un tick dado;
-- `th64sim escena4 ...`: lo mismo con el hospital de un escenario (objetos y personas), tras unas horas de simulación.
+- `th64sim escena4 ...`: lo mismo con el hospital de un escenario (objetos y personas), tras unas horas de simulación;
+- `th64sim panel <alta|baja> <nivel.tmp> <n> <dir_hojas> <textos.trg> <capturas.txt> <dir_salida>`: el mapa y el panel inferior en cada estado de `bench/scenarios/captura_panel.lua` (dinero, fecha, reputación, pausa, puntero, botón pulsado y descripción). Con `alta`, a 640 × 480 con los gráficos de CorsixTH, para compararlo con sus capturas; con `baja`, a 320 × 240 con los de la N64 ([`tools/hito6/`](../tools/hito6/README.md)).
 
-Las tres últimas las usan [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md) y [`tools/oraculo_hito4/`](../tools/oraculo_hito4/README.md).
+Las de dibujar las usan [`tools/oraculo_mapa/`](../tools/oraculo_mapa/README.md) y [`tools/oraculo_hito4/`](../tools/oraculo_hito4/README.md).
 
-Con el escenario del hito 4 en `assets/escenarios/hito4.trg` (lo copia `tools/oraculo_hito4/motor.sh`), la ROM normal abre el hospital en marcha, con el dinero y la fecha abajo:
-- el stick o la cruceta mueven la cámara;
-- A sigue al último paciente que ha llegado o deja de seguirlo;
-- Z alterna entre velocidad Normal (un tick, una hora de juego, cada 54 ms) y 8 veces más deprisa. La simulación avanza en el tiempo que le sobra a cada fotograma: si no le da tiempo, el juego va más despacio, pero sin saltar fotogramas;
-- R oculta los datos; L mide el tiempo del RDP.
+Con el escenario del hito 4 en `assets/escenarios/hito4.trg` (lo copia `tools/oraculo_hito4/motor.sh`), la ROM normal abre el hospital en marcha, con el panel inferior de Theme Hospital y un puntero (hito 6.1):
+- el stick mueve el puntero, con aceleración; Z mantenido lo hace ir más deprisa. El ratón de N64 también lo mueve;
+- A y B son los botones izquierdo y derecho del ratón. Los botones del panel se hunden, pero todavía no abren nada;
+- los botones C y la cruceta desplazan la vista, y también el puntero al tocar un borde de la pantalla;
+- con el puntero un momento sobre un botón del panel, sale su descripción;
+- Start pausa (el panel dice «Pause»);
+- L alterna entre velocidad Normal (un tick, una hora de juego, cada 54 ms) y 8 veces más deprisa. La simulación avanza en el tiempo que le sobra a cada fotograma: si no le da tiempo, el juego va más despacio, pero sin saltar fotogramas;
+- R muestra los datos de depuración.
 
 Sin el escenario, la ROM normal abre el visor del mapa con un humanoide que pasea por él:
 - el stick o la cruceta mueven la cámara;

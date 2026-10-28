@@ -8,7 +8,7 @@
 //
 // El dibujo no lee la simulación, que puede estar a medio tick: lee la
 // instantánea que se toma al acabar cada tick (las entidades de th_vista_sim,
-// el dinero y la fecha). La pasada de temperatura de cada tick se hace
+// el dinero, la reputación y la fecha). La pasada de temperatura de cada tick se hace
 // después de la instantánea (temp_defer), antes del tick siguiente.
 //
 // Lo que se simula es lo mismo que con th_sim_tick seguido: la huella no
@@ -25,6 +25,7 @@ typedef struct {
     const th_view_entity *entidades;
     int n_entidades;
     int32_t saldo;
+    int32_t reputacion;
     th_date fecha;
     int personas;
     uint32_t horas; // ticks acabados

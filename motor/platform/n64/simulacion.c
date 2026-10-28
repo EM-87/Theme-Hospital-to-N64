@@ -60,6 +60,7 @@ static void hacer_instantanea(void)
     foto.entidades = ents;
     foto.n_entidades = th_vista_sim(sim, ents, max_ents);
     foto.saldo = sim->hosp.balance;
+    foto.reputacion = sim->hosp.reputation;
     foto.fecha = sim->date;
     foto.personas = sim->n_order;
     foto.horas = sim->hours;

@@ -35,6 +35,8 @@
 #include "th/version.h"
 #include "th_test.h"
 #include "objetos.h"
+#include "panel_inferior.h"
+#include "raster.h"
 #include "vista.h"
 
 void (*th_test_log)(const char *fmt, ...) = NULL;
@@ -62,6 +64,8 @@ static int uso(void)
             "     th64sim reglas <reglas.trg> [ruta]\n"
             "     th64sim vista <nivel.tmp> <número de nivel> <bloques.tsh> <paleta> <unidad> <x> <y> <ancho> <alto> "
             "<salida.ppm> [mezcla.pgm]\n"
+            "     th64sim panel <alta|baja> <nivel.tmp> <número de nivel> <dir_hojas> <textos.trg> <capturas.txt> "
+            "<dir_salida>\n"
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
             "       mezcla.pgm: 255 donde el último sprite pintado era semitransparente (sombras)\n",
             TH64_VERSION);
@@ -423,6 +427,135 @@ static int orden_vista(int argc, char **argv)
     int r = dibujar_escena(&v, &sc, paleta, argv[11], argc > 12 ? argv[12] : NULL, NULL);
     free(hoja);
     return r;
+}
+
+// Hito 6.1: el mapa y el panel inferior en cada estado de las capturas de
+// bench/scenarios/captura_panel.lua. Con «alta», a 640 × 480 con los gráficos
+// de CorsixTH (dir_hojas: el de tools/oraculo_mapa/alta.py), para compararlo
+// con sus capturas; con «baja», a 320 × 240 con los de la N64 (dir_hojas:
+// motor/assets), la cámara y el puntero a la mitad y el puntero dibujado.
+// Escribe panel_N.ppm y panel_N_ui.pgm (donde pintó la interfaz: 1 + la hoja,
+// o 255 en los rectángulos) en dir_salida.
+static int orden_panel(char **argv)
+{
+    const int alta = strcmp(argv[2], "alta") == 0;
+    if (!alta && strcmp(argv[2], "baja") != 0)
+        return uso();
+    if (cargar_mapa(argv[3], atoi(argv[4])))
+        return 1;
+    static const char *de_alta[TH_SHEETS] = {"vblk-0", NULL, "panel02v", "mpointer", "font05v",
+                                             "font16v", "font01v", "font124v", "font00v"};
+    static const char *de_baja[TH_SHEETS] = {"datam/mblk-0", NULL, "datam/panel02m", "datam/mpointer",
+                                             "fuentes/font100m", "fuentes/font101m", "fuentes/font132m",
+                                             "fuentes/font131m", "fuentes/font130m"};
+    const char *const *nombres = alta ? de_alta : de_baja;
+    th_sheet hojas[TH_SHEETS];
+    const th_sheet *sheets[TH_SHEETS] = {NULL};
+    uint8_t *datos[TH_SHEETS] = {NULL};
+    char ruta[1024];
+    for (int i = 0; i < TH_SHEETS; i++) {
+        if (!nombres[i])
+            continue;
+        snprintf(ruta, sizeof ruta, "%s/%s.tsh", argv[5], nombres[i]);
+        if (cargar_hoja(ruta, &hojas[i], &datos[i]))
+            return 1;
+        sheets[i] = &hojas[i];
+    }
+    // En alta, la paleta de DATA y la de las descripciones de CorsixTH
+    // (Pref01V.pal); en baja, la de la N64 para todo.
+    static uint8_t paleta[256][3], pal_tooltip[256][3];
+    snprintf(ruta, sizeof ruta, alta ? "%s/mpalette.dat" : "%s/paleta.tpl", argv[5]);
+    if (cargar_paleta(ruta, paleta))
+        return 1;
+    if (alta) {
+        snprintf(ruta, sizeof ruta, "%s/pref01v.pal", argv[5]);
+        if (cargar_paleta(ruta, pal_tooltip))
+            return 1;
+    }
+    size_t len;
+    uint8_t *t_datos = leer_fichero(argv[6], &len);
+    th_rules textos;
+    if (!t_datos || th_rules_init(&textos, t_datos, len) != 0) {
+        fprintf(stderr, "no se pueden leer los textos %s\n", argv[6]);
+        return 1;
+    }
+    // Las de UIBottomPanel:_initFonts y UI; en baja, como en la ROM (interfaz.c).
+    const th_ui_fonts fuentes = {
+        .money = {sheets[TH_SHEET_FONT_MONEY], TH_SHEET_FONT_MONEY, 0, 0, 0},
+        .date = {sheets[TH_SHEET_FONT_DATE], TH_SHEET_FONT_DATE, 0, 0, alta ? 0 : 2},
+        .white = {sheets[TH_SHEET_FONT_WHITE], TH_SHEET_FONT_WHITE, 0, alta ? -2 : -1, 0},
+        .pause = {sheets[TH_SHEET_FONT_PAUSE], TH_SHEET_FONT_PAUSE, 0, 0, 0},
+        .tooltip = {sheets[TH_SHEET_FONT_TOOLTIP], TH_SHEET_FONT_TOOLTIP, 0, 0, 0},
+    };
+    FILE *f = fopen(argv[7], "r");
+    if (!f)
+        return 1;
+    const int W = alta ? 640 : 320, H = alta ? 480 : 240, k = alta ? 1 : 2;
+    static th_draw elementos[8192];
+    static uint8_t rgb[640 * 480 * 3], hoja[640 * 480];
+    th_raster r = {.rgb = rgb, .hoja = hoja, .w = W, .h = H, .paleta = (const uint8_t(*)[3])paleta};
+    if (alta)
+        r.paletas[TH_SHEET_FONT_TOOLTIP] = (const uint8_t(*)[3])pal_tooltip;
+    char linea[1024], png[512];
+    int n = 0;
+    while (fgets(linea, sizeof linea, f)) {
+        int vx, vy, dia, mes, rep, pausa, px, py, pulsado, descripcion;
+        long dinero;
+        if (sscanf(linea, "%511s %d %d %ld %d %d %d %d %d %d %d %d", png, &vx, &vy, &dinero, &dia, &mes, &rep, &pausa,
+                   &px, &py, &pulsado, &descripcion) != 12)
+            continue;
+        n++;
+        if (px >= 0) {
+            px /= k;
+            py /= k;
+        }
+        th_drawlist l = {.items = elementos, .capacity = 8192};
+        th_view v = {.unit = 32 / k, .x = vx / k, .y = vy / k, .w = W, .h = H};
+        if (th_view_map(&v, &mapa, sheets[TH_SHEET_BLOCKS], &l) < 0)
+            return 1;
+        th_bottom_panel bp;
+        th_bottom_panel_init(&bp, alta, W, H);
+        th_bottom_panel_mouse_move(&bp, px, py);
+        if (pulsado)
+            th_ui_mouse_down(&bp.win, TH_UI_LEFT, px, py);
+        const th_bottom_info info = {.balance = (int32_t)dinero, .day = dia, .month = mes, .reputation = rep,
+                                     .rep_min = 0, .rep_max = 1000, .paused = pausa};
+        if (th_bottom_panel_draw(&bp, &fuentes, &info, &textos, &l) < 0)
+            return 1;
+        char texto[512];
+        int tx, ty;
+        if (descripcion && th_bottom_panel_tooltip(&bp, px, py, &info, &textos, texto, sizeof texto, &tx, &ty))
+            th_font_tooltip(&fuentes.tooltip, texto, tx, ty, th_bottom_panel_tooltip_width(&bp), W, &l);
+        if (!alta && px >= 0 && l.count < l.capacity)
+            l.items[l.count++] = (th_draw){.sprite = 1, .sheet = TH_SHEET_POINTER, .x = (int16_t)px, .y = (int16_t)py};
+        th_raster_clear(&r, 0, 0, 0);
+        th_raster_draw(&r, sheets, &l);
+        snprintf(ruta, sizeof ruta, "%s/panel_%d.ppm", argv[8], n);
+        FILE *o = fopen(ruta, "wb");
+        if (!o)
+            return 1;
+        fprintf(o, "P6\n%d %d\n255\n", W, H);
+        fwrite(rgb, 3, (size_t)(W * H), o);
+        fclose(o);
+        snprintf(ruta, sizeof ruta, "%s/panel_%d_ui.pgm", argv[8], n);
+        if (!(o = fopen(ruta, "wb")))
+            return 1;
+        int ui = 0;
+        for (int i = 0; i < W * H; i++) {
+            if (hoja[i] < 1 + TH_SHEET_PANEL)
+                hoja[i] = 0;
+            ui += hoja[i] != 0;
+        }
+        fprintf(o, "P5\n%d %d\n255\n", W, H);
+        fwrite(hoja, 1, (size_t)(W * H), o);
+        fclose(o);
+        printf("panel %d: %d elementos, %d píxeles de interfaz\n", n, l.count, ui);
+    }
+    fclose(f);
+    for (int i = 0; i < TH_SHEETS; i++)
+        free(datos[i]);
+    free(t_datos);
+    return n ? 0 : 1;
 }
 
 static int orden_caminos(char **argv)
@@ -853,5 +986,7 @@ int main(int argc, char **argv)
         return orden_reglas(argc, argv);
     if ((argc == 12 || argc == 13) && strcmp(argv[1], "vista") == 0)
         return orden_vista(argc, argv);
+    if (argc == 9 && strcmp(argv[1], "panel") == 0)
+        return orden_panel(argv);
     return uso();
 }

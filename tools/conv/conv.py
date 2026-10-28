@@ -214,8 +214,13 @@ def paso_fuentes(d, salida, vistas, resumen):
                              hojas.es_compleja(nombre))
         fnt, png, glifos = fuentes.convertir(nombre, sprites, rgb, tabla)
         base = f"fuentes/{nombre.lower()}"
+        # La hoja de sprites tal cual: la interfaz del motor (motor/ui/texto.c)
+        # dibuja cada carácter como un sprite, igual que bitmap_font de CorsixTH.
+        tsh = hojas.escribir(sprites)
+        if hojas.leer_tsh(tsh) != sprites:
+            sys.exit(f"ERROR: la fuente {nombre} no se lee igual que se escribió")
         f = {"fuente": f"QDATAM/{nombre}", "glifos": len(glifos), "fnt": escribir(salida, base + ".fnt", fnt.encode()),
-             "png": escribir(salida, base + ".png", png)}
+             "png": escribir(salida, base + ".png", png), "tsh": escribir(salida, base + ".tsh", tsh)}
         if len(glifos) > 60:
             f["faltan"] = {i: "".join(sorted(fuentes.cobertura(t, glifos))) for i, t in textos.items()}
         r["fuentes"].append(f)

@@ -12,6 +12,11 @@ Escribe en dir_salida:
   animaciones.tan  tablas de animación (VSTART/VFRA/VLIST/VELE-1)
   mpalette.dat     DATA/MPALETTE.DAT descomprimido (768 B, 6 bits por
                    componente), que th64sim acepta como paleta de CorsixTH
+  panel02v.tsh     el panel inferior (DATA/PANEL02V)
+  mpointer.tsh     los punteros (DATA/MPOINTER)
+  font05v.tsh, font16v.tsh, font01v.tsh, font124v.tsh, font00v.tsh
+                   las fuentes del panel y de las descripciones (QDATA)
+  pref01v.pal      la paleta con la que CorsixTH dibuja las descripciones
 """
 import os
 import sys
@@ -23,8 +28,9 @@ import conv  # noqa: E402
 import hojas  # noqa: E402
 
 
-def hoja(d, nombre):
-    sprites = hojas.leer(d.leer("DATA", nombre + ".TAB"), d.leer("DATA", nombre + ".DAT"), hojas.es_compleja(nombre))
+def hoja(d, nombre, directorio="DATA"):
+    sprites = hojas.leer(d.leer(directorio, nombre + ".TAB"), d.leer(directorio, nombre + ".DAT"),
+                         hojas.es_compleja(nombre))
     tsh = hojas.escribir(sprites)
     if hojas.leer_tsh(tsh) != sprites:
         sys.exit(f"ERROR: la hoja {nombre} no se lee igual que se escribió")
@@ -47,6 +53,15 @@ def main():
     with open(os.path.join(salida, "animaciones.tan"), "wb") as f:
         f.write(tan)
     print(f"animaciones: {len(tablas[0])} animaciones, {len(tan)} B")
+    for directorio, nombre in (("DATA", "PANEL02V"), ("DATA", "MPOINTER"), ("QDATA", "FONT05V"),
+                               ("QDATA", "FONT16V"), ("QDATA", "FONT01V"), ("QDATA", "FONT124V"),
+                               ("QDATA", "FONT00V")):
+        tsh, n = hoja(d, nombre, directorio)
+        with open(os.path.join(salida, nombre.lower() + ".tsh"), "wb") as f:
+            f.write(tsh)
+        print(f"{nombre}: {n} sprites, {len(tsh)} B")
+    with open(os.path.join(salida, "pref01v.pal"), "wb") as f:
+        f.write(d.leer("QDATA", "PREF01V.PAL"))
     pal = d.leer("DATA", "MPALETTE.DAT")
     with open(os.path.join(salida, "mpalette.dat"), "wb") as f:
         f.write(pal)

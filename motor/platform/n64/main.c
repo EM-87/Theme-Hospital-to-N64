@@ -28,6 +28,7 @@
 #include <stdlib.h>
 
 #include "graficos.h"
+#include "interfaz.h"
 #include "mapa_n64.h"
 #include "raster.h"
 #include "simulacion.h"
@@ -432,14 +433,15 @@ static void dibujar_escena(const th_view *v, medida_t *m)
 // referencia (en el orden de CorsixTH, sprite a sprite) y compara los dos
 // píxel a píxel. En las mezclas el RDP redondea distinto: se cuentan aparte
 // las que difieren en 1 (de 31) por componente.
-static int comprobar_vista(const char *hito, const th_view *v)
+typedef struct {
+    int distintos, mezcla_1, mezclas, de_entidades;
+} diferencias_t;
+
+// Lo que dibujó el RDP en la pantalla frente al rasterizador de referencia con
+// la misma lista y las mismas hojas.
+static diferencias_t comparar_con_referencia(const char *hito, surface_t *pantalla, const th_drawlist *l,
+                                             const th_sheet *const sheets[TH_SHEETS])
 {
-    surface_t *pantalla = display_get();
-    rdpq_attach(pantalla, NULL);
-    rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
-    rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
-    medida_t m;
-    dibujar_escena(v, &m);
     rdpq_detach_wait();
     data_cache_hit_invalidate(pantalla->buffer, pantalla->stride * pantalla->height);
 
@@ -455,8 +457,7 @@ static int comprobar_vista(const char *hito, const th_view *v)
                    .w = ANCHO, .h = ALTO, .paleta = (const uint8_t(*)[3])pal8};
     assertf(r.rgb && r.mezcla && r.hoja, "sin memoria para la referencia");
     th_raster_clear(&r, 0, 0, 0);
-    const th_sheet *const sheets[TH_SHEETS] = {&sh_bloques, &sh_sprites};
-    th_raster_draw(&r, sheets, &lista);
+    th_raster_draw(&r, sheets, l);
 
     const uint16_t *fb = pantalla->buffer;
     int distintos = 0, mezcla_1 = 0, mezclas = 0, de_entidades = 0;
@@ -487,11 +488,69 @@ static int comprobar_vista(const char *hito, const th_view *v)
     free(r.rgb);
     free(r.mezcla);
     free(r.hoja);
+    return (diferencias_t){distintos, mezcla_1, mezclas, de_entidades};
+}
+
+static int comprobar_vista(const char *hito, const th_view *v)
+{
+    surface_t *pantalla = display_get();
+    rdpq_attach(pantalla, NULL);
+    rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+    rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+    medida_t m;
+    dibujar_escena(v, &m);
+    const th_sheet *const sheets[TH_SHEETS] = {&sh_bloques, &sh_sprites};
+    const diferencias_t d = comparar_con_referencia(hito, pantalla, &lista, sheets);
     debugf("TH64 %s: vista (%d,%d): %d pixeles comparados, %d distintos; %d de %d mezclados a 1/31; "
            "%d de entidades; %d sprites, %d cargas, %d cortes, %d casillas redibujadas\n",
-           hito, v->x, v->y, ANCHO * ALTO, distintos, mezcla_1, mezclas, de_entidades, m.st.sprites, m.st.cargas,
-           m.st.cortes, lista.redraws);
+           hito, v->x, v->y, ANCHO * ALTO, d.distintos, d.mezcla_1, d.mezclas, d.de_entidades, m.st.sprites,
+           m.st.cargas, m.st.cortes, lista.redraws);
     display_show(pantalla);
+    return d.distintos;
+}
+
+// Hito 6.1: el panel inferior, su descripción y el puntero, dibujados por el
+// RDP y por la referencia, en varios estados: en pausa, con los botones de
+// gestión a la vista, con un botón pulsado y con dos descripciones.
+static int comprobar_interfaz(void)
+{
+    if (!interfaz_cargar(ANCHO, ALTO, false))
+        return 1;
+    static const struct {
+        int x, y;
+        bool pulsado, descripcion, pausa;
+        int32_t dinero, reputacion;
+        int dia, mes;
+    } estados[] = {
+        {160, 120, false, false, true, 40000, 500, 1, 1},  {200, 225, false, false, false, -1234, 0, 28, 9},
+        {120, 227, true, false, false, 1234567, 1000, 31, 12}, {10, 225, false, true, false, 987, 333, 15, 4},
+        {40, 233, false, true, false, 40000, 777, 3, 3},
+    };
+    static th_draw elementos_ui[512];
+    int distintos = 0;
+    for (unsigned i = 0; i < sizeof estados / sizeof estados[0]; i++) {
+        interfaz_estado(estados[i].x, estados[i].y, estados[i].pulsado, estados[i].descripcion);
+        const th_bottom_info info = {.balance = estados[i].dinero, .day = estados[i].dia, .month = estados[i].mes,
+                                     .reputation = estados[i].reputacion, .rep_min = 0, .rep_max = 1000,
+                                     .paused = estados[i].pausa};
+        th_drawlist l = {.items = elementos_ui, .capacity = 512};
+        interfaz_lista(&info, &l);
+        surface_t *pantalla = display_get();
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        mapa_n64_stats_t st;
+        const uint32_t t0 = get_ticks();
+        interfaz_dibujar(&info, paletas.colores[PALETA_NORMAL], &st);
+        const uint32_t t1 = get_ticks();
+        const diferencias_t d = comparar_con_referencia("hito6.1", pantalla, &l, interfaz_hojas());
+        debugf("TH64 hito6.1: interfaz %u (puntero %d,%d): %d elementos, %d pixeles distintos; %d cargas; CPU del "
+               "dibujo %.3f ms\n",
+               i + 1, estados[i].x, estados[i].y, l.count, d.distintos, st.cargas, (t1 - t0) * 1000.0f / TICKS_PER_SECOND);
+        display_show(pantalla);
+        distintos += d.distintos;
+    }
+    debugf("TH64 hito6.1: comparacion de la interfaz con la referencia: %d pixeles distintos\n", distintos);
     return distintos;
 }
 
@@ -1303,6 +1362,8 @@ int main(void)
             fallos++;
         recorrido_hospital(c, 450);
     }
+    if (assets && comprobar_interfaz())
+        fallos++;
     debugf("TH64 pruebas: fin, %d fallos\n", fallos);
     if (emux_detect(0))
         emux_ioctl_exit();
@@ -1342,21 +1403,36 @@ int main(void)
         nuevo_humanoide(mapa.camera_x, mapa.camera_y);
     }
     int velocidad = 1;
-    bool datos = true, medir_rdp = false, seguir = !hospital;
+    bool datos = !hospital, medir_rdp = false, seguir = !hospital;
+    // Hito 6.1: con el hospital, el panel inferior y el puntero (interfaz.c).
+    // El stick mueve el puntero; A y B son los botones del ratón; los botones
+    // C y la cruceta desplazan la vista; Start pausa; L cambia entre x1 y x8.
+    const bool interfaz = hospital && interfaz_cargar(ANCHO, ALTO, true);
+    bool pausa = false;
+    joypad_buttons_t antes = {0};
     float cpu_ms = 0, lista_ms = 0, sim_ms = 0, rdp_buf_ms = 0, rdp_pipe_ms = 0;
     mapa_n64_stats_t st = {0};
     sim_t s = {0};
     uint32_t reloj = get_ticks(), acumulado = 0, t_rep = 0;
     const uint32_t por_tick = TICKS_PER_SECOND / 1000 * MS_POR_TICK;
     for (;;) {
-        joypad_poll();
-        joypad_inputs_t in = joypad_get_inputs(JOYPAD_PORT_1);
-        joypad_buttons_t pulsado = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+        joypad_inputs_t in;
+        joypad_buttons_t pulsado;
+        interfaz_orden_t orden = {0};
+        if (interfaz) {
+            orden = interfaz_mandos(&in);
+            pulsado.raw = in.btn.raw & ~antes.raw;
+            antes = in.btn;
+        } else {
+            joypad_poll();
+            in = joypad_get_inputs(JOYPAD_PORT_1);
+            pulsado = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+        }
         if (pulsado.r)
             datos = !datos;
         if (pulsado.l)
             medir_rdp = !medir_rdp;
-        if (pulsado.a)
+        if (pulsado.a && !interfaz)
             seguir = !seguir;
         if (assets && pulsado.b && !hospital) {
             for (int i = 0; i < 10; i++) {
@@ -1367,8 +1443,12 @@ int main(void)
                     a_pasear(h, &s);
             }
         }
-        if (hospital && pulsado.z)
+        if (hospital && !interfaz && pulsado.z)
             velocidad = velocidad == 1 ? 8 : 1;
+        if (interfaz && pulsado.l)
+            velocidad = velocidad == 1 ? 8 : 1;
+        if (interfaz && pulsado.start)
+            pausa = !pausa;
         if (assets && !hospital && pulsado.z) {
             nivel = nivel % NIVELES + 1;
             if (cargar_nivel(nivel)) {
@@ -1378,10 +1458,16 @@ int main(void)
         }
         // Stick con zona muerta; la cruceta, 8 píxeles por fotograma. Mover la
         // cámara deja de seguir al humanoide.
-        int sx = abs(in.stick_x) > 8 ? in.stick_x / 6 : 0;
-        int sy = abs(in.stick_y) > 8 ? -in.stick_y / 6 : 0;
-        sx += in.btn.d_right ? 8 : in.btn.d_left ? -8 : 0;
-        sy += in.btn.d_down ? 8 : in.btn.d_up ? -8 : 0;
+        int sx = 0, sy = 0;
+        if (interfaz) {
+            sx = orden.vista_dx + (in.btn.c_right || in.btn.d_right ? 8 : in.btn.c_left || in.btn.d_left ? -8 : 0);
+            sy = orden.vista_dy + (in.btn.c_down || in.btn.d_down ? 8 : in.btn.c_up || in.btn.d_up ? -8 : 0);
+        } else {
+            sx = abs(in.stick_x) > 8 ? in.stick_x / 6 : 0;
+            sy = abs(in.stick_y) > 8 ? -in.stick_y / 6 : 0;
+            sx += in.btn.d_right ? 8 : in.btn.d_left ? -8 : 0;
+            sy += in.btn.d_down ? 8 : in.btn.d_up ? -8 : 0;
+        }
         if (sx || sy)
             seguir = false;
         v.x += sx;
@@ -1397,7 +1483,7 @@ int main(void)
         acumulado += t0 - reloj;
         reloj = t0;
         uint32_t sim0 = s.cpu_ticks + s.cpu_caminos;
-        for (int k = 0; assets && acumulado * velocidad >= por_tick && k < 4 * velocidad; k++) {
+        for (int k = 0; assets && !pausa && acumulado * velocidad >= por_tick && k < 4 * velocidad; k++) {
             acumulado -= por_tick / velocidad;
             if (hospital) {
                 if (simulacion_pendientes() <= 2 * velocidad)
@@ -1458,15 +1544,24 @@ int main(void)
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 24, "Sin assets: ejecuta tools/conv/conv.py");
             }
             if (hospital) {
-                rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 210, "A: seguir al ultimo paciente  Z: x1/x8  R: datos");
+                rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 200,
+                                 interfaz ? "Start: pausa  L: x1/x8  R: datos" : "A: seguir al ultimo paciente  Z: x1/x8  R: datos");
             } else {
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 220, "RAM %d KiB  heap %d/%d KiB", ram_kib,
                                  heap.used / 1024, heap.total / 1024);
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 232, "A: seguir  B: +10  Z: nivel  R: datos  L: RDP");
             }
         }
-        if (hospital)
+        if (interfaz) {
+            const instantanea_t *f = simulacion_instantanea();
+            const th_bottom_info info = {.balance = f->saldo, .day = f->fecha.day, .month = f->fecha.month,
+                                         .reputation = f->reputacion, .rep_min = 0, .rep_max = 1000,
+                                         .paused = pausa};
+            mapa_n64_stats_t st_ui;
+            interfaz_dibujar(&info, paletas.colores[PALETA_NORMAL], &st_ui);
+        } else if (hospital) {
             dibujar_marcador();
+        }
         rdpq_detach_show();
         if (hospital) {
             const uint32_t cpu0 = simulacion_stats()->cpu;

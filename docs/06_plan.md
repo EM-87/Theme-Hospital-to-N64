@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha: 2026-10-27. Estado: **plan**. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
+Fecha: 2026-10-27. Estado: **en curso**: hito 6.1 hecho ([`06_juego_base.md`](06_juego_base.md)). Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
 
 **Objetivo: el nivel 1 de Theme Hospital, de principio a fin, en la ROM.**
 - Se empieza con el edificio vacío y 40.000 $.

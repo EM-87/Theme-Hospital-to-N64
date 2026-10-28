@@ -98,6 +98,8 @@ if grep -q "assets ok" "$log"; then
     grep -q "TH64 hito4: recorrido .* 0 saltos" "$log" || { echo "   FALLO: el hospital en marcha no va a 30 fps"; grep "TH64 hito4" "$log"; exit 1; }
     grep "TH64 hito4" "$log" | sed 's/^/   /'
   fi
+  grep -q "TH64 hito6.1: comparacion de la interfaz con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: la interfaz no se dibuja como la referencia"; grep "TH64 hito6.1" "$log"; exit 1; }
+  grep "TH64 hito6.1" "$log" | sed 's/^/   /'
 else
   echo "   (sin assets: no se comprueba el dibujo; ejecuta tools/conv/conv.py)"
 fi

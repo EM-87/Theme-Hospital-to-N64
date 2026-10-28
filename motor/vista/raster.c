@@ -38,6 +38,7 @@ static void pintar(th_raster *r, const th_sheet *sh, const th_draw *d)
     if (y1 > r->h)
         y1 = r->h;
     const int alfa = d->flags & TH_DRAW_ALPHA25 ? ALFA25 : d->flags & TH_DRAW_ALPHA50 ? ALFA50 : 255;
+    const uint8_t(*paleta)[3] = r->paletas[d->sheet] ? r->paletas[d->sheet] : r->paleta;
     for (int y = y0; y < y1; y++) {
         const int fy = d->flags & TH_DRAW_FLIP_V ? h - 1 - (y - d->y) : y - d->y;
         const uint8_t *fila = px + fy * paso;
@@ -49,7 +50,7 @@ static void pintar(th_raster *r, const th_sheet *sh, const th_draw *d)
             if ((d->flags & TH_DRAW_CROP) && (x < d->clip_x0 || x >= d->clip_x1))
                 continue;
             uint8_t *o = &r->rgb[3 * (y * r->w + x)];
-            const uint8_t *p = r->paleta[c];
+            const uint8_t *p = paleta[c];
             if (alfa < 255) {
                 for (int k = 0; k < 3; k++)
                     o[k] = (uint8_t)((p[k] * alfa + o[k] * (255 - alfa) + 127) / 255);
@@ -66,11 +67,33 @@ static void pintar(th_raster *r, const th_sheet *sh, const th_draw *d)
     }
 }
 
+// Un rectángulo de color: RGBA5551 a 8 bits por componente, como el RDP
+// (los 5 bits arriba y repetidos abajo).
+static void rellenar(th_raster *r, const th_draw *d)
+{
+    const uint16_t c = d->sprite;
+    uint8_t rgb[3];
+    for (int k = 0; k < 3; k++) {
+        const int v = c >> (11 - 5 * k) & 31;
+        rgb[k] = (uint8_t)(v << 3 | v >> 2);
+    }
+    for (int y = d->y < 0 ? 0 : d->y; y < d->y + d->clip_y1 && y < r->h; y++)
+        for (int x = d->x < 0 ? 0 : d->x; x < d->x + d->clip_x1 && x < r->w; x++) {
+            memcpy(&r->rgb[3 * (y * r->w + x)], rgb, 3);
+            if (r->mezcla)
+                r->mezcla[y * r->w + x] = 0;
+            if (r->hoja)
+                r->hoja[y * r->w + x] = 255;
+        }
+}
+
 void th_raster_draw(th_raster *r, const th_sheet *const sheets[TH_SHEETS], const th_drawlist *l)
 {
     for (int i = 0; i < l->count; i++) {
         const th_draw *d = &l->items[i];
-        if (d->sheet < TH_SHEETS && sheets[d->sheet])
+        if (d->sheet == TH_SHEET_FILL)
+            rellenar(r, d);
+        else if (d->sheet < TH_SHEETS && sheets[d->sheet])
             pintar(r, sheets[d->sheet], d);
     }
 }

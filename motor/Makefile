@@ -29,9 +29,9 @@ endif
 include $(N64_INST)/include/n64.mk
 
 # El núcleo se compila además con -Wextra; -Werror y -O2 ya los pone n64.mk.
-CFLAGS += -Wextra -Icore/include -Ivista -Itests
+CFLAGS += -Wextra -Icore/include -Ivista -Iui -Itests
 
-C_FILES := $(wildcard core/src/*.c) $(wildcard vista/*.c) $(wildcard platform/n64/*.c)
+C_FILES := $(wildcard core/src/*.c) $(wildcard vista/*.c) $(wildcard ui/*.c) $(wildcard platform/n64/*.c)
 ifdef HORAS
   CFLAGS += -DTH_HOSPITAL_HORAS=$(HORAS)
 endif

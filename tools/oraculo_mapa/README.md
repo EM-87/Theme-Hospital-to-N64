@@ -47,7 +47,7 @@ tools/oraculo_mapa/escenas.sh                 # las 8 escenas de docs/05_prototi
 | `oraculo.sh <nivel> [casillas] [dir]` | Todo el proceso para un nivel. Deja en `dir` (por defecto `$TH64_WORK/resultados/hito2/vista`) las capturas, las vistas y las diferencias en rojo |
 | `escenas.sh [lista] [dir]` | Lo mismo para escenas con un humanoide (por defecto en `$TH64_WORK/resultados/hito3/escenas`) |
 | `caminos.sh [niveles] [lista] [dir]` | Los oráculos de caminos y caminatas (por defecto en `$TH64_WORK/resultados/hito3`) |
-| `alta.py <dir>` | Los gráficos de alta resolución de `DATA` en los formatos del motor: `VBLK-0` y `VSPR-0` a TSH1, las tablas de animación a TAN1 y `MPALETTE.DAT` descomprimido. Los scripts lo llaman solos y lo dejan en `$TH64_WORK/resultados/alta` |
+| `alta.py <dir>` | Los gráficos de alta resolución de `DATA` en los formatos del motor: `VBLK-0` y `VSPR-0` a TSH1, las tablas de animación a TAN1 y `MPALETTE.DAT` descomprimido. Para el panel inferior de la fase 6, también `PANEL02V`, `MPOINTER`, las fuentes `FONT05V`, `FONT16V`, `FONT01V`, `FONT124V` y `FONT00V` de `QDATA` y la paleta `PREF01V.PAL`. Los scripts lo llaman solos y lo dejan en `$TH64_WORK/resultados/alta` |
 | `comparar.py <captura.png> <vista.ppm> [dif.png] [--mezcla m.pgm] [--entidades e.pgm] [--excluir x0,y0,x1,y1]` | Cuenta los píxeles iguales, los que difieren en 2 o menos (el redondeo de la mezcla de las sombras) y los distintos, con las zonas distintas agrupadas. Con `--entidades` cuenta aparte los píxeles del humanoide del motor |
 
 Lo que se espera:

@@ -241,6 +241,17 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
     int alfa = 255;
     for (int i = l->floor_count; i < l->count; i++) {
         const th_draw *d = &l->items[i];
+        if (d->sheet == TH_SHEET_FILL) {
+            // Un rectángulo de color (el recuadro de una descripción): en modo
+            // relleno, y se vuelve al de los sprites.
+            rdpq_set_mode_fill(color_from_packed16(d->sprite));
+            rdpq_fill_rectangle(d->x, d->y, d->x + d->clip_x1, d->y + d->clip_y1);
+            graficos_modo_sprites(paleta);
+            preparar_tiles();
+            alfa = 255;
+            st->sprites++;
+            continue;
+        }
         int a = alfa_de(d);
         if (a != alfa) {
             if (a < 255)

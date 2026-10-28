@@ -41,8 +41,23 @@ static inline int th_sheet_stride(int w)
 // Bloques especiales de la hoja de bloques del mapa (MBLK / VBLK).
 enum { TH_BLOCK_SHADOW_FULL = 74, TH_BLOCK_SHADOW_HALF = 75, TH_BLOCK_SHADOW_WALL = 156 };
 
-// Hojas de las que sale cada sprite de la lista.
-enum { TH_SHEET_BLOCKS = 0, TH_SHEET_SPRITES = 1, TH_SHEETS = 2 };
+// Hojas de las que sale cada sprite de la lista: las del mapa y las de la
+// interfaz (ui/), cada una de alta resolución (CorsixTH) o baja (la N64).
+enum {
+    TH_SHEET_BLOCKS = 0,
+    TH_SHEET_SPRITES = 1,
+    TH_SHEET_PANEL = 2,        // panel inferior (PANEL02V / PANEL02M)
+    TH_SHEET_POINTER = 3,      // punteros (MPOINTER)
+    TH_SHEET_FONT_MONEY = 4,   // cifras del dinero (Font05V / FONT100M)
+    TH_SHEET_FONT_DATE = 5,    // la fecha (Font16V / FONT101M)
+    TH_SHEET_FONT_WHITE = 6,   // blanca (Font01V / FONT132M)
+    TH_SHEET_FONT_PAUSE = 7,   // azul (Font124V / FONT131M)
+    TH_SHEET_FONT_TOOLTIP = 8, // las descripciones (Font00V / FONT130M)
+    TH_SHEETS = 9,
+    // No es una hoja: un rectángulo de color RGBA5551 (sprite) en (x, y), de
+    // clip_x1 × clip_y1 píxeles.
+    TH_SHEET_FILL = 255,
+};
 
 enum {
     TH_DRAW_ALPHA25 = 1, // al 25 % de opacidad (thdf_alpha_75 de CorsixTH)
