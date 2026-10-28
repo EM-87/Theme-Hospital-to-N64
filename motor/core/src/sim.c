@@ -1489,7 +1489,9 @@ static int object_type(const char *id)
         uint8_t type;
     } t[] = {{"door", TH_OBJ_DOOR},  {"bench", TH_OBJ_BENCH},   {"reception_desk", TH_OBJ_RECEPTION_DESK},
              {"desk", TH_OBJ_DESK},  {"cabinet", TH_OBJ_CABINET}, {"chair", TH_OBJ_CHAIR},
-             {"radiator", TH_OBJ_RADIATOR}};
+             {"radiator", TH_OBJ_RADIATOR},
+             // La puerta batiente de la derecha es la puerta de su sala (room.door).
+             {"swing_door_right", TH_OBJ_DOOR}};
     for (unsigned i = 0; i < sizeof t / sizeof t[0]; i++)
         if (!strcmp(t[i].id, id))
             return t[i].type;

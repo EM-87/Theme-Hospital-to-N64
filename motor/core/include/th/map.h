@@ -63,6 +63,9 @@ typedef struct th_map {
     uint8_t parcel_owner[TH_MAP_MAX_PARCELS];
     uint16_t parcel_tiles[TH_MAP_MAX_PARCELS];
     uint8_t camera_x, camera_y, heliport_x, heliport_y; // jugador 1
+    // Cambia cada vez que se recalculan las sombras, que es después de tocar
+    // las capas o las banderas: así la vista girada sabe cuándo rehacerse.
+    uint32_t version;
 } th_map;
 
 enum {

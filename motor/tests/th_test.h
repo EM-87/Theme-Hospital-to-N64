@@ -36,6 +36,8 @@ void th_test_map(void);
 void th_test_humanoid(void);
 // Pruebas del lector de reglas (test_rules.c).
 void th_test_rules(void);
+// Pruebas de las cuatro vistas (test_vista.c).
+void th_test_vista(void);
 // Simulación de referencia: huella del estado tras 'ticks' pasos.
 uint32_t th_golden_sim(uint32_t seed, int ticks);
 // Lo mismo con float (informativo: ¿coincide entre plataformas?).

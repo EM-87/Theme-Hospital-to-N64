@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "girar.h"
 #include "th/anim.h"
 #include "th/map.h"
 
@@ -109,9 +110,12 @@ typedef struct th_view_entity {
 
 #define TH_VIEW_MAX_ENTITIES 512 // entidades que pueden caer cerca de la pantalla
 
-// Todo lo que se dibuja: el mapa, sus hojas y las entidades.
+// Todo lo que se dibuja: el mapa, sus hojas y las entidades. Con la cámara
+// girada, rot_tiles es el mapa girado (th_rot_map) y las entidades van en
+// casillas de la vista; si es NULL, se dibuja el mapa tal cual.
 typedef struct th_scene {
     const th_map *map;
+    const th_vtile *rot_tiles;
     const th_sheet *sheets[TH_SHEETS];
     const th_anims *anims;
     const th_view_entity *entities;
@@ -139,6 +143,14 @@ int th_view_map(const th_view *v, const th_map *m, const th_sheet *blocks, th_dr
 
 // Limita la cámara para que el centro de la pantalla no salga del rombo del mapa.
 void th_view_clamp(th_view *v);
+
+// Gira la cámara de la rotación from a la to (girar.h) sin mover el punto
+// del mundo que hay en el centro de la pantalla.
+void th_view_rotate(th_view *v, int from, int to);
+
+// La casilla de la vista bajo el píxel (sx, sy) de la pantalla, en el suelo
+// (como Map:ScreenToWorld de CorsixTH). Puede caer fuera del mapa.
+void th_view_pick(const th_view *v, int sx, int sy, int *x, int *y);
 
 // Huella de una lista de dibujo (FNV-1a de todos sus campos), para comprobar
 // que dos formas de hacerla dan la misma.

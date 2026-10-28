@@ -152,20 +152,32 @@ static inline int add_layer(builder *bd, int wall, int block, int sx, int sy)
     return add_block(bd, wall, block, sx - bd->v->unit, sy - bd->h[block] + bd->v->unit);
 }
 
+// Lo mismo, en espejo si flip (las piezas sustitutas de las vistas giradas).
+static inline int add_layer_flip(builder *bd, int wall, int block, int sx, int sy, int flip)
+{
+    if (!flip)
+        return add_layer(bd, wall, block, sx, sy);
+    return add_sprite(bd, wall, TH_SHEET_BLOCKS, block, bd->w[block], bd->h[block], sx - bd->v->unit,
+                      sy - bd->h[block] + bd->v->unit, TH_DRAW_FLIP_H, 0, 0);
+}
+
 // draw_north_wall: la pared norte y, si hay, la sombra sobre ella recortada a
-// su altura.
-static int add_north_wall(builder *bd, const th_tile *t, int sx, int sy)
+// su altura. En las vistas giradas, después, el decorado de la capa norte.
+// vflags son las banderas TH_VT_* de la casilla.
+static int add_north_wall(builder *bd, int wall_n, int sc_n, int vflags, int sx, int sy)
 {
     const int u = bd->v->unit;
-    if (add_layer(bd, 1, t->wall_n, sx, sy) < 0)
+    if (add_layer(bd, 1, wall_n, sx, sy) < 0)
         return -1;
-    const int h = bd->h[t->wall_n];
-    if (t->wall_n && h > 0 && (t->flags & TH_TILE_SHADOW_WALL)) {
+    const int h = bd->h[wall_n];
+    if (wall_n && h > 0 && (vflags & TH_VT_SHADOW_WALL)) {
         int c0 = sy - h + u + u / 8;
         if (add(bd, 1, TH_BLOCK_SHADOW_WALL, sx - u, sy - 56 * u / 32, TH_DRAW_ALPHA25 | TH_DRAW_CLIP, c0,
                 c0 + 82 * u / 32) < 0)
             return -1;
     }
+    if (sc_n && add_layer_flip(bd, 1, sc_n, sx, sy, vflags & TH_VT_FLIP_SC_N) < 0)
+        return -1;
     return 0;
 }
 
@@ -302,11 +314,109 @@ static int line_range(const th_view *v, int s, int margin, int *x0, int *x1)
     return *x0 <= *x1;
 }
 
+// Lo que la vista lee de la casilla i de la línea (la i-ésima desde x0),
+// del mapa (g = 0) o del mapa girado (g = 1); las del mapa no tienen
+// decorado aparte ni espejos.
+#define T_FLOOR(i) (g ? gt[(i) * paso].floor : mt[(i) * paso].floor)
+#define T_WALL_N(i) (g ? gt[(i) * paso].wall_n : mt[(i) * paso].wall_n)
+#define T_WALL_W(i) (g ? gt[(i) * paso].wall_w : mt[(i) * paso].wall_w)
+#define T_SC_N(i) (g ? gt[(i) * paso].sc_n : 0)
+#define T_SC_W(i) (g ? gt[(i) * paso].sc_w : 0)
+#define T_FLAGS(i) (g ? gt[(i) * paso].flags : (int)((mt[(i) * paso].flags >> 11) & 7)) // TH_TILE_SHADOW_* → TH_VT_*
+
+// Una línea de casillas (x + y = s) de x0 a x1. Se compila dos veces, una
+// para el mapa y otra para el mapa girado: la vista original no paga nada.
+static inline __attribute__((always_inline)) int scene_line(builder *bd, int s, int x0, int x1, int first,
+                                                            const int g)
+{
+    const th_scene *sc = bd->sc;
+    const th_view *v = bd->v;
+    const int u = v->unit, half = v->unit / 2;
+    const int paso = 1 - TH_MAP_WIDTH; // x + 1, y − 1
+    const th_tile *mt = g ? NULL : th_map_tile_c(sc->map, x0, s - x0);
+    const th_vtile *gt = g ? sc->rot_tiles + (s - x0) * TH_MAP_WIDTH + x0 : NULL;
+    // En la línea s, la casilla x está en (u·(2x − s) − v->x, u/2·s − v->y).
+    const int sy = half * s - v->y;
+    const int sx0 = u * (2 * x0 - s) - v->x;
+    const int n = x1 - x0;
+    int i, sx;
+    // Suelos y sombras del suelo (draw_floor), de izquierda a derecha.
+    for (i = 0, sx = sx0; i <= n; i++, sx += 2 * u) {
+        const int fl = T_FLAGS(i);
+        if (add_layer_flip(bd, 0, T_FLOOR(i), sx, sy, fl & TH_VT_FLIP_FLOOR) < 0)
+            return -1;
+        int sombra = fl & TH_VT_SHADOW_FULL ? TH_BLOCK_SHADOW_FULL : fl & TH_VT_SHADOW_HALF ? TH_BLOCK_SHADOW_HALF : 0;
+        if (sombra && add(bd, 0, sombra, sx - u, sy, TH_DRAW_ALPHA25, 0, 0) < 0)
+            return -1;
+    }
+    // Paredes norte de derecha a izquierda, cada una con las entidades de
+    // la lista temprana de su casilla.
+    for (i = n, sx = sx0 + 2 * u * n; i >= 0; i--, sx -= 2 * u) {
+        const int x = x0 + i, wall_n = T_WALL_N(i), sc_n = T_SC_N(i);
+        if (((wall_n || sc_n) && add_north_wall(bd, wall_n, sc_n, T_FLAGS(i), sx, sy) < 0) ||
+            (bd->n_ent && has_entities(bd, x, s - x) && add_tile_entities_list(bd, x, s - x, sx, sy, -1, 1) < 0))
+            return -1;
+    }
+    // De izquierda a derecha: la pared oeste y las entidades de la casilla.
+    int prev_needs_redraw = 0;
+    for (i = 0, sx = sx0; i <= n; i++, sx += 2 * u) {
+        const int x = x0 + i, y = s - x;
+        const int wall_n = T_WALL_N(i), sc_n = T_SC_N(i), sc_w = T_SC_W(i);
+        if (add_layer(bd, 1, T_WALL_W(i), sx, sy) < 0 ||
+            (sc_w && add_layer_flip(bd, 1, sc_w, sx, sy, T_FLAGS(i) & TH_VT_FLIP_SC_W) < 0))
+            return -1;
+        int needs_redraw = (wall_n && bd->h[wall_n] > 0) || (sc_n && bd->h[sc_n] > 0);
+        int animated = 0;
+        if (bd->n_ent && has_entities(bd, x, y)) {
+            const int key = y * TH_MAP_WIDTH + x;
+            for (int k = first_entity(bd, x, y); k < bd->n_ent && bd->key[k] == key; k++) {
+                const th_view_entity *e = &sc->entities[bd->ent[k]];
+                if (e->early) {
+                    needs_redraw = 1;
+                    continue;
+                }
+                if (add_entity(bd, e, sx, sy) < 0)
+                    return -1;
+                animated |= th_anims_is_multi_frame(sc->anims, e->anim);
+                needs_redraw |= e->drawing_layer == TH_LAYER_NORTH_SIDE;
+            }
+        }
+        if (animated && !first) {
+            // Lo que tapa a una entidad animada: los objetos del lado sur
+            // de la casilla del oeste, los del lado este de la del norte y,
+            // si hace falta, la casilla anterior de la línea con su pared
+            // norte y lo que hay en ella.
+            int redraw = prev_needs_redraw;
+            int r = add_tile_entities(bd, x - 1, y, sx - u, sy - half, TH_LAYER_SOUTH_SIDE);
+            if (r < 0)
+                return -1;
+            redraw |= r > 0;
+            if (add_tile_entities(bd, x, y - 1, sx + u, sy - half, TH_LAYER_EAST_SIDE) < 0)
+                return -1;
+            if (redraw && x - 1 >= 0 && y + 1 < TH_MAP_HEIGHT) {
+                bd->l->redraws++;
+                if (add_north_wall(bd, T_WALL_N(i - 1), T_SC_N(i - 1), T_FLAGS(i - 1), sx - 2 * u, sy) < 0 ||
+                    add_tile_entities_list(bd, x - 1, y + 1, sx - 2 * u, sy, -1, 1) < 0 ||
+                    add_tile_entities(bd, x - 1, y + 1, sx - 2 * u, sy, -1) < 0)
+                    return -1;
+            }
+        }
+        prev_needs_redraw = needs_redraw;
+    }
+    return 0;
+}
+
+#undef T_FLOOR
+#undef T_WALL_N
+#undef T_WALL_W
+#undef T_SC_N
+#undef T_SC_W
+#undef T_FLAGS
+
 int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
 {
     const int u = v->unit, half = v->unit / 2;
     const th_sheet *blocks = sc->sheets[TH_SHEET_BLOCKS];
-    const th_map *m = sc->map;
     static builder bd;
     bd.l = out;
     bd.v = v;
@@ -347,7 +457,8 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
     for (int i = 0; i < sc->entity_count && bd.n_ent < TH_VIEW_MAX_ENTITIES; i++) {
         const th_view_entity *e = &sc->entities[i];
         int s = e->tile_x + e->tile_y;
-        if (e->tile_x < 0 || s < s0 || s > s1)
+        if (e->tile_x < 0 || e->tile_y < 0 || e->tile_x >= TH_MAP_WIDTH || e->tile_y >= TH_MAP_HEIGHT || s < s0 ||
+            s > s1)
             continue;
         const int k = tile_key(e);
         int j = bd.n_ent++;
@@ -367,73 +478,8 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
         int x0, x1;
         if (!line_range(v, s, margin, &x0, &x1))
             continue;
-        // En la línea s, la casilla x está en (u·(2x − s) − v->x, u/2·s − v->y).
-        const int sy = half * s - v->y;
-        const int sx0 = u * (2 * x0 - s) - v->x;
-        const th_tile *t0 = th_map_tile_c(m, x0, s - x0);
-        const int paso = 1 - TH_MAP_WIDTH; // x + 1, y − 1
-        const th_tile *t;
-        int x, sx;
-        // Suelos y sombras del suelo (draw_floor), de izquierda a derecha.
-        for (x = x0, t = t0, sx = sx0; x <= x1; x++, t += paso, sx += 2 * u) {
-            if (add_layer(&bd, 0, t->floor, sx, sy) < 0)
-                return -1;
-            int sombra = t->flags & TH_TILE_SHADOW_FULL   ? TH_BLOCK_SHADOW_FULL
-                         : t->flags & TH_TILE_SHADOW_HALF ? TH_BLOCK_SHADOW_HALF
-                                                          : 0;
-            if (sombra && add(&bd, 0, sombra, sx - u, sy, TH_DRAW_ALPHA25, 0, 0) < 0)
-                return -1;
-        }
-        // Paredes norte de derecha a izquierda, cada una con las entidades de
-        // la lista temprana de su casilla.
-        for (x = x1, t = t0 + (x1 - x0) * paso, sx = sx0 + 2 * u * (x1 - x0); x >= x0; x--, t -= paso, sx -= 2 * u)
-            if (add_north_wall(&bd, t, sx, sy) < 0 ||
-                (bd.n_ent && has_entities(&bd, x, s - x) && add_tile_entities_list(&bd, x, s - x, sx, sy, -1, 1) < 0))
-                return -1;
-        // De izquierda a derecha: la pared oeste y las entidades de la casilla.
-        int prev_needs_redraw = 0;
-        for (x = x0, t = t0, sx = sx0; x <= x1; x++, t += paso, sx += 2 * u) {
-            const int y = s - x;
-            if (add_layer(&bd, 1, t->wall_w, sx, sy) < 0)
-                return -1;
-            int needs_redraw = t->wall_n && bd.h[t->wall_n] > 0;
-            int animated = 0;
-            if (bd.n_ent && has_entities(&bd, x, y)) {
-                const int key = y * TH_MAP_WIDTH + x;
-                for (int i = first_entity(&bd, x, y); i < bd.n_ent && bd.key[i] == key; i++) {
-                    const th_view_entity *e = &sc->entities[bd.ent[i]];
-                    if (e->early) {
-                        needs_redraw = 1;
-                        continue;
-                    }
-                    if (add_entity(&bd, e, sx, sy) < 0)
-                        return -1;
-                    animated |= th_anims_is_multi_frame(sc->anims, e->anim);
-                    needs_redraw |= e->drawing_layer == TH_LAYER_NORTH_SIDE;
-                }
-            }
-            if (animated && !first) {
-                // Lo que tapa a una entidad animada: los objetos del lado sur
-                // de la casilla del oeste, los del lado este de la del norte y,
-                // si hace falta, la casilla anterior de la línea con su pared
-                // norte y lo que hay en ella.
-                int redraw = prev_needs_redraw;
-                int r = add_tile_entities(&bd, x - 1, y, sx - u, sy - half, TH_LAYER_SOUTH_SIDE);
-                if (r < 0)
-                    return -1;
-                redraw |= r > 0;
-                if (add_tile_entities(&bd, x, y - 1, sx + u, sy - half, TH_LAYER_EAST_SIDE) < 0)
-                    return -1;
-                if (redraw && x - 1 >= 0 && y + 1 < TH_MAP_HEIGHT) {
-                    out->redraws++;
-                    if (add_north_wall(&bd, th_map_tile_c(m, x - 1, y + 1), sx - 2 * u, sy) < 0 ||
-                        add_tile_entities_list(&bd, x - 1, y + 1, sx - 2 * u, sy, -1, 1) < 0 ||
-                        add_tile_entities(&bd, x - 1, y + 1, sx - 2 * u, sy, -1) < 0)
-                        return -1;
-                }
-            }
-            prev_needs_redraw = needs_redraw;
-        }
+        if ((sc->rot_tiles ? scene_line(&bd, s, x0, x1, first, 1) : scene_line(&bd, s, x0, x1, first, 0)) < 0)
+            return -1;
         first = 0;
     }
 
@@ -477,6 +523,26 @@ void th_view_clamp(th_view *v)
         cy = cy_max;
     v->x = cx - v->w / 2;
     v->y = cy - v->h / 2;
+}
+
+void th_view_rotate(th_view *v, int from, int to)
+{
+    // El centro en casillas (a, b), en unidades de 1/(2u): con
+    // cx = u·(a − b) y cy = u/2·(a + b), 2u·a = cx + 2cy y 2u·b = 2cy − cx.
+    const int u = v->unit;
+    const int32_t cx = v->x + v->w / 2, cy = v->y + v->h / 2;
+    int32_t a = cx + 2 * cy, b = 2 * cy - cx;
+    th_rot_point(from, to, &a, &b, 2 * u * TH_MAP_WIDTH);
+    v->x = (int)((a - b) / 2) - v->w / 2;
+    v->y = (int)((a + b) / 4) - v->h / 2;
+}
+
+void th_view_pick(const th_view *v, int sx, int sy, int *x, int *y)
+{
+    const int u = v->unit;
+    const int px = sx + v->x, py = sy + v->y;
+    *x = floor_div(px + 2 * py, 2 * u);
+    *y = floor_div(2 * py - px, 2 * u);
 }
 
 uint32_t th_drawlist_hash(const th_drawlist *l)

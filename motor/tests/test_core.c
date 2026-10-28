@@ -224,6 +224,7 @@ int th_run_core_tests(void)
     th_test_map();
     th_test_humanoid();
     th_test_rules();
+    th_test_vista();
     th_test_log("pruebas: %d comprobaciones, %d fallos\n", th_test_checks, th_test_failures);
     return th_test_failures;
 }

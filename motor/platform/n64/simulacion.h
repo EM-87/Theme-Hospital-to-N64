@@ -29,6 +29,7 @@ typedef struct {
     th_date fecha;
     int personas;
     uint32_t horas; // ticks acabados
+    int giro;       // la cámara con la que se hicieron las entidades (girar.h)
 } instantanea_t;
 
 typedef struct {
@@ -52,6 +53,10 @@ void simulacion_avanzar(uint32_t limite);
 // Acaba todo lo pedido, sin límite de tiempo.
 void simulacion_terminar(void);
 const instantanea_t *simulacion_instantanea(void);
+// Las entidades de las instantáneas, con la cámara girada (hito 6.2). Si la
+// simulación no está a medio tick, rehace la instantánea al momento; si lo
+// está, la siguiente ya sale girada.
+void simulacion_girar(int giro);
 const simulacion_stats_t *simulacion_stats(void);
 
 #endif

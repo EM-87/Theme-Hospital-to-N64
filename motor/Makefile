@@ -2,10 +2,13 @@
 #   make                 ROM normal: th64.z64
 #   make PRUEBAS=1       ROM que ejecuta las pruebas del núcleo: th64_pruebas.z64
 #   make HORAS=N         ROM normal cuyo hospital empieza N horas adelantado:
-#                        th64_horas.z64 (para capturas)
+#                        th64_horas.z64 (para capturas); con MODO=m (0 hito 4,
+#                        1 hito 5, 2 vistas, 3 visor) y GIRO=r, abre ese modo
+#                        con la cámara girada sin pasar por el menú
 #   make MEDIR=1         ROM de medida del hito 5 (tools/hito5/medir.sh): th64_medir.z64
-#   ESCENARIO=hito5      con make o make HORAS=N: el escenario que abre la ROM
-#                        (por defecto hito4; conviene make clean al cambiarlo)
+#   ESCENARIO=hito5      el escenario de las pruebas (por defecto hito4; conviene
+#                        make clean al cambiarlo). La ROM normal los ofrece todos
+#                        en su menú
 # Los assets los genera el conversor (tools/conv) en filesystem/, que no está
 # en el repositorio porque sale de los datos del juego de cada usuario.
 ifeq ($(N64_INST),)
@@ -35,6 +38,12 @@ C_FILES := $(wildcard core/src/*.c) $(wildcard vista/*.c) $(wildcard ui/*.c) $(w
 ifdef HORAS
   CFLAGS += -DTH_HOSPITAL_HORAS=$(HORAS)
 endif
+ifdef MODO
+  CFLAGS += -DTH_MODO_INICIAL=$(MODO)
+endif
+ifdef GIRO
+  CFLAGS += -DTH_GIRO_INICIAL=$(GIRO)
+endif
 ifdef ESCENARIO
   CFLAGS += -DTH_ESCENARIO='"$(ESCENARIO)"'
 endif
@@ -42,7 +51,7 @@ ifdef MEDIR
   CFLAGS += -DTH_MEDIR
 endif
 ifdef PRUEBAS
-  C_FILES += tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c
+  C_FILES += tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c tests/test_vista.c
   CFLAGS += -DTH_PRUEBAS
 endif
 OBJS := $(addprefix $(BUILD_DIR)/,$(C_FILES:.c=.o))

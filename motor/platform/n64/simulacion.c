@@ -20,6 +20,7 @@ static uint32_t entrada; // cuándo se reanudó por última vez
 static int en_temperatura;
 static uint32_t ultima_pausa; // para el mayor tramo sin pausas
 static int etapa;             // 1 tick, 2 instantánea, 3 temperatura
+static int giro;              // la cámara de las instantáneas
 
 // Suma a la cuenta el tiempo desde la última vez.
 static void contar(void)
@@ -58,7 +59,8 @@ static void pausa(void)
 static void hacer_instantanea(void)
 {
     foto.entidades = ents;
-    foto.n_entidades = th_vista_sim(sim, ents, max_ents);
+    foto.n_entidades = th_vista_sim_rot(sim, giro, ents, max_ents);
+    foto.giro = giro;
     foto.saldo = sim->hosp.balance;
     foto.reputacion = sim->hosp.reputation;
     foto.fecha = sim->date;
@@ -141,6 +143,13 @@ void simulacion_terminar(void)
 const instantanea_t *simulacion_instantanea(void)
 {
     return &foto;
+}
+
+void simulacion_girar(int g)
+{
+    giro = g & 3;
+    if (sim && etapa != 1) // a medio tick las entidades no se pueden leer
+        hacer_instantanea();
 }
 
 const simulacion_stats_t *simulacion_stats(void)

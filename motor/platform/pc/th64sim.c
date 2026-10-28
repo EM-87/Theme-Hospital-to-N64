@@ -66,8 +66,11 @@ static int uso(void)
             "<salida.ppm> [mezcla.pgm]\n"
             "     th64sim panel <alta|baja> <nivel.tmp> <número de nivel> <dir_hojas> <textos.trg> <capturas.txt> "
             "<dir_salida>\n"
+            "     th64sim tabla_giro <salida.tsv>\n"
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
-            "       mezcla.pgm: 255 donde el último sprite pintado era semitransparente (sombras)\n",
+            "       mezcla.pgm: 255 donde el último sprite pintado era semitransparente (sombras)\n"
+            "       --giro=r (vista, escena4 y lista): la cámara girada r × 90°, con el mismo centro; con\n"
+            "         --camara-girada, x e y son ya las de la vista girada\n",
             TH64_VERSION);
     return 2;
 }
@@ -412,6 +415,23 @@ static int cargar_hoja(const char *ruta, th_sheet *h, uint8_t **datos)
     return 0;
 }
 
+// --giro=r: la cámara girada r veces 90° (hito 6.2), con el mismo punto
+// del mundo en el centro de la pantalla.
+static int giro, camara_girada;
+static th_rot_map mapa_girado;
+
+static void aplicar_giro(th_view *v, th_scene *sc)
+{
+    if (!giro)
+        return;
+    if (!camara_girada) { // --camara-girada: x e y ya son de la vista girada
+        th_view_rotate(v, 0, giro);
+        th_view_clamp(v); // como la ROM (girar_camara)
+    }
+    th_rot_map_update(&mapa_girado, sc->map, giro);
+    sc->rot_tiles = mapa_girado.tiles;
+}
+
 static int orden_vista(int argc, char **argv)
 {
     if (cargar_mapa(argv[2], atoi(argv[3])))
@@ -424,6 +444,7 @@ static int orden_vista(int argc, char **argv)
     th_view v = {.unit = atoi(argv[6]), .x = atoi(argv[7]), .y = atoi(argv[8]), .w = atoi(argv[9]),
                  .h = atoi(argv[10])};
     th_scene sc = {.map = &mapa, .sheets = {&bloques, NULL}};
+    aplicar_giro(&v, &sc);
     int r = dibujar_escena(&v, &sc, paleta, argv[11], argc > 12 ? argv[12] : NULL, NULL);
     free(hoja);
     return r;
@@ -894,13 +915,14 @@ static int orden_escena4(int argc, char **argv)
     for (int i = 0; i < horas; i++)
         th_sim_tick(s);
     static th_view_entity ents[TH_VISTA_SIM_MAX];
-    int n = th_vista_sim(s, ents, (int)(sizeof ents / sizeof ents[0]));
+    int n = th_vista_sim_rot(s, giro, ents, (int)(sizeof ents / sizeof ents[0]));
     if (!atoi(argv[14]))
         n -= s->n_order; // sin las personas (van al final)
     th_view v = {.unit = atoi(argv[8]), .x = atoi(argv[9]), .y = atoi(argv[10]), .w = atoi(argv[11]),
                  .h = atoi(argv[12])};
     th_scene sc = {.map = s->w.map, .sheets = {&bloques, &sprites}, .anims = s->w.anims, .entities = ents,
                    .entity_count = n};
+    aplicar_giro(&v, &sc);
     int r = dibujar_escena(&v, &sc, paleta, argv[15], argc > 16 ? argv[16] : NULL, argc > 17 ? argv[17] : NULL);
     free(b_datos);
     free(s_datos);
@@ -925,11 +947,12 @@ static int orden_lista(int argc, char **argv)
     for (int i = 0; i < horas; i++)
         th_sim_tick(s);
     static th_view_entity ents[TH_VISTA_SIM_MAX];
-    const int n = th_vista_sim(s, ents, (int)(sizeof ents / sizeof ents[0]));
+    const int n = th_vista_sim_rot(s, giro, ents, (int)(sizeof ents / sizeof ents[0]));
     th_view v = {.unit = atoi(argv[7]), .x = atoi(argv[8]), .y = atoi(argv[9]), .w = atoi(argv[10]),
                  .h = atoi(argv[11])};
     th_scene sc = {.map = s->w.map, .sheets = {&bloques, &sprites}, .anims = s->w.anims, .entities = ents,
                    .entity_count = n};
+    aplicar_giro(&v, &sc);
     static th_draw elementos[4096];
     th_drawlist l = {.items = elementos, .capacity = 4096};
     struct timespec t0, t1;
@@ -951,8 +974,34 @@ static int orden_lista(int argc, char **argv)
     return 0;
 }
 
+// Las tablas de piezas giradas (girar.h), para el oráculo de las vistas
+// (bench/scenarios/captura_girada.lua): «giro bloque suelo capa», con las
+// banderas TH_ROT_* en los números.
+static int orden_tabla_giro(char **argv)
+{
+    FILE *f = fopen(argv[2], "w");
+    if (!f)
+        return 1;
+    for (int r = 1; r <= 3; r++)
+        for (int b = 0; b < 256; b++)
+            fprintf(f, "%d\t%d\t%u\t%u\n", r, b, th_rot_floor(r, b), th_rot_layer(r, b));
+    fclose(f);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
+    // Opciones que valen para cualquier orden: se quitan de argv.
+    for (int i = 1; i < argc; i++)
+        if (strncmp(argv[i], "--giro=", 7) == 0 || strcmp(argv[i], "--camara-girada") == 0) {
+            if (argv[i][2] == 'g')
+                giro = atoi(argv[i] + 7) & 3;
+            else
+                camara_girada = 1;
+            memmove(&argv[i], &argv[i + 1], (size_t)(argc - i) * sizeof argv[0]);
+            argc--;
+            i--;
+        }
     if (argc == 7 && strcmp(argv[1], "hito4") == 0)
         return th64sim_hito4(argv);
     if (argc == 6 && strcmp(argv[1], "carga") == 0)
@@ -988,5 +1037,7 @@ int main(int argc, char **argv)
         return orden_vista(argc, argv);
     if (argc == 9 && strcmp(argv[1], "panel") == 0)
         return orden_panel(argv);
+    if (argc == 3 && strcmp(argv[1], "tabla_giro") == 0)
+        return orden_tabla_giro(argv);
     return uso();
 }

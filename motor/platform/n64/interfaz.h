@@ -13,9 +13,18 @@
 #include "panel_inferior.h"
 
 // Carga las hojas (rom:/datam/panel02m.tsh, mpointer.tsh y las fuentes de
-// rom:/fuentes/) y los textos en inglés. Con mandos, empieza a leerlos en
-// cada barrido (interfaz_mandos); la ROM de pruebas no los necesita.
+// rom:/fuentes/) y los textos en inglés, la primera vez. Con mandos, empieza
+// a leerlos en cada barrido (interfaz_mandos_iniciar); la ROM de pruebas no
+// los necesita.
 bool interfaz_cargar(int ancho, int alto, bool mandos);
+
+// Empieza a leer los mandos en cada barrido. Desde entonces no hay que
+// llamar a joypad_poll: interfaz_mandos o interfaz_leer dan la última lectura.
+void interfaz_mandos_iniciar(void);
+// La última lectura del puerto 1, sin mover el puntero (el menú, el visor).
+void interfaz_leer(joypad_inputs_t *mando);
+// Dónde está el puntero, en píxeles de la pantalla.
+void interfaz_puntero(int *x, int *y);
 
 // Lo que el juego tiene que hacer después de leer los mandos.
 typedef struct {

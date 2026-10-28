@@ -60,6 +60,8 @@ static int is_wall(uint8_t block, int tall)
 
 void th_map_update_shadows(th_map *m)
 {
+    static uint32_t versiones; // distinta en cada llamada, también entre mapas
+    m->version = ++versiones;
     const uint32_t shadows = TH_TILE_SHADOW_HALF | TH_TILE_SHADOW_FULL | TH_TILE_SHADOW_WALL;
     th_tile *t = m->tiles;
     for (int y = 0; y < TH_MAP_HEIGHT; y++) {

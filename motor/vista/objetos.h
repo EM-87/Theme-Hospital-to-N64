@@ -16,4 +16,19 @@
 // Rellena out con las entidades de la simulación; devuelve cuántas son.
 int th_vista_sim(const th_sim *s, th_view_entity *out, int max);
 
+// Lo mismo con la cámara girada rot (girar.h): las entidades van en casillas
+// de la vista. Los objetos se colocan con la orientación girada o, si no se
+// pueden poner así, con la opuesta (de frente en lugar de espaldas); las
+// personas, con la animación que mira a la dirección girada, y quien usa un
+// objeto, como lo pondría use_object con el objeto girado.
+int th_vista_sim_rot(const th_sim *s, int rot, th_view_entity *out, int max);
+
+// Un humanoide (ya puesto en e como con la cámara sin girar) con la cámara
+// girada rot: en su posición girada y, si su animación es de las que van por
+// parejas (caminar, quieto, llamar y cruzar puertas, como en walk_anims de
+// CorsixTH), con la que mira a la dirección girada; si esa dirección no está
+// dibujada (las de las necesidades solo miran al este o al sur), con la
+// opuesta. Para quien usa un objeto hace falta la simulación: th_vista_sim_rot.
+void th_vista_humanoide_rot(const th_humanoid *h, const th_anims *anims, int rot, th_view_entity *e);
+
 #endif

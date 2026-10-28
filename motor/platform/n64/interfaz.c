@@ -68,8 +68,34 @@ static void cargar_textos(const char *ruta)
         memset(&textos, 0, sizeof textos);
 }
 
+void interfaz_mandos_iniciar(void)
+{
+    static bool instalado;
+    if (!instalado)
+        vi_install_vblank_handler(en_cada_barrido, NULL);
+    instalado = true;
+}
+
+void interfaz_leer(joypad_inputs_t *mando)
+{
+    disable_interrupts();
+    *mando = *(const joypad_inputs_t *)&ultimo;
+    enable_interrupts();
+}
+
+void interfaz_puntero(int *x, int *y)
+{
+    *x = th_pointer_x(&puntero);
+    *y = th_pointer_y(&puntero);
+}
+
 bool interfaz_cargar(int ancho, int alto, bool mandos)
 {
+    static bool cargada;
+    if (mandos)
+        interfaz_mandos_iniciar();
+    if (cargada)
+        return true;
     for (unsigned i = 0; i < sizeof rutas / sizeof rutas[0]; i++) {
         const int k = rutas[i].indice;
         if (!hoja_cargar(&hojas[k], rutas[i].ruta) ||
@@ -90,8 +116,7 @@ bool interfaz_cargar(int ancho, int alto, bool mandos)
     alto_pantalla = alto;
     th_bottom_panel_init(&panel, 0, ancho, alto);
     th_pointer_init(&puntero, ancho, alto);
-    if (mandos)
-        vi_install_vblank_handler(en_cada_barrido, NULL);
+    cargada = true;
     return true;
 }
 

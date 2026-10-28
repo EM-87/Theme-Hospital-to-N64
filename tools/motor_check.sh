@@ -14,7 +14,10 @@
 #      hito 4 (assets/escenarios/hito4.trg), 3.000 horas de hospital dan la
 #      misma huella que en el PC, el RDP dibuja el hospital (objetos y
 #      personas) igual que la referencia y el hospital en marcha va a 30 fps;
-#   4. ROM normal: compila y arranca.
+#      la interfaz (hito 6.1) y las tres vistas giradas del hospital (hito
+#      6.2) igual que la referencia, y estas con la misma lista de dibujo que
+#      th64sim lista --giro;
+#   4. ROM normal: compila y arranca en el menú.
 # En las dos ROM comprueba también que el bucle del dibujo no choca con las
 # funciones de rdpq que llama en la caché de instrucciones
 # (tools/cache_instrucciones.py).
@@ -100,6 +103,19 @@ if grep -q "assets ok" "$log"; then
   fi
   grep -q "TH64 hito6.1: comparacion de la interfaz con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: la interfaz no se dibuja como la referencia"; grep "TH64 hito6.1" "$log"; exit 1; }
   grep "TH64 hito6.1" "$log" | sed 's/^/   /'
+  if [ -n "$huella_h4" ]; then
+    # Hito 6.2: las vistas giradas del hospital, dibujadas como la referencia y
+    # con la misma lista de dibujo que el PC (th64sim lista --giro).
+    grep -q "TH64 hito6.2: comparacion de las vistas giradas con la referencia: 0 pixeles distintos" "$log" || { echo "   FALLO: las vistas giradas no se dibujan como la referencia"; grep "TH64 hito6.2" "$log"; exit 1; }
+    D=$M/assets/datam
+    while read -r r x y h; do
+      h_pc=$("$M/build/pc/th64sim" lista "$M/assets" "$M/assets/escenarios/hito4.trg" "$D/mblk-0.tsh" "$D/mspr-0.tsh" \
+        "$D/animaciones.tan" 16 "$x" "$y" 320 240 3000 1 --giro="$r" --camara-girada | sed -n 's/.*huella \([0-9a-f]*\).*/\1/p')
+      [ "$h" = "$h_pc" ] || { echo "   FALLO: vista $r: lista de dibujo N64 $h frente a PC $h_pc"; exit 1; }
+    done < <(sed -n 's/.*TH64 hito6.2: vista \([0-9]\), camara (\(-*[0-9]*\),\(-*[0-9]*\)): .*huella \([0-9a-f]*\).*/\1 \2 \3 \4/p' "$log")
+    grep "TH64 hito6.2" "$log" | sed 's/^/   /'
+    echo "   listas de dibujo de las vistas giradas iguales en el PC y en la N64"
+  fi
 else
   echo "   (sin assets: no se comprueba el dibujo; ejecuta tools/conv/conv.py)"
 fi
@@ -109,11 +125,9 @@ make -s -C "$M" > "$OUT/make_rom.log"
 python3 -I "$REPO_DIR/tools/cache_instrucciones.py" "$N64_INST/bin/mips64-elf-nm" "$M/build/n64/th64.elf" --relleno \
   | sed 's/^/   /' \
   || { echo "   FALLO: el dibujo choca con rdpq en la caché de instrucciones (motor/platform/n64/relleno_cache.c)"; exit 1; }
-# Con assets, la ROM avisa de que ha cargado el nivel; sin ellos, solo del heap.
-hasta="TH64 motor: heap"
-grep -q "assets ok" "$log" && hasta="TH64 hito3: nivel"
-[ -n "$huella_h4" ] && grep -q "assets ok" "$log" && hasta="TH64 hito4: hospital del escenario cargado"
+# La ROM normal arranca en el menú de la ROM de prueba (hito 6.2).
+hasta="TH64 menu: ROM de prueba lista"
 ARES_UNTIL="$hasta" "$REPO_DIR/tools/run_ares.sh" "$M/th64.z64" "$OUT/ares_rom" 60 > /dev/null
-grep "TH64 motor\|TH64 hito3\|TH64 hito4" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
+grep "TH64 motor\|TH64 hito3\|TH64 menu" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
 grep -q "$hasta" "$OUT/ares_rom/isviewer.log" || { echo "   FALLO: la ROM normal no arranca"; exit 1; }
 echo "== todo correcto"
