@@ -29,7 +29,7 @@ Estructura:
 | Ruta | Contenido |
 |---|---|
 | `docs/` | plan y documento de hallazgos de cada fase |
-| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`), del código (`tools/arquitectura/`), de cómo construir el motor (`tools/construccion/`), el conversor de datos del motor (`tools/conv/`) y los oráculos del mapa (`tools/oraculo_mapa/`) |
+| `tools/` | instalación del entorno, ejecución sin pantalla (CorsixTH, ares, mediciones), análisis de los datos (`tools/datos/`), del código (`tools/arquitectura/`), de cómo construir el motor (`tools/construccion/`), el conversor de datos del motor (`tools/conv/`) , los oráculos del mapa (`tools/oraculo_mapa/`) y los inventarios del arte (`tools/arte/`) |
 | `bench/` | arnés de medición dentro de CorsixTH, partidas de referencia y resultados resumidos |
 | `n64/` | ROMs: hola mundo, benchmarks de CPU (`luabench`), medida de RAM libre (`rambase`) y ROMs de medida de la fase 4 (`pruebas/`) |
 | `motor/` | el motor de la fase 5: núcleo portable, vista del mapa, capa de la N64 y pruebas ([`motor/README.md`](motor/README.md)) |
