@@ -5,9 +5,11 @@ Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los ass
 ```bash
 source tools/env.sh
 python3 -I tools/conv/conv.py                    # todos los pasos
-python3 -I tools/conv/conv.py graficos           # solo un paso (graficos, animaciones, niveles, reglas, textos, fuentes, sonido)
+python3 -I tools/conv/conv.py niveles            # solo un paso (graficos, animaciones, niveles, reglas, textos, fuentes, sonido)
 python3 -I tools/conv/conv.py --vistas DIR       # además, vistas previas en PNG
 ```
+
+Los pasos `graficos`, `animaciones` y `reglas` van siempre juntos: pedir uno ejecuta los tres. Llevan el arte nuevo (`tools/arte/README.md`) con índices que se cruzan, así que salen del mismo manifiesto. Con arte nuevo, los tres necesitan también CorsixTH y `lua5.4`, y además numpy y Pillow.
 
 | Módulo | Qué hace |
 |---|---|

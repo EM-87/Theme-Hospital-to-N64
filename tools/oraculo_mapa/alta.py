@@ -7,10 +7,11 @@ tools/conv/conv.py.
 Uso: python3 -I tools/oraculo_mapa/alta.py <dir_salida> [--arte]   (lee $TH_DATA_DIR)
 
 Con --arte, la hoja de sprites y las animaciones llevan además el arte nuevo
-(tools/arte/importar.py), con los mismos índices que en motor/assets. Sin él,
-el motor dibuja con el espejo de CorsixTH, como el oráculo: las reglas de
-motor/assets nombran animaciones que estas tablas no tienen, y la vista las
-ignora.
+(tools/arte/importar.py; necesita también el código de CorsixTH y lua5.4). Sus
+índices son los de motor/assets si el manifiesto es el mismo que en la última
+conversión (tools/conv/conv.py). Sin --arte, el motor dibuja con el espejo de
+CorsixTH, como el oráculo: las reglas de motor/assets nombran animaciones que
+estas tablas no tienen, y la vista las ignora.
 
 Escribe en dir_salida:
   vblk-0.tsh       bloques del mapa (VBLK-0), más el 226 de las vistas giradas

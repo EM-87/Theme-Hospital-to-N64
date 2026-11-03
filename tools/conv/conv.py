@@ -15,6 +15,10 @@ SoundFont TimGM6mb (paquete timgm6mb-soundfont, que instala tools/setup.sh).
 Si hay arte nuevo ($TH64_ARTE_DIR/arte.json, ver tools/arte/importar.py), se
 añade al final de la hoja de sprites MSPR-0 y de las tablas de animación, y las
 reglas de cada objeto llevan en «arte» la animación nueva de cada orientación.
+Los pasos graficos, animaciones y reglas van siempre juntos (pedir uno ejecuta los
+tres), para que la hoja, las tablas y las reglas salgan del mismo manifiesto. Con
+arte nuevo, los tres necesitan el código de CorsixTH y lua5.4: el importador saca
+de CorsixTH qué animación dibuja hoy cada orientación de cada objeto.
 """
 import argparse
 import json
@@ -93,9 +97,10 @@ def paso_graficos(d, salida, vistas, resumen):
             sprites = hojas.con_sombra_oeste(sprites, 16)
         if n == "MSPR-0":  # más los sprites del arte nuevo, si lo hay
             esc, nuevas = importar.aplicar(d, "baja")
-            if esc.sprites[:len(sprites)] != sprites:
-                sys.exit("ERROR: el importador de arte no parte de la misma hoja MSPR-0")
-            sprites = esc.sprites
+            if nuevas:
+                if esc.sprites[:len(sprites)] != sprites:
+                    sys.exit("ERROR: el importador de arte no parte de la misma hoja MSPR-0")
+                sprites = esc.sprites
         tsh = hojas.escribir(sprites)
         # Comprobación de ida y vuelta: el fichero escrito devuelve los mismos píxeles.
         if hojas.leer_tsh(tsh) != sprites:
@@ -148,9 +153,11 @@ def paso_animaciones(d, salida, vistas, resumen, oraculo=None):
     originales = len(prim)
     # Más las animaciones del arte nuevo, si lo hay (al final: no cambia ningún índice).
     esc, nuevas = importar.aplicar(d, "baja")
-    if (esc.prim[:originales], esc.fot[:len(fot)], esc.lista[:len(lista)], esc.ele[:len(ele)]) != (prim, fot, lista, ele):
-        sys.exit("ERROR: el importador de arte no parte de las mismas tablas de animación")
-    prim, fot, lista, ele = esc.prim, esc.fot, esc.lista, esc.ele
+    if nuevas:
+        if (esc.prim[:originales], esc.fot[:len(fot)], esc.lista[:len(lista)], esc.ele[:len(ele)]) != \
+                (prim, fot, lista, ele):
+            sys.exit("ERROR: el importador de arte no parte de las mismas tablas de animación")
+        prim, fot, lista, ele = esc.prim, esc.fot, esc.lista, esc.ele
     tan = anim.escribir(prim, fot, lista, ele)
     dur = anim.duraciones(prim, fot)
     if anim.leer_tan(tan) != (prim, dur, [(f[0], f[1], f[2], f[3]) for f in fot], lista, ele):
@@ -295,6 +302,10 @@ def paso_sonido(d, salida, vistas, resumen):
 
 PASOS = {"graficos": paso_graficos, "animaciones": paso_animaciones, "niveles": paso_niveles,
          "reglas": paso_reglas, "textos": paso_textos, "fuentes": paso_fuentes, "sonido": paso_sonido}
+# La hoja MSPR-0, las tablas de animación y las reglas llevan el arte nuevo con índices que se cruzan: van
+# juntos, del mismo manifiesto. Por separado, un objeto podría apuntar a la animación o al sprite de otra
+# conversión (desaparecer o salir con el arte de otro), sin ningún aviso.
+PASOS_DEL_ARTE = ("graficos", "animaciones", "reglas")
 
 
 def main():
@@ -307,6 +318,11 @@ def main():
     a = ap.parse_args()
     if not a.datos:
         sys.exit("falta --datos o TH_DATA_DIR")
+    if set(PASOS_DEL_ARTE) & set(a.pasos):
+        extra = [p for p in PASOS_DEL_ARTE if p not in a.pasos]
+        if extra:
+            print(f"(graficos, animaciones y reglas van siempre juntos: añado {' '.join(extra)})")
+            a.pasos += extra
     d = Datos(a.datos)
     previo = os.path.join(a.salida, "conversion.json")
     resumen = json.load(open(previo)) if os.path.exists(previo) else {}

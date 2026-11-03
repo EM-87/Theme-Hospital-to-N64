@@ -13,6 +13,8 @@ Reglas de la comparación:
     CorsixTH, que allí ya es el texto traducido;
   * el aspecto de los pacientes («aspecto») solo lo tiene el extractor: es su
     traducción de initPatient, que se compara aparte (está la función);
+  * el arte nuevo de los objetos («arte», tools/arte/importar.py) solo lo tiene
+    el extractor: lo añade conv.py desde el manifiesto, y CorsixTH no lo conoce;
   * todo lo demás tiene que ser idéntico, y un entero no es igual a un real.
 """
 import json
@@ -32,6 +34,8 @@ def diferencias(a, b, ruta, out, limite=20):
     if isinstance(a, dict):
         for k in sorted(set(a) | set(b)):
             if k == "aspecto" and ruta.startswith("enfermedades."):
+                continue
+            if k == "arte" and ruta.startswith("objetos.") and ruta.count(".") == 1:
                 continue
             if k not in b:
                 out.append(f"{ruta}.{k}: solo en el extractor")
