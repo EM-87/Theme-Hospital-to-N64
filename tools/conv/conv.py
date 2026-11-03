@@ -11,6 +11,10 @@ Pasos (por defecto, todos): graficos animaciones niveles reglas textos fuentes s
 Los pasos reglas, textos, fuentes y sonido necesitan además el código de
 CorsixTH ($CORSIXTH_DIR); reglas y textos, también lua5.4; sonido, g++ y el
 SoundFont TimGM6mb (paquete timgm6mb-soundfont, que instala tools/setup.sh).
+
+Si hay arte nuevo ($TH64_ARTE_DIR/arte.json, ver tools/arte/importar.py), se
+añade al final de la hoja de sprites MSPR-0 y de las tablas de animación, y las
+reglas de cada objeto llevan en «arte» la animación nueva de cada orientación.
 """
 import argparse
 import json
@@ -28,6 +32,9 @@ import paleta  # noqa: E402
 import reglas  # noqa: E402
 import rnc  # noqa: E402
 import sonidos  # noqa: E402
+
+sys.path.insert(0, os.path.join(AQUI, "..", "arte"))
+import importar  # noqa: E402
 
 REPO = os.path.normpath(os.path.join(AQUI, "..", ".."))
 
@@ -84,6 +91,11 @@ def paso_graficos(d, salida, vistas, resumen):
         sprites = hojas.leer(tab, dat, hojas.es_compleja(n))
         if n == "MBLK-0":  # más la sombra sobre una pared oeste de las vistas giradas
             sprites = hojas.con_sombra_oeste(sprites, 16)
+        if n == "MSPR-0":  # más los sprites del arte nuevo, si lo hay
+            esc, nuevas = importar.aplicar(d, "baja")
+            if esc.sprites[:len(sprites)] != sprites:
+                sys.exit("ERROR: el importador de arte no parte de la misma hoja MSPR-0")
+            sprites = esc.sprites
         tsh = hojas.escribir(sprites)
         # Comprobación de ida y vuelta: el fichero escrito devuelve los mismos píxeles.
         if hojas.leer_tsh(tsh) != sprites:
@@ -133,18 +145,25 @@ def paso_animaciones(d, salida, vistas, resumen, oraculo=None):
     vprim, vfot, _, _ = anim.leer(*v)
     if vprim != prim or [f[1:] for f in vfot] != [f[1:] for f in fot]:
         sys.exit("ERROR: las animaciones de DATAM no se encadenan como las de DATA")
+    originales = len(prim)
+    # Más las animaciones del arte nuevo, si lo hay (al final: no cambia ningún índice).
+    esc, nuevas = importar.aplicar(d, "baja")
+    if (esc.prim[:originales], esc.fot[:len(fot)], esc.lista[:len(lista)], esc.ele[:len(ele)]) != (prim, fot, lista, ele):
+        sys.exit("ERROR: el importador de arte no parte de las mismas tablas de animación")
+    prim, fot, lista, ele = esc.prim, esc.fot, esc.lista, esc.ele
     tan = anim.escribir(prim, fot, lista, ele)
     dur = anim.duraciones(prim, fot)
     if anim.leer_tan(tan) != (prim, dur, [(f[0], f[1], f[2], f[3]) for f in fot], lista, ele):
         sys.exit("ERROR: las animaciones no se leen igual que se escribieron")
     r = {"fichero": "datam/animaciones.tan", "animaciones": len(prim), "fotogramas": len(fot),
-         "lista": len(lista), "elementos": len(ele), "bytes": escribir(salida, "datam/animaciones.tan", tan)}
+         "lista": len(lista), "elementos": len(ele), "bytes": escribir(salida, "datam/animaciones.tan", tan),
+         "arte": [{k: n[k] for k in ("objeto", "orientacion", "animacion", "sprite", "informe")} for n in nuevas]}
     if oraculo:
         # Volcado de AnimationManager:getAnimLength de CorsixTH: «animación duración» por línea
         # (tools/construccion/metodo/oraculo/sonda_anim.lua).
         ref = {int(a): int(b) for a, b in (l.split() for l in open(oraculo) if l.strip())}
-        distintas = [(i, dur[i], ref.get(i)) for i in range(len(dur)) if ref.get(i) != dur[i]]
-        r["oraculo"] = {"iguales": len(dur) - len(distintas), "distintas": distintas}
+        distintas = [(i, dur[i], ref.get(i)) for i in range(originales) if ref.get(i) != dur[i]]
+        r["oraculo"] = {"iguales": originales - len(distintas), "distintas": distintas}
     resumen["animaciones"] = r
 
 
@@ -164,6 +183,11 @@ def paso_reglas(d, salida, vistas, resumen):
     doc, salida_lua = reglas.extraer(lua, d.ruta("LEVELS"))
     tablas = [d.leer("DATAM", f"M{t}-1.ANI") for t in ("START", "FRA", "LIST", "ELE")]
     prim, fot, _, _ = anim.leer(*tablas)
+    # El arte nuevo: en cada objeto, «arte» = {orientación: animación}, que la vista usa sin espejo
+    # en lugar de idle_animations (motor/vista/objetos.c), si la animación está en las tablas cargadas.
+    _, nuevas = importar.aplicar(d, "baja")
+    for objeto, por_dir in importar.por_objeto(nuevas).items():
+        doc["objetos"][objeto]["arte"] = por_dir
     r = reglas.preparar(doc, anim.duraciones(prim, fot))
     r["extractor"] = salida_lua
     r["ficheros"] = {}
@@ -300,6 +324,9 @@ def main():
         r = resumen["animaciones"]
         print(f"animaciones       {r['animaciones']} animaciones, {r['fotogramas']} fotogramas, "
               f"{r['elementos']} elementos  {r['bytes']} B  -> {r['fichero']}")
+        for n in r["arte"]:
+            print(f"  arte nuevo: {n['objeto']} {n['orientacion']} -> animación {n['animacion']}, sprite {n['sprite']} "
+                  f"({n['informe']['sprite'][0]} x {n['informe']['sprite'][1]}, silueta {n['informe']['silueta']})")
         if "oraculo" in r:
             o = r["oraculo"]
             print(f"  duraciones frente a CorsixTH: {o['iguales']} iguales, {len(o['distintas'])} distintas "

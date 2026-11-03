@@ -4,7 +4,13 @@
 CorsixTH y compararlo con sus capturas. La N64 usa los de DATAM, que convierte
 tools/conv/conv.py.
 
-Uso: python3 -I tools/oraculo_mapa/alta.py <dir_salida>   (lee $TH_DATA_DIR)
+Uso: python3 -I tools/oraculo_mapa/alta.py <dir_salida> [--arte]   (lee $TH_DATA_DIR)
+
+Con --arte, la hoja de sprites y las animaciones llevan además el arte nuevo
+(tools/arte/importar.py), con los mismos índices que en motor/assets. Sin él,
+el motor dibuja con el espejo de CorsixTH, como el oráculo: las reglas de
+motor/assets nombran animaciones que estas tablas no tienen, y la vista las
+ignora.
 
 Escribe en dir_salida:
   vblk-0.tsh       bloques del mapa (VBLK-0), más el 226 de las vistas giradas
@@ -28,6 +34,9 @@ import anim  # noqa: E402
 import conv  # noqa: E402
 import hojas  # noqa: E402
 
+sys.path.insert(0, os.path.join(AQUI, "..", "arte"))
+import importar  # noqa: E402
+
 
 def hoja(d, nombre, directorio="DATA"):
     sprites = hojas.leer(d.leer(directorio, nombre + ".TAB"), d.leer(directorio, nombre + ".DAT"),
@@ -41,17 +50,26 @@ def hoja(d, nombre, directorio="DATA"):
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3) or (len(sys.argv) == 3 and sys.argv[2] != "--arte"):
         sys.exit(__doc__)
     salida = sys.argv[1]
+    con_arte = len(sys.argv) == 3
     os.makedirs(salida, exist_ok=True)
     d = conv.Datos(os.environ.get("TH_DATA_DIR", ""))
+    esc, nuevas = importar.aplicar(d, "alta") if con_arte else (None, [])
     for nombre in ("VBLK-0", "VSPR-0"):
-        tsh, n = hoja(d, nombre)
+        if nombre == "VSPR-0" and esc:
+            tsh, n = hojas.escribir(esc.sprites), len(esc.sprites)
+        else:
+            tsh, n = hoja(d, nombre)
         with open(os.path.join(salida, nombre.lower() + ".tsh"), "wb") as f:
             f.write(tsh)
         print(f"{nombre}: {n} sprites, {len(tsh)} B")
     tablas = anim.leer(*[d.leer("DATA", f"V{t}-1.ANI") for t in ("START", "FRA", "LIST", "ELE")])
+    if esc:
+        tablas = (esc.prim, esc.fot, esc.lista, esc.ele)
+        for n in nuevas:
+            print(f"arte nuevo: {n['objeto']} {n['orientacion']} -> animación {n['animacion']}, sprite {n['sprite']}")
     tan = anim.escribir(*tablas)
     with open(os.path.join(salida, "animaciones.tan"), "wb") as f:
         f.write(tan)

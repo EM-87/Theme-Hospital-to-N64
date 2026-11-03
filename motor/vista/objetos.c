@@ -166,6 +166,14 @@ static int add_object(const th_sim *s, int i, const colocacion *c, th_view_entit
         an = th_rules_get(r, idle, dir_names[mirror_dir[dir]]);
         flags = TH_ANIM_FLIP_H;
     }
+    // El arte nuevo (tools/arte/importar.py): una animación propia para esta
+    // orientación, sin espejo. Solo si está en las tablas cargadas: los
+    // gráficos del oráculo de CorsixTH no la llevan, y ahí sigue el espejo.
+    th_rnode arte = th_rules_get(r, th_rules_get(r, o->def, "arte"), dir_names[dir]);
+    if (arte && (unsigned)th_rules_int(r, arte, 0) < s->w.anims->count) {
+        an = arte;
+        flags = 0;
+    }
     if (!an)
         return 0;
     const unsigned anim = (unsigned)th_rules_int(r, an, 0);

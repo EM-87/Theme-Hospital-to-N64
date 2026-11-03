@@ -186,6 +186,19 @@ Si la vista 1 queda demasiado oscura, se prueba un tono intermedio. Los objetos 
   3. las máquinas.
 - **Derechos.** Lo que se derive del arte de TH se trata como sus datos: no va al repositorio.
 
+**Lo que se ha probado (2026-10-29 a 2026-11-03).**
+- **PixelLab desde la web** (rotación de 8 vistas) da resultados aprovechables con objetos que tienen dos vistas dibujadas: con el norte y el este del escritorio, el sur y el oeste salieron con la cámara de TH, el estilo y el ordenador en su sitio. Con el váter (una sola vista) y con Ludo, peor: inventan el interior.
+- **La API de PixelLab**, con la máquina de bebidas, cuya espalda dibujó Bullfrog y sirve de examen:
+
+| Herramienta | Coste (cuenta de prueba) | Resultado |
+|---|---|---|
+| `/v2/rotate`, a un ángulo concreto | 1 generación por vista, 9–14 s | Inservible para TH: la puerta sale como una solapa encima; cambiar el ángulo de cámara o la fidelidad a la imagen apenas cambia nada |
+| `/v2/generate-8-rotations-v3`, la de la web | **1 generación por objeto** (unos 2,5 céntimos de dólar con plan de pago), 1,5 min | La mejor: mismo tamaño y cámara; espalda lisa (sin la rejilla de Bullfrog), silueta al 85–88 % y color al 73–80 % |
+| `/v2/generate-8-rotations-v2`, «Pro» | 10 generaciones por objeto | Silueta al 98 %, pero el color se va y las direcciones no cuadran |
+
+- **Ningún modelo sabe cómo es la espalda que no ve.** La rejilla o la cisterna hay que añadirlas aparte, con un retoque o copiando piezas del arte original.
+- **El importador está hecho** ([`06_juego_base.md`](06_juego_base.md#arte-nuevo-el-importador)): el escritorio en sur y oeste ya está en el motor. Con el médico sentado vuelve el espejo, porque su animación lleva el escritorio dentro.
+
 **[CorsixTH-Graphics](https://github.com/CorsixTH/CorsixTH-Graphics)**, que propuso Eduardo, es el intento de la comunidad de sustituir el arte de TH por arte libre. Se quedó en 80 suelos (de Zephyris, CC BY-SA 4.0), un codificador de animaciones (MIT) y la especificación de su formato; el último cambio es de 2021. Sirve como modelo para el importador: describe sprites, fotogramas y elementos en texto, con grupos de hasta cuatro vistas por animación. Sus suelos no sirven para las espaldas. Y deja una lección: dibujar a mano el arte de TH se paró en los suelos.
 
 ### Colocar en las cuatro direcciones (hito 6.3)

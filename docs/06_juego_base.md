@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha de inicio: 2026-10-27. Estado: **hitos 6.1, 6.2 y 6.2b hechos**. Plan, hitos y criterios: [`06_plan.md`](06_plan.md).
+Fecha de inicio: 2026-10-27. Estado: **hitos 6.1, 6.2 y 6.2b hechos, y el importador de arte nuevo**. Plan, hitos y criterios: [`06_plan.md`](06_plan.md).
 
 ## Hito 6.1 — Puntero y panel
 
@@ -339,3 +339,55 @@ ROM de medida en ares, con el hospital del hito 5 a la hora 3.833 (50 pacientes,
 - **Que Eduardo mire las vistas con el sol fijo**, sobre todo la de 90°, con todas las paredes a la sombra. Si queda demasiado oscura, se puede probar un tono intermedio.
 - **Los objetos y las personas llevan su luz pintada**, de un sol al suroeste en la vista original: en las giradas no casa del todo, pero se nota mucho menos que en las paredes. Sin arte nuevo no se puede hacer más.
 - **Más adelante**, si se quiere: la sombra según la hora, el día y la noche, las estaciones… (apuntado en el [plan](06_plan.md#el-sol-fijo-hito-62b)).
+
+## Arte nuevo: el importador
+
+**Hecho.** Las vistas que Theme Hospital no dibujó, o dibujó en espejo, se pueden hacer fuera del juego (a mano o con IA) y meterlas en el motor sin tocarlo. El primer caso es el **escritorio de la consulta** en sur y oeste, que el juego dibuja con el este y el norte en espejo: el ordenador cambiaba de lado al girar la cámara. Eduardo los sacó con PixelLab (rotación de 8 vistas) a partir del norte y el este originales.
+
+- **El arte nuevo no va al repositorio:** se deriva del arte de TH. Vive en `$TH64_WORK/arte` con un manifiesto (`arte.json`) que dice qué objeto, qué orientación y qué imágenes ([`tools/arte`](../tools/arte/README.md#el-arte-nuevo)).
+- **El conversor lo añade al final** de la hoja de sprites y de las tablas de animación, así que no cambia ningún índice del juego, y apunta en las reglas de cada objeto qué animación usar en cada orientación.
+- **La vista la dibuja sin espejo** en la vista original y en las giradas, si la animación está en las tablas cargadas. Si no lo está, vuelve al espejo de siempre: así los gráficos del oráculo de CorsixTH, que se hacen sin arte, siguen comparándose igual.
+- **La simulación no cambia:** la animación de reposo de un objeto solo la usa la vista.
+
+![El escritorio con el arte nuevo](img/06_arte_escritorio.png)
+
+*Arriba, el sur y el oeste del escritorio: lo que dibuja hoy el juego (el este y el norte en espejo) y el arte nuevo, ya en los colores del juego y con su sombra semitransparente. Abajo, el escritorio de la consulta del hospital de las vistas en las cuatro vistas, con los gráficos de alta resolución: está orientado al oeste, así que la vista original y la de 270° enseñan el arte nuevo, y el ordenador queda siempre a la izquierda del médico.*
+
+### Cómo se convierte una vista
+
+[`importar.py`](../tools/arte/importar.py), en cada resolución (`DATA` para el oráculo, `DATAM` para la N64):
+1. **La referencia** es lo que el juego dibuja hoy en esa orientación: la animación de reposo o la de su espejo, con sus piezas opacas y sus sombras semitransparentes por separado.
+2. **Los colores** pasan a los de los sprites opacos del objeto: 88 en `DATA` y 77 en `DATAM`, del escritorio.
+3. **La sombra pintada se quita.** PixelLab recibe la sombra del escritorio como un gris opaco y la devuelve así. Se quitan los píxeles que caen en la huella de la sombra de la referencia y cuyo color más cercano es el de la sombra, y se pone la sombra de la referencia, semitransparente.
+4. **La posición** es la que más casa con la silueta de la referencia, buscando hasta 12 píxeles en cada dirección. Los desplazamientos se guardan como en las tablas de TH: con origen en (141, 186) y a la escala de 640, también en `DATAM`, y con el redondeo hacia cero del motor.
+5. **La animación nueva** es un fotograma con las sombras de la referencia (ya sin espejo) y el sprite nuevo.
+
+Si falta la imagen de baja resolución, sale de la de alta reducida a la mitad; es lo que se ha hecho con el escritorio.
+
+| Escritorio | Sur | Oeste |
+|---|---:|---:|
+| Sprite en `DATA` / `DATAM` | 93 × 87 / 46 × 44 | 94 × 87 / 47 × 44 |
+| Silueta frente a la referencia (intersección sobre unión), `DATA` / `DATAM` | 0,725 / 0,734 | 0,726 / 0,720 |
+| Píxeles de sombra pintada quitados, `DATA` / `DATAM` | 472 / 80 | 514 / 93 |
+| Animación y sprite nuevos | 5186 y 4397 | 5187 y 4398 |
+
+La silueta casa en un 72–73 %: el arte nuevo no es el espejo, así que la silla y el ordenador están en otro sitio, pero las patas apoyan en el mismo sitio.
+
+### Comprobaciones y coste
+
+| Qué | Resultado |
+|---|---|
+| `tools/motor_check.sh` con el arte | Todo bien: 208.743 comprobaciones, 0 fallos; la huella de la simulación, la misma (`d38fbaef`, y `8fefaa13` el hospital del hito 4). Las vistas giradas de la N64, 0 píxeles distintos de la referencia y las mismas listas que en el PC (la vista 270° cambia de huella: el escritorio del hito 4 sale con el sur nuevo) |
+| El oráculo de CorsixTH de las vistas (40 capturas), con las reglas con arte y los gráficos de alta sin arte | **Las mismas cifras que antes del importador:** 11.744.796 píxeles del mapa iguales de 11.745.090 y 467.432 de entidades de 542.910 |
+| Las reglas | Las 39 de 39 se leen igual en el núcleo y en el conversor |
+| Hoja `MSPR-0` | 4.397 → 4.399 sprites, +4.240 B (1.216.784 B) |
+| Tablas de animación | 5.186 → 5.188 animaciones, +60 B (481.098 B) |
+| Heap de la ROM normal con 8 MiB | 2.445 → 2.449 KiB |
+
+Los hospitales de prueba tienen el escritorio al oeste (el del hito 4 y los dos del de las vistas) o al sur (el del hito 5), así que la ROM ya enseña el arte nuevo en la vista original.
+
+### Lo que no cubre todavía
+
+- **El objeto en uso.** Mientras alguien usa un objeto, el objeto no se dibuja: lo dibuja la animación de la persona, que lo lleva dentro, como en CorsixTH. Las animaciones del médico sentado al escritorio (56, 72, 718 y 64 en norte; 58, 74 y 66 en este) y las de la enfermera (3240, 3256 y 3248) llevan los sprites del escritorio y de la silla. Así que con el médico sentado vuelve el escritorio en espejo. Arreglarlo es el problema de la gente usando objetos: animaciones de uso nuevas, o separar el escritorio de la persona en las que ya hay.
+- **Los objetos partidos en columnas** (cama, banco, carro de paradas, sofá y ultraescáner en alguna orientación) se dibujan recortados por columnas. En la N64, un sprite que no cabe en la TMEM (2.048 téxeles) va por `rdpq_tex_blit`, que no recorta. El importador rechaza esos casos hasta que el sprite se parta.
+- **Colocar en cuatro direcciones** los objetos que solo tienen norte y este necesita sus huellas al sur y al oeste (hito 6.3); hasta entonces, su arte nuevo no se usa porque la vista pone el sustituto.
