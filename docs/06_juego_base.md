@@ -390,7 +390,7 @@ Las que fallaban con la primera versión eran justo las 26 (22 en `DATAM`) en la
 
 | Qué | Resultado |
 |---|---|
-| `tools/motor_check.sh` con el arte | En el PC (gcc, y con ASan y UBSan), las pruebas bien; la huella de la simulación, la misma (`d38fbaef`, y `8fefaa13` el hospital del hito 4); reglas y textos, 39 de 39 ficheros (37 de reglas y 2 de textos) iguales en el núcleo y en el conversor. La ROM de pruebas en ares estaba aún en marcha al escribir esto |
+| `tools/motor_check.sh` con el arte | Todo bien: 208.743 comprobaciones, 0 fallos; la huella de la simulación, la misma (`d38fbaef`, y `8fefaa13` el hospital del hito 4); reglas y textos, 39 de 39 ficheros (37 de reglas y 2 de textos) iguales en el núcleo y en el conversor. Las vistas giradas de la N64, 0 píxeles distintos de la referencia y las mismas listas que en el PC. Frente a la primera versión del importador solo cambia la vista de 270°, donde sale el sur nuevo del escritorio del hito 4: 18 píxeles de entidades menos (4.959 → 4.941), los de la raya del borde de la sombra |
 | El oráculo de CorsixTH de las vistas (40 capturas), con las reglas con arte y los gráficos de alta sin arte | **Las mismas cifras que antes del importador:** 11.744.796 píxeles del mapa iguales de 11.745.090 y 467.432 de entidades de 542.910; 0 capturas con diferencias fuera de lo esperado. El informe sale idéntico, línea a línea, al de la primera versión |
 | Las reglas frente a CorsixTH (`comparar_reglas.py`), con arte | Iguales: 60 de 60 objetos, 23 de 23 salas, 34 de 34 enfermedades, 9 de 9 diagnósticos y 36 de 36 niveles. La clave `arte` no cuenta: CorsixTH no la tiene |
 | Hoja `MSPR-0` | 4.397 → 4.399 sprites, +4.240 B (1.216.784 B) |
