@@ -64,7 +64,10 @@ static const char *const definiciones =
     "            \"use_position_secondary\": [0, 1],"
     "            \"adjacent_to_solid_footprint\": [[-1, 0], [0, -1], [1, 0]]}}},"
     " \"entrance_left_door\": {\"id\": \"entrance_left_door\", \"thob\": 58, \"class\": \"EntranceDoor\","
-    "  \"supports_creation_for_map\": true}"
+    "  \"supports_creation_for_map\": true},"
+    " \"door\": {\"id\": \"door\", \"thob\": 3, \"class\": \"Door\"},"
+    " \"swing_door_left\": {\"id\": \"swing_door_left\", \"thob\": 52, \"class\": \"SwingDoor\"},"
+    " \"swing_door_right\": {\"id\": \"swing_door_right\", \"thob\": 53, \"class\": \"SwingDoor\"}"
     "}, \"salas\": {\"gp\": {\"id\": \"gp\", \"objects_additional\": [\"plant\"], \"objects_needed\": {\"desk\": 1}}}}";
 
 // Los precios del nivel (level_config.objects[thob].StartCost), del thob 1 al 50.
@@ -125,7 +128,7 @@ static th_rnode def(const char *id)
 
 static int orden(int kind, const char *id, int x, int y, int dir, int qty, int *bad)
 {
-    th_order o = {0, (uint8_t)kind, (uint8_t)x, (uint8_t)y, (uint8_t)dir, (uint8_t)qty, id ? def(id) : 0};
+    th_order o = {0, (uint8_t)kind, (uint8_t)x, (uint8_t)y, (uint8_t)dir, (uint8_t)qty, 0, 0, id ? def(id) : 0};
     th_order_result r;
     const int m = th_build_apply(&sim, &o, &r);
     if (bad)
@@ -482,21 +485,24 @@ static void test_sala(void)
     r->num = 1;
     r->type = 0;
     r->is_active = 1;
-    r->door = 7;
     r->x = r->y = 40;
     r->w = r->h = 3;
     for (int y = 40; y <= 42; y++)
         for (int x = 40; x <= 42; x++)
             th_map_tile(&mapa, x, y)->room = 1;
+    // Su puerta, en el mapa (colocar dentro exige room.door.tile_x).
+    r->door = (uint8_t)th_sim_new_object(&sim, def("door"), 40, 40, TH_DIR_NORTH);
+    TH_CHECK(r->door != TH_NONE);
+    sim.obj[r->door].room = 1;
     orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL);
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 41, 41, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
-    TH_CHECK_EQ(sim.obj[0].room, 1);
+    TH_CHECK_EQ(sim.obj[1].room, 1);
     TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 41, 41, 0, 0, NULL), TH_REASON_OK);
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 20, 20, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
-    TH_CHECK_EQ(sim.obj[0].room, 0);
+    TH_CHECK_EQ(sim.obj[1].room, 0);
     orden(TH_ORD_RECOGER, NULL, 20, 20, 0, 0, NULL);
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 42, 42, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
-    TH_CHECK_EQ(sim.obj[0].room, 1);
+    TH_CHECK_EQ(sim.obj[1].room, 1);
     // Un banco no es de la consulta: fuera.
     orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL);
     int bad = 0;
@@ -576,7 +582,7 @@ static void test_cola(void)
     preparar();
     sim.ev.order = al_aplicar;
     avisos = 0;
-    th_order a = {5, TH_ORD_COMPRAR, 0, 0, 0, 1, def("plant")}, b = {3, TH_ORD_CERRAR, 0, 0, 0, 0, 0};
+    th_order a = {5, TH_ORD_COMPRAR, 0, 0, 0, 1, 0, 0, def("plant")}, b = {3, TH_ORD_CERRAR, 0, 0, 0, 0, 0, 0, 0};
     TH_CHECK_EQ(th_sim_push_order(&sim, &a), 0);
     TH_CHECK_EQ(th_sim_push_order(&sim, &b), 0);
     sim.hours = 3;
