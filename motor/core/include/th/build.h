@@ -38,6 +38,7 @@ enum {
     TH_REASON_NO_SE_PUEDE,
     TH_REASON_ORDEN,        // orden que no existe
     TH_REASON_OTRA_VENTANA, // con la ventana de colocar abierta, el clic no llega al mundo
+    TH_REASON_LLENO,        // el tope del motor (th_sim_object_fits): CorsixTH no lo tiene
 };
 
 // th_order y th_order_result están en th/sim.h, que los guarda en la cola.

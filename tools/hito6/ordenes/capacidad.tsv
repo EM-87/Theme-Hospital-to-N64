@@ -1,0 +1,307 @@
+# Hito 6.3, paso 2: el tope de objetos del nucleo (TH_SIM_OBJECTS = 254) en el
+# nivel 1, sin salas y sin gente. CorsixTH no tiene tope: la lista llena los
+# 254 huecos del nucleo (las 2 puertas de la entrada y 252 objetos de pasillo:
+# 178 plantas, 45 radiadores y 29 extintores), vende uno del medio y pone otro,
+# que en el nucleo ocupa el hueco y en CorsixTH va al final de world.entities;
+# la comparacion de la lista de objetos tiene que salir igual gracias al numero
+# de alta. Despues, recoger y deshacer, y recoger y mover, con los 254 vivos.
+# Una orden por linea, con tabuladores (bench/lib/ordenes.lua); coordenadas
+# desde 0. El dinero empieza en 40.000; planta 5, radiador 20 y extintor 25.
+#
+# Las casillas salen del volcado del nivel (th64sim mapa --volcar): las plantas,
+# en la rejilla x par / y impar de las casillas construibles, pasables y del
+# hospital (asi cada casilla libre sigue unida a las demas y ninguna colocacion
+# corta el paso); los radiadores, mirando al norte en casillas con pared al
+# norte que no son de la rejilla, y los extintores, mirando al oeste en casillas
+# con pared al oeste (sin las esquinas, que ya llevan radiador): un objeto de
+# borde contra una pared vale sin mas (_isSideObjectPlacementValid).
+#
+# --- 1. Las 178 plantas de la rejilla, por filas (y 51..77) y de oeste a este -----
+# Dos compras (99 es el maximo por orden) y todas colocadas antes de la
+# siguiente compra. Aceptadas todas.
+comprar	plant	99
+colocar	plant	58	51	north
+colocar	plant	60	51	north
+colocar	plant	62	51	north
+colocar	plant	64	51	north
+colocar	plant	66	51	north
+colocar	plant	68	51	north
+colocar	plant	70	51	north
+colocar	plant	58	53	north
+colocar	plant	60	53	north
+colocar	plant	62	53	north
+colocar	plant	64	53	north
+colocar	plant	66	53	north
+colocar	plant	68	53	north
+colocar	plant	70	53	north
+colocar	plant	58	55	north
+colocar	plant	60	55	north
+colocar	plant	62	55	north
+colocar	plant	64	55	north
+colocar	plant	66	55	north
+colocar	plant	68	55	north
+colocar	plant	70	55	north
+colocar	plant	58	57	north
+colocar	plant	60	57	north
+colocar	plant	62	57	north
+colocar	plant	64	57	north
+colocar	plant	66	57	north
+colocar	plant	68	57	north
+colocar	plant	70	57	north
+colocar	plant	50	59	north
+colocar	plant	52	59	north
+colocar	plant	54	59	north
+colocar	plant	56	59	north
+colocar	plant	58	59	north
+colocar	plant	60	59	north
+colocar	plant	62	59	north
+colocar	plant	64	59	north
+colocar	plant	66	59	north
+colocar	plant	68	59	north
+colocar	plant	70	59	north
+colocar	plant	72	59	north
+colocar	plant	74	59	north
+colocar	plant	76	59	north
+colocar	plant	78	59	north
+colocar	plant	84	59	north
+colocar	plant	86	59	north
+colocar	plant	88	59	north
+colocar	plant	90	59	north
+colocar	plant	92	59	north
+colocar	plant	50	61	north
+colocar	plant	52	61	north
+colocar	plant	54	61	north
+colocar	plant	56	61	north
+colocar	plant	58	61	north
+colocar	plant	60	61	north
+colocar	plant	62	61	north
+colocar	plant	64	61	north
+colocar	plant	66	61	north
+colocar	plant	68	61	north
+colocar	plant	70	61	north
+colocar	plant	72	61	north
+colocar	plant	74	61	north
+colocar	plant	76	61	north
+colocar	plant	78	61	north
+colocar	plant	84	61	north
+colocar	plant	86	61	north
+colocar	plant	88	61	north
+colocar	plant	90	61	north
+colocar	plant	92	61	north
+colocar	plant	50	63	north
+colocar	plant	52	63	north
+colocar	plant	54	63	north
+colocar	plant	56	63	north
+colocar	plant	58	63	north
+colocar	plant	60	63	north
+colocar	plant	62	63	north
+colocar	plant	64	63	north
+colocar	plant	66	63	north
+colocar	plant	68	63	north
+colocar	plant	70	63	north
+colocar	plant	72	63	north
+colocar	plant	74	63	north
+colocar	plant	76	63	north
+colocar	plant	78	63	north
+colocar	plant	84	63	north
+colocar	plant	86	63	north
+colocar	plant	88	63	north
+colocar	plant	90	63	north
+colocar	plant	92	63	north
+colocar	plant	50	65	north
+colocar	plant	52	65	north
+colocar	plant	54	65	north
+colocar	plant	56	65	north
+colocar	plant	58	65	north
+colocar	plant	60	65	north
+colocar	plant	62	65	north
+colocar	plant	64	65	north
+colocar	plant	66	65	north
+colocar	plant	68	65	north
+colocar	plant	70	65	north
+comprar	plant	79
+colocar	plant	72	65	north
+colocar	plant	74	65	north
+colocar	plant	76	65	north
+colocar	plant	78	65	north
+colocar	plant	84	65	north
+colocar	plant	86	65	north
+colocar	plant	88	65	north
+colocar	plant	90	65	north
+colocar	plant	92	65	north
+colocar	plant	50	67	north
+colocar	plant	52	67	north
+colocar	plant	54	67	north
+colocar	plant	56	67	north
+colocar	plant	58	67	north
+colocar	plant	60	67	north
+colocar	plant	62	67	north
+colocar	plant	64	67	north
+colocar	plant	66	67	north
+colocar	plant	68	67	north
+colocar	plant	70	67	north
+colocar	plant	72	67	north
+colocar	plant	74	67	north
+colocar	plant	76	67	north
+colocar	plant	78	67	north
+colocar	plant	84	67	north
+colocar	plant	86	67	north
+colocar	plant	88	67	north
+colocar	plant	90	67	north
+colocar	plant	92	67	north
+colocar	plant	50	69	north
+colocar	plant	52	69	north
+colocar	plant	54	69	north
+colocar	plant	56	69	north
+colocar	plant	58	69	north
+colocar	plant	60	69	north
+colocar	plant	62	69	north
+colocar	plant	64	69	north
+colocar	plant	66	69	north
+colocar	plant	68	69	north
+colocar	plant	70	69	north
+colocar	plant	72	69	north
+colocar	plant	74	69	north
+colocar	plant	76	69	north
+colocar	plant	78	69	north
+colocar	plant	80	69	north
+colocar	plant	82	69	north
+colocar	plant	84	69	north
+colocar	plant	86	69	north
+colocar	plant	88	69	north
+colocar	plant	90	69	north
+colocar	plant	92	69	north
+colocar	plant	58	71	north
+colocar	plant	60	71	north
+colocar	plant	62	71	north
+colocar	plant	64	71	north
+colocar	plant	66	71	north
+colocar	plant	68	71	north
+colocar	plant	70	71	north
+colocar	plant	58	73	north
+colocar	plant	60	73	north
+colocar	plant	62	73	north
+colocar	plant	64	73	north
+colocar	plant	66	73	north
+colocar	plant	68	73	north
+colocar	plant	70	73	north
+colocar	plant	58	75	north
+colocar	plant	60	75	north
+colocar	plant	62	75	north
+colocar	plant	64	75	north
+colocar	plant	66	75	north
+colocar	plant	68	75	north
+colocar	plant	70	75	north
+colocar	plant	58	77	north
+colocar	plant	60	77	north
+colocar	plant	62	77	north
+colocar	plant	64	77	north
+colocar	plant	66	77	north
+colocar	plant	68	77	north
+colocar	plant	70	77	north
+#
+# --- 2. Los 45 radiadores, contra las paredes del norte ------------------------
+# Aceptadas todas.
+comprar	radiator	45
+colocar	radiator	57	50	north
+colocar	radiator	58	50	north
+colocar	radiator	59	50	north
+colocar	radiator	60	50	north
+colocar	radiator	61	50	north
+colocar	radiator	62	50	north
+colocar	radiator	63	50	north
+colocar	radiator	64	50	north
+colocar	radiator	65	50	north
+colocar	radiator	66	50	north
+colocar	radiator	67	50	north
+colocar	radiator	68	50	north
+colocar	radiator	69	50	north
+colocar	radiator	70	50	north
+colocar	radiator	49	58	north
+colocar	radiator	50	58	north
+colocar	radiator	51	58	north
+colocar	radiator	52	58	north
+colocar	radiator	53	58	north
+colocar	radiator	54	58	north
+colocar	radiator	55	58	north
+colocar	radiator	56	58	north
+colocar	radiator	71	58	north
+colocar	radiator	72	58	north
+colocar	radiator	73	58	north
+colocar	radiator	74	58	north
+colocar	radiator	75	58	north
+colocar	radiator	76	58	north
+colocar	radiator	77	58	north
+colocar	radiator	78	58	north
+colocar	radiator	83	58	north
+colocar	radiator	84	58	north
+colocar	radiator	85	58	north
+colocar	radiator	86	58	north
+colocar	radiator	87	58	north
+colocar	radiator	88	58	north
+colocar	radiator	89	58	north
+colocar	radiator	90	58	north
+colocar	radiator	91	58	north
+colocar	radiator	92	58	north
+colocar	radiator	93	58	north
+colocar	radiator	79	68	north
+colocar	radiator	80	68	north
+colocar	radiator	81	68	north
+colocar	radiator	82	68	north
+#
+# --- 3. Los 29 extintores, contra las paredes del oeste -----------------------
+# Con el ultimo, el nucleo tiene sus 254 objetos (las 2 puertas y los 252 de
+# pasillo): una colocacion mas daria lleno en el nucleo, que CorsixTH no tiene.
+# Aceptadas todas.
+comprar	extinguisher	29
+colocar	extinguisher	49	59	west
+colocar	extinguisher	49	60	west
+colocar	extinguisher	49	61	west
+colocar	extinguisher	49	62	west
+colocar	extinguisher	49	63	west
+colocar	extinguisher	49	64	west
+colocar	extinguisher	49	65	west
+colocar	extinguisher	49	66	west
+colocar	extinguisher	49	67	west
+colocar	extinguisher	49	68	west
+colocar	extinguisher	49	69	west
+colocar	extinguisher	49	70	west
+colocar	extinguisher	57	51	west
+colocar	extinguisher	57	52	west
+colocar	extinguisher	57	53	west
+colocar	extinguisher	57	54	west
+colocar	extinguisher	57	55	west
+colocar	extinguisher	57	56	west
+colocar	extinguisher	57	57	west
+colocar	extinguisher	57	71	west
+colocar	extinguisher	57	72	west
+colocar	extinguisher	57	73	west
+colocar	extinguisher	57	74	west
+colocar	extinguisher	57	75	west
+colocar	extinguisher	57	76	west
+colocar	extinguisher	57	77	west
+colocar	extinguisher	57	78	west
+colocar	extinguisher	83	59	west
+colocar	extinguisher	83	60	west
+#
+# --- 4. Con los 254 vivos: vender uno del medio y poner otro --------------------
+# La planta 50 (la de (52, 61)): recoger y vender (+5), quedan 253. Despues
+# comprar una planta (-5) y colocarla en (51, 61), una casilla libre (sus vecinas
+# (51, 60) y (51, 62) siguen unidas por la fila 60). En el nucleo ocupa
+# el hueco de la vendida; en CorsixTH va al final de world.entities. Aceptadas.
+recoger	52	61
+vender
+comprar	plant	1
+colocar	plant	51	61	north
+#
+# --- 5. Con los 254 vivos otra vez: deshacer y mover ------------------------------
+# Recoger la planta de (74, 67) y deshacer: vuelve a su sitio, sin dinero. Aceptadas.
+recoger	74	67
+deshacer
+# Recoger la planta de (54, 65) y colocarla en (52, 61), la casilla que dejo libre la
+# planta vendida: moverla no cuesta nada y sigue siendo el mismo objeto. Aceptadas.
+recoger	54	65
+colocar	plant	52	61	north
+# Colocar el objeto cogido cierra la ventana: cerrar ya no tiene ventana en
+# ninguno de los dos lados. Rechazada, sin_ventana.
+cerrar

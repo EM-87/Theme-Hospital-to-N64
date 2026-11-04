@@ -35,6 +35,10 @@ int th_run_core_tests(void);
 // Pruebas del mapa (test_map.c) y del A*, las animaciones y los humanoides (test_humanoid.c).
 void th_test_map(void);
 void th_test_humanoid(void);
+// Unas animaciones sintéticas (27 animaciones de 29 fotogramas), para las
+// pruebas que mueven humanoides sin datos del juego.
+struct th_anims;
+void th_test_anims(struct th_anims *a);
 // Pruebas del lector de reglas (test_rules.c).
 void th_test_rules(void);
 // Pruebas de ocupar y desocupar casillas (test_objects.c).

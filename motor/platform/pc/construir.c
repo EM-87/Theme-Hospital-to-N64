@@ -220,15 +220,21 @@ typedef struct movimiento {
     char motivo[64];
 } movimiento;
 
-static movimiento movs[64];
-static int n_movs;
+// Una orden mueve como mucho 99 devoluciones, lo cogido vendido y la compra
+// (comprar con la ventana de colocar abierta). Si hay más, se cuentan y la
+// comparación falla: no se compara a medias.
+#define MOVS_MAX 256
+static movimiento movs[MOVS_MAX];
+static int n_movs, movs_perdidos;
 static const th_sim *sim_actual;
 
 static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reason, int who)
 {
     (void)ctx;
-    if (n_movs >= 64)
+    if (n_movs >= MOVS_MAX) {
+        movs_perdidos++;
         return;
+    }
     movimiento *m = &movs[n_movs++];
     m->importe = amount;
     // El valor del hospital cambia en lo mismo que el importe, con el signo de
@@ -243,21 +249,32 @@ static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reas
 
 static int comparar_dinero(tabla *t, long n, int mostrar)
 {
-    movimiento suyos[64];
-    int k = 0;
+    static movimiento suyos[MOVS_MAX];
+    int k = 0, suyos_total = 0;
     if (t->f && (t->hay || leer_fila(t)))
         while (t->hay && t->n_fila <= n) {
-            if (t->n_fila == n && k < 64) {
-                movimiento *m = &suyos[k++];
-                m->importe = strtol(campo(t, "importe"), NULL, 10);
-                m->valor = strtol(campo(t, "valor"), NULL, 10);
-                snprintf(m->motivo, sizeof m->motivo, "%s", campo(t, "motivo"));
+            if (t->n_fila == n) {
+                suyos_total++;
+                if (k < MOVS_MAX) {
+                    movimiento *m = &suyos[k++];
+                    m->importe = strtol(campo(t, "importe"), NULL, 10);
+                    m->valor = strtol(campo(t, "valor"), NULL, 10);
+                    snprintf(m->motivo, sizeof m->motivo, "%s", campo(t, "motivo"));
+                }
             }
             if (!leer_fila(t))
                 break;
         }
+    int distintos = 0;
+    // Todos los movimientos, y los mismos de cada lado.
+    if (movs_perdidos || suyos_total != k || n_movs != suyos_total) {
+        distintos++;
+        if (mostrar)
+            anotar("    movimientos: th64 %d, CorsixTH %d\n", n_movs + movs_perdidos, suyos_total);
+    }
     // Como conjunto: el orden de los movimientos de una orden sale de pairs.
-    int usados[64] = {0}, distintos = 0;
+    static int usados[MOVS_MAX];
+    memset(usados, 0, sizeof usados);
     for (int i = 0; i < n_movs; i++) {
         int hallado = -1;
         for (int j = 0; j < k && hallado < 0; j++)
@@ -311,11 +328,18 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
         if (!t->hay || t->n_fila != n)
             return 0; // esta orden no cambió los objetos
     }
-    // Los objetos vivos del núcleo, en el orden de world.entities (el de índice).
+    // Los objetos vivos del núcleo, en el orden de world.entities (el de alta,
+    // entity_seq: el índice no vale, los huecos se reutilizan).
     int nuestros[TH_SIM_OBJECTS], nn = 0;
     for (int i = 0; i < s->n_obj; i++)
-        if (s->obj[i].def && (s->obj[i].oflags & TH_OBJF_ON_MAP))
-            nuestros[nn++] = i;
+        if (s->obj[i].def && (s->obj[i].oflags & TH_OBJF_ON_MAP)) {
+            int j = nn++;
+            while (j > 0 && s->obj[nuestros[j - 1]].entity_seq > s->obj[i].entity_seq) {
+                nuestros[j] = nuestros[j - 1];
+                j--;
+            }
+            nuestros[j] = i;
+        }
     int k = 0, distintos = 0;
     while (t->hay && t->n_fila == n) {
         char suyo[160], mio[160] = "(nada)";
@@ -444,7 +468,7 @@ int th64sim_construir(int argc, char **argv)
         if (!leer_orden(s, linea, &n, &o, texto, sizeof texto))
             continue;
         ordenes++;
-        n_movs = 0;
+        n_movs = movs_perdidos = 0;
         th_order_result r;
         th_build_apply(s, &o, &r);
         aceptadas += r.reason == TH_REASON_OK;

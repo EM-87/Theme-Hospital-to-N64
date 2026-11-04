@@ -1,0 +1,43 @@
+# Lo que la revision adversarial del paso 2 echo en falta (2026-11-04): casos
+# que ni pasillo.tsv ni las pruebas del nucleo distinguian de un nucleo
+# mutado. Nivel 1, sin salas. Cada caso dice que prueba y que da en CorsixTH.
+#
+# 1. Mas de 99 sin dinero para 99: sin_dinero, no maximo (la pulsacion 100 no llega)
+comprar	drinks_machine	100
+# 2. Con la ventana de colocar abierta, comprar algo que no es de pasillo
+comprar	bench	2
+colocar	bench	60	60	north
+comprar	desk	1
+cerrar
+# 3. Radiadores espalda con espalda: vender el que cortó el paso
+comprar	radiator	2
+colocar	radiator	73	63	north
+colocar	radiator	73	62	south
+recoger	73	63
+vender
+# 4. Espalda con espalda: mover el que cortó el paso
+comprar	radiator	2
+colocar	radiator	75	63	north
+colocar	radiator	75	62	south
+recoger	75	63
+colocar	radiator	76	66	west
+# 5. Papelera al este en la casilla de uso de un banco al este
+comprar	bench	1
+colocar	bench	65	66	east
+comprar	bin	1
+colocar	bin	66	66	east
+colocar	bin	66	66	north
+# 6. Deshacer con el segundo y el primero de una pareja
+comprar	radiator	2
+colocar	radiator	70	63	north
+colocar	radiator	70	62	south
+recoger	70	62
+deshacer
+recoger	70	63
+deshacer
+# 7. Girar un mostrador en su sitio
+comprar	reception_desk	1
+colocar	reception_desk	55	60	north
+recoger	55	60
+colocar	reception_desk	55	60	east
+comprar	bin	0

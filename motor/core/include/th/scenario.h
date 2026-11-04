@@ -9,7 +9,9 @@
 //              recalculan);
 //   objetos    [{id, x, y, direccion, sala, orden}], con el id del objeto de
 //              las definiciones, en el orden de world.entities; orden es su
-//              sitio en la lista world.objects de su casilla (puede faltar);
+//              sitio en la lista world.objects de su casilla (puede faltar).
+//              Con más de TH_SIM_OBJECTS, th_sim_init da -29; con más
+//              mostradores y puertas que colas (TH_SIM_QUEUES), -30;
 //   listas     las casillas (y * 128 + x) con lista en world.objects, aunque
 //              esté vacía (puede faltar);
 //   parcelas   el dueño de cada parcela, de la 1 en adelante (puede faltar);

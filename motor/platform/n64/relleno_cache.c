@@ -5,7 +5,7 @@
 // tools/cache_instrucciones.py dice si chocan y cuánto relleno lo evita; el
 // fichero tiene que enlazarse después de mapa_n64.c.
 #if defined(TH_PRUEBAS)
-#define RELLENO "10944"
+#define RELLENO "14496"
 #elif defined(TH_HOSPITAL_HORAS)
 #define RELLENO "0"
 #elif defined(TH_MEDIR)

@@ -104,6 +104,7 @@ typedef struct th_object {
     uint8_t oflags; // TH_OBJF_*
     th_rnode def;   // objetos.<id> en las definiciones
     uint32_t seq;   // orden de llegada a su casilla (world.objects): el menor va primero
+    uint32_t entity_seq; // orden de alta en world.entities (th_sim.entity_seq): el mayor es el último
 } th_object;
 
 // Lo que necesitan las funciones de ocupar: el mapa, el buscador de caminos

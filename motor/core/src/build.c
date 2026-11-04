@@ -51,7 +51,7 @@ const char *th_build_reason_name(int reason)
     static const char *const names[] = {"-",           "no_es_de_pasillo", "sin_dinero",  "maximo",
                                         "sin_ventana", "sin_objeto",       "orientacion", "casillas",
                                         "bloqueo",     "persona",          "no_se_puede", "orden",
-                                        "otra_ventana"};
+                                        "otra_ventana", "lleno"};
     return reason >= 0 && reason < (int)(sizeof names / sizeof names[0]) ? names[reason] : "?";
 }
 
@@ -307,7 +307,11 @@ int th_build_check_cell(th_sim *s, th_rnode def, int x, int y, int dir, int *bad
 }
 
 // World:anyHumanoidObscuringArea y Humanoid:isObscuringArea: alguien en la
-// casilla, o en una vecina caminando hacia ella.
+// casilla, o en una vecina caminando hacia ella. Un caminar sin camino (o a
+// su propia casilla) no tiene path_x y tapa: es el que no llegó a empezar
+// (sin TH_AS_STARTED, que walk_start pone tras guardar el camino y conserva
+// al reiniciar, como path_x); path_len y cur son del humanoide, no de la
+// acción, y guardan los del paseo anterior.
 static int humanoid_obscuring(const th_sim *s, int x, int y)
 {
     for (int i = 0; i < TH_SIM_HUMANOIDS; i++) {
@@ -322,7 +326,7 @@ static int humanoid_obscuring(const th_sim *s, int x, int y)
             return 1;
         if (!h->queue_len || h->queue[0].kind != TH_ACTION_WALK)
             continue;
-        if (!h->path_len || (h->cur_x == x && h->cur_y == y))
+        if (!(h->queue[0].state & TH_AS_STARTED) || !h->path_len || (h->cur_x == x && h->cur_y == y))
             return 1;
     }
     return 0;
@@ -434,15 +438,18 @@ static int place_object(th_sim *s, int x, int y, int dont_close, int dont_remove
         prepare_footprint(s, def, o->dir, x, y);
         w = th_sim_objects(s);
         th_object_set_tile(&w, obj, x, y);
+        if (o->type == TH_OBJ_RECEPTION_DESK)
+            th_sim_desk_check_for_staff(s, obj); // ReceptionDesk:setTile
     } else {
         prepare_footprint(s, def, p->orient, x, y);
         obj = th_sim_new_object(s, def, x, y, p->orient);
+        if (obj == TH_NONE)
+            return TH_NONE; // no cabe: order_colocar lo mira antes (th_sim_object_fits)
     }
-    if (obj != TH_NONE) {
-        const int room = th_map_tile_c(s->w.map, x, y)->room;
-        if (room)
-            s->obj[obj].room = (uint8_t)room;
-    }
+    // La sala del objeto es la de su casilla (Entity:getRoom), también 0 al
+    // sacarlo de una sala. room.objects de la sala vieja, que CorsixTH no
+    // limpia al mover, es otra cosa (paso 3).
+    s->obj[obj].room = (uint8_t)th_map_tile_c(s->w.map, x, y)->room;
     th_sim_map_changed(s);
     if (!dont_remove)
         remove_object(s, dont_close, 1, 0);
@@ -495,15 +502,16 @@ static int order_comprar(th_sim *s, const th_order *o)
         return TH_REASON_NO_ES_DE_PASILLO;
     // Cada unidad es una pulsación de «+» (purchaseItem(i, 1)), que no cobra:
     // falla si el saldo no llega al total o, en la centésima, porque ya hay 99.
-    // Si falla una, se cierra la ventana y no se compra nada.
+    // Si falla una, se cierra la ventana y no se compra nada. Sin pulsaciones
+    // no se mira el saldo: confirm sin nada que comprar solo cierra.
     const int qty = o->qty;
+    if (qty <= 0)
+        return TH_REASON_OK;
     const int32_t price = th_build_object_cost(s, o->def);
     if (s->hosp.balance < (int64_t)(qty < 99 ? qty : 99) * price)
         return TH_REASON_SIN_DINERO;
     if (qty > 99)
         return TH_REASON_MAXIMO;
-    if (qty <= 0)
-        return TH_REASON_OK; // confirm sin nada que comprar: cierra
     // confirm: cobra y abre la ventana de colocar.
     money(s, qty * price, TH_MONEY_BUY_OBJECT, o->def);
     open_window(s, o->def, qty, -1);
@@ -532,6 +540,10 @@ static int order_colocar(th_sim *s, const th_order *o, th_order_result *r)
     }
     if (humanoid_obscuring(s, o->x, o->y))
         return TH_REASON_PERSONA;
+    // El tope del motor, donde CorsixTH ya aceptaría: uno nuevo que no cabe
+    // se rechaza sin tocar nada (ni la basura ni la unidad pagada).
+    if (p->item[k].n_existing == 0 && !th_sim_object_fits(s, o->def))
+        return TH_REASON_LLENO;
     place_object(s, o->x, o->y, 0, 0);
     return TH_REASON_OK;
 }
@@ -542,11 +554,13 @@ static int order_recoger(th_sim *s, const th_order *o)
     // (setWorldHitTest(false)) y el clic derecho gira el plano.
     if (s->place.open)
         return TH_REASON_OTRA_VENTANA;
-    // El objeto con ese origen que va el último en world.entities.
+    // El objeto con ese origen que va el último en world.entities (el de
+    // mayor entity_seq: el índice no vale, los huecos se reutilizan).
     int obj = -1;
     for (int i = 0; i < s->n_obj; i++) {
         const th_object *ob = &s->obj[i];
-        if (ob->def && (ob->oflags & TH_OBJF_ON_MAP) && ob->x == o->x && ob->y == o->y)
+        if (ob->def && (ob->oflags & TH_OBJF_ON_MAP) && ob->x == o->x && ob->y == o->y &&
+            (obj < 0 || ob->entity_seq > s->obj[obj].entity_seq))
             obj = i;
     }
     if (obj < 0)

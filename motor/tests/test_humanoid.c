@@ -103,7 +103,7 @@ static void put32(uint8_t *p, uint32_t v)
     put16(p + 2, v & 0xFFFF);
 }
 
-static void anims_de_prueba(th_anims *a)
+void th_test_anims(th_anims *a)
 {
     memset(tan, 0, sizeof(tan));
     memcpy(tan, "TAN1", 4);
@@ -131,9 +131,9 @@ static void anims_de_prueba(th_anims *a)
 static void test_anims(void)
 {
     th_anims a;
-    anims_de_prueba(&a);
+    th_test_anims(&a);
     TH_CHECK_EQ(th_anims_init(&a, tan, 20), -1);
-    anims_de_prueba(&a);
+    th_test_anims(&a);
     TH_CHECK_EQ(th_anims_first_frame(&a, 18), 18);
     TH_CHECK_EQ(th_anims_next_frame(&a, 18), 27);
     TH_CHECK_EQ(th_anims_next_frame(&a, 27), 18);
@@ -147,7 +147,7 @@ static void test_caminata(void)
 {
     mapa_de_prueba();
     th_anims a;
-    anims_de_prueba(&a);
+    th_test_anims(&a);
     th_world w = {.map = &mapa, .pf = &buscador, .anims = &a};
     static th_humanoid h;
     th_humanoid_init(&w, &h, th_walk_anims_find("Standard Male Patient"));

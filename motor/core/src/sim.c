@@ -410,6 +410,7 @@ static int new_person(th_sim *s, int kind, const th_walk_anims *walk)
         p->u.s.quitting_in = -1;
         p->u.s.associated_desk = TH_NONE;
     }
+    p->entity_seq = ++s->entity_seq;
     s->order[s->n_order++] = (uint8_t)who;
     th_humanoid_init(&s->w, &p->h, walk);
     return who;
@@ -1404,16 +1405,21 @@ void th_sim_tick(th_sim *s)
     if (count && s->hosp.opened)
         for (int i = 0; i < count; i++)
             spawn_patient(s);
-    // Entidades en el orden de world.entities: los mostradores (objetos) y
-    // después las personas en el orden en que se crearon.
-    for (int k = 0; k < s->n_desks; k++)
-        th_sim_desk_tick(s, s->desks[k]);
-    uint8_t order[TH_SIM_HUMANOIDS];
-    const int n = s->n_order;
+    // Entidades en el orden de world.entities, que es el de alta: los
+    // mostradores (objetos que hacen tick) y las personas, mezclados por
+    // entity_seq. Un mostrador comprado en marcha va detrás de la gente que ya
+    // existía (World:objectPlaced), y quien llega después, detrás de él.
+    uint8_t order[TH_SIM_HUMANOIDS], desks[TH_SIM_QUEUES];
+    const int n = s->n_order, nd = s->n_desks;
     memcpy(order, s->order, (unsigned)n);
+    memcpy(desks, s->desks, (unsigned)nd);
+    int d = 0;
     for (int k = 0; k < n; k++) {
         const int who = order[k];
         th_person *p = &s->hum[who];
+        for (; d < nd && s->obj[desks[d]].entity_seq < p->entity_seq; d++)
+            if (s->obj[desks[d]].type == TH_OBJ_RECEPTION_DESK)
+                th_sim_desk_tick(s, desks[d]);
         if (!p->alive)
             continue;
         th_humanoid_tick(&s->w, &p->h);
@@ -1421,6 +1427,9 @@ void th_sim_tick(th_sim *s)
             staff_tick(s, who);
         th_pausar();
     }
+    for (; d < nd; d++)
+        if (s->obj[desks[d]].type == TH_OBJ_RECEPTION_DESK)
+            th_sim_desk_tick(s, desks[d]);
     th_sim_temperature_begin(s, outside[s->date.month - 1], (uint16_t)(400000ll * 65535 / TH_MICRO));
     if (!s->temp_defer)
         th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
@@ -1551,17 +1560,41 @@ static void object_sim_init(th_sim *s, int i)
     o->user = o->reserved_for = o->queue = o->receptionist = TH_NONE;
     if (o->type == TH_OBJ_RECEPTION_DESK) {
         // ReceptionDesk:ReceptionDesk: cola de 20 con 3 de pie aunque haya bancos.
+        // Sin cola libre no entra en desks: no atiende ni hace tick
+        // (th_sim_object_fits lo rechaza antes).
         o->queue = (uint8_t)new_queue(s, 20, 3, TH_NONE);
-        if (s->n_desks < (int)sizeof s->desks)
+        if (o->queue != TH_NONE && s->n_desks < (int)sizeof s->desks)
             s->desks[s->n_desks++] = (uint8_t)i;
     } else if (o->type == TH_OBJ_DOOR) {
         o->queue = (uint8_t)new_queue(s, 6, 0, i);
     }
 }
 
+int th_sim_object_fits(const th_sim *s, th_rnode def)
+{
+    if (s->n_obj >= TH_SIM_OBJECTS) {
+        int i = 0;
+        while (i < TH_SIM_OBJECTS && s->obj[i].def)
+            i++;
+        if (i >= TH_SIM_OBJECTS)
+            return 0;
+    }
+    const char *id = th_rules_str(s->defs, get(s->defs, def, "id"), NULL);
+    const int type = object_type(id ? id : "");
+    if (type == TH_OBJ_RECEPTION_DESK || type == TH_OBJ_DOOR) {
+        int k = 0; // como new_queue
+        while (k < s->n_queues && s->queues[k].max_size)
+            k++;
+        if (k >= TH_SIM_QUEUES)
+            return 0;
+    }
+    return 1;
+}
+
 int th_sim_new_object(th_sim *s, th_rnode def, int x, int y, int dir)
 {
-    // Al final, como world.entities; si no queda sitio, en un hueco libre.
+    // Al final o, si no queda sitio, en un hueco libre: el orden de
+    // world.entities lo guarda entity_seq, no el índice.
     int i = s->n_obj;
     if (i >= TH_SIM_OBJECTS)
         for (i = 0; i < s->n_obj && s->obj[i].def; i++)
@@ -1574,10 +1607,15 @@ int th_sim_new_object(th_sim *s, th_rnode def, int x, int y, int dir)
         return TH_NONE;
     if (i == s->n_obj)
         s->n_obj++;
+    o->entity_seq = ++s->entity_seq;
     object_sim_init(s, i);
     o->room = (uint8_t)th_map_tile_c(s->w.map, x, y)->room;
     th_objects w = th_sim_objects(s);
     th_object_set_tile(&w, i, x, y);
+    // Object:Object llama a setTile, y ReceptionDesk:setTile busca
+    // recepcionista (checkForNearbyStaff).
+    if (o->type == TH_OBJ_RECEPTION_DESK)
+        th_sim_desk_check_for_staff(s, i);
     return i;
 }
 
@@ -1785,7 +1823,9 @@ static int load_scenario(th_sim *s)
     // El thob del radiador, haya o no radiadores: la temperatura lo busca en
     // las listas de las casillas.
     s->radiator_thob = (int16_t)th_rules_int(s->defs, get(s->defs, get(s->defs, defs_obj, "radiator"), "thob"), -1);
-    for (uint32_t i = 0; i < th_rules_len(r, objs) && s->n_obj < TH_SIM_OBJECTS; i++) {
+    for (uint32_t i = 0; i < th_rules_len(r, objs); i++) {
+        if (s->n_obj >= TH_SIM_OBJECTS)
+            return -29; // más objetos que huecos (TH_SIM_OBJECTS)
         th_rnode o = th_rules_at(r, objs, i);
         const char *id = th_rules_str(r, get(r, o, "id"), NULL);
         th_object *ob = &s->obj[s->n_obj];
@@ -1805,7 +1845,10 @@ static int load_scenario(th_sim *s)
         // Un objeto cogido al guardar (con su ventana de colocar abierta): aún no.
         if (th_rules_bool(r, get(r, o, "recogido"), 0))
             return -27;
+        ob->entity_seq = ++s->entity_seq;
         object_sim_init(s, s->n_obj);
+        if ((ob->type == TH_OBJ_RECEPTION_DESK || ob->type == TH_OBJ_DOOR) && ob->queue == TH_NONE)
+            return -30; // sin cola libre (TH_SIM_QUEUES)
         s->n_obj++;
     }
     // La basura del suelo: aún no se carga (su sitio en las listas, su

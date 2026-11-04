@@ -39,9 +39,12 @@
 
 #define TH_MICRO 1000000
 #define TH_SIM_HUMANOIDS 128 // el tope de la demo (docs/04_construccion.md)
-#define TH_SIM_OBJECTS 96
+// Objetos: CorsixTH no tiene tope (el hospital «lleno» de docs/01_mediciones.md
+// tiene 305). Con índices de 8 bits y TH_NONE = 255 caben 254; más exige
+// índices de 16 bits (las acciones, las colas, las salas y la ventana de colocar).
+#define TH_SIM_OBJECTS 254
 #define TH_SIM_ROOMS 16
-#define TH_SIM_QUEUES 24
+#define TH_SIM_QUEUES 24 // las de las puertas y los mostradores: un mostrador sin cola no cabe
 #define TH_SIM_QUEUE_LEN 30
 #define TH_SIM_SPAWN_POINTS 32
 #define TH_SIM_DISEASES 40
@@ -182,7 +185,8 @@ typedef struct th_staff {
 typedef struct th_person {
     th_humanoid h;
     uint8_t alive;
-    uint8_t kind; // TH_HUM_*
+    uint8_t kind;        // TH_HUM_*
+    uint32_t entity_seq; // orden de alta en world.entities (th_sim.entity_seq)
     int32_t happiness, warmth, health; // millonésimas
     union {
         th_patient p;
@@ -320,7 +324,11 @@ typedef struct th_sim {
     uint8_t n_order;
     uint8_t order[TH_SIM_HUMANOIDS]; // humanoides en el orden de world.entities
     uint8_t n_desks;
-    uint8_t desks[8]; // mostradores, en orden de creación (ticks)
+    uint8_t desks[TH_SIM_QUEUES]; // mostradores con cola, en orden de alta (ticks)
+    // El orden de alta en world.entities, común a objetos y personas
+    // (th_object.entity_seq y th_person.entity_seq): el último creado tiene el
+    // mayor. Los huecos de obj se reutilizan, así que el índice no lo da.
+    uint32_t entity_seq;
     int16_t radiator_thob; // -1 si no hay radiadores
     // Temperatura de cada casilla, con dos memorias que se alternan (las de
     // level_map), y lo que hace falta para recalcular solo lo que puede
@@ -439,9 +447,13 @@ int th_sim_object_at(const th_sim *s, int x, int y, int type); // TH_NONE si no 
 // Los objetos de la simulación para th/objects.h.
 th_objects th_sim_objects(th_sim *s);
 // World:newObject: un objeto nuevo con su casilla y lo que la simulación
-// lleva de él (tipo, cola y lista de los mostradores). Devuelve su índice o
-// TH_NONE si no cabe.
+// lleva de él (tipo, cola y lista de los mostradores; un mostrador busca
+// recepcionista, ReceptionDesk:setTile). Devuelve su índice o TH_NONE si no
+// cabe: quien llama lo mira antes con th_sim_object_fits.
 int th_sim_new_object(th_sim *s, th_rnode def, int x, int y, int dir);
+// Si cabe un objeto nuevo de esa definición: un hueco en obj y, si lleva cola
+// (mostrador o puerta), una cola libre. Es el tope del motor; CorsixTH no lo tiene.
+int th_sim_object_fits(const th_sim *s, th_rnode def);
 // World:destroyEntity de un objeto: sale del mapa y de la simulación, y su
 // hueco queda libre.
 void th_sim_destroy_object(th_sim *s, int obj);

@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "th/anim.h"
 #include "th/build.h"
+#include "th/humanoid.h"
 #include "th/map.h"
 #include "th/objects.h"
 #include "th/path.h"
@@ -56,9 +58,14 @@ static const char *const definiciones =
     "  \"west\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"only_side\": true}]}}},"
     " \"desk\": {\"id\": \"desk\", \"thob\": 8, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}]}}},"
+    " \"reception_desk\": {\"id\": \"reception_desk\", \"thob\": 2, \"corridor_object\": 1, \"orientations\": {"
+    "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true},"
+    "                             {\"#1\": 0, \"#2\": 1, \"only_passable\": true}],"
+    "            \"use_position_secondary\": [0, 1],"
+    "            \"adjacent_to_solid_footprint\": [[-1, 0], [0, -1], [1, 0]]}}},"
     " \"entrance_left_door\": {\"id\": \"entrance_left_door\", \"thob\": 58, \"class\": \"EntranceDoor\","
     "  \"supports_creation_for_map\": true}"
-    "}}";
+    "}, \"salas\": {\"gp\": {\"id\": \"gp\", \"objects_additional\": [\"plant\"], \"objects_needed\": {\"desk\": 1}}}}";
 
 // Los precios del nivel (level_config.objects[thob].StartCost), del thob 1 al 50.
 static size_t nivel_trg(void)
@@ -67,7 +74,7 @@ static size_t nivel_trg(void)
     int k = snprintf(json, sizeof json, "{\"objects\": [");
     for (int thob = 1; thob <= 50; thob++)
         k += snprintf(json + k, sizeof json - (size_t)k, "%s{\"StartCost\": %d}", thob > 1 ? ", " : "",
-                      thob == 4 ? 40 : thob == 44 ? 20 : thob == 45 ? 5 : thob == 8 ? 100 : 0);
+                      thob == 4 ? 40 : thob == 44 ? 20 : thob == 45 ? 5 : thob == 8 ? 100 : thob == 2 ? 150 : 0);
     snprintf(json + k, sizeof json - (size_t)k, "]}");
     return th_test_trg(json, trg_nivel, sizeof trg_nivel);
 }
@@ -99,6 +106,10 @@ static void preparar(void)
     sim.level = &nivel;
     sim.w.map = &mapa;
     sim.w.pf = &buscador;
+    // th_world.sim se llama como el atajo de arriba: sin él un momento.
+#undef sim
+    E->sim.w.sim = &E->sim;
+#define sim (E->sim)
     sim.radiator_thob = 44;
     sim.hosp.balance = 200;
     for (int i = 0; i < TH_SIM_OBJECTS; i++)
@@ -188,6 +199,22 @@ static void test_comprar_colocar(void)
     TH_CHECK_EQ(sim.hosp.balance, 140);
     TH_CHECK_EQ(sim.place.open, 0);
     TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "desk", 0, 0, 0, 1, NULL), TH_REASON_NO_ES_DE_PASILLO);
+    // Comprar 0 no pulsa «+», así que no mira el saldo, ni en negativo:
+    // confirm sin nada que comprar solo cierra.
+    sim.hosp.balance = -100;
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL), TH_REASON_SIN_DINERO);
+    TH_CHECK_EQ(sim.place.open, 0);
+    TH_CHECK_EQ(sim.hosp.balance, -100);
+    // Lo que no es de pasillo tampoco se compra con la ventana de colocar
+    // abierta: la ventana se cierra antes y devuelve lo que quedaba.
+    sim.hosp.balance = 140;
+    orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 2, NULL);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "bench", 40, 40, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hosp.balance, 60);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "desk", 0, 0, 0, 1, NULL), TH_REASON_NO_ES_DE_PASILLO);
+    TH_CHECK_EQ(sim.place.open, 0);
+    TH_CHECK_EQ(sim.hosp.balance, 100);
 }
 
 // Coger y mover gratis, deshacer y vender (removeObject: move_cancellation y
@@ -267,15 +294,32 @@ static void test_bloqueo(void)
     TH_CHECK_EQ(banderas(20, 30) & TH_TILE_TRAVEL_W, TH_TILE_TRAVEL_W);
     TH_CHECK_EQ(banderas(19, 30) & TH_TILE_TRAVEL_E, TH_TILE_TRAVEL_E);
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "radiator", 20, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    // La excepción de la casilla aislada, con la rareza de isIsolated: un
+    // pasillo de una casilla en x = 5 (de y = 26 a 31, sin salida por abajo)
+    // y una bolsa pasable fuera del hospital en (4, 30). La planta en (5, 30)
+    // vale: (4, 30) queda aislada, y (5, 31) llega a (5, 29) porque la huella
+    // se queda pasable tras isIsolated. Sin la excepción, o sin la rareza,
+    // daría bloqueo.
+    preparar();
+    for (int y = 26; y <= 32; y++)
+        th_map_tile(&mapa, 6, y)->flags &= ~(uint32_t)TH_TILE_PASSABLE;
+    th_map_tile(&mapa, 5, 32)->flags &= ~(uint32_t)TH_TILE_PASSABLE;
+    th_map_tile(&mapa, 4, 30)->flags |= TH_TILE_PASSABLE;
+    th_map_update_pathfinding(&mapa);
+    orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 5, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(banderas(5, 30) & TH_TILE_PASSABLE, 0);
 }
 
-// prepareFootprintTilesForBuild: colocar encima quita la basura.
+// prepareFootprintTilesForBuild: colocar encima quita toda la basura de la casilla.
 static void test_basura(void)
 {
     preparar();
     th_sim_add_litter(&sim, 40, 40, TH_LITTER_PAPER, 0);
+    th_sim_add_litter(&sim, 40, 40, TH_LITTER_BOTTLE, 0);
     th_sim_add_litter(&sim, 41, 40, TH_LITTER_PAPER, 0);
     TH_CHECK_EQ(th_map_thob_at(&mapa, 40, 40, 0), TH_LITTER_THOB);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 40, 40), 2);
     TH_CHECK_EQ(th_map_has_object_list(&mapa, 40, 40), 1);
     orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL);
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 40, 40, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
@@ -286,11 +330,12 @@ static void test_basura(void)
 }
 
 // anyHumanoidObscuringArea: alguien en el origen, o en una vecina (sin
-// diagonales) caminando hacia él. La batería de CorsixTH no tiene gente.
+// diagonales) caminando hacia él, o en una vecina con un caminar sin camino
+// (sin path_x: el que no llegó a empezar). La batería de CorsixTH no tiene gente.
 static void test_persona(void)
 {
     preparar();
-    orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 3, NULL);
+    orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 9, NULL);
     th_person *p = &sim.hum[0];
     p->alive = 1;
     p->h.tile_x = 25;
@@ -300,17 +345,207 @@ static void test_persona(void)
     p->h.tile_x = 26;
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 25, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
     // En la vecina, caminando hacia el origen: tapa; hacia otro sitio, no.
+    p->h.tile_y = 30;
     p->h.queue_len = 1;
     p->h.queue[0].kind = TH_ACTION_WALK;
+    p->h.queue[0].state = TH_AS_STARTED;
     p->h.path_len = 2;
     p->h.cur_x = 25;
     p->h.cur_y = 30;
-    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
-    p->h.tile_x = 27;
-    p->h.tile_y = 31;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_PERSONA);
     p->h.cur_x = 27;
-    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 27, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_PERSONA);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    // En diagonal no cuenta, ni caminando hacia el origen.
+    p->h.tile_x = 26;
+    p->h.tile_y = 36;
+    p->h.cur_x = 25;
+    p->h.cur_y = 35;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 35, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    // En la vecina de abajo, caminando hacia el origen (el siguiente paso).
+    p->h.tile_x = 27;
+    p->h.tile_y = 41;
+    p->h.cur_x = 27;
+    p->h.cur_y = 40;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 27, 40, TH_DIR_NORTH, 0, NULL), TH_REASON_PERSONA);
+    // Un caminar que no llegó a empezar (sin camino, o a su propia casilla):
+    // path_len y cur son los del paseo anterior, hacia otro sitio, pero la
+    // acción no tiene path_x y tapa. Empezado (reiniciado sin camino), vale.
+    p->h.tile_x = 26;
+    p->h.tile_y = 45;
+    p->h.queue[0].state = 0;
+    p->h.cur_x = 28;
+    p->h.cur_y = 45;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 45, TH_DIR_NORTH, 0, NULL), TH_REASON_PERSONA);
+    p->h.queue[0].state = TH_AS_STARTED;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 25, 45, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
     p->alive = 0;
+}
+
+// El tope del motor (th_sim_object_fits), que CorsixTH no tiene: con los
+// huecos llenos, colocar uno nuevo se rechaza con «lleno» después de las
+// comprobaciones de CorsixTH y sin tocar nada; mover sí vale. Lo vendido deja
+// un hueco que se reutiliza, y el orden de world.entities lo guarda
+// entity_seq, que es lo que mira coger.
+static void test_lleno(void)
+{
+    preparar();
+    sim.hosp.balance = 2000;
+    // Plantas en las casillas pares, de dos en dos, con la 200 en (51, 51).
+    int n = 0;
+    for (int y = 6; y < 60 && n < TH_SIM_OBJECTS; y += 2)
+        for (int x = 6; x < 60 && n < TH_SIM_OBJECTS; x += 2, n++) {
+            const int i = th_sim_new_object(&sim, def("plant"), n == 200 ? 51 : x, n == 200 ? 51 : y, TH_DIR_NORTH);
+            TH_CHECK_EQ(i, n);
+        }
+    TH_CHECK_EQ(sim.n_obj, TH_SIM_OBJECTS);
+    TH_CHECK_EQ(sim.obj[1].x, 8);
+    TH_CHECK_EQ(th_sim_object_fits(&sim, def("plant")), 0);
+    TH_CHECK_EQ(th_sim_new_object(&sim, def("plant"), 7, 7, TH_DIR_NORTH), TH_NONE);
+    th_sim_add_litter(&sim, 7, 7, TH_LITTER_PAPER, 0);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    const int32_t saldo = sim.hosp.balance;
+    int bad = 0;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 8, 8, TH_DIR_NORTH, 0, &bad), TH_REASON_CASILLAS); // antes que lleno
+    TH_CHECK_EQ(bad, 1);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 7, 7, TH_DIR_NORTH, 0, NULL), TH_REASON_LLENO);
+    TH_CHECK_EQ(sim.place.open, 1);
+    TH_CHECK_EQ(sim.place.item[0].qty, 1);
+    TH_CHECK_EQ(sim.n_litter, 1);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 7, 7, 0), TH_LITTER_THOB);
+    TH_CHECK_EQ(sim.hosp.balance, saldo);
+    TH_CHECK_EQ(sim.n_obj, TH_SIM_OBJECTS);
+    // Cerrar devuelve la unidad; mover una planta a (7, 7) sí vale.
+    TH_CHECK_EQ(orden(TH_ORD_CERRAR, NULL, 0, 0, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hosp.balance, saldo + 5);
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 6, 6, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 7, 7, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].x, 7);
+    TH_CHECK_EQ(sim.n_litter, 0);
+    // Vender la 1 deja su hueco: n_obj no baja, y la siguiente lo ocupa con
+    // el entity_seq más alto.
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 8, 6, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_VENDER, NULL, 0, 0, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[1].def, 0);
+    TH_CHECK_EQ(sim.n_obj, TH_SIM_OBJECTS);
+    TH_CHECK_EQ(th_sim_object_fits(&sim, def("plant")), 1);
+    const uint32_t ultimo = sim.entity_seq;
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 9, 9, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[1].x, 9);
+    TH_CHECK_EQ(sim.obj[1].entity_seq, ultimo + 1);
+    TH_CHECK_EQ(sim.n_obj, TH_SIM_OBJECTS);
+    // Coger «el último de world.entities» con ese origen es el de mayor
+    // entity_seq, aunque esté en un hueco más bajo: dos plantas en (51, 51),
+    // la 200 y una nueva en el hueco 3.
+    th_sim_destroy_object(&sim, 3);
+    TH_CHECK_EQ(th_sim_new_object(&sim, def("plant"), 51, 51, TH_DIR_NORTH), 3);
+    TH_CHECK(sim.obj[3].entity_seq > sim.obj[200].entity_seq);
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 51, 51, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.place.item[0].existing, 3 + 1);
+    TH_CHECK_EQ(orden(TH_ORD_DESHACER, NULL, 0, 0, 0, 0, NULL), TH_REASON_OK);
+    // Un mostrador necesita además una cola libre (TH_SIM_QUEUES, con las
+    // puertas): sin ella no cabe aunque haya hueco.
+    th_sim_destroy_object(&sim, 5);
+    TH_CHECK_EQ(th_sim_object_fits(&sim, def("reception_desk")), 1);
+    sim.n_queues = TH_SIM_QUEUES;
+    for (int k = 0; k < TH_SIM_QUEUES; k++)
+        sim.queues[k].max_size = 6;
+    TH_CHECK_EQ(th_sim_object_fits(&sim, def("reception_desk")), 0);
+    TH_CHECK_EQ(th_sim_object_fits(&sim, def("plant")), 1);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "reception_desk", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 7, 13, TH_DIR_NORTH, 0, NULL), TH_REASON_LLENO);
+    sim.queues[4].max_size = 0; // una cola libre (la de un mostrador vendido)
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 7, 13, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[5].type, TH_OBJ_RECEPTION_DESK);
+    TH_CHECK_EQ(sim.obj[5].queue, 4);
+    TH_CHECK_EQ(sim.n_desks, 1);
+    TH_CHECK_EQ(sim.desks[0], 5);
+}
+
+// Entity:getRoom: la sala de un objeto es la de su casilla, también al sacar
+// de una sala activa un objeto de pasillo (room.objects de la sala vieja, que
+// CorsixTH no limpia al mover, es otra cosa).
+static void test_sala(void)
+{
+    preparar();
+    // Una consulta activa de 3 × 3 en (40..42, 40..42), que admite plantas.
+    sim.n_room_types = 1;
+    sim.room_types[0] = "gp";
+    sim.n_rooms = 1;
+    th_room *r = &sim.rooms[0];
+    r->num = 1;
+    r->type = 0;
+    r->is_active = 1;
+    r->door = 7;
+    r->x = r->y = 40;
+    r->w = r->h = 3;
+    for (int y = 40; y <= 42; y++)
+        for (int x = 40; x <= 42; x++)
+            th_map_tile(&mapa, x, y)->room = 1;
+    orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 41, 41, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].room, 1);
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 41, 41, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 20, 20, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].room, 0);
+    orden(TH_ORD_RECOGER, NULL, 20, 20, 0, 0, NULL);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 42, 42, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].room, 1);
+    // Un banco no es de la consulta: fuera.
+    orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL);
+    int bad = 0;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "bench", 40, 41, TH_DIR_NORTH, 0, &bad), TH_REASON_CASILLAS);
+    TH_CHECK_EQ(bad, 1);
+}
+
+// ReceptionDesk:setTile → checkForNearbyStaff: un mostrador nuevo, o movido,
+// reserva a la recepcionista libre más cercana, que va hacia él.
+static void test_mostrador(void)
+{
+    preparar();
+    static th_anims anims;
+    th_test_anims(&anims);
+    sim.w.anims = &anims;
+    sim.hosp.balance = 1000;
+    th_person *p = &sim.hum[0];
+    p->alive = 1;
+    p->kind = TH_HUM_RECEPTIONIST;
+    p->u.s.associated_desk = TH_NONE;
+    p->entity_seq = ++sim.entity_seq;
+    sim.order[0] = 0;
+    sim.n_order = 1;
+    th_humanoid_init(&sim.w, &p->h, th_walk_anims_find("Receptionist"));
+    th_humanoid_set_tile(&sim.w, &p->h, 20, 20);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "reception_desk", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 30, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.n_desks, 1);
+    TH_CHECK_EQ(sim.obj[0].entity_seq, p->entity_seq + 1); // detrás de ella en world.entities
+    TH_CHECK_EQ(sim.obj[0].reserved_for, 0);
+    TH_CHECK_EQ(p->u.s.associated_desk, 0);
+    TH_CHECK_EQ(p->h.queue_len, 2);
+    TH_CHECK_EQ(p->h.queue[0].kind, TH_ACTION_WALK);
+    TH_CHECK_EQ(p->h.queue[0].x, 30);
+    TH_CHECK_EQ(p->h.queue[0].y, 31);
+    TH_CHECK_EQ(p->h.queue[1].kind, TH_ACTION_STAFF_RECEPTION);
+    // Movido: lo mismo (coger no le quita todavía la reserva, que es el
+    // handleRemovedObject pendiente; aquí se quita a mano para verlo).
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 30, 30, 0, 0, NULL), TH_REASON_OK);
+    sim.obj[0].reserved_for = TH_NONE;
+    p->u.s.associated_desk = TH_NONE;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 34, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].reserved_for, 0);
+    TH_CHECK_EQ(p->u.s.associated_desk, 0);
+    // El caminar de antes se queda (must_happen); el nuevo va detrás.
+    TH_CHECK_EQ(p->h.queue_len, 4);
+    TH_CHECK_EQ(p->h.queue[2].x, 34);
+    // Otro mostrador, con ella ya reservada: se queda sin nadie.
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "reception_desk", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 40, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[1].reserved_for, TH_NONE);
+    TH_CHECK_EQ(sim.n_desks, 2);
+    p->alive = 0;
+    sim.n_order = 0;
+    sim.w.anims = NULL;
 }
 
 // La cola: cada orden, al empezar el tick de su hora, y avisa al aplicarla.
@@ -346,6 +581,7 @@ static void test_cola(void)
         th_sim_push_order(&sim, &b);
     TH_CHECK_EQ(th_sim_push_order(&sim, &b), -1);
     TH_CHECK_EQ(strcmp(th_build_reason_name(TH_REASON_CASILLAS), "casillas"), 0);
+    TH_CHECK_EQ(strcmp(th_build_reason_name(TH_REASON_LLENO), "lleno"), 0);
 }
 
 void th_test_build(void)
@@ -368,6 +604,9 @@ void th_test_build(void)
     test_bloqueo();
     test_basura();
     test_persona();
+    test_lleno();
+    test_sala();
+    test_mostrador();
     test_cola();
     free(E);
     E = NULL;
