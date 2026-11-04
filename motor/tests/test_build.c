@@ -407,6 +407,12 @@ static void test_lleno(void)
     int bad = 0;
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 8, 8, TH_DIR_NORTH, 0, &bad), TH_REASON_CASILLAS); // antes que lleno
     TH_CHECK_EQ(bad, 1);
+    th_person *q = &sim.hum[0]; // y alguien delante, también antes
+    q->alive = 1;
+    q->h.tile_x = 7;
+    q->h.tile_y = 7;
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 7, 7, TH_DIR_NORTH, 0, NULL), TH_REASON_PERSONA);
+    q->alive = 0;
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "plant", 7, 7, TH_DIR_NORTH, 0, NULL), TH_REASON_LLENO);
     TH_CHECK_EQ(sim.place.open, 1);
     TH_CHECK_EQ(sim.place.item[0].qty, 1);
@@ -543,6 +549,12 @@ static void test_mostrador(void)
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 40, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
     TH_CHECK_EQ(sim.obj[1].reserved_for, TH_NONE);
     TH_CHECK_EQ(sim.n_desks, 2);
+    // Caben más de 8 mostradores: tantos como colas.
+    for (int k = 0; k < 9; k++)
+        TH_CHECK_EQ(th_sim_new_object(&sim, def("reception_desk"), 10 + 2 * k, 50, TH_DIR_NORTH), 2 + k);
+    TH_CHECK_EQ(sim.n_desks, 11);
+    TH_CHECK_EQ(sim.desks[10], 10);
+    TH_CHECK_EQ(sim.n_queues, 11);
     p->alive = 0;
     sim.n_order = 0;
     sim.w.anims = NULL;
