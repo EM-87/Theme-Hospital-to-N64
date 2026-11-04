@@ -7,8 +7,11 @@
 //              [x, y, suelo, norte, oeste, banderas, sala, objeto], con las
 //              banderas en el formato TH_TILE_* (sin las de sombra, que se
 //              recalculan);
-//   objetos    [{id, x, y, direccion, sala}], con el id del objeto de las
-//              definiciones;
+//   objetos    [{id, x, y, direccion, sala, orden}], con el id del objeto de
+//              las definiciones, en el orden de world.entities; orden es su
+//              sitio en la lista world.objects de su casilla (puede faltar);
+//   listas     las casillas (y * 128 + x) con lista en world.objects, aunque
+//              esté vacía (puede faltar);
 //   salas      [{num, id, x, y, ancho, alto, puerta = {x, y, direccion}}];
 //   personal   [{clase, x, y, perfil = {habilidad, atencion, sueldo, ...}}];
 //   fecha, mundo y hospital: el reloj, las llegadas y el dinero.

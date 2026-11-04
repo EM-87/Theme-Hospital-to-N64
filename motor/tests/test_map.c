@@ -166,7 +166,7 @@ static void test_parcelas(void)
     TH_CHECK(banderas(15, 15) & TH_TILE_HOSPITAL);
 
     // Comprar la parcela 2 quita sus 20 divisorias y restaura el fichero.
-    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 1), 20);
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 1, NULL), 20);
     TH_CHECK_EQ(th_map_tile(&mapa, 20, 15)->wall_w, 0);
     TH_CHECK_EQ(th_map_tile(&mapa, 15, 20)->wall_n, 0);
     TH_CHECK_EQ(th_map_tile(&mapa, 24, 16)->wall_n, 0);
@@ -176,15 +176,17 @@ static void test_parcelas(void)
     TH_CHECK(banderas(22, 15) & TH_TILE_HOSPITAL);
     TH_CHECK(!(banderas(20, 15) & TH_TILE_SHADOW_HALF));
     // Venderla la deja como al principio.
-    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 0), 0);
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 0, NULL), 0);
     TH_CHECK_EQ(th_map_tile(&mapa, 20, 15)->wall_w, 143);
     uint32_t h = th_map_hash(&mapa);
     TH_CHECK_EQ(cargar(1), TH_MAP_OK);
     TH_CHECK_EQ(th_map_hash(&mapa), h);
     // Argumentos que no valen.
-    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 0, 1), -1);
-    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 4, 1), -1);
-    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 1, -1), -1);
+    uint32_t puestos = 7;
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 0, 1, &puestos), -1);
+    TH_CHECK_EQ(puestos, 0);
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 4, 1, NULL), -1);
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 1, -1, NULL), -1);
 }
 
 static void test_correcciones(void)
@@ -251,6 +253,27 @@ static void test_lista(void)
     th_map_remove_thob(&mapa, 10, 20, 44);
     TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 30, 44), 0);
     TH_CHECK_EQ(th_map_thob_at(&mapa, 10, 30, 1), 44);
+    // Vaciar una casilla (eraseObjectTypes) también libera su pila.
+    th_map_add_thob(&mapa, 10, 31, 3);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 31, 44), -1);
+    th_map_clear_thobs(&mapa, 11, 20);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 11, 20), 0);
+    TH_CHECK_EQ(th_map_tile(&mapa, 11, 20)->stack, 0);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 31, 44), 0);
+    th_map_clear_thobs(&mapa, 12, 12); // una vacía: nada
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 12, 12), 0);
+    // Las listas de world.objects: la lista de tipos no las abre, y una
+    // abierta no se cierra.
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 10, 30), 0);
+    const uint32_t h2 = th_map_hash(&mapa);
+    th_map_open_object_list(&mapa, 127, 127);
+    th_map_open_object_list(&mapa, 8, 0);
+    TH_CHECK(th_map_hash(&mapa) != h2);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 127, 127), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 8, 0), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 7, 0), 0);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 9, 0), 0);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 126, 127), 0);
 }
 
 // Los objetos del fichero (World:createMapObjects): las puertas de la entrada
@@ -279,16 +302,28 @@ static void test_objetos_del_nivel(void)
     TH_CHECK_EQ(th_map_thob_count(&mapa, 12, 12), 0);
     TH_CHECK_EQ(th_map_thob_at(&mapa, 2, 2, 0), 59);
     TH_CHECK_EQ(th_map_thob_count(&mapa, 35, 15), 0); // la parcela 2 no tiene dueño
+    // Las puertas colocadas abren su lista de world.objects; el banco no.
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 15, 15), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 2, 2), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 12, 12), 0);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 35, 15), 0);
+    // En el orden del fichero (por filas): (2, 2), (12, 12), (15, 15) y (35, 15).
+    TH_CHECK_EQ(mapa.map_objects[3].x, 35);
     const uint32_t h = th_map_hash(&mapa);
-    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 1) >= 0, 1);
+    uint32_t puestos = 0;
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 1, &puestos) >= 0, 1);
+    TH_CHECK_EQ(puestos, 1u << 3);
     TH_CHECK(th_map_hash(&mapa) != h);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 35, 15), 1);
     TH_CHECK_EQ(th_map_thob_at(&mapa, 35, 15, 0), 58);
     TH_CHECK_EQ(banderas(35, 15) & (TH_TILE_TALL_W | TH_TILE_DO_NOT_IDLE | TH_TILE_BUILDABLE),
                 TH_TILE_TALL_W | TH_TILE_DO_NOT_IDLE);
     TH_CHECK_EQ(banderas(34, 15) & (TH_TILE_DO_NOT_IDLE | TH_TILE_BUILDABLE), TH_TILE_DO_NOT_IDLE);
     // Solo una vez: venderla y volver a comprarla no la duplica.
-    th_map_set_parcel_owner(&mapa, 2, 0);
-    th_map_set_parcel_owner(&mapa, 2, 1);
+    th_map_set_parcel_owner(&mapa, 2, 0, &puestos);
+    TH_CHECK_EQ(puestos, 0);
+    th_map_set_parcel_owner(&mapa, 2, 1, &puestos);
+    TH_CHECK_EQ(puestos, 0);
     TH_CHECK_EQ(th_map_thob_count(&mapa, 35, 15), 1);
 }
 

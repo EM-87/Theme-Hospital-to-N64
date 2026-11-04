@@ -221,13 +221,14 @@ int th_objects_part_of_nearby(th_objects *w, int x, int y, int distance)
 }
 
 // La casilla del objeto y su sitio, el último, entre los objetos con ese
-// origen (world.objects).
+// origen (world.objects, cuya lista en la casilla queda abierta para siempre).
 static void record_tile(th_objects *w, th_object *o, int x, int y)
 {
     o->x = (uint8_t)x;
     o->y = (uint8_t)y;
     o->oflags |= TH_OBJF_ON_MAP;
     o->seq = ++*w->seq;
+    th_map_open_object_list(w->map, x, y);
 }
 
 // World:addObjectToTile: lo anterior y la lista de tipos de la casilla.
@@ -380,14 +381,40 @@ void th_object_adopt(th_objects *w, int i, int x, int y)
     record_tile(w, &w->obj[i], x, y);
 }
 
+int th_object_init_map_object(th_object *o, const th_rules *defs, const th_map_object *mo)
+{
+    // object_id_by_thob y supports_creation_for_map.
+    const th_rnode objs = th_rules_get(defs, defs->root, "objetos");
+    const uint32_t n = th_rules_type(defs, objs) == TH_RULES_MAP ? th_rules_len(defs, objs) : 0;
+    for (uint32_t i = 0; i < n; i++) {
+        const th_rnode def = th_rules_entry_value(defs, objs, i);
+        if (th_rules_int(defs, th_rules_get(defs, def, "thob"), -1) != mo->thob)
+            continue;
+        if (!th_rules_bool(defs, th_rules_get(defs, def, "supports_creation_for_map"), 0))
+            return -1;
+        return th_object_init(o, defs, def, mo->flags & 1 ? TH_DIR_WEST : TH_DIR_NORTH);
+    }
+    return -1;
+}
+
 void th_objects_reset_side(th_objects *w)
 {
-    // Las casillas con objetos de borde, por índice.
-    for (int tile = 0; tile < TH_MAP_WIDTH * TH_MAP_HEIGHT; tile++) {
+    // pairs(world.objects): solo las casillas con objetos de borde hacen algo.
+    // Van por índice, de la menor a la mayor; al volver a poner un objeto en
+    // la misma casilla no cambia ninguna.
+    for (int last = -1;;) {
+        int tile = TH_MAP_WIDTH * TH_MAP_HEIGHT;
+        for (int i = 0; i < w->n_obj; i++) {
+            const th_object *o = &w->obj[i];
+            const int t = o->y * TH_MAP_WIDTH + o->x;
+            if (o->oclass == TH_OCLASS_SIDE && (o->oflags & TH_OBJF_ON_MAP) && t > last && t < tile)
+                tile = t;
+        }
+        if (tile == TH_MAP_WIDTH * TH_MAP_HEIGHT)
+            break;
+        last = tile;
         const int x = tile % TH_MAP_WIDTH, y = tile / TH_MAP_WIDTH;
-        int list[TH_OBJECT_MAX_WALKABLE], n = 0, side = 0;
-        if (!th_map_thob_count(w->map, x, y))
-            continue;
+        int list[TH_OBJECT_MAX_WALKABLE], n = 0;
         // world.objects de la casilla, en orden.
         for (int i = 0; i < w->n_obj && n < TH_OBJECT_MAX_WALKABLE; i++) {
             const th_object *o = &w->obj[i];
@@ -399,10 +426,7 @@ void th_objects_reset_side(th_objects *w)
                 k--;
             }
             list[k] = i;
-            side |= o->oclass == TH_OCLASS_SIDE;
         }
-        if (!side)
-            continue;
         // for _, obj in ipairs(objects): setTile saca al objeto de la lista y
         // lo pone al final, así que se salta el que venía detrás y el último
         // objeto de borde puede pasar dos veces.

@@ -879,7 +879,7 @@ static void daily_object_effects(th_sim *s, int who)
     int extinguishers = 0;
     for (int i = 0; i < s->n_obj; i++) {
         const th_object *o = &s->obj[i];
-        if (o->x >= px - 2 && o->x <= px + 2 && o->y >= py - 2 && o->y <= py + 2 &&
+        if ((o->oflags & TH_OBJF_ON_MAP) && o->x >= px - 2 && o->x <= px + 2 && o->y >= py - 2 && o->y <= py + 2 &&
             th_map_tile_c(m, o->x, o->y)->room == room && object_is(s, i, "extinguisher"))
             extinguishers++;
     }
@@ -984,12 +984,8 @@ void th_sim_patient_set_tile(th_sim *s, int who, int x, int y)
         return;
     if (x >= 0 && !person_room(s, p)) {
         const th_tile *t = th_map_tile_c(m, x, y);
-        int objects = 0;
-        for (int i = 0; i < s->n_obj && !objects; i++)
-            objects = s->obj[i].x == x && s->obj[i].y == y;
-        for (int i = 0; i < s->n_litter && !objects; i++)
-            objects = s->litter[i].x == x && s->litter[i].y == y;
-        if (!objects && (t->flags & TH_TILE_BUILDABLE) && (t->flags & TH_TILE_HOSPITAL) &&
+        // not getObjects(x, y): ni siquiera una lista vacía.
+        if (!th_map_has_object_list(m, x, y) && (t->flags & TH_TILE_BUILDABLE) && (t->flags & TH_TILE_HOSPITAL) &&
             th_map_parcel_owner(m, t->parcel) == 1) {
             const int trash = th_rng_range(&s->rng, 1, 4);
             th_sim_add_litter(s, x, y, TH_LITTER_SODA_CAN + trash - 1, th_rng_range(&s->rng, 0, 1));
@@ -1002,6 +998,7 @@ void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror)
 {
     if (x < 0)
         return;
+    th_map_open_object_list(s->w.map, x, y); // Litter:setTile → addObjectToTile
     if (s->n_litter >= TH_SIM_LITTER) {
         s->litter_lost++;
         return;
@@ -1539,6 +1536,52 @@ static int32_t happiness_factor(const th_sim *s, const th_room *r, int minimum_s
     return f;
 }
 
+// Las dos listas de cada casilla tal como quedan al cargar una partida en
+// CorsixTH, que es de donde sale el escenario (exportar_escenario.lua).
+//  * World:resetAnimations rehace la lista de tipos de las casillas con
+//    objetos en el orden de world.entities: primero las vacía todas y después
+//    añade el tipo de cada objeto.
+//  * world.objects se carga tal como se guardó, y su orden puede no ser el de
+//    entities: la esclava de un objeto doble va antes que su maestra en
+//    entities y después en world.objects, y resetSideObjects reordena. El
+//    escenario lo trae en «orden»; los seq de los objetos de cada casilla se
+//    reparten en ese orden.
+//  * Las listas de world.objects que existen: las de los objetos y las que el
+//    escenario trae en «listas» (casillas que tuvieron objetos o basura).
+static void load_object_lists(th_sim *s, const uint8_t *orden)
+{
+    th_map *m = s->w.map;
+    for (int i = 0; i < s->n_obj; i++)
+        th_map_clear_thobs(m, s->obj[i].x, s->obj[i].y);
+    for (int i = 0; i < s->n_obj; i++) {
+        th_map_add_thob(m, s->obj[i].x, s->obj[i].y, s->obj[i].thob);
+        th_map_open_object_list(m, s->obj[i].x, s->obj[i].y);
+    }
+    uint32_t seq[TH_SIM_OBJECTS];
+    for (int i = 0; i < s->n_obj; i++) {
+        // El k-ésimo seq de la casilla, por índice, para el k-ésimo por orden.
+        int k = 0;
+        for (int j = 0; j < s->n_obj; j++)
+            if (j != i && s->obj[j].x == s->obj[i].x && s->obj[j].y == s->obj[i].y &&
+                (orden[j] < orden[i] || (orden[j] == orden[i] && j < i)))
+                k++;
+        for (int j = 0; j < s->n_obj; j++)
+            if (s->obj[j].x == s->obj[i].x && s->obj[j].y == s->obj[i].y && k-- == 0) {
+                seq[i] = s->obj[j].seq;
+                break;
+            }
+    }
+    for (int i = 0; i < s->n_obj; i++)
+        s->obj[i].seq = seq[i];
+    const th_rules *r = s->scen;
+    th_rnode listas = get(r, r->root, "listas");
+    for (uint32_t i = 0; i < th_rules_len(r, listas); i++) {
+        const int32_t t = th_rules_int(r, th_rules_at(r, listas, i), -1);
+        if (t >= 0 && t < TH_MAP_WIDTH * TH_MAP_HEIGHT)
+            th_map_open_object_list(m, t % TH_MAP_WIDTH, t / TH_MAP_WIDTH);
+    }
+}
+
 static int load_scenario(th_sim *s)
 {
     const th_rules *r = s->scen;
@@ -1615,8 +1658,9 @@ static int load_scenario(th_sim *s)
             def = get(s->defs, get(s->defs, s->defs->root, "diagnosticos"), c->id);
         c->cure_price = th_rules_int(s->defs, get(s->defs, def, "cure_price"), 0);
     }
-    // Objetos.
+    // Objetos, en el orden de world.entities.
     th_rnode objs = get(r, root, "objetos"), defs_obj = get(s->defs, s->defs->root, "objetos");
+    uint8_t orden[TH_SIM_OBJECTS];
     s->n_obj = 0;
     s->n_desks = 0;
     s->radiator_thob = -1;
@@ -1635,6 +1679,8 @@ static int load_scenario(th_sim *s)
         ob->y = (uint8_t)th_rules_int(r, get(r, o, "y"), 0);
         ob->oflags |= TH_OBJF_ON_MAP;
         ob->seq = ++s->obj_seq;
+        // Su sitio en world.objects de la casilla (sin él, el de entities).
+        orden[s->n_obj] = (uint8_t)th_rules_int(r, get(r, o, "orden"), 255);
         ob->room = (uint8_t)th_rules_int(r, get(r, o, "sala"), 0);
         ob->user = ob->reserved_for = ob->queue = ob->receptionist = TH_NONE;
         if (ob->type == TH_OBJ_RECEPTION_DESK) {
@@ -1647,6 +1693,7 @@ static int load_scenario(th_sim *s)
         }
         s->n_obj++;
     }
+    load_object_lists(s, orden);
     // Salas.
     th_rnode salas = get(r, root, "salas"), defs_salas = get(s->defs, s->defs->root, "salas");
     s->n_rooms = 0;

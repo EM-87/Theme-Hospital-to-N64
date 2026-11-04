@@ -1,7 +1,8 @@
 // Un TRG1 (th/rules.h) a partir de un JSON pequeño, para escribir en las
 // pruebas definiciones legibles: lo mismo que escribir() de
 // tools/conv/reglas.py. Admite mapas, listas, enteros, true, false, null y
-// cadenas sin escapes; las claves "#n" son enteras.
+// cadenas sin escapes; las claves "#n" son enteras. Una lista o un mapa de más
+// de HIJOS elementos no cabe.
 #include <string.h>
 
 #include "th/rules.h"
@@ -217,7 +218,11 @@ static void escribir(int i, uint8_t v[8])
     default: ocho(v, x->tipo, 0); return;
     }
     int hijos[HIJOS], n = 0;
-    for (int h = x->primero; h >= 0 && n < HIJOS; h = nodos[h].siguiente) {
+    for (int h = x->primero; h >= 0; h = nodos[h].siguiente) {
+        if (n == HIJOS) {
+            lleno = 1; // no cabe: th_test_trg devuelve 0
+            return;
+        }
         int k = n++;
         while (x->tipo == TH_RULES_MAP && k > 0 && antes(&nodos[h], &nodos[hijos[k - 1]])) {
             hijos[k] = hijos[k - 1];

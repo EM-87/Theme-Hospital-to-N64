@@ -7,7 +7,11 @@
 --   * escenario.json (JSON canónico de tools/conv/json_canonico.lua): la
 --     fecha, el mundo (llegadas, puntos de aparición, enfermedades), el
 --     hospital (dinero, políticas, casebook, seguros), los objetos, las salas
---     y el personal con su perfil.
+--     y el personal con su perfil. De cada objeto, además, su sitio en la
+--     lista world.objects de su casilla («orden», desde 0), que puede no ser el
+--     de world.entities; y en «listas», las casillas (y * ancho + x) que tienen
+--     esa lista, aunque se haya quedado vacía: Patient:setTile no tira basura
+--     en ellas.
 -- Coordenadas desde 0, como en el motor.
 -- Opción: --load=partida.sav (obligatoria)
 local th64 = th64
@@ -46,10 +50,18 @@ end
 local objetos, salas, personal = {}, {}, {}
 for _, e in ipairs(world.entities) do
   if class.is(e, Object) then
+    local orden
+    for k, o in ipairs(world:getObjects(e.tile_x, e.tile_y) or {}) do
+      if o == e then orden = k - 1 end
+    end
     objetos[#objetos + 1] = {id = e.object_type.id, x = e.tile_x - 1, y = e.tile_y - 1, direccion = e.direction,
-      sala = sala_de(e)}
+      sala = sala_de(e), orden = orden}
   end
 end
+-- world.objects[(y - 1) * ancho + x], desde 1: la casilla y * ancho + x desde 0.
+local listas = {}
+for indice in pairs(world.objects) do listas[#listas + 1] = indice - 1 end
+table.sort(listas)
 for _, r in pairs(world.rooms) do
   if r then
     salas[#salas + 1] = {num = r.id, id = r.room_info.id, x = r.x - 1, y = r.y - 1, ancho = r.width, alto = r.height,
@@ -94,12 +106,13 @@ local doc = {
     abierto = h.opened and true or false, politicas = h.policies, casebook = casebook,
     seguros = h.insurance, saldo_seguros = h.insurance_balance, entrada = {x = h.x and h.x - 1 or nil}},
   objetos = objetos,
+  listas = listas,
   salas = salas,
   personal = personal,
 }
 f = assert(io.open(th64.out("escenario.json"), "w"))
 f:write(canonico.escribir(doc), "\n")
 f:close()
-th64.log("escenario exportado: %d objetos, %d salas, %d en plantilla, %d puntos de aparición, fecha %s", #objetos,
-  #salas, #personal, #puntos, d:tostring())
+th64.log("escenario exportado: %d objetos, %d listas de world.objects, %d salas, %d en plantilla, " ..
+  "%d puntos de aparición, fecha %s", #objetos, #listas, #salas, #personal, #puntos, d:tostring())
 th64.quit(0)

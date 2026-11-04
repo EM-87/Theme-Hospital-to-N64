@@ -63,7 +63,8 @@ def main():
     if not reglas.igual(reglas.leer(datos), doc):
         sys.exit("el TRG1 no se relee igual")
     open(sys.argv[3], "wb").write(datos)
-    print(f"escenario: {len(doc['celdas'])} casillas, {len(doc['objetos'])} objetos, {len(doc['salas'])} salas, "
+    print(f"escenario: {len(doc['celdas'])} casillas, {len(doc['objetos'])} objetos, "
+          f"{len(doc.get('listas', []))} listas de world.objects, {len(doc['salas'])} salas, "
           f"{len(doc['personal'])} en plantilla, {len(datos)} B")
 
 

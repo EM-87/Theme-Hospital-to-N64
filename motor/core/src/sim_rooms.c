@@ -12,10 +12,16 @@ static const char *const dir_names[] = {"north", "east", "south", "west"};
 
 int th_sim_object_at(const th_sim *s, int x, int y, int type)
 {
-    for (int i = 0; i < s->n_obj; i++)
-        if (s->obj[i].type == type && s->obj[i].x == x && s->obj[i].y == y)
-            return i;
-    return TH_NONE;
+    // World:getObject(x, y, id): el primero de world.objects de la casilla con
+    // ese tipo, entre los que están en el mapa.
+    int best = TH_NONE;
+    for (int i = 0; i < s->n_obj; i++) {
+        const th_object *o = &s->obj[i];
+        if (o->type == type && o->x == x && o->y == y && (o->oflags & TH_OBJF_ON_MAP) &&
+            (best == TH_NONE || o->seq < s->obj[best].seq))
+            best = i;
+    }
+    return best;
 }
 
 th_objects th_sim_objects(th_sim *s)

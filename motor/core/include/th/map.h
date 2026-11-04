@@ -15,7 +15,7 @@
 #define TH_MAP_MAX_PARCELS 64
 #define TH_MAP_MAX_PLAYERS 4
 // Objetos del fichero del nivel: en la campaña solo hay puertas de la entrada,
-// 20 como mucho (nivel 11).
+// 20 como mucho (nivel 11). Caben en la máscara de th_map_set_parcel_owner.
 #define TH_MAP_MAX_MAP_OBJECTS 32
 // Casillas con más de un objeto a la vez (objetos de borde juntos): sus
 // objetos del segundo en adelante van en una tabla aparte. Caben 5 por
@@ -95,6 +95,11 @@ typedef struct th_map {
     th_map_object map_objects[TH_MAP_MAX_MAP_OBJECTS];
     th_tile_stack stacks[TH_MAP_MAX_STACKS];
     uint16_t thob_lost; // objetos que no cupieron en la lista de su casilla
+    // Las casillas que tienen lista en world.objects, un bit por casilla:
+    // World:addObjectToTile la crea con el primer objeto o la primera basura
+    // que llega y nadie la borra, así que getObjects da {} y no nil aunque se
+    // haya quedado vacía. Patient:setTile no tira basura en ellas.
+    uint8_t object_lists[TH_MAP_WIDTH * TH_MAP_HEIGHT / 8];
 } th_map;
 
 enum {
@@ -127,7 +132,13 @@ int th_map_parcel_owner(const th_map *m, int parcel);
 // nivel de la parcela que esperaban. Devuelve cuántas paredes divisorias se
 // quitaron (CorsixTH cierra con ellas las salas que quedan abiertas; eso
 // llegará con las salas) o -1 si los argumentos no valen.
-int th_map_set_parcel_owner(th_map *m, int parcel, int owner);
+// En *placed (si no es NULL) queda la máscara de los map_objects que se acaban
+// de colocar: el mapa ya tiene sus banderas y su tipo en la lista, pero quien
+// llama tiene que crear su th_object (th_object_init_map_object y
+// th_object_adopt), que es lo que hace el newObject de World:setPlotOwner.
+// CorsixTH los crea en el orden de pairs(delayed_map_objects); aquí van en el
+// del fichero.
+int th_map_set_parcel_owner(th_map *m, int parcel, int owner, uint32_t *placed);
 
 // La lista de objetos de una casilla (map_tile.objects de CorsixTH).
 // Añadir va al final (setCellFlags{thob}); quitar quita el primero igual
@@ -139,18 +150,26 @@ int th_map_has_thob(const th_map *m, int x, int y, int thob);
 // Cuántos objetos tiene la casilla y el k-ésimo (desde 0).
 int th_map_thob_count(const th_map *m, int x, int y);
 int th_map_thob_at(const th_map *m, int x, int y, int k);
+// Vacía la lista de la casilla (eraseObjectTypes).
+void th_map_clear_thobs(th_map *m, int x, int y);
+
+// La lista de world.objects de la casilla: se abre con el primer objeto o la
+// primera basura (World:addObjectToTile) y ya no se cierra.
+void th_map_open_object_list(th_map *m, int x, int y);
+int th_map_has_object_list(const th_map *m, int x, int y);
 
 // Una puerta de la entrada en (x, y): EntranceDoor:setTile de CorsixTH
 // (objects/doors/entrance_*_door.lua). thob 59 es la derecha (la maestra) y
-// 58 la izquierda; west, si mira al oeste. Con on = 0 la quita.
+// 58 la izquierda; west, si mira al oeste. Con on = 0 la quita. Al ponerla
+// abre la lista de world.objects de la casilla.
 void th_map_entrance_door(th_map *m, int x, int y, int thob, int west, int on);
 // Las casillas de paso de esa puerta además de la suya
 // (additional_walkable_tiles): cuántas son y sus desplazamientos.
 int th_map_entrance_door_tiles(int thob, int west, int8_t dx[3], int8_t dy[3]);
 void th_map_update_pathfinding(th_map *m);
 void th_map_update_shadows(th_map *m);
-// Huella de las capas, banderas, salas, objetos y dueños: para comparar el PC
-// con la N64.
+// Huella de las capas, banderas, salas, objetos, listas de world.objects y
+// dueños: para comparar el PC con la N64.
 uint32_t th_map_hash(const th_map *m);
 
 #endif

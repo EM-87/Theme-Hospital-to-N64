@@ -190,27 +190,38 @@ static int set_parcel_owner(th_map *m, int parcel, int owner)
 // las parcelas con dueño, en el orden del fichero; los demás esperan a que se
 // compre su parcela. Solo las puertas de la entrada se pueden crear así
 // (supports_creation_for_map); con otro thob, CorsixTH avisa y no hace nada.
-static void place_map_objects(th_map *m, int parcel)
+_Static_assert(TH_MAP_MAX_MAP_OBJECTS <= 32, "la máscara de los objetos del nivel es de 32 bits");
+
+static uint32_t place_map_objects(th_map *m, int parcel)
 {
+    uint32_t placed = 0;
     for (int i = 0; i < m->n_map_objects; i++) {
         th_map_object *o = &m->map_objects[i];
         const int p = th_map_tile(m, o->x, o->y)->parcel;
         if (o->placed || (parcel >= 0 && p != parcel) || (p != 0 && th_map_parcel_owner(m, p) == 0))
             continue;
-        if (o->thob == 58 || o->thob == 59)
+        if (o->thob == 58 || o->thob == 59) {
             th_map_entrance_door(m, o->x, o->y, o->thob, o->flags & 1, 1);
+            placed |= 1u << i;
+        }
         o->placed = 1;
     }
+    return placed;
 }
 
-int th_map_set_parcel_owner(th_map *m, int parcel, int owner)
+int th_map_set_parcel_owner(th_map *m, int parcel, int owner, uint32_t *placed)
 {
+    if (placed)
+        *placed = 0;
     if (parcel <= 0 || parcel >= m->parcel_count || owner < 0 || owner > TH_MAP_MAX_PLAYERS)
         return -1;
     int removed = set_parcel_owner(m, parcel, owner);
     // World:setPlotOwner: los objetos del nivel que esperaban a la parcela.
-    if (owner != 0)
-        place_map_objects(m, parcel);
+    if (owner != 0) {
+        const uint32_t p = place_map_objects(m, parcel);
+        if (placed)
+            *placed = p;
+    }
     th_map_update_shadows(m);
     return removed;
 }
@@ -234,6 +245,28 @@ int th_map_thob_at(const th_map *m, int x, int y, int k)
     if (!t->stack || k > m->stacks[t->stack - 1].n)
         return 0;
     return m->stacks[t->stack - 1].thob[k - 1];
+}
+
+void th_map_clear_thobs(th_map *m, int x, int y)
+{
+    th_tile *t = th_map_tile(m, x, y);
+    th_tile_stack *st = stack_of(m, t);
+    if (st)
+        st->n = 0;
+    t->object = 0;
+    t->stack = 0;
+}
+
+void th_map_open_object_list(th_map *m, int x, int y)
+{
+    const int i = y * TH_MAP_WIDTH + x;
+    m->object_lists[i >> 3] |= (uint8_t)(1u << (i & 7));
+}
+
+int th_map_has_object_list(const th_map *m, int x, int y)
+{
+    const int i = y * TH_MAP_WIDTH + x;
+    return (m->object_lists[i >> 3] >> (i & 7)) & 1;
 }
 
 int th_map_has_thob(const th_map *m, int x, int y, int thob)
@@ -317,8 +350,10 @@ void th_map_entrance_door(th_map *m, int x, int y, int thob, int west, int on)
     int8_t dx[3], dy[3];
     const int n = th_map_entrance_door_tiles(thob, west, dx, dy);
     const uint32_t tall = west ? TH_TILE_TALL_W : TH_TILE_TALL_N;
-    if (on)
+    if (on) {
         th_map_add_thob(m, x, y, thob); // Object.setTile, antes que las banderas
+        th_map_open_object_list(m, x, y);
+    }
     th_tile *t = th_map_tile(m, x, y);
     t->flags = on ? (t->flags | tall | TH_TILE_DO_NOT_IDLE) & ~TH_TILE_BUILDABLE
                   : (t->flags | TH_TILE_BUILDABLE) & ~(tall | TH_TILE_DO_NOT_IDLE);
@@ -420,6 +455,9 @@ uint32_t th_map_hash(const th_map *m)
     }
     for (int i = 0; i < m->parcel_count; i++)
         MIX(m->parcel_owner[i]);
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT / 8; i += 4)
+        MIX(m->object_lists[i] | (m->object_lists[i + 1] << 8) | (m->object_lists[i + 2] << 16) |
+            ((uint32_t)m->object_lists[i + 3] << 24));
 #undef MIX
     return h;
 }

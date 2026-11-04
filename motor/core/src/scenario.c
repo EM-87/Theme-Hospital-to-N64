@@ -25,9 +25,10 @@ int th_scenario_apply_cells(th_map *m, const th_rules *r, th_rnode cells)
         t->room = (uint16_t)v[6];
         // El escenario solo trae el primer objeto de la casilla
         // (getCellFlags.thob): si no es el que hay, la lista se queda con él.
+        // Las de las casillas con objetos las rehace después la simulación
+        // con todos (load_scenario, como World:resetAnimations).
         if (th_map_thob_at(m, v[0], v[1], 0) != v[7]) {
-            while (th_map_thob_count(m, v[0], v[1]))
-                th_map_remove_thob(m, v[0], v[1], th_map_thob_at(m, v[0], v[1], 0));
+            th_map_clear_thobs(m, v[0], v[1]);
             if (v[7])
                 th_map_add_thob(m, v[0], v[1], v[7]);
         }

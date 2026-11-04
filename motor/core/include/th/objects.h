@@ -8,10 +8,13 @@
 // Lo que CorsixTH guarda en cada casilla son dos listas: la de los tipos de
 // objeto del mapa (map_tile.objects, en th_map) y la de los objetos de Lua
 // cuyo origen es esa casilla (world.objects). La segunda no se guarda: es la de
-// los objetos con ese origen, en el orden de th_object.seq.
+// los objetos con ese origen, en el orden de th_object.seq. Solo se guarda si
+// existe (th_map_has_object_list): una casilla que tuvo un objeto o basura
+// sigue teniendo su lista, vacía, cuando se van.
 //
-// La basura (Litter) todavía no entra en el mapa: la simulación la lleva en su
-// propia lista (th_sim.litter).
+// La basura (Litter) todavía no entra en la lista de tipos del mapa: la
+// simulación la lleva en su propia lista (th_sim.litter) y solo abre la de
+// world.objects.
 #ifndef TH_OBJECTS_H
 #define TH_OBJECTS_H
 
@@ -93,9 +96,11 @@ int th_object_init(th_object *o, const th_rules *defs, th_rnode def, int dir);
 void th_object_set_tile(th_objects *w, int i, int x, int y);
 
 // World:resetSideObjects: vuelve a poner en su sitio los objetos de borde,
-// casilla a casilla. CorsixTH recorre las casillas en el orden de pairs() de
-// una tabla; aquí van por índice. Solo cambia algo si dos objetos de borde
-// cortan el mismo borde desde las dos casillas.
+// casilla a casilla. Las casillas son las de world.objects, es decir, las de
+// los objetos (no la lista de tipos del mapa, que al cargar puede no tenerlos
+// todos). CorsixTH las recorre en el orden de pairs() de una tabla; aquí van
+// por índice. Solo cambia algo si dos objetos de borde cortan el mismo borde
+// desde las dos casillas.
 void th_objects_reset_side(th_objects *w);
 
 // World:isTilePartOfNearbyObject: 1 si (x, y) es casilla de paso de un objeto
@@ -111,8 +116,16 @@ int th_objects_first_at(const th_objects *w, int x, int y);
 int th_object_walkable_tiles(const th_objects *w, int i, int *xs, int *ys);
 
 // Para los objetos que ya están en el mapa sin haber pasado por
-// th_object_set_tile (las puertas de la entrada, que pone th_map_load): les
-// da su casilla y su sitio en la lista de la casilla, sin tocar el mapa.
+// th_object_set_tile (las puertas de la entrada, que ponen th_map_load y
+// th_map_set_parcel_owner): les da su casilla y su sitio en la lista de la
+// casilla, sin tocar el mapa.
 void th_object_adopt(th_objects *w, int i, int x, int y);
+
+// El th_object de un objeto del nivel (World:_createMapObject): la definición
+// con su thob que admite crearse desde el mapa (supports_creation_for_map; en
+// la campaña, solo las puertas de la entrada) y la dirección de sus banderas
+// (par, norte; impar, oeste). Devuelve -1 si no hay tal definición: CorsixTH
+// avisa y no crea nada. Después, th_object_adopt con su casilla.
+int th_object_init_map_object(th_object *o, const th_rules *defs, const th_map_object *mo);
 
 #endif

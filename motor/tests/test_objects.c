@@ -3,6 +3,7 @@
 // código de CorsixTH (entities/object.lua, objects/door.lua, doors/*.lua y
 // world.lua) y de los experimentos 1 y 2 del hito 6.3. La comparación con
 // hospitales de verdad está en th64sim banderas (52 escenarios de CorsixTH).
+#include <stdio.h>
 #include <string.h>
 
 #include "th/map.h"
@@ -43,8 +44,10 @@ static const char *const definiciones =
     " \"door\": {\"id\": \"door\", \"thob\": 3, \"class\": \"Door\"},"
     " \"swing_door_right\": {\"id\": \"swing_door_right\", \"thob\": 53, \"class\": \"SwingDoor\"},"
     " \"swing_door_left\": {\"id\": \"swing_door_left\", \"thob\": 52, \"class\": \"SwingDoor\"},"
-    " \"entrance_right_door\": {\"id\": \"entrance_right_door\", \"thob\": 59, \"class\": \"EntranceDoor\"},"
-    " \"entrance_left_door\": {\"id\": \"entrance_left_door\", \"thob\": 58, \"class\": \"EntranceDoor\"},"
+    " \"entrance_right_door\": {\"id\": \"entrance_right_door\", \"thob\": 59, \"class\": \"EntranceDoor\","
+    "  \"supports_creation_for_map\": true},"
+    " \"entrance_left_door\": {\"id\": \"entrance_left_door\", \"thob\": 58, \"class\": \"EntranceDoor\","
+    "  \"supports_creation_for_map\": true},"
     " \"litter\": {\"id\": \"litter\", \"thob\": 62, \"class\": \"Litter\"},"
     " \"maquina\": {\"id\": \"maquina\", \"thob\": 30, \"orientations\": {"
     "  \"north\": {\"footprint\": [[0, 0], {\"#1\": 1, \"#2\": 0, \"need_north_side\": true},"
@@ -64,30 +67,45 @@ static const char *const definiciones =
 #define LADOS TH_TILE_BUILDABLE_SIDES
 
 // Nivel de un jugador: césped, y suelo de hospital de (5, 5) a (60, 60) en la
-// parcela 1, con todas las banderas del fichero.
-static void preparar(void)
+// parcela 1, con todas las banderas del fichero. Con puertas, también la
+// parcela 2, de (61, 5) a (80, 60) y sin dueño, con dos puertas de la entrada
+// al oeste: la izquierda en (70, 30) y la derecha en (70, 31).
+static void preparar_nivel(int puertas)
 {
     memset(tmp, 0, sizeof(tmp));
     memcpy(tmp, "TMP1", 4);
     tmp[5] = TH_MAP_WIDTH;
     tmp[7] = TH_MAP_HEIGHT;
     tmp[8] = 1;
-    tmp[9] = 2;
+    tmp[9] = puertas ? 3 : 2;
     tmp[11] = CASILLA;
     for (int y = 0; y < TH_MAP_HEIGHT; y++)
         for (int x = 0; x < TH_MAP_WIDTH; x++) {
             uint8_t *c = &tmp[CABECERA + CASILLA * (y * TH_MAP_WIDTH + x)];
             c[0] = 1;
-            if (x >= 5 && y >= 5 && x <= 60 && y <= 60) {
+            if (y >= 5 && y <= 60 && (x >= 5 && x <= 60 ? 1 : puertas && x >= 61 && x <= 80 ? 2 : 0)) {
                 c[0] = 17;
                 c[3] = TH_TILE_FILE_FLAGS;
-                c[8] = 1;
+                c[8] = x <= 60 ? 1 : 2;
             }
         }
+    if (puertas) {
+        uint8_t *izq = &tmp[CABECERA + CASILLA * (30 * TH_MAP_WIDTH + 70)];
+        uint8_t *der = &tmp[CABECERA + CASILLA * (31 * TH_MAP_WIDTH + 70)];
+        izq[6] = 58;
+        izq[7] = 1;
+        der[6] = 59;
+        der[7] = 1;
+    }
     TH_CHECK_EQ(th_map_load(&mapa, tmp, sizeof(tmp), 0), TH_MAP_OK);
     memset(objs, 0, sizeof(objs));
     seq = 0;
     w = (th_objects){&mapa, &buscador, &defs, objs, 0, &seq};
+}
+
+static void preparar(void)
+{
+    preparar_nivel(0);
 }
 
 static int nuevo(const char *id, int dir)
@@ -261,6 +279,94 @@ static void test_reinicio(void)
     TH_CHECK_EQ(th_objects_first_at(&w, 45, 45), r);
 }
 
+// Lo mismo cuando la lista de tipos de la casilla no tiene todos sus objetos,
+// como al cargar un escenario que solo traía el primero: resetSideObjects
+// recorre world.objects (los objetos), no esa lista, así que al quitar el
+// radiador el extintor vuelve a cortar su borde (hallazgo 1 de la revisión).
+static void test_reinicio_sin_lista(void)
+{
+    preparar();
+    const int r = nuevo("radiator", TH_DIR_NORTH), e = nuevo("extinguisher", TH_DIR_WEST);
+    th_object_set_tile(&w, r, 45, 45);
+    th_object_set_tile(&w, e, 45, 45);
+    th_map_clear_thobs(&mapa, 45, 45);
+    th_map_add_thob(&mapa, 45, 45, 44);
+    // destroyEntity del radiador: setTile(nil), updatePathfinding y resetSideObjects.
+    th_object_set_tile(&w, r, -1, -1);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 45, 45), 0);
+    th_map_update_pathfinding(&mapa);
+    TH_CHECK_EQ(banderas(45, 45) & TH_TILE_TRAVEL_W, TH_TILE_TRAVEL_W);
+    th_objects_reset_side(&w);
+    TH_CHECK_EQ(banderas(45, 45) & TRANSITO, TRANSITO & ~(uint32_t)TH_TILE_TRAVEL_W);
+    TH_CHECK_EQ(banderas(44, 45) & TH_TILE_TRAVEL_E, 0);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 45, 45), 1);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 45, 45, 0), 43);
+    TH_CHECK_EQ(th_objects_first_at(&w, 45, 45), e);
+}
+
+// world.objects: la lista de una casilla se abre con el primer objeto que
+// llega y no se cierra aunque se vaya (getObjects da {} y no nil, y
+// Patient:setTile no tira basura ahí). Solo la del origen.
+static void test_listas(void)
+{
+    preparar();
+    const int b = nuevo("bench", TH_DIR_NORTH);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 10, 10), 0);
+    th_object_set_tile(&w, b, 10, 10);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 10, 10), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 10, 9), 0);
+    th_object_set_tile(&w, b, 12, 10);
+    th_object_set_tile(&w, b, -1, -1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 10, 10), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 12, 10), 1);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 11, 10), 0);
+    const int a = nuevo("entrance_left_door", TH_DIR_WEST);
+    th_object_adopt(&w, a, 30, 30);
+    TH_CHECK_EQ(th_map_has_object_list(&mapa, 30, 30), 1);
+}
+
+// World:setPlotOwner crea con newObject las puertas de la entrada de la
+// parcela comprada. Aquí se crean con th_object_init_map_object y se adoptan;
+// sin ellas, isTilePartOfNearbyObject no ve sus casillas de paso (hallazgo 3
+// de la revisión, nivel 2 de la campaña).
+static void test_parcela(void)
+{
+    preparar_nivel(1);
+    TH_CHECK_EQ(mapa.n_map_objects, 2);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 70, 31), 0);
+    uint32_t puestos = 0;
+    TH_CHECK(th_map_set_parcel_owner(&mapa, 2, 1, &puestos) >= 0);
+    TH_CHECK_EQ(puestos, 3u);
+    for (int i = 0; i < mapa.n_map_objects; i++) {
+        const th_map_object *mo = &mapa.map_objects[i];
+        if (!(puestos & (1u << i)))
+            continue;
+        const int k = w.n_obj++;
+        TH_CHECK_EQ(th_object_init_map_object(&objs[k], &defs, mo), 0);
+        th_object_adopt(&w, k, mo->x, mo->y);
+    }
+    TH_CHECK_EQ(objs[0].thob, 58);
+    TH_CHECK_EQ(objs[0].oflags & TH_OBJF_MASTER, 0);
+    TH_CHECK_EQ(objs[1].thob, 59);
+    TH_CHECK_EQ(objs[1].oclass, TH_OCLASS_ENTRANCE_DOOR);
+    TH_CHECK_EQ(objs[1].oflags & TH_OBJF_MASTER, TH_OBJF_MASTER);
+    TH_CHECK_EQ(objs[1].dir, TH_DIR_WEST);
+    TH_CHECK_EQ(th_objects_first_at(&w, 70, 31), 1);
+    // Un banco al norte con la casilla de uso en (70, 32), que es de paso de
+    // la puerta derecha: al quitarlo, sigue sin construir.
+    TH_CHECK_EQ(banderas(70, 32) & TH_TILE_BUILDABLE, 0);
+    const int b = nuevo("bench", TH_DIR_NORTH);
+    th_object_set_tile(&w, b, 70, 33);
+    th_object_set_tile(&w, b, -1, -1);
+    TH_CHECK_EQ(banderas(70, 32) & TH_TILE_BUILDABLE, 0);
+    TH_CHECK_EQ(banderas(70, 33) & TH_TILE_BUILDABLE, TH_TILE_BUILDABLE);
+    // Los demás objetos del fichero no se crean.
+    const th_map_object banco = {10, 10, 4, 0, 1}, raro = {10, 10, 99, 1, 1};
+    th_object o;
+    TH_CHECK_EQ(th_object_init_map_object(&o, &defs, &banco), -1);
+    TH_CHECK_EQ(th_object_init_map_object(&o, &defs, &raro), -1);
+}
+
 static void test_puertas(void)
 {
     preparar();
@@ -343,6 +449,29 @@ static void test_opcional(void)
     th_object_set_tile(&w, o, 5, 20);
     TH_CHECK_EQ(banderas(4, 20), cesped);
     TH_CHECK_EQ(banderas(6, 20), BASE & ~(uint32_t)(TH_TILE_BUILDABLE | TH_TILE_BUILDABLE_W));
+    th_object_set_tile(&w, o, -1, -1);
+    // Las dos valen: solo cambia la primera de la huella, la de la izquierda.
+    th_object_set_tile(&w, o, 22, 32);
+    TH_CHECK_EQ(banderas(21, 32), BASE & ~(uint32_t)(TH_TILE_BUILDABLE | TH_TILE_BUILDABLE_E));
+    TH_CHECK_EQ(banderas(23, 32), BASE);
+    th_object_set_tile(&w, o, -1, -1);
+    for (int x = 21; x <= 23; x++)
+        TH_CHECK_EQ(banderas(x, 32), BASE);
+    // La de la izquierda es el origen de un banco, que no es de paso: cambia
+    // la de la derecha. Al quitar el objeto, deoccupyTilesByObjectFootprintAt
+    // restaura también la que no ocupó (rareza 7): el origen del banco recupera
+    // su borde este y vuelve a ser pasable y construible, como en CorsixTH.
+    const int b = nuevo("bench", TH_DIR_NORTH);
+    th_object_set_tile(&w, b, 21, 32);
+    const uint32_t banco = BASE & ~(uint32_t)(TH_TILE_BUILDABLE | TH_TILE_PASSABLE | LADOS);
+    TH_CHECK_EQ(banderas(21, 32), banco);
+    th_object_set_tile(&w, o, 22, 32);
+    TH_CHECK_EQ(banderas(21, 32), banco);
+    TH_CHECK_EQ(banderas(23, 32), BASE & ~(uint32_t)(TH_TILE_BUILDABLE | TH_TILE_BUILDABLE_W));
+    th_object_set_tile(&w, o, -1, -1);
+    TH_CHECK_EQ(banderas(21, 32),
+                BASE & ~(uint32_t)(TH_TILE_BUILDABLE_N | TH_TILE_BUILDABLE_S | TH_TILE_BUILDABLE_W));
+    TH_CHECK_EQ(banderas(23, 32), BASE);
 }
 
 static void test_alcance(void)
@@ -381,8 +510,33 @@ static void test_rarezas(void)
     TH_CHECK_EQ(banderas(50, 19) & TH_TILE_BUILDABLE, TH_TILE_BUILDABLE);
 }
 
+// th_test_trg: una lista de 64 cabe; una de 65 no (devuelve 0 en vez de
+// truncarla sin avisar).
+static size_t lista_trg(int n, uint8_t *buf, size_t cap)
+{
+    char json[512];
+    int k = snprintf(json, sizeof json, "{\"l\": [");
+    for (int i = 0; i < n; i++)
+        k += snprintf(json + k, sizeof json - (size_t)k, i ? ", %d" : "%d", i);
+    snprintf(json + k, sizeof json - (size_t)k, "]}");
+    return th_test_trg(json, buf, cap);
+}
+
+static void test_trg_json(void)
+{
+    static uint8_t buf[2048];
+    th_rules r;
+    const size_t n = lista_trg(64, buf, sizeof buf);
+    TH_CHECK(n > 0);
+    TH_CHECK_EQ(th_rules_init(&r, buf, n), 0);
+    TH_CHECK_EQ(th_rules_len(&r, th_rules_get(&r, r.root, "l")), 64);
+    TH_CHECK_EQ(th_rules_int(&r, th_rules_at(&r, th_rules_get(&r, r.root, "l"), 63), -1), 63);
+    TH_CHECK_EQ(lista_trg(65, buf, sizeof buf), 0);
+}
+
 void th_test_objects(void)
 {
+    test_trg_json();
     const size_t n = th_test_trg(definiciones, trg, sizeof(trg));
     TH_CHECK(n > 0);
     TH_CHECK_EQ(th_rules_init(&defs, trg, n), 0);
@@ -393,6 +547,9 @@ void th_test_objects(void)
     test_compartida();
     test_borde();
     test_reinicio();
+    test_reinicio_sin_lista();
+    test_listas();
+    test_parcela();
     test_puertas();
     test_opcional();
     test_alcance();
