@@ -33,20 +33,21 @@ dejan en `TH64_ARTE_DIR` (por defecto `$TH64_WORK/arte`) con un manifiesto
 - `objeto`: el id de CorsixTH (`objects/*.lua`); `orientacion`: `north`, `east`,
   `south` o `west`.
 - `alta` y `baja`: PNG con fondo transparente a la escala de `DATA` y de `DATAM`.
-  Hace falta una de las dos: la baja que falte sale de la alta reducida a la
-  mitad, y la alta, de la baja ampliada al doble.
+  Hace falta una de las dos, y la que falte sale de la otra, sin sus motas: la
+  baja, de la alta recortada a su caja con lados pares y reducida a la mitad
+  exacta (no depende del margen del PNG); la alta, de la baja ampliada al doble.
 - El dibujo puede traer la sombra pintada, opaca. Se quita si el objeto tiene
   sombra de suelo en TH: 6 de los 59 objetos con animación de reposo (24 de sus
-  216 orientaciones). En los otros 53 no hay huella con la que reconocerla y se
-  queda, en los colores del objeto: hay que mirar la vista previa y, si sobra,
-  borrarla del PNG.
+  216 orientaciones). En los otros 48 que se importan no hay huella con la que
+  reconocerla y se queda, en los colores del objeto: hay que mirar la vista
+  previa y, si sobra, borrarla del PNG.
 - Las partes semitransparentes que no son sombra (el cristal de las puertas de
   la entrada y de vaivén, y los rotores del helicóptero: 10 orientaciones de 5
   objetos) todavía no se saben convertir: esas vistas se rechazan con un error.
 - El dibujo tiene que estar a la escala de su resolución: si mide menos de
   1/1,5 o más de 1,5 veces lo que el juego dibuja hoy, da error. Las motas
-  sueltas del PNG (manchas de hasta 16 píxeles a más de 6 del dibujo) se quitan
-  y el informe las cuenta.
+  sueltas del PNG (manchas de hasta 16 píxeles a más de 6 de las manchas del
+  dibujo, contadas en el PNG que se da) se quitan y el informe las cuenta.
 
 `tools/conv/conv.py` lo mete en los assets del motor si hay manifiesto:
 1. **la hoja `MSPR-0`** lleva los sprites nuevos al final;
@@ -58,7 +59,8 @@ Los tres pasos (`graficos`, `animaciones` y `reglas`) van siempre juntos: pedir
 uno ejecuta los tres, para que salgan del mismo manifiesto. Por eso los tres
 necesitan siempre CorsixTH y `lua5.4`, como las reglas; con arte, además numpy y
 Pillow. Lo que falte se dice antes de escribir nada, y un error del manifiesto o
-de un PNG sale en una línea, con el objeto, la orientación y la resolución.
+de un PNG (que no está, roto o enorme) sale en una línea, con el objeto, la
+orientación, la resolución y, si es del PNG, su ruta.
 
 La vista (`motor/vista/objetos.c`) dibuja esa animación sin espejo, si está en
 las tablas cargadas. Los gráficos de alta resolución del oráculo de CorsixTH
@@ -85,13 +87,16 @@ Cómo se convierte cada vista (en cada resolución, ver `importar.py`):
 **La vuelta completa** (`importar.py --comprobar`) prueba el importador con el
 arte de TH: cada orientación de cada objeto, con su sombra pintada en opaco,
 pasa por el importador como si fuera arte nuevo y tiene que salir igual, píxel a
-píxel y en el mismo sitio. Lo hace dos veces: con el dibujo tal cual, y con lo
-que trae el arte de verdad (el borde de la sombra un píxel fuera de su huella,
-migas sueltas junto a él y una mota lejos del dibujo). Salen iguales las 206
-orientaciones que se importan, en las dos pasadas, en `DATA` y en `DATAM`; las
-otras 10, con cristal o rotores, se rechazan. Lo que no puede medir es dónde se
-coloca un dibujo distinto de la referencia: con el mismo dibujo, el sitio bueno
-gana siempre. Eso lo dice el escritorio (`docs/06_juego_base.md`).
+píxel y en el mismo sitio. Lo hace con el dibujo tal cual; con lo que trae el
+arte de verdad (el borde de la sombra hasta 3 píxeles fuera de su huella, migas
+sueltas de 1 a 3 píxeles junto a él y una mota lejos del dibujo); en `DATAM`,
+con ese dibujo sacado al doble, como una alta que sale de la baja; y al doble y
+a la mitad, que tienen que dar el error de escala. Salen bien las 206
+orientaciones que se importan, en todas las pasadas, en `DATA` y en `DATAM`; las
+otras 10, con cristal o rotores, se rechazan. Estropeando el importador a
+propósito, lo nota todo menos una cosa: dónde se coloca un dibujo distinto de la
+referencia, porque con el mismo dibujo el sitio bueno gana siempre. Eso lo dice
+el escritorio (`docs/06_juego_base.md`).
 
 **Lo que no cubre todavía.** Mientras alguien usa un objeto, el objeto no se
 dibuja: lo dibuja la animación de la persona, que lo lleva dentro. Por ejemplo,

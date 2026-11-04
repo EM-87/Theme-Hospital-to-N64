@@ -14,8 +14,9 @@ TH64_ARTE_DIR (por defecto $TH64_WORK/arte), con un manifiesto arte.json:
 - objeto: el id del objeto en CorsixTH (objects/*.lua);
 - orientacion: north, east, south o west;
 - alta y baja: PNG con fondo transparente, a la escala de DATA (640 × 480) y de
-  DATAM (320 × 240). Hace falta una de las dos: si falta la baja, sale de la alta
-  reducida a la mitad; si falta la alta, de la baja ampliada al doble.
+  DATAM (320 × 240). Hace falta una de las dos, y la que falte sale de la otra,
+  sin sus motas (derivar): la baja, de la alta recortada a su caja con lados pares
+  y reducida a la mitad exacta; la alta, de la baja ampliada al doble.
 
 Cada vista se convierte así, en cada resolución:
   1. la referencia es lo que el juego dibuja hoy en esa orientación: la animación
@@ -24,8 +25,8 @@ Cada vista se convierte así, en cada resolución:
      de suelo por separado. Si lleva partes semitransparentes que no son sombra
      (el cristal de 4 puertas, los rotores del helicóptero), se rechaza: aún no se
      saben convertir. Del dibujo se quitan las motas (manchas sueltas pequeñas
-     lejos de él) y se comprueba que esté a la escala (entre 1/1,5 y 1,5 veces lo
-     que el juego dibuja hoy);
+     lejos de él, contadas en el PNG que se da) y se comprueba que esté a la
+     escala (entre 1/1,5 y 1,5 veces lo que el juego dibuja hoy);
   2. lo que tiene color de sombra: los píxeles más cerca del gris de la sombra de
      la referencia que de cualquier color opaco del objeto. Si el objeto usa ese
      mismo gris (sombra ambigua en el informe), ese color no cuenta como opaco;
@@ -51,8 +52,9 @@ Uso como herramienta: python3 -I tools/arte/importar.py [--vistas dir] [--compro
   manifiesto, conv.py y alta.py no los necesitan para el arte.
   --comprobar: la vuelta completa con el arte de TH, sin el arte nuevo. Cada
   orientación de cada objeto, con su sombra pintada en opaco, tiene que salir igual
-  que el juego la dibuja, tal cual y con ruido (ver comprobar). Sale con 1 si
-  alguna no sale igual.
+  que el juego la dibuja: tal cual, con ruido y, en DATAM, sacada al doble; y al
+  doble y a la mitad tiene que dar el error de escala (ver comprobar). Sale con 1
+  si alguna no sale bien.
 """
 import json
 import os
@@ -167,6 +169,20 @@ class Escala:
             return el
         w = self.sprites[s][0]
         return (s, self.crudo(-self.px(x, ORIGEN_X) - w, ORIGEN_X), y, capa, fl ^ FLIP_H, cid)
+
+    def doble(self):
+        """La misma escala al doble, con la unidad de DATA: los sprites ampliados al doble (sin suavizar) y los
+        desplazamientos de los elementos al doble. Lo que compone es lo de esta escala ampliado al doble. Para
+        probar la alta sacada de la baja (comprobar)."""
+        sprites = []
+        for w, h, px in self.sprites:
+            if w:
+                m = np.frombuffer(px, np.uint8).reshape(h, w)
+                px = np.repeat(np.repeat(m, 2, 0), 2, 1).tobytes()
+            sprites.append((2 * w, 2 * h, px))
+        ele = [(s, ORIGEN_X + 2 * self.px(x, ORIGEN_X), ORIGEN_Y + 2 * self.px(y, ORIGEN_Y), c, fl, cid)
+               for s, x, y, c, fl, cid in self.ele]
+        return Escala((self.prim, self.fot, self.lista, ele), sprites, 32, self.rgb)
 
     def componer(self, elementos, lado=1024, ox=512, oy=640):
         """Índices opacos (-1 = nada) y máscara de sombra, con el vértice norte de la casilla en (ox, oy)."""
@@ -283,16 +299,18 @@ def recortar(a, alfa):
     return a[c], alfa[c]
 
 
-def motas_de(alfa, factor=1):
-    """Las motas: manchas sueltas de hasta MOTA_PX píxeles a más de MOTA_LEJOS de la caja de la mancha mayor
-    (con factor, la imagen ampliada: los dos crecen con ella)."""
+def motas_de(alfa):
+    """Las motas: manchas sueltas de hasta MOTA_PX píxeles a más de MOTA_LEJOS de la caja de todas las manchas
+    mayores (las del dibujo; en un objeto diminuto, como la ratonera, la mayor). Se miden en el PNG que se da
+    (imagen_de)."""
     et, ms = manchas(alfa)
     if len(ms) < 2:
         return np.zeros_like(alfa)
-    p = max(range(len(ms)), key=lambda i: ms[i][0])
-    _, py0, py1, px0, px1 = ms[p]
-    fuera = [i + 1 for i, (t, y0, y1, x0, x1) in enumerate(ms)
-             if i != p and t <= MOTA_PX * factor ** 2 and max(py0 - y1, y0 - py1, px0 - x1, x0 - px1) > MOTA_LEJOS * factor]
+    grandes = [m for m in ms if m[0] > MOTA_PX] or [max(ms)]
+
+    def hueco(a, b):
+        return max(a[1] - b[2], b[1] - a[2], a[3] - b[4], b[3] - a[4])
+    fuera = [i + 1 for i, m in enumerate(ms) if m[0] <= MOTA_PX and min(hueco(m, g) for g in grandes) > MOTA_LEJOS]
     return np.isin(et, fuera)
 
 
@@ -311,11 +329,13 @@ def partes_no_sombra(ref):
     return sorted({el[0] for el in ref if el[4] & ALFA and not es_sombra(el)})
 
 
-def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1024, ox=512, oy=640, factor=1):
+def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1024, ox=512, oy=640, factor=1,
+               motas_previas=None):
     """Una vista nueva en una resolución. imagen: PIL RGBA; factor: 2 si sale de la otra resolución ampliada al
-    doble (las migas y las motas, que se miden en píxeles, crecen con ella). Devuelve (sprite, elementos,
-    informe): sprite = (ancho, alto, píxeles CI8 sin relleno) y elementos = los del fotograma nuevo, sin el
-    índice del sprite nuevo (None, que pone anadir)."""
+    doble (las migas, que se miden en píxeles, crecen con ella); motas_previas: si la imagen sale de la otra
+    resolución, las motas ya se quitaron allí (imagen_de) y esto es cuántos píxeles eran. Devuelve (sprite,
+    elementos, informe): sprite = (ancho, alto, píxeles CI8 sin relleno) y elementos = los del fotograma nuevo,
+    sin el índice del sprite nuevo (None, que pone anadir)."""
     ref = [esc.sin_espejo(e, espejo_ref) for e in esc.elementos(anim_ref)]
     otras = partes_no_sombra(ref)
     if otras:
@@ -324,8 +344,9 @@ def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1
     opaco, sombra = esc.componer(ref, lado, ox, oy)
     usados = colores_opacos(esc, anims_objeto)
     grises = colores_sombra(esc, ref)
-    a = np.asarray(imagen.convert("RGBA")).astype(int)
+    a = np.asarray(imagen.convert("RGBA"))
     a, alfa = recortar(a, a[:, :, 3] > 127)
+    a = a.astype(np.int32)
     ry, rx = np.where((opaco >= 0) | sombra)
     rh, rw = ry.max() + 1 - ry.min(), rx.max() + 1 - rx.min()
 
@@ -334,9 +355,10 @@ def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1
         if not 1 / tope < k < tope:
             raise ValueError(f"el dibujo ({w} x {h}) mide {k:.1f} veces lo que el juego dibuja hoy ({rw} x {rh}): "
                              f"¿está a la escala de DATA (alta, 640 x 480) o de DATAM (baja, 320 x 240)?")
-    escala_bien(*alfa.shape, 4)  # una imagen enorme, antes de recorrerla
+    if alfa.sum() >= 16 * rh * rw:  # una imagen enorme, antes de recorrerla (por lo opaco: una mota lejos no
+        escala_bien(*alfa.shape, 4)  # cuenta; si salta esto, la caja es aún mayor y el error es seguro)
     # 1. Las motas (polvo del PNG): manchas sueltas pequeñas lejos del dibujo. Fuera, antes de colocarlo.
-    motas = motas_de(alfa, factor)
+    motas = motas_de(alfa) if motas_previas is None else np.zeros_like(alfa)
     if motas.any():
         a, alfa = recortar(a, alfa & ~motas)
     h, w = alfa.shape
@@ -405,7 +427,8 @@ def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1
     sombras = [e for e in ref if es_sombra(e)]
     informe = {"silueta": round(float(iou), 3), "sprite": [sprite[0], sprite[1]], "colores": len(usados),
                "sombra_pintada_quitada": int(pintada.sum()), "fuera_de_la_huella": int((pintada & ~huella).sum()),
-               "migas": int(migas.sum()), "motas": int(motas.sum()), "sombra_ambigua": ambigua,
+               "migas": int(migas.sum()), "motas": int(motas.sum()) if motas_previas is None else motas_previas,
+               "sombra_ambigua": ambigua,
                "sombras": len(sombras),
                "referencia": {"animacion": anim_ref, "espejo": espejo_ref}}
     return sprite, sombras + [nuevo], informe
@@ -429,18 +452,41 @@ def anadir(esc, sprite, elementos):
     return len(esc.prim) - 1, n_spr
 
 
+def cargar(ruta):
+    """Un PNG en RGBA. Cualquier error de Pillow (no está, no es una imagen, está roto, es enorme) sale como
+    ValueError con la ruta."""
+    try:
+        with Image.open(ruta) as im:
+            return im.convert("RGBA")
+    except Exception as ex:  # Pillow: OSError, SyntaxError (un trozo roto), DecompressionBombError...
+        raise ValueError(f"no puedo leer {ruta}: {ex}") from ex
+
+
+def derivar(im, res):
+    """La imagen de la otra resolución: (imagen, factor, motas). Las motas se deciden aquí, en la que se da, y
+    se quitan antes (motas = sus píxeles). Después, recortada a su caja con lados pares, se reduce a la mitad
+    exacta para la baja, o se amplía al doble, sin suavizar, para la alta (factor = 2)."""
+    a = np.asarray(im.convert("RGBA")).copy()
+    alfa = a[:, :, 3] > 127
+    motas = motas_de(alfa)
+    a[motas | ~alfa] = 0
+    a, _ = recortar(a, alfa & ~motas)
+    if res == "baja":
+        a = np.pad(a, ((0, a.shape[0] % 2), (0, a.shape[1] % 2), (0, 0)))  # la mitad exacta, sea cual sea el margen
+        return Image.fromarray(a, "RGBA").resize((a.shape[1] // 2, a.shape[0] // 2), Image.LANCZOS), 1, int(motas.sum())
+    return Image.fromarray(a, "RGBA").resize((a.shape[1] * 2, a.shape[0] * 2), Image.NEAREST), 2, int(motas.sum())
+
+
 def imagen_de(entrada, res):
-    """(imagen, factor) de una resolución. Si falta, sale de la otra: la baja, de la alta reducida a la mitad;
-    la alta, de la baja ampliada al doble (sin suavizar, y entonces factor = 2)."""
+    """(imagen, factor, motas, origen) de una resolución: la del manifiesto (factor 1, motas None: las quita
+    convertir) o, si falta, la de la otra resolución pasada por derivar; origen lo dice, para los errores."""
     if entrada.get(res):
-        return Image.open(entrada[res]).convert("RGBA"), 1
-    if res == "baja" and entrada.get("alta"):
-        im = Image.open(entrada["alta"]).convert("RGBA")
-        return im.resize((max(1, round(im.width / 2)), max(1, round(im.height / 2))), Image.LANCZOS), 1
-    if res == "alta" and entrada.get("baja"):
-        im = Image.open(entrada["baja"]).convert("RGBA")
-        return im.resize((im.width * 2, im.height * 2), Image.NEAREST), 2
-    raise ValueError(f"falta la imagen {res}")
+        return cargar(entrada[res]), 1, None, None
+    otra = "alta" if res == "baja" else "baja"
+    if not entrada.get(otra):
+        raise ValueError(f"falta la imagen {res}")
+    im, factor, motas = derivar(cargar(entrada[otra]), res)
+    return im, factor, motas, f"sacada de la {otra}" + (" reducida a la mitad" if res == "baja" else " ampliada al doble")
 
 
 def rgb_paleta(mpalette):
@@ -535,17 +581,19 @@ def aplicar(d, res, entradas=None):
                 raise ValueError("objeto desconocido (no es un id de CorsixTH)")
             id_anims = idle[e["objeto"]]
             ref, esp = animacion_de_referencia(id_anims, e["orientacion"])
-            imagen, factor = imagen_de(e, res)
+            origen = None
+            imagen, factor, motas, origen = imagen_de(e, res)
             sprite, elementos, inf = convertir(esc, imagen, sorted({a for a in id_anims.values() if a is not None}),
-                                               ref, esp, factor=factor)
+                                               ref, esp, factor=factor, motas_previas=motas)
             # Un objeto partido en columnas se dibuja recortado; en la N64, un sprite que no cabe en la TMEM
             # va por rdpq_tex_blit, que no recorta, y saldría entero en cada columna.
             if partida(doc, e["objeto"], e["orientacion"]) and res == "baja" and \
                     (sprite[0] + 7) // 8 * 8 * sprite[1] > TMEM_TEXELES:
                 raise ValueError(f"se dibuja partido en columnas y su sprite ({sprite[0]} x {sprite[1]}) no cabe "
                                  "en la TMEM de la N64; hay que partirlo")
-        except (ValueError, OSError) as ex:  # OSError: un PNG que no está o que no es una imagen
-            raise ValueError(f"{e['objeto']} {e['orientacion']} ({res}): {ex}") from ex
+        except ValueError as ex:
+            de = f", {origen}" if origen else ""
+            raise ValueError(f"{e['objeto']} {e['orientacion']} ({res}{de}): {ex}") from ex
         nueva, n_spr = anadir(esc, sprite, elementos)
         nuevas.append({"objeto": e["objeto"], "orientacion": e["orientacion"], "animacion": nueva,
                        "sprite": n_spr, "informe": inf})
@@ -554,41 +602,67 @@ def aplicar(d, res, entradas=None):
 
 
 def con_ruido(esc, opaco, sombra, todo, ref, anims):
-    """El dibujo de la vuelta completa con lo que trae el arte de verdad: el borde de la sombra pintada, un píxel
-    fuera de su huella y en su gris; migas sueltas junto a él, de un píxel cada tres en x y en y y en un color
-    del objeto; y una mota de un píxel 30 por debajo del dibujo."""
+    """El dibujo de la vuelta completa con lo que trae el arte de verdad (el escritorio de PixelLab): el borde de
+    la sombra pintada, en su gris, hasta 3 píxeles fuera de su huella; migas sueltas de 1 a 3 píxeles junto a
+    él, en un color del objeto; y una mota de un píxel lejos del dibujo, en diagonal."""
     grises = colores_sombra(esc, ref)
     otros = [i for i in colores_opacos(esc, anims) if tuple(esc.rgb[i]) not in {tuple(esc.rgb[g]) for g in grises}]
     todo = todo.copy()
     objeto = opaco >= 0
-    visible = (todo >= 0) & ~objeto  # la sombra pintada que se ve
-    if visible.any() and otros:
-        borde = crecer(visible) & ~sombra & ~objeto
-        todo[borde] = grises[0]
-        pintada = visible | borde
-        yy, xx = np.indices(todo.shape)
-        migas = crecer(pintada) & ~pintada & ~crecer(objeto) & ~sombra & (yy % 3 == 0) & (xx % 3 == 0)
-        todo[migas] = otros[0]
+    pintada = (todo >= 0) & ~objeto  # la sombra pintada que se ve
+    if pintada.any() and otros:
+        for _ in range(3):
+            pintada |= crecer(pintada) & ~objeto
+        todo[pintada & ~sombra & ~objeto] = grises[0]
+        libres = crecer(pintada) & ~pintada & ~crecer(objeto) & ~sombra
+        formas = (((0, 0),), ((0, 0), (0, 1)), ((0, 0), (0, 1), (1, 0)))  # migas de 1, 2 y 3 píxeles
+        n = 0
+        for y, x in zip(*np.nonzero(libres & (np.indices(todo.shape)[0] % 4 == 0) & (np.indices(todo.shape)[1] % 4 == 0))):
+            forma = formas[n % 3]
+            if all(libres[y + dy, x + dx] for dy, dx in forma):
+                for dy, dx in forma:
+                    todo[y + dy, x + dx] = otros[0]
+                n += 1
     ys, xs = np.where(todo >= 0)
-    todo[ys.max() + 30, (xs.min() + xs.max()) // 2] = otros[0] if otros else todo[ys.max(), xs[ys.argmax()]]
+    todo[ys.max() + 40, xs.max() + 40] = otros[0] if otros else todo[ys.max(), xs[ys.argmax()]]
     return todo
 
 
 def comprobar(d):
     """La vuelta completa con el arte de TH, sin arte nuevo: cada orientación que el juego dibuja hoy (la suya o
     la de su espejo), con su sombra pintada en opaco, pasa por convertir como si fuera el dibujo nuevo de esa
-    misma orientación. Tiene que salir el mismo sprite en el mismo sitio, sin la sombra pintada. Dos pasadas:
-    «exacta», el dibujo tal cual, y «ruido», con el borde de la sombra fuera de la huella, migas y una mota
-    (con_ruido). Devuelve [(res, objeto, orientación, pasada, informe, distintos)]: distintos = píxeles que no
-    salen iguales (0 = la vuelta es exacta; -1 = el sprite sale de otro tamaño o en otro sitio; -2 = error, y
-    el informe lo lleva en «error»). Las
-    orientaciones con partes semitransparentes que no son sombra, que el importador rechaza, salen con pasada
-    «rechazada», sin informe y con distintos None."""
+    misma orientación. Tiene que salir el mismo sprite en el mismo sitio, sin la sombra pintada. Pasadas:
+    «exacta», el dibujo tal cual; «ruido», con lo que trae el arte de verdad (con_ruido); «doble», solo en DATAM:
+    el dibujo con ruido de la baja, pasado por derivar como una alta sacada de la baja, contra la escala doble
+    (Escala.doble); y «escala», el dibujo al doble y a la mitad, que tienen que dar el error de escala.
+    Devuelve [(res, objeto, orientación, pasada, informe, distintos)]: distintos = píxeles que no salen iguales
+    (0 = bien; -1 = el sprite sale de otro tamaño o en otro sitio; -2 = error, y el informe lo lleva en «error»;
+    en «escala», -3 = no dio el error de escala). Las orientaciones con partes semitransparentes que no son
+    sombra, que el importador rechaza, salen con pasada «rechazada», sin informe y con distintos None."""
     necesita_numpy()
     idle = animaciones_de_reposo(_doc(d))
     out = []
+
+    def imagen(e, dibujo):
+        img = np.zeros(dibujo.shape + (4,), np.uint8)
+        img[dibujo >= 0, :3] = e.rgb[dibujo[dibujo >= 0]]
+        img[dibujo >= 0, 3] = 255
+        return Image.fromarray(img, "RGBA")
+
+    def probar(e, img, anims, a, esp, esperado, sitio_bueno, **kw):
+        try:
+            sprite, elementos, inf = convertir(e, img, anims, a, esp, **kw)
+        except ValueError as ex:
+            return {"error": str(ex)}, -2
+        w, h, px = sprite
+        sitio = (e.px(elementos[-1][1], ORIGEN_X), e.px(elementos[-1][2], ORIGEN_Y))
+        if esperado.shape != (h, w) or sitio != sitio_bueno:
+            return inf, -1
+        return inf, int((np.frombuffer(px, np.uint8).reshape(h, w) != esperado).sum())
+
     for res in ("alta", "baja"):
         esc = escala(d, res)
+        esc2 = esc.doble() if res == "baja" else None
         for objeto in sorted(idle):
             anims = sorted({a for a in idle[objeto].values() if a is not None})
             for ori in ORIENTACIONES:
@@ -608,22 +682,31 @@ def comprobar(d):
                 todo = np.where(opaco >= 0, opaco, pintura)
                 ys, xs = np.where(opaco >= 0)
                 esperado = np.where(opaco >= 0, opaco, TRANSPARENTE)[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-                for pasada, dibujo in (("exacta", todo), ("ruido", con_ruido(esc, opaco, sombra, todo, ref, anims))):
-                    img = np.zeros(dibujo.shape + (4,), np.uint8)
-                    img[dibujo >= 0, :3] = esc.rgb[dibujo[dibujo >= 0]]
-                    img[dibujo >= 0, 3] = 255
-                    try:
-                        sprite, elementos, inf = convertir(esc, Image.fromarray(img, "RGBA"), anims, a, esp)
-                    except ValueError as ex:
-                        out.append((res, objeto, ori, pasada, {"error": str(ex)}, -2))
-                        continue
-                    w, h, px = sprite
-                    sitio = (esc.px(elementos[-1][1], ORIGEN_X), esc.px(elementos[-1][2], ORIGEN_Y))
-                    if esperado.shape == (h, w) and sitio == (xs.min() - 512, ys.min() - 640):
-                        distintos = int((np.frombuffer(px, np.uint8).reshape(h, w) != esperado).sum())
-                    else:
-                        distintos = -1
+                sitio = (xs.min() - 512, ys.min() - 640)
+                ruido = con_ruido(esc, opaco, sombra, todo, ref, anims)
+                for pasada, dibujo in (("exacta", todo), ("ruido", ruido)):
+                    inf, distintos = probar(esc, imagen(esc, dibujo), anims, a, esp, esperado, sitio)
                     out.append((res, objeto, ori, pasada, inf, distintos))
+                if esc2 is not None:
+                    # La alta sacada de la baja: lo que compone la escala doble es lo de la baja, al doble.
+                    alta, factor, motas = derivar(imagen(esc, ruido), "alta")
+                    inf, distintos = probar(esc2, alta, anims, a, esp, np.repeat(np.repeat(esperado, 2, 0), 2, 1),
+                                            (2 * sitio[0], 2 * sitio[1]), factor=factor, motas_previas=motas)
+                    out.append((res, objeto, ori, "doble", inf, distintos))
+                # La escala: el dibujo al doble y a la mitad tienen que dar el error de escala.
+                im = imagen(esc, todo)
+                ys2, xs2 = np.where(todo >= 0)
+                im = im.crop((xs2.min(), ys2.min(), xs2.max() + 1, ys2.max() + 1))
+                fallos = []
+                for k in (2, 0.5):
+                    otra = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.NEAREST)
+                    try:
+                        convertir(esc, otra, anims, a, esp)
+                        fallos.append(f"al {k}: no dio error")
+                    except ValueError as ex:
+                        if "veces lo que el juego dibuja" not in str(ex):
+                            fallos.append(f"al {k}: {ex}")
+                out.append((res, objeto, ori, "escala", {"fallos": fallos}, -3 if fallos else 0))
     return out
 
 
@@ -649,19 +732,25 @@ def main():
         for res in ("alta", "baja"):
             f = [x for x in filas if x[0] == res]
             rechazadas = [x for x in f if x[3] == "rechazada"]
-            for pasada in ("exacta", "ruido"):
+            for pasada in ("exacta", "ruido", "doble", "escala"):
                 g = [x for x in f if x[3] == pasada]
+                if not g:
+                    continue
                 mal = [x for x in g if x[5]]
-                bien = [x for x in g if "error" not in x[4]]
-                suma = {k: sum(x[4][k] for x in bien) for k in ("sombra_pintada_quitada", "fuera_de_la_huella", "migas",
-                                                               "motas")}
-                print(f"{res}, {pasada}: {len(g) - len(mal)} de {len(g)} orientaciones salen iguales "
-                      f"({sum(1 for x in bien if x[4]['sombras'])} con sombra de suelo, "
-                      f"{sum(1 for x in bien if x[4]['sombra_ambigua'])} ambiguas); quitados: sombra pintada "
-                      f"{suma['sombra_pintada_quitada']} píxeles ({suma['fuera_de_la_huella']} fuera de la huella), "
-                      f"migas {suma['migas']}, motas {suma['motas']}")
+                if pasada == "escala":
+                    print(f"{res}, escala: {len(g) - len(mal)} de {len(g)} orientaciones dan el error de escala al "
+                          f"doble y a la mitad")
+                else:
+                    bien = [x for x in g if "error" not in x[4]]
+                    suma = {k: sum(x[4][k] for x in bien)
+                            for k in ("sombra_pintada_quitada", "fuera_de_la_huella", "migas", "motas")}
+                    print(f"{res}, {pasada}: {len(g) - len(mal)} de {len(g)} orientaciones salen iguales "
+                          f"({sum(1 for x in bien if x[4]['sombras'])} con sombra de suelo, "
+                          f"{sum(1 for x in bien if x[4]['sombra_ambigua'])} ambiguas); quitados: sombra pintada "
+                          f"{suma['sombra_pintada_quitada']} píxeles ({suma['fuera_de_la_huella']} fuera de la "
+                          f"huella), migas {suma['migas']}, motas {suma['motas']}")
                 for x in mal:
-                    que = {-1: "otro tamaño o sitio", -2: "error"}.get(x[5], f"{x[5]} píxeles distintos")
+                    que = {-1: "otro tamaño o sitio", -2: "error", -3: "escala"}.get(x[5], f"{x[5]} píxeles distintos")
                     print(f"  {x[1]} {x[2]}: {que}; {json.dumps(x[4], ensure_ascii=False)}")
             print(f"{res}: {len(rechazadas)} orientaciones rechazadas (partes semitransparentes que no son sombra): "
                   f"{', '.join(sorted({x[1] for x in rechazadas}))}")

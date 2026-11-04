@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos ([`06_juego_base.md`](06_juego_base.md)); el siguiente es el 6.3, construir. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
+Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos, y el importador de arte nuevo ([`06_juego_base.md`](06_juego_base.md)); el siguiente es el 6.3, construir, por pasos ([abajo](#construir-hito-63-por-pasos)). Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
 
 **Objetivo: el nivel 1 de Theme Hospital, de principio a fin, en la ROM.**
 - Se empieza con el edificio vacío y 40.000 $.
@@ -204,6 +204,41 @@ Si la vista 1 queda demasiado oscura, se prueba un tono intermedio. Los objetos 
 ### Colocar en las cuatro direcciones (hito 6.3)
 
 Los 37 objetos de norte y este se podrán colocar también al sur y al oeste. Su huella, el sitio de uso y los demás datos de esas orientaciones salen girando los que ya tienen, como en las vistas. Mientras no haya espalda, se dibuja el sustituto. Es un añadido de TH64: ni TH ni CorsixTH lo permiten.
+
+La lectura del código de CorsixTH (2026-11-04) dice cómo girarlos: el sur es el norte girado 180° y el oeste, el este girado 180°. Cada posición `(x, y)` pasa a `(−x, −y)`, `need_north_side` a `need_south_side` y `need_east_side` a `need_west_side`, y las direcciones de llegada suman 2. Girar 90° no vale, porque en estos objetos el este es el norte en espejo. Es la regla que ya siguen 10 de los 13 objetos que CorsixTH trae en cuatro direcciones, y CorsixTH acepta las orientaciones giradas con su propio código si se le meten en memoria: también sirven de oráculo. Ejemplos: el váter al sur se usa desde (0, −1) y al oeste desde (−1, 0); el diván al sur ocupa (0, 1) y (0, 0) y se usa desde (−1, 0).
+
+### Construir (hito 6.3), por pasos
+
+**Lo que hay hoy** (lectura del 2026-11-04):
+- **El núcleo no construye nada.** Las banderas de salas, puertas y objetos llegan ya calculadas por CorsixTH en los escenarios. No hay órdenes, validaciones, ni altas y bajas de objetos o salas en marcha. La huella de la simulación no mira el mapa, ni las salas, ni los objetos.
+- **La interfaz** tiene el panel inferior y el puntero en las cuatro vistas, con la casilla y la posición dentro del rombo, que basta para elegir el borde de una puerta. No tiene ninguna ventana de construir.
+- **El arnés** (`bench/lib/builder.lua`) ya construye pasando por las ventanas de CorsixTH (plano, puerta y objetos): sirve de oráculo.
+
+**Los pasos.** Cada uno, con su commit, sus cifras y su comparación con CorsixTH:
+1. **Los objetos en el mapa.** Ocupar y desocupar casillas con la huella como `Object:setTile` de CorsixTH, la lista de objetos por casilla y las puertas de la entrada al cargar el nivel. La huella de la simulación pasa a incluir el mapa, los objetos y las salas. Se comprueba con el mapa del nivel 1 (las 3 casillas junto a las puertas de la entrada, que hoy no se comparan) y con las casillas de los escenarios: calculadas por el núcleo, las 16.384 tienen que salir iguales que en CorsixTH.
+2. **Las órdenes y amueblar el pasillo.**
+   - La cola de órdenes: cada orden lleva su tick, se aplica al empezarlo y se graba para repetirla.
+   - Comprar, colocar y vender objetos de pasillo, con las validaciones de CorsixTH y el bloqueo de zonas en el modo 2. El bloqueo usa una búsqueda propia, porque el buscador de la simulación puede estar a medias.
+   - `th64sim construir` y la batería en CorsixTH: aceptadas y rechazadas una a una, las 16.384 casillas y el dinero movimiento a movimiento.
+3. **Las salas rectangulares.**
+   - El plano, la puerta, las ventanas y las paredes, con los juegos de paredes en las reglas.
+   - Despejar, los objetos de la sala y confirmar.
+   - Los avisos a quien espera una sala.
+   - La batería, con las 8 salas del nivel 1.
+4. **Editar y vender** salas y objetos.
+5. **El sur y el oeste** de los 37 objetos de norte y este (arriba).
+6. **Las salas de cualquier forma**, con la máscara y la regla de Eduardo.
+7. **La interfaz en la ROM.**
+   - Las ventanas de construir y de amueblar.
+   - El plano al arrastrar, la puerta y las ventanas.
+   - El objeto que sigue al puntero, en azul o en rojo como en TH.
+   - Coger, girar y vender, en las cuatro vistas.
+   - Hay que vigilar dos picos de CPU estimados: 32 a 38 ms al cambiar paredes en una vista girada, y 9 a 19 ms del bloqueo de zonas cada vez que el objeto cambia de casilla.
+
+**Lo que tiene que decidir Eduardo:**
+1. **El tamaño mínimo de las salas de cualquier forma.** CorsixTH exige un ancho y un alto mínimos por separado (4 × 4 en la consulta). La regla de contar casillas aceptaría una consulta de 2 × 8, con 16 casillas pero sin sitio para sus muebles. La propuesta: a los rectángulos, la regla de CorsixTH, para que sigan siendo exactamente los suyos; a las demás formas, la de las casillas, más un ancho mínimo en cada brazo (¿2 casillas?).
+2. **Las ventanas de construir.** El plan decía las de `QDATA` reducidas a la mitad. Pero el juego trae su propia versión de baja resolución en `DATAM/MUTTON01`, que ya se convierte y va en la ROM sin usarse. La propuesta es usar esa.
+3. **Un fallo de CorsixTH.** Al editar una sala, bajar la cantidad de un objeto en la tienda devuelve el doble: una planta de 5 $ devuelve 10 $. Comprobado en el juego. La propuesta es no copiarlo y dejar ese caso fuera de la batería.
 
 ### La demo sin Expansion Pak (hito 6.10)
 

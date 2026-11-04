@@ -12,14 +12,16 @@ Se ejecutan en este orden. Los pasos graficos, animaciones y reglas van siempre
 juntos (pedir uno ejecuta los tres): llevan el arte nuevo con índices que se
 cruzan, así que salen del mismo manifiesto (ver abajo). Todos menos niveles
 necesitan además el código de CorsixTH ($CORSIXTH_DIR): graficos y animaciones,
-porque van con reglas. Los tres y textos necesitan también lua5.4; sonido, g++ y
-el SoundFont TimGM6mb (paquete timgm6mb-soundfont, que instala tools/setup.sh);
-fuentes y --vistas, Pillow. Lo que falte se dice antes de escribir nada.
+porque van con reglas. Los tres y textos necesitan también lua5.4; sonido, g++ (si
+no está ya compilado xmi2mid) y el SoundFont TimGM6mb (paquete timgm6mb-soundfont,
+que instala tools/setup.sh); fuentes y --vistas, Pillow. Lo que falte de todo esto
+se dice antes de escribir nada.
 
 Si hay arte nuevo ($TH64_ARTE_DIR/arte.json, ver tools/arte/importar.py), se
 añade al final de la hoja de sprites MSPR-0 y de las tablas de animación, y las
 reglas de cada objeto llevan en «arte» la animación nueva de cada orientación.
-Con arte nuevo hacen falta además numpy y Pillow.
+Con arte nuevo hacen falta además numpy y Pillow (que tools/setup.sh no instala),
+y también se dice antes de escribir nada si faltan.
 """
 import argparse
 import json
@@ -270,6 +272,11 @@ def paso_fuentes(d, salida, vistas, resumen):
     resumen["fuentes"] = r
 
 
+def xmi2mid():
+    """El xmi2mid compilado (sonidos.compilar_xmi2mid). Si no está, el paso sonido lo compila con g++."""
+    return os.path.join(os.environ.get("TH64_WORK", os.path.expanduser("~/th64-work")), "cache", "xmi2mid")
+
+
 def paso_sonido(d, salida, vistas, resumen):
     # Efectos y locutor: WAV sin repetir y una tabla posición → fichero por idioma.
     ficheros, tablas, r = sonidos.sonidos(lambda n: d.leer("SOUND", "DATA", n))
@@ -281,8 +288,7 @@ def paso_sonido(d, salida, vistas, resumen):
             sys.exit(f"ERROR: la tabla de sonidos de {idioma} no se lee igual que se escribió")
         escribir(salida, f"sonido/{idioma}.trg", trg)
     # Música: XMI a MIDI con el código de CorsixTH, y el SoundFont recortado.
-    cache = os.path.join(os.environ.get("TH64_WORK", os.path.expanduser("~/th64-work")), "cache", "xmi2mid")
-    exe = sonidos.compilar_xmi2mid(os.environ.get("CORSIXTH_DIR", ""), cache)
+    exe = sonidos.compilar_xmi2mid(os.environ.get("CORSIXTH_DIR", ""), xmi2mid())
     midi = d.ruta("SOUND", "MIDI")
     usados, piezas = set(), []
     for f in sorted(os.listdir(midi)):
@@ -346,6 +352,27 @@ def main():
     if pedidos & {"graficos", "animaciones", "reglas", "textos"} and not shutil.which("lua5.4"):
         sys.exit("falta lua5.4 (lo instala tools/setup.sh): lo necesitan reglas y textos, y graficos y "
                  "animaciones, que van con reglas")
+    falta = []
+    if "fuentes" in pedidos or a.vistas:
+        try:
+            import PIL  # noqa: F401
+        except ImportError:
+            falta.append("Pillow (python3-pil), que necesitan fuentes y --vistas")
+    if "sonido" in pedidos:
+        if not os.path.exists(xmi2mid()) and not shutil.which("g++"):
+            falta.append("g++ (lo instala tools/setup.sh), para compilar xmi2mid en el paso sonido")
+        if not os.path.isfile(sonidos.SOUNDFONT):
+            falta.append(f"el SoundFont {sonidos.SOUNDFONT} (timgm6mb-soundfont, que instala tools/setup.sh), "
+                         "que necesita sonido")
+    if pedidos & set(PASOS_DEL_ARTE) and importar.np is None:
+        try:
+            hay_arte = bool(importar.manifiesto())
+        except ValueError as ex:
+            sys.exit(f"ERROR en el arte nuevo: {ex}")
+        if hay_arte:
+            falta.append("numpy y Pillow (python3-numpy y python3-pil), que necesita el arte nuevo")
+    if falta:
+        sys.exit("falta " + "; ".join(falta))
     d = Datos(a.datos)
     previo = os.path.join(a.salida, "conversion.json")
     resumen = json.load(open(previo)) if os.path.exists(previo) else {}
