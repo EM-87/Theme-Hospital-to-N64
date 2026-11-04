@@ -5,6 +5,7 @@
 // con CorsixTH en marcha es la de th64sim construir con la batería
 // (tools/hito6/construir.sh).
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "th/build.h"
@@ -18,12 +19,22 @@
 #define CASILLA 10
 #define CABECERA 32
 
-static uint8_t tmp[CABECERA + CASILLA * TH_MAP_WIDTH * TH_MAP_HEIGHT];
-static th_map mapa;
-static th_pathfinder buscador;
+// Lo grande (unos 825 KB) va en el montón mientras duran estas pruebas y se
+// devuelve al acabar: en la ROM de pruebas, lo que viene detrás necesita ese
+// montón (la comparación de la interfaz pide 384 KB).
+typedef struct estado {
+    uint8_t tmp[CABECERA + CASILLA * TH_MAP_WIDTH * TH_MAP_HEIGHT];
+    th_map mapa;
+    th_pathfinder buscador;
+    th_sim sim;
+} estado;
+static estado *E;
+#define tmp (E->tmp)
+#define mapa (E->mapa)
+#define buscador (E->buscador)
+#define sim (E->sim)
 static uint8_t trg_defs[8192], trg_nivel[4096];
 static th_rules defs, nivel;
-static th_sim sim;
 
 // Las definiciones que importan para colocar: clase, thob, corridor_object y
 // las huellas con su adjacent_to_solid_footprint, como las de CorsixTH.
@@ -343,8 +354,13 @@ void th_test_build(void)
     const size_t m = nivel_trg();
     TH_CHECK(n > 0);
     TH_CHECK(m > 0);
-    if (!n || !m)
+    E = malloc(sizeof *E);
+    TH_CHECK(E != NULL);
+    if (!n || !m || !E) {
+        free(E);
+        E = NULL;
         return;
+    }
     TH_CHECK_EQ(th_rules_init(&defs, trg_defs, n), 0);
     TH_CHECK_EQ(th_rules_init(&nivel, trg_nivel, m), 0);
     test_comprar_colocar();
@@ -353,4 +369,6 @@ void th_test_build(void)
     test_basura();
     test_persona();
     test_cola();
+    free(E);
+    E = NULL;
 }
