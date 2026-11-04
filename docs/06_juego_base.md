@@ -345,7 +345,7 @@ ROM de medida en ares, con el hospital del hito 5 a la hora 3.833 (50 pacientes,
 **Hecho.** Las vistas que Theme Hospital no dibujó, o dibujó en espejo, se pueden hacer fuera del juego (a mano o con IA) y meterlas en el motor sin tocarlo. El primer caso es el **escritorio de la consulta** en sur y oeste, que el juego dibuja con el este y el norte en espejo: el ordenador cambiaba de lado al girar la cámara. Eduardo los sacó con PixelLab (rotación de 8 vistas) a partir del norte y el este originales.
 
 - **El arte nuevo no va al repositorio:** se deriva del arte de TH. Los PNG viven en `$TH64_WORK/arte` con un manifiesto (`arte.json`) que dice qué objeto, qué orientación y qué imágenes ([`tools/arte`](../tools/arte/README.md#el-arte-nuevo)). La imagen de abajo es una vista previa, como las capturas de los demás hitos.
-- **El conversor lo añade al final** de la hoja de sprites y de las tablas de animación, así que no cambia ningún índice del juego, y apunta en las reglas de cada objeto qué animación usar en cada orientación. Esos tres pasos (`graficos`, `animaciones` y `reglas`) van siempre juntos, para que salgan del mismo manifiesto; con arte, necesitan también CorsixTH y `lua5.4`.
+- **El conversor lo añade al final** de la hoja de sprites y de las tablas de animación, así que no cambia ningún índice del juego, y apunta en las reglas de cada objeto qué animación usar en cada orientación. Esos tres pasos (`graficos`, `animaciones` y `reglas`) van siempre juntos, para que salgan del mismo manifiesto; por eso los tres necesitan siempre CorsixTH y `lua5.4`, como las reglas.
 - **La vista la dibuja sin espejo** en la vista original y en las giradas, si la animación está en las tablas cargadas. Si no lo está, vuelve al espejo de siempre: así los gráficos del oráculo de CorsixTH, que se hacen sin arte, siguen comparándose igual.
 - **La simulación no cambia:** la animación de reposo de un objeto solo la usa la vista.
 
@@ -356,10 +356,10 @@ ROM de medida en ares, con el hospital del hito 5 a la hora 3.833 (50 pacientes,
 ### Cómo se convierte una vista
 
 [`importar.py`](../tools/arte/importar.py), en cada resolución (`DATA` para el oráculo, `DATAM` para la N64):
-1. **La referencia** es lo que el juego dibuja hoy en esa orientación: la animación de reposo o la de su espejo, con sus piezas opacas y sus sombras semitransparentes por separado.
+1. **La referencia** es lo que el juego dibuja hoy en esa orientación: la animación de reposo o la de su espejo, con sus piezas opacas y sus sombras de suelo por separado. Del dibujo se quitan las motas (manchas sueltas de hasta 16 píxeles a más de 6 del dibujo) y se comprueba la escala: tiene que medir entre 1/1,5 y 1,5 veces lo que el juego dibuja hoy.
 2. **El color de sombra.** PixelLab recibe la sombra del escritorio como un gris opaco, (81, 81, 81), y la devuelve igual. Tiene color de sombra lo que está más cerca de ese gris que de cualquier color opaco del objeto.
 3. **La posición** es la que más casa con la silueta de la referencia, sin lo que tiene color de sombra, buscando hasta 12 píxeles en cada dirección. Los desplazamientos se guardan como en las tablas de TH: con origen en (141, 186) y a la escala de 640, también en `DATAM`, y con el redondeo hacia cero del motor.
-4. **La sombra pintada se quita:** las manchas de color de sombra que tocan la huella de la sombra de la referencia, enteras, aunque se salgan de ella, y las migas sueltas que quedan en su borde (hasta 3 píxeles). Queda la sombra de la referencia, semitransparente. Si el objeto usa el mismo gris que su sombra (la «sombra ambigua»: 9 de los 11 objetos con sombra en `DATA`, 7 en `DATAM`), lo que cae sobre la silueta de la referencia se queda, porque puede ser del objeto.
+4. **La sombra pintada se quita:** las manchas de color de sombra que tocan la huella de la sombra de la referencia, enteras, aunque se salgan de ella, y las migas sueltas que quedan en su borde (hasta 3 píxeles, o 12 si la imagen sale de la baja ampliada al doble). Queda la sombra de la referencia, semitransparente. Si el objeto usa el mismo gris que su sombra (la «sombra ambigua»: 4 de los 6 objetos con sombra de suelo, 16 de sus 24 orientaciones), lo que cae sobre la silueta de la referencia se queda, porque puede ser del objeto.
 5. **Los colores** pasan a los de los sprites opacos del objeto: 88 en `DATA` y 77 en `DATAM`, del escritorio.
 6. **La animación nueva** es un fotograma con las sombras de la referencia (ya sin espejo) y el sprite nuevo.
 
@@ -374,17 +374,21 @@ Basta con la imagen de una de las dos resoluciones: la que falte sale de la otra
 | Migas del borde quitadas | 10 / 9 | 4 / 4 |
 | Animación y sprite nuevos | 5186 y 4397 | 5187 y 4398 |
 
-La silueta casa en un 77–79 %: el arte nuevo no es el espejo, así que la silla y el ordenador están en otro sitio, pero las patas apoyan en el mismo sitio.
+La silueta casa en un 77–79 %: el arte nuevo no es el espejo, así que la silla y el ordenador están en otro sitio, pero las patas apoyan en el mismo sitio. Con los arreglos (colocarlo sin el color de sombra y quitar el borde de la sombra), el sprite final casa mejor con la referencia: 0,775 y 0,788 en el sur (`DATA` y `DATAM`) y 0,794 y 0,774 en el oeste, frente a 0,757, 0,766, 0,781 y 0,764 con la primera versión.
 
-**La vuelta completa** (`importar.py --comprobar`) prueba el importador con el arte del juego: cada orientación de cada objeto, con su sombra pintada en opaco, pasa por el importador como si fuera arte nuevo de esa orientación, y tiene que salir el mismo sprite en el mismo sitio. Son 216 orientaciones de 59 objetos, 98 de ellas en espejo; 34 tienen sombra semitransparente.
+**La vuelta completa** (`importar.py --comprobar`) prueba el importador con el arte del juego: cada orientación de cada objeto, con su sombra pintada en opaco, pasa por el importador como si fuera arte nuevo de esa orientación, y tiene que salir el mismo sprite en el mismo sitio. Son 216 orientaciones de 59 objetos, 98 de ellas en espejo. 24 tienen sombra de suelo. Otras 10, de 5 objetos, tienen partes semitransparentes que no son sombra: el cristal de 4 puertas y los rotores del helicóptero. El importador las rechaza. Las 206 restantes pasan dos veces: tal cual, y con lo que trae el arte de verdad (el borde de la sombra un píxel fuera de su huella, migas sueltas junto a él y una mota lejos del dibujo).
 
 | Vuelta completa | `DATA` | `DATAM` |
 |---|---:|---:|
-| Orientaciones que salen iguales, píxel a píxel y en su sitio | **216 de 216** | **216 de 216** |
-| … con la primera versión del importador | 190 de 216 | 194 de 216 |
-| Sombra pintada quitada en total | 24.802 píxeles | 6.266 píxeles |
+| Orientaciones que salen iguales, píxel a píxel y en su sitio, tal cual | **206 de 206** | **206 de 206** |
+| … y con ruido | **206 de 206** | **206 de 206** |
+| Rechazadas (cristal o rotores) | 10 | 10 |
+| Quitado con ruido: sombra pintada (de ella, fuera de la huella), migas y motas | 13.928 (2.280), 226 y 206 píxeles | 4.044 (1.160), 110 y 206 píxeles |
+| Con la primera versión del importador (las 216, tal cual) | 190 de 216 | 194 de 216 |
 
-Las que fallaban con la primera versión eran justo las 26 (22 en `DATAM`) en las que el gris de la sombra es también un color opaco del objeto. La sombra no se quitaba (546 píxeles de sombra opaca en la mesa de operaciones, 342 en el billar, 509 en el ecógrafo) o se quitaba solo en parte (las puertas), y el helicóptero salía en otro sitio.
+Las que fallaban con la primera versión eran justo aquellas en las que un gris de lo semitransparente es también un color opaco del objeto: las 16 con sombra de suelo ambigua y 10 de cristal o rotores (6 en `DATAM`). La sombra no se quitaba (546 píxeles de sombra opaca en la mesa de operaciones, 342 en el billar, 509 en el ecógrafo) o se quitaba solo en parte (las puertas), y el helicóptero salía en otro sitio.
+
+Para saber si la prueba mide algo, se estropea el importador a propósito, en `DATAM`. Sin las manchas enteras salen 182 de 206 con ruido, y sin las migas, otras 182. Sin proteger la sombra ambigua, 194 de 206 en las dos pasadas, y sin quitar las motas salta el error de escala. Lo único que no nota es colocar el dibujo con la sombra pintada dentro: con el mismo dibujo que la referencia, el sitio bueno gana igual. Eso lo dice el escritorio (arriba).
 
 ### Comprobaciones y coste
 
@@ -397,24 +401,24 @@ Las que fallaban con la primera versión eran justo las 26 (22 en `DATAM`) en la
 | Tablas de animación | 5.186 → 5.188 animaciones, +60 B (481.098 B) |
 | Heap de la ROM normal con 8 MiB | 2.445 → 2.449 KiB |
 
-Los hospitales de prueba tienen el escritorio al oeste (el del hito 4 y los dos del de las vistas) o al sur (el del hito 5), así que la ROM ya enseña el arte nuevo en la vista original.
+Los hospitales de prueba tienen el escritorio al oeste (el del hito 4 y los dos del de las vistas) o al sur (el del hito 5), así que la ROM ya enseña el arte nuevo en la vista original. La segunda ronda de arreglos (abajo) no cambia ningún asset: la hoja, las tablas y las reglas salen idénticas byte a byte, así que estas cifras siguen valiendo.
 
-### La revisión
+### Las revisiones
 
-Una revisión adversarial (3 revisores: el importador, el motor y la documentación) encontró 15 problemas distintos. Se verificaron por separado 6 (en 8 verificaciones) y todos eran reales; el del borde de la sombra se confirmó después con las mismas cifras. Están todos atendidos:
+**La primera** (3 revisores: el importador, el motor y la documentación) encontró 15 problemas distintos. Se verificaron por separado 6 (en 8 verificaciones) y todos eran reales; el del borde de la sombra se confirmó después con las mismas cifras. Están todos atendidos:
 
 | Problema | Arreglo |
 |---|---|
 | Pedir solo uno de los pasos `graficos`, `animaciones` o `reglas`, o hacerlo con otro manifiesto, desincronizaba la hoja, las tablas y las reglas sin aviso: el armario desaparecía (598 píxeles distintos) o salía con el arte del escritorio (1.726) | Los tres pasos van siempre juntos |
 | La vuelta al espejo del motor solo mira las tablas, no la hoja de sprites | Con los tres pasos juntos, la hoja y las tablas ya no pueden separarse |
-| La sombra pintada no se quitaba si su gris era también un color opaco del objeto (26 orientaciones de 34 con sombra) | El gris de la sombra no cuenta como opaco al buscarla; la silueta de la referencia protege el objeto |
+| La sombra pintada no se quitaba si su gris era también un color opaco del objeto (26 orientaciones de 34 con partes semitransparentes) | El gris de la sombra no cuenta como opaco al buscarla; la silueta de la referencia protege el objeto |
 | El borde de la sombra pintada que salía de la huella se quedaba como una raya oscura: 72 y 30 píxeles en el sur, 14 y 12 en el oeste | Se quitan las manchas enteras y las migas |
-| En los objetos sin sombra semitransparente (48 de 59) la sombra pintada se queda entera | No hay con qué reconocerla: documentado (hay que borrarla del PNG) |
+| En los objetos sin sombra de suelo (53 de 59) la sombra pintada se queda entera | No hay con qué reconocerla: documentado (hay que borrarla del PNG) |
 | La posición se buscaba con la sombra pintada dentro | Se busca sin el color de sombra |
 | `comparar_reglas.py` daba 59 de 60 objetos con arte | No cuenta la clave `arte` |
-| `conv.py` y `alta.py` pedían numpy y Pillow aunque no hubiera arte | Solo con arte |
-| Con arte, `graficos` y `animaciones` necesitan CorsixTH y `lua5.4`, y no se decía | Documentado, con un aviso claro si falta |
-| Una imagen a otra escala (1.200 × 1.200) gastaba 6 GB antes de fallar con un error de numpy | Error en 5 s, con 134 MiB: «¿está a la escala de DATA o de DATAM?» |
+| `conv.py` y `alta.py` pedían numpy y Pillow aunque no hubiera arte | numpy, solo con arte; Pillow, con arte y, como antes, para el paso `fuentes` y `--vistas` |
+| `graficos` y `animaciones` necesitan CorsixTH y `lua5.4`, y no se decía | Documentado; si falta alguno, se dice antes de escribir nada |
+| Una imagen a otra escala (1.200 × 1.200) gastaba 6 GB antes de fallar con un error de numpy | Error en 4 s, con 132 MiB: «mide 13.6 veces lo que el juego dibuja hoy» |
 | Un manifiesto con solo la imagen de baja resolución paraba el importador y `alta.py --arte` | La alta sale de la baja ampliada al doble |
 | Dos entradas del mismo objeto y orientación metían en la ROM una animación sin usar | Error: vistas repetidas |
 | La imagen de este documento lleva los sprites nuevos, píxel a píxel | Se queda, como las capturas de los demás hitos: es una vista previa, no el arte (los PNG y el manifiesto no se suben) |
@@ -422,9 +426,25 @@ Una revisión adversarial (3 revisores: el importador, el motor y la documentaci
 
 Al arreglarlo apareció uno más: la referencia dibujaba los elementos con capa, que el motor no dibuja en un objeto (la luz del visor de rayos X). Ya no los dibuja.
 
+**La segunda** revisó esos arreglos (3 revisores y 9 verificaciones). Dio 15 hallazgos, que son 10 problemas distintos; los 9 que se verificaron eran reales. Están todos atendidos:
+
+| Problema | Arreglo |
+|---|---|
+| Lo semitransparente no siempre es sombra: el cristal de 4 puertas y los rotores del helicóptero (10 orientaciones) se tomaban por sombra pintada, y se cambiaban por los de la referencia en el sitio de la referencia | Solo son sombra los sprites de sombra de suelo (580 y 2536); esas 10 vistas se rechazan con un error claro |
+| La comprobación de escala no veía ni el doble ni la mitad: la planta de `DATA` puesta como baja entraba al doble | Escala en los dos sentidos |
+| Una mota suelta en el PNG movía el dibujo (18 píxeles más arriba) y agrandaba el sprite | Las motas se quitan antes de colocarlo |
+| `--comprobar` no ejercitaba el borde, las migas ni las motas | La segunda pasada, con ruido, y la prueba de estropearlo a propósito |
+| Con solo la baja, la alta ampliada conservaba el borde de la sombra (cada miga, 4 píxeles) | Las migas y las motas crecen con la imagen |
+| `graficos` y `animaciones` necesitan CorsixTH y `lua5.4` aunque no haya arte (van con `reglas`), y la documentación decía «con arte» | Corregido; se comprueba antes de escribir nada |
+| Sin `lua5.4` salía una traza de Python | Mensaje claro, en `conv.py` y en el importador |
+| Un paso mal escrito dejaba escritos los anteriores y sin hacer los añadidos | Los pasos se comprueban antes de empezar y van siempre en el mismo orden |
+| Los errores del manifiesto o de un PNG salían como trazas, a veces sin decir qué objeto | Un error en una línea, con el objeto, la orientación y la resolución |
+| La documentación decía que Pillow solo hace falta con arte | Corregido (arriba) |
+
 ### Lo que no cubre todavía
 
 - **El objeto en uso.** Mientras alguien usa un objeto, el objeto no se dibuja: lo dibuja la animación de la persona, que lo lleva dentro, como en CorsixTH. Las animaciones del médico sentado al escritorio (56, 72, 718 y 64 en norte; 58, 74 y 66 en este) y las de la enfermera (3240, 3256 y 3248 en norte; 3242, 3258 y 3250 en este) llevan los sprites del escritorio y de la silla. Así que con alguien sentado vuelve el escritorio en espejo. Arreglarlo es el problema de la gente usando objetos: animaciones de uso nuevas, o separar el escritorio de la persona en las que ya hay. Tampoco pasan a la animación nueva los elementos con capa, como la luz del visor de rayos X durante la operación.
-- **Los objetos sin sombra semitransparente** (48 de los 59, como el banco, el váter o la recepción): no hay huella con la que reconocer una sombra pintada, así que se queda en los colores del objeto. Hay que mirar la vista previa y, si sobra, borrarla del PNG.
+- **Los objetos sin sombra de suelo** (53 de los 59, como el banco, el váter o la recepción): no hay huella con la que reconocer una sombra pintada, así que se queda en los colores del objeto. Hay que mirar la vista previa y, si sobra, borrarla del PNG.
+- **Las partes semitransparentes que no son sombra** (el cristal de las puertas de la entrada y de vaivén, y los rotores del helicóptero): esas 10 vistas se rechazan. Convertirlas pide sacar del dibujo esas partes como un sprite semitransparente propio.
 - **Los objetos partidos en columnas** (cama, banco, carro de paradas, sofá y ultraescáner en alguna orientación) se dibujan recortados por columnas. En la N64, un sprite que no cabe en la TMEM (2.048 téxeles) va por `rdpq_tex_blit`, que no recorta. El importador rechaza esos casos hasta que el sprite se parta.
 - **Colocar en cuatro direcciones** los objetos que solo tienen norte y este necesita sus huellas al sur y al oeste (hito 6.3); hasta entonces, su arte nuevo no se usa porque la vista pone el sustituto.

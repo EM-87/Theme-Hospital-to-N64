@@ -57,7 +57,10 @@ def main():
     con_arte = len(sys.argv) == 3
     os.makedirs(salida, exist_ok=True)
     d = conv.Datos(os.environ.get("TH_DATA_DIR", ""))
-    esc, nuevas = importar.aplicar(d, "alta") if con_arte else (None, [])
+    try:
+        esc, nuevas = importar.aplicar(d, "alta") if con_arte else (None, [])
+    except ValueError as ex:
+        sys.exit(f"ERROR en el arte nuevo: {ex}")
     for nombre in ("VBLK-0", "VSPR-0"):
         if nombre == "VSPR-0" and esc:
             tsh, n = hojas.escribir(esc.sprites), len(esc.sprites)

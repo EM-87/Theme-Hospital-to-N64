@@ -8,21 +8,23 @@ meterlos en la ROM). Nada de lo que genera va al repositorio.
 Uso:
   python3 -I tools/conv/conv.py [--datos DIR] [--salida DIR] [--vistas DIR] [pasos...]
 Pasos (por defecto, todos): graficos animaciones niveles reglas textos fuentes sonido
-Los pasos reglas, textos, fuentes y sonido necesitan además el código de
-CorsixTH ($CORSIXTH_DIR); reglas y textos, también lua5.4; sonido, g++ y el
-SoundFont TimGM6mb (paquete timgm6mb-soundfont, que instala tools/setup.sh).
+Se ejecutan en este orden. Los pasos graficos, animaciones y reglas van siempre
+juntos (pedir uno ejecuta los tres): llevan el arte nuevo con índices que se
+cruzan, así que salen del mismo manifiesto (ver abajo). Todos menos niveles
+necesitan además el código de CorsixTH ($CORSIXTH_DIR): graficos y animaciones,
+porque van con reglas. Los tres y textos necesitan también lua5.4; sonido, g++ y
+el SoundFont TimGM6mb (paquete timgm6mb-soundfont, que instala tools/setup.sh);
+fuentes y --vistas, Pillow. Lo que falte se dice antes de escribir nada.
 
 Si hay arte nuevo ($TH64_ARTE_DIR/arte.json, ver tools/arte/importar.py), se
 añade al final de la hoja de sprites MSPR-0 y de las tablas de animación, y las
 reglas de cada objeto llevan en «arte» la animación nueva de cada orientación.
-Los pasos graficos, animaciones y reglas van siempre juntos (pedir uno ejecuta los
-tres), para que la hoja, las tablas y las reglas salgan del mismo manifiesto. Con
-arte nuevo, los tres necesitan el código de CorsixTH y lua5.4: el importador saca
-de CorsixTH qué animación dibuja hoy cada orientación de cada objeto.
+Con arte nuevo hacen falta además numpy y Pillow.
 """
 import argparse
 import json
 import os
+import shutil
 import struct
 import sys
 
@@ -76,6 +78,14 @@ def escribir(salida, relativa, datos):
     return len(datos)
 
 
+def arte_nuevo(d):
+    """El arte nuevo en DATAM (tools/arte/importar.py). Un error del manifiesto o de un PNG sale como ERROR."""
+    try:
+        return importar.aplicar(d, "baja")
+    except ValueError as ex:
+        sys.exit(f"ERROR en el arte nuevo: {ex}")
+
+
 def paso_graficos(d, salida, vistas, resumen):
     # Paletas: TPL1 = 'TPL1', u16 número de paletas, u16 0, y 512 B por paleta.
     pals = paleta.variantes(d.leer("DATA", "MPALETTE.DAT"), d.leer("QDATA", "GHOST1.DAT"))
@@ -96,7 +106,7 @@ def paso_graficos(d, salida, vistas, resumen):
         if n == "MBLK-0":  # más la sombra sobre una pared oeste de las vistas giradas
             sprites = hojas.con_sombra_oeste(sprites, 16)
         if n == "MSPR-0":  # más los sprites del arte nuevo, si lo hay
-            esc, nuevas = importar.aplicar(d, "baja")
+            esc, nuevas = arte_nuevo(d)
             if nuevas:
                 if esc.sprites[:len(sprites)] != sprites:
                     sys.exit("ERROR: el importador de arte no parte de la misma hoja MSPR-0")
@@ -152,7 +162,7 @@ def paso_animaciones(d, salida, vistas, resumen, oraculo=None):
         sys.exit("ERROR: las animaciones de DATAM no se encadenan como las de DATA")
     originales = len(prim)
     # Más las animaciones del arte nuevo, si lo hay (al final: no cambia ningún índice).
-    esc, nuevas = importar.aplicar(d, "baja")
+    esc, nuevas = arte_nuevo(d)
     if nuevas:
         if (esc.prim[:originales], esc.fot[:len(fot)], esc.lista[:len(lista)], esc.ele[:len(ele)]) != \
                 (prim, fot, lista, ele):
@@ -192,7 +202,7 @@ def paso_reglas(d, salida, vistas, resumen):
     prim, fot, _, _ = anim.leer(*tablas)
     # El arte nuevo: en cada objeto, «arte» = {orientación: animación}, que la vista usa sin espejo
     # en lugar de idle_animations (motor/vista/objetos.c), si la animación está en las tablas cargadas.
-    _, nuevas = importar.aplicar(d, "baja")
+    _, nuevas = arte_nuevo(d)
     for objeto, por_dir in importar.por_objeto(nuevas).items():
         doc["objetos"][objeto]["arte"] = por_dir
     r = reglas.preparar(doc, anim.duraciones(prim, fot))
@@ -318,17 +328,28 @@ def main():
     a = ap.parse_args()
     if not a.datos:
         sys.exit("falta --datos o TH_DATA_DIR")
-    if set(PASOS_DEL_ARTE) & set(a.pasos):
-        extra = [p for p in PASOS_DEL_ARTE if p not in a.pasos]
+    # Antes de escribir nada: que los pasos existan, que los del arte vayan juntos y que esté lo que necesitan.
+    desconocidos = [p for p in a.pasos if p not in PASOS]
+    if desconocidos:
+        sys.exit(f"paso desconocido: {' '.join(desconocidos)}")
+    pedidos = set(a.pasos)
+    if pedidos & set(PASOS_DEL_ARTE):
+        extra = [p for p in PASOS_DEL_ARTE if p not in pedidos]
         if extra:
             print(f"(graficos, animaciones y reglas van siempre juntos: añado {' '.join(extra)})")
-            a.pasos += extra
+            pedidos |= set(extra)
+    a.pasos = [p for p in PASOS if p in pedidos]
+    lua = os.path.join(os.environ.get("CORSIXTH_DIR", ""), "CorsixTH", "Lua")
+    if pedidos - {"niveles"} and not os.path.isfile(os.path.join(lua, "base_config.lua")):
+        sys.exit(f"no encuentro el código de CorsixTH en {lua} (CORSIXTH_DIR): lo necesitan "
+                 f"{' '.join(sorted(pedidos - {'niveles'}))}")
+    if pedidos & {"graficos", "animaciones", "reglas", "textos"} and not shutil.which("lua5.4"):
+        sys.exit("falta lua5.4 (lo instala tools/setup.sh): lo necesitan reglas y textos, y graficos y "
+                 "animaciones, que van con reglas")
     d = Datos(a.datos)
     previo = os.path.join(a.salida, "conversion.json")
     resumen = json.load(open(previo)) if os.path.exists(previo) else {}
     for p in a.pasos:
-        if p not in PASOS:
-            sys.exit(f"paso desconocido: {p}")
         if p == "animaciones":
             PASOS[p](d, a.salida, a.vistas, resumen, a.oraculo_anim)
         else:
@@ -341,8 +362,10 @@ def main():
         print(f"animaciones       {r['animaciones']} animaciones, {r['fotogramas']} fotogramas, "
               f"{r['elementos']} elementos  {r['bytes']} B  -> {r['fichero']}")
         for n in r["arte"]:
+            inf = n["informe"]
+            motas = f", {inf['motas']} píxeles de motas quitados" if inf.get("motas") else ""
             print(f"  arte nuevo: {n['objeto']} {n['orientacion']} -> animación {n['animacion']}, sprite {n['sprite']} "
-                  f"({n['informe']['sprite'][0]} x {n['informe']['sprite'][1]}, silueta {n['informe']['silueta']})")
+                  f"({inf['sprite'][0]} x {inf['sprite'][1]}, silueta {inf['silueta']}{motas})")
         if "oraculo" in r:
             o = r["oraculo"]
             print(f"  duraciones frente a CorsixTH: {o['iguales']} iguales, {len(o['distintas'])} distintas "

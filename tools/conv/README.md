@@ -1,6 +1,6 @@
 # Conversor de datos (fase 5, hito 0)
 
-Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los assets del motor en `motor/assets/`, sin comprimir. Al compilar la ROM, `motor/Makefile` los comprime en `motor/filesystem/`. Nada de lo que genera va al repositorio. Los pasos de reglas, textos, fuentes y sonido necesitan además el código de CorsixTH v0.70.1 (`$CORSIXTH_DIR`, que deja `tools/setup.sh`). Reglas y textos necesitan también `lua5.4`, y sonido, `g++` y el SoundFont TimGM6mb (paquete `timgm6mb-soundfont`, GPL-2, que también instala `tools/setup.sh`).
+Lee la copia de Theme Hospital de cada usuario (`$TH_DATA_DIR`) y genera los assets del motor en `motor/assets/`, sin comprimir. Al compilar la ROM, `motor/Makefile` los comprime en `motor/filesystem/`. Nada de lo que genera va al repositorio. Todos los pasos menos niveles necesitan además el código de CorsixTH v0.70.1 (`$CORSIXTH_DIR`, que deja `tools/setup.sh`): graficos y animaciones, porque van con reglas (abajo). Esos tres y textos necesitan también `lua5.4`; sonido, `g++` y el SoundFont TimGM6mb (paquete `timgm6mb-soundfont`, GPL-2, que también instala `tools/setup.sh`); fuentes y `--vistas`, Pillow. Lo que falte se dice antes de escribir nada.
 
 ```bash
 source tools/env.sh
@@ -9,7 +9,7 @@ python3 -I tools/conv/conv.py niveles            # solo un paso (graficos, anima
 python3 -I tools/conv/conv.py --vistas DIR       # además, vistas previas en PNG
 ```
 
-Los pasos `graficos`, `animaciones` y `reglas` van siempre juntos: pedir uno ejecuta los tres. Llevan el arte nuevo (`tools/arte/README.md`) con índices que se cruzan, así que salen del mismo manifiesto. Con arte nuevo, los tres necesitan también CorsixTH y `lua5.4`, y además numpy y Pillow.
+Los pasos `graficos`, `animaciones` y `reglas` van siempre juntos: pedir uno ejecuta los tres, y los pasos se ejecutan siempre en el orden de la lista. Llevan el arte nuevo (`tools/arte/README.md`) con índices que se cruzan, así que salen del mismo manifiesto. Con arte nuevo, hacen falta además numpy y Pillow.
 
 | Módulo | Qué hace |
 |---|---|

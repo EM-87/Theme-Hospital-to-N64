@@ -21,7 +21,11 @@ Cada vista se convierte así, en cada resolución:
   1. la referencia es lo que el juego dibuja hoy en esa orientación: la animación
      de reposo de la orientación o, si no la hay, la de su espejo
      (Object:initOrientation de CorsixTH), con sus elementos opacos y sus sombras
-     semitransparentes por separado;
+     de suelo por separado. Si lleva partes semitransparentes que no son sombra
+     (el cristal de 4 puertas, los rotores del helicóptero), se rechaza: aún no se
+     saben convertir. Del dibujo se quitan las motas (manchas sueltas pequeñas
+     lejos de él) y se comprueba que esté a la escala (entre 1/1,5 y 1,5 veces lo
+     que el juego dibuja hoy);
   2. lo que tiene color de sombra: los píxeles más cerca del gris de la sombra de
      la referencia que de cualquier color opaco del objeto. Si el objeto usa ese
      mismo gris (sombra ambigua en el informe), ese color no cuenta como opaco;
@@ -32,8 +36,8 @@ Cada vista se convierte así, en cada resolución:
      queda suelto junto a ellas (manchas de hasta MIGAS píxeles: el borde, en otro
      gris). Con la sombra ambigua, lo que cae sobre la silueta de la referencia se
      queda (puede ser del objeto). La sombra de verdad es la de la referencia,
-     semitransparente. Si la referencia no tiene sombra semitransparente, no se
-     quita nada: lo pintado se queda en los colores del objeto;
+     semitransparente. Si la referencia no tiene sombra de suelo, no se quita nada:
+     lo pintado se queda en los colores del objeto;
   5. el resto pasa a los colores de los sprites opacos del objeto;
   6. la animación nueva es un fotograma con las sombras de la referencia (ya sin
      espejo) y el sprite nuevo, que se añaden al final de la hoja de sprites y de
@@ -44,13 +48,15 @@ Uso como herramienta: python3 -I tools/arte/importar.py [--vistas dir] [--compro
   (CORSIXTH_DIR, con lua5.4), y escribe en dir, si se da, una vista previa por vista
   nueva (la referencia de hoy junto a la nueva, en las dos resoluciones). conv.py y
   alta.py usan las mismas funciones al convertir. Necesita numpy y Pillow; sin
-  manifiesto, el resto de herramientas no.
+  manifiesto, conv.py y alta.py no los necesitan para el arte.
   --comprobar: la vuelta completa con el arte de TH, sin el arte nuevo. Cada
   orientación de cada objeto, con su sombra pintada en opaco, tiene que salir igual
-  que el juego la dibuja (ver comprobar). Sale con 1 si alguna no sale igual.
+  que el juego la dibuja, tal cual y con ruido (ver comprobar). Sale con 1 si
+  alguna no sale igual.
 """
 import json
 import os
+import shutil
 import sys
 
 try:  # solo hacen falta si hay arte nuevo: conv.py y alta.py importan este módulo siempre
@@ -69,6 +75,11 @@ ESPEJO = {"north": "west", "west": "north", "east": "south", "south": "east"}
 ORIGEN_X, ORIGEN_Y = 141, 186  # origen de los desplazamientos crudos de los elementos
 FLIP_H, ALFA = 1, 0xC          # banderas de elemento: espejo y semitransparencia (thdf_alpha_50/75)
 TRANSPARENTE = 255
+# Los sprites semitransparentes de las animaciones de reposo que son sombras en el suelo (un paralelogramo de
+# un solo gris): los 6 objetos con sombra (autopsy, bed, desk, operating_table, pool_table, ultrascanner, 24
+# orientaciones). Los otros semitransparentes no son sombra: el cristal de 4 puertas (2440, 2442, 2459 y 2460) y
+# los rotores del helicóptero (2935 a 2938, del mismo gris que las sombras). Medido en DATA y en DATAM.
+SOMBRAS_DE_SUELO = {580, 2536}
 
 
 def dir_arte():
@@ -82,15 +93,24 @@ def manifiesto(directorio=None):
     ruta = os.path.join(directorio, "arte.json")
     if not os.path.isfile(ruta):
         return []
-    doc = json.load(open(ruta))
+    try:
+        doc = json.load(open(ruta, encoding="utf-8"))
+    except (OSError, ValueError) as ex:
+        raise ValueError(f"no puedo leer {ruta}: {ex}") from ex
+    if not isinstance(doc, dict) or not isinstance(doc.get("objetos", []), list):
+        raise ValueError(f"{ruta}: tiene que ser {{\"objetos\": [...]}}")
     entradas = []
     for e in doc.get("objetos", []):
+        if not isinstance(e, dict) or not isinstance(e.get("objeto"), str):
+            raise ValueError(f"entrada sin «objeto» en {ruta}: {e}")
         if e.get("orientacion") not in ORIENTACIONES:
             raise ValueError(f"orientación desconocida en {ruta}: {e}")
         e = dict(e)
         if not (e.get("alta") or e.get("baja")):
             raise ValueError(f"entrada sin imagen (alta o baja) en {ruta}: {e}")
         for res in ("alta", "baja"):
+            if e.get(res) is not None and not isinstance(e[res], str):
+                raise ValueError(f"«{res}» tiene que ser la ruta de un PNG en {ruta}: {e}")
             if e.get(res):
                 e[res] = os.path.join(directorio, e[res])
         entradas.append(e)
@@ -182,16 +202,25 @@ def colores_opacos(esc, anims):
     return sorted(usados)
 
 
+def es_sombra(el):
+    """¿Es el elemento una sombra en el suelo (semitransparente y de SOMBRAS_DE_SUELO)?"""
+    return bool(el[4] & ALFA) and el[0] in SOMBRAS_DE_SUELO
+
+
 def colores_sombra(esc, elementos):
+    """Índices de paleta de las sombras de suelo de unos elementos."""
     usados = set()
-    for s, x, y, capa, fl, cid in elementos:
-        if fl & ALFA:
-            q = np.frombuffer(esc.sprites[s][2], np.uint8)
+    for el in elementos:
+        if es_sombra(el):
+            q = np.frombuffer(esc.sprites[el[0]][2], np.uint8)
             usados |= set(np.unique(q[q != TRANSPARENTE]).tolist())
     return sorted(usados)
 
 
-MIGAS = 3  # píxeles: lo que queda suelto junto a la sombra pintada, hasta este tamaño, se quita con ella
+MIGAS = 3        # píxeles: lo que queda suelto junto a la sombra pintada, hasta este tamaño, se quita con ella
+MOTA_PX = 16     # píxeles: una mancha suelta hasta este tamaño...
+MOTA_LEJOS = 6   # ...a más de tantos píxeles de la caja del dibujo es una mota (polvo del PNG) y se quita
+ESCALA_MAX = 1.5  # el dibujo mide entre 1/1,5 y 1,5 veces lo que el juego dibuja hoy (DATA es el doble de DATAM)
 
 
 def cercanos(rgb, colores):
@@ -217,6 +246,56 @@ def crecer(m):
     return out
 
 
+def manchas(m):
+    """Las manchas de la máscara (conexas, también en diagonal): (etiquetas, [(tamaño, y0, y1, x0, x1)]), con la
+    mancha i en etiquetas == i + 1 y su caja de y0 a y1 y de x0 a x1, ambos incluidos."""
+    h, w = m.shape
+    lm = m.tolist()
+    et = [[0] * w for _ in range(h)]
+    out = []
+    for y0, x0 in zip(*(v.tolist() for v in np.nonzero(m))):
+        if et[y0][x0]:
+            continue
+        n = len(out) + 1
+        et[y0][x0] = n
+        pila, t, cy0, cy1, cx0, cx1 = [(y0, x0)], 0, y0, y0, x0, x0
+        while pila:
+            y, x = pila.pop()
+            t += 1
+            cy0, cy1, cx0, cx1 = min(cy0, y), max(cy1, y), min(cx0, x), max(cx1, x)
+            for vy in (y - 1, y, y + 1):
+                if 0 <= vy < h:
+                    fila, fet = lm[vy], et[vy]
+                    for vx in (x - 1, x, x + 1):
+                        if 0 <= vx < w and fila[vx] and not fet[vx]:
+                            fet[vx] = n
+                            pila.append((vy, vx))
+        out.append((t, cy0, cy1, cx0, cx1))
+    return np.array(et, np.int32).reshape(h, w), out
+
+
+def recortar(a, alfa):
+    """La imagen y su máscara, recortadas a lo que tiene la máscara."""
+    ys, xs = np.where(alfa)
+    if not len(ys):
+        raise ValueError("la imagen está vacía")
+    c = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+    return a[c], alfa[c]
+
+
+def motas_de(alfa, factor=1):
+    """Las motas: manchas sueltas de hasta MOTA_PX píxeles a más de MOTA_LEJOS de la caja de la mancha mayor
+    (con factor, la imagen ampliada: los dos crecen con ella)."""
+    et, ms = manchas(alfa)
+    if len(ms) < 2:
+        return np.zeros_like(alfa)
+    p = max(range(len(ms)), key=lambda i: ms[i][0])
+    _, py0, py1, px0, px1 = ms[p]
+    fuera = [i + 1 for i, (t, y0, y1, x0, x1) in enumerate(ms)
+             if i != p and t <= MOTA_PX * factor ** 2 and max(py0 - y1, y0 - py1, px0 - x1, x0 - px1) > MOTA_LEJOS * factor]
+    return np.isin(et, fuera)
+
+
 def rellenar(semilla, mascara):
     """Las manchas de la máscara (conexas, también en diagonal) que tocan la semilla, enteras."""
     m = semilla & mascara
@@ -227,26 +306,41 @@ def rellenar(semilla, mascara):
         m = n
 
 
-def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1024, ox=512, oy=640):
-    """Una vista nueva en una resolución. imagen: PIL RGBA. Devuelve (sprite, elementos, informe):
-    sprite = (ancho, alto, píxeles CI8 sin relleno) y elementos = los del fotograma nuevo, sin el índice
-    del sprite nuevo (None, que pone anadir)."""
+def partes_no_sombra(ref):
+    """Los sprites semitransparentes de unos elementos que no son sombra de suelo (cristal, rotores)."""
+    return sorted({el[0] for el in ref if el[4] & ALFA and not es_sombra(el)})
+
+
+def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1024, ox=512, oy=640, factor=1):
+    """Una vista nueva en una resolución. imagen: PIL RGBA; factor: 2 si sale de la otra resolución ampliada al
+    doble (las migas y las motas, que se miden en píxeles, crecen con ella). Devuelve (sprite, elementos,
+    informe): sprite = (ancho, alto, píxeles CI8 sin relleno) y elementos = los del fotograma nuevo, sin el
+    índice del sprite nuevo (None, que pone anadir)."""
     ref = [esc.sin_espejo(e, espejo_ref) for e in esc.elementos(anim_ref)]
+    otras = partes_no_sombra(ref)
+    if otras:
+        raise ValueError(f"lleva partes semitransparentes que no son sombra (sprites {otras}: el cristal de una "
+                         "puerta o los rotores del helicóptero), y el importador aún no sabe convertirlas")
     opaco, sombra = esc.componer(ref, lado, ox, oy)
     usados = colores_opacos(esc, anims_objeto)
     grises = colores_sombra(esc, ref)
     a = np.asarray(imagen.convert("RGBA")).astype(int)
-    alfa = a[:, :, 3] > 127
-    ys, xs = np.where(alfa)
-    if not len(ys):
-        raise ValueError("la imagen está vacía")
-    a, alfa = a[ys.min():ys.max() + 1, xs.min():xs.max() + 1], alfa[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-    h, w = alfa.shape
+    a, alfa = recortar(a, a[:, :, 3] > 127)
     ry, rx = np.where((opaco >= 0) | sombra)
     rh, rw = ry.max() + 1 - ry.min(), rx.max() + 1 - rx.min()
-    if h > 2 * rh + 2 * buscar or w > 2 * rw + 2 * buscar:
-        raise ValueError(f"el dibujo ({w} x {h}) es mucho mayor que lo que el juego dibuja hoy ({rw} x {rh}): "
-                         f"¿está a la escala de DATA (alta, 640 x 480) o de DATAM (baja, 320 x 240)?")
+
+    def escala_bien(h, w, tope):
+        k = (h * w / (rh * rw)) ** 0.5  # veces que mide el dibujo lo que el juego dibuja hoy
+        if not 1 / tope < k < tope:
+            raise ValueError(f"el dibujo ({w} x {h}) mide {k:.1f} veces lo que el juego dibuja hoy ({rw} x {rh}): "
+                             f"¿está a la escala de DATA (alta, 640 x 480) o de DATAM (baja, 320 x 240)?")
+    escala_bien(*alfa.shape, 4)  # una imagen enorme, antes de recorrerla
+    # 1. Las motas (polvo del PNG): manchas sueltas pequeñas lejos del dibujo. Fuera, antes de colocarlo.
+    motas = motas_de(alfa, factor)
+    if motas.any():
+        a, alfa = recortar(a, alfa & ~motas)
+    h, w = alfa.shape
+    escala_bien(h, w, ESCALA_MAX)
     rgb = a[:, :, :3]
     # 2. Lo que tiene color de sombra: más cerca del gris de la sombra de la referencia que de cualquier color
     # opaco del objeto. Si el objeto usa ese mismo gris (sombra ambigua), ese color no cuenta aquí como opaco:
@@ -294,7 +388,7 @@ def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1
         semilla = np.zeros_like(alfa)
         semilla[ys[0], xs[0]] = True
         mancha = rellenar(semilla, resto)
-        if mancha.sum() <= MIGAS:
+        if mancha.sum() <= MIGAS * factor ** 2:
             migas |= mancha
         pendiente &= ~mancha
     # 5. Lo que queda, en los colores opacos.
@@ -308,10 +402,11 @@ def convertir(esc, imagen, anims_objeto, anim_ref, espejo_ref, buscar=12, lado=1
     y0, x0 = y0 + ys.min(), x0 + xs.min()
     sprite = (ci8.shape[1], ci8.shape[0], ci8.tobytes())
     nuevo = (None, esc.crudo(x0 - ox, ORIGEN_X), esc.crudo(y0 - oy, ORIGEN_Y), 0, 0, 0)
-    sombras = [e for e in ref if e[4] & ALFA]
+    sombras = [e for e in ref if es_sombra(e)]
     informe = {"silueta": round(float(iou), 3), "sprite": [sprite[0], sprite[1]], "colores": len(usados),
                "sombra_pintada_quitada": int(pintada.sum()), "fuera_de_la_huella": int((pintada & ~huella).sum()),
-               "migas": int(migas.sum()), "sombra_ambigua": ambigua, "sombras": len(sombras),
+               "migas": int(migas.sum()), "motas": int(motas.sum()), "sombra_ambigua": ambigua,
+               "sombras": len(sombras),
                "referencia": {"animacion": anim_ref, "espejo": espejo_ref}}
     return sprite, sombras + [nuevo], informe
 
@@ -335,17 +430,17 @@ def anadir(esc, sprite, elementos):
 
 
 def imagen_de(entrada, res):
-    """La imagen de una resolución. Si falta, sale de la otra: la baja, de la alta reducida a la mitad; la
-    alta, de la baja ampliada al doble (sin suavizar)."""
+    """(imagen, factor) de una resolución. Si falta, sale de la otra: la baja, de la alta reducida a la mitad;
+    la alta, de la baja ampliada al doble (sin suavizar, y entonces factor = 2)."""
     if entrada.get(res):
-        return Image.open(entrada[res]).convert("RGBA")
+        return Image.open(entrada[res]).convert("RGBA"), 1
     if res == "baja" and entrada.get("alta"):
         im = Image.open(entrada["alta"]).convert("RGBA")
-        return im.resize((max(1, round(im.width / 2)), max(1, round(im.height / 2))), Image.LANCZOS)
+        return im.resize((max(1, round(im.width / 2)), max(1, round(im.height / 2))), Image.LANCZOS), 1
     if res == "alta" and entrada.get("baja"):
         im = Image.open(entrada["baja"]).convert("RGBA")
-        return im.resize((im.width * 2, im.height * 2), Image.NEAREST)
-    raise ValueError(f"{entrada['objeto']} {entrada['orientacion']}: falta la imagen {res}")
+        return im.resize((im.width * 2, im.height * 2), Image.NEAREST), 2
+    raise ValueError(f"falta la imagen {res}")
 
 
 def rgb_paleta(mpalette):
@@ -377,7 +472,7 @@ def _doc(d):
     if "doc" not in _CACHE:
         import reglas
         lua = os.path.join(os.environ.get("CORSIXTH_DIR", ""), "CorsixTH", "Lua")
-        if not os.path.isfile(os.path.join(lua, "base_config.lua")):
+        if not os.path.isfile(os.path.join(lua, "base_config.lua")) or not shutil.which("lua5.4"):
             raise SystemExit(f"el arte nuevo necesita el código de CorsixTH en {lua} (CORSIXTH_DIR) y lua5.4: "
                              "de ahí sale qué animación dibuja hoy cada orientación")
         _CACHE["doc"], _ = reglas.extraer(lua, d.ruta("LEVELS"))
@@ -435,21 +530,22 @@ def aplicar(d, res, entradas=None):
     doc = _doc(d)
     idle = animaciones_de_reposo(doc)
     for e in entradas:
-        if e["objeto"] not in idle:
-            raise ValueError(f"objeto desconocido en el manifiesto: {e['objeto']}")
-        id_anims = idle[e["objeto"]]
-        ref, esp = animacion_de_referencia(id_anims, e["orientacion"])
         try:
-            sprite, elementos, inf = convertir(esc, imagen_de(e, res),
-                                               sorted({a for a in id_anims.values() if a is not None}), ref, esp)
-        except ValueError as ex:
+            if e["objeto"] not in idle:
+                raise ValueError("objeto desconocido (no es un id de CorsixTH)")
+            id_anims = idle[e["objeto"]]
+            ref, esp = animacion_de_referencia(id_anims, e["orientacion"])
+            imagen, factor = imagen_de(e, res)
+            sprite, elementos, inf = convertir(esc, imagen, sorted({a for a in id_anims.values() if a is not None}),
+                                               ref, esp, factor=factor)
+            # Un objeto partido en columnas se dibuja recortado; en la N64, un sprite que no cabe en la TMEM
+            # va por rdpq_tex_blit, que no recorta, y saldría entero en cada columna.
+            if partida(doc, e["objeto"], e["orientacion"]) and res == "baja" and \
+                    (sprite[0] + 7) // 8 * 8 * sprite[1] > TMEM_TEXELES:
+                raise ValueError(f"se dibuja partido en columnas y su sprite ({sprite[0]} x {sprite[1]}) no cabe "
+                                 "en la TMEM de la N64; hay que partirlo")
+        except (ValueError, OSError) as ex:  # OSError: un PNG que no está o que no es una imagen
             raise ValueError(f"{e['objeto']} {e['orientacion']} ({res}): {ex}") from ex
-        # Un objeto partido en columnas se dibuja recortado; en la N64, un sprite que no cabe en la TMEM
-        # va por rdpq_tex_blit, que no recorta, y saldría entero en cada columna.
-        if partida(doc, e["objeto"], e["orientacion"]) and res == "baja" and \
-                (sprite[0] + 7) // 8 * 8 * sprite[1] > TMEM_TEXELES:
-            raise ValueError(f"{e['objeto']} {e['orientacion']}: se dibuja partido en columnas y su sprite "
-                             f"({sprite[0]} x {sprite[1]}) no cabe en la TMEM de la N64; hay que partirlo")
         nueva, n_spr = anadir(esc, sprite, elementos)
         nuevas.append({"objeto": e["objeto"], "orientacion": e["orientacion"], "animacion": nueva,
                        "sprite": n_spr, "informe": inf})
@@ -457,12 +553,37 @@ def aplicar(d, res, entradas=None):
     return esc, nuevas
 
 
+def con_ruido(esc, opaco, sombra, todo, ref, anims):
+    """El dibujo de la vuelta completa con lo que trae el arte de verdad: el borde de la sombra pintada, un píxel
+    fuera de su huella y en su gris; migas sueltas junto a él, de un píxel cada tres en x y en y y en un color
+    del objeto; y una mota de un píxel 30 por debajo del dibujo."""
+    grises = colores_sombra(esc, ref)
+    otros = [i for i in colores_opacos(esc, anims) if tuple(esc.rgb[i]) not in {tuple(esc.rgb[g]) for g in grises}]
+    todo = todo.copy()
+    objeto = opaco >= 0
+    visible = (todo >= 0) & ~objeto  # la sombra pintada que se ve
+    if visible.any() and otros:
+        borde = crecer(visible) & ~sombra & ~objeto
+        todo[borde] = grises[0]
+        pintada = visible | borde
+        yy, xx = np.indices(todo.shape)
+        migas = crecer(pintada) & ~pintada & ~crecer(objeto) & ~sombra & (yy % 3 == 0) & (xx % 3 == 0)
+        todo[migas] = otros[0]
+    ys, xs = np.where(todo >= 0)
+    todo[ys.max() + 30, (xs.min() + xs.max()) // 2] = otros[0] if otros else todo[ys.max(), xs[ys.argmax()]]
+    return todo
+
+
 def comprobar(d):
-    """La vuelta completa con el arte de TH, sin arte nuevo: cada orientación que el juego dibuja hoy (la
-    suya o la de su espejo), con su sombra pintada en opaco, como si fuera el dibujo nuevo de esa misma
-    orientación. Tiene que salir el mismo sprite en el mismo sitio, sin la sombra pintada. Devuelve
-    [(res, objeto, orientación, informe, distintos)]: distintos = píxeles que no salen iguales (0 = la
-    vuelta es exacta; -1 = el sprite sale de otro tamaño o en otro sitio)."""
+    """La vuelta completa con el arte de TH, sin arte nuevo: cada orientación que el juego dibuja hoy (la suya o
+    la de su espejo), con su sombra pintada en opaco, pasa por convertir como si fuera el dibujo nuevo de esa
+    misma orientación. Tiene que salir el mismo sprite en el mismo sitio, sin la sombra pintada. Dos pasadas:
+    «exacta», el dibujo tal cual, y «ruido», con el borde de la sombra fuera de la huella, migas y una mota
+    (con_ruido). Devuelve [(res, objeto, orientación, pasada, informe, distintos)]: distintos = píxeles que no
+    salen iguales (0 = la vuelta es exacta; -1 = el sprite sale de otro tamaño o en otro sitio; -2 = error, y
+    el informe lo lleva en «error»). Las
+    orientaciones con partes semitransparentes que no son sombra, que el importador rechaza, salen con pasada
+    «rechazada», sin informe y con distintos None."""
     necesita_numpy()
     idle = animaciones_de_reposo(_doc(d))
     out = []
@@ -476,25 +597,33 @@ def comprobar(d):
                 except ValueError:
                     continue
                 ref = [esc.sin_espejo(e, esp) for e in esc.elementos(a)]
-                opaco, _ = esc.componer(ref)
+                opaco, sombra = esc.componer(ref)
                 if not (opaco >= 0).any():
+                    continue
+                if partes_no_sombra(ref):
+                    out.append((res, objeto, ori, "rechazada", None, None))
                     continue
                 # La sombra pintada: los sprites de sombra con sus colores, opacos, debajo del objeto.
                 pintura, _ = esc.componer([(s, x, y, c, fl & ~ALFA, cid) for s, x, y, c, fl, cid in ref if fl & ALFA])
                 todo = np.where(opaco >= 0, opaco, pintura)
-                img = np.zeros(todo.shape + (4,), np.uint8)
-                img[todo >= 0, :3] = esc.rgb[todo[todo >= 0]]
-                img[todo >= 0, 3] = 255
-                sprite, elementos, inf = convertir(esc, Image.fromarray(img, "RGBA"), anims, a, esp)
                 ys, xs = np.where(opaco >= 0)
                 esperado = np.where(opaco >= 0, opaco, TRANSPARENTE)[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-                w, h, px = sprite
-                sitio = (esc.px(elementos[-1][1], ORIGEN_X), esc.px(elementos[-1][2], ORIGEN_Y))
-                if esperado.shape == (h, w) and sitio == (xs.min() - 512, ys.min() - 640):
-                    distintos = int((np.frombuffer(px, np.uint8).reshape(h, w) != esperado).sum())
-                else:
-                    distintos = -1
-                out.append((res, objeto, ori, inf, distintos))
+                for pasada, dibujo in (("exacta", todo), ("ruido", con_ruido(esc, opaco, sombra, todo, ref, anims))):
+                    img = np.zeros(dibujo.shape + (4,), np.uint8)
+                    img[dibujo >= 0, :3] = esc.rgb[dibujo[dibujo >= 0]]
+                    img[dibujo >= 0, 3] = 255
+                    try:
+                        sprite, elementos, inf = convertir(esc, Image.fromarray(img, "RGBA"), anims, a, esp)
+                    except ValueError as ex:
+                        out.append((res, objeto, ori, pasada, {"error": str(ex)}, -2))
+                        continue
+                    w, h, px = sprite
+                    sitio = (esc.px(elementos[-1][1], ORIGEN_X), esc.px(elementos[-1][2], ORIGEN_Y))
+                    if esperado.shape == (h, w) and sitio == (xs.min() - 512, ys.min() - 640):
+                        distintos = int((np.frombuffer(px, np.uint8).reshape(h, w) != esperado).sum())
+                    else:
+                        distintos = -1
+                    out.append((res, objeto, ori, pasada, inf, distintos))
     return out
 
 
@@ -519,17 +648,29 @@ def main():
         filas = comprobar(d)
         for res in ("alta", "baja"):
             f = [x for x in filas if x[0] == res]
-            mal = [x for x in f if x[4]]
-            print(f"{res}: {len(f) - len(mal)} de {len(f)} orientaciones salen iguales "
-                  f"({sum(1 for x in f if x[3]['sombras'])} con sombra, "
-                  f"{sum(1 for x in f if x[3]['sombra_ambigua'])} con la sombra ambigua; "
-                  f"sombra pintada quitada: {sum(x[3]['sombra_pintada_quitada'] for x in f)} píxeles)")
-            for x in mal:
-                print(f"  {x[1]} {x[2]}: {'otro tamaño o sitio' if x[4] < 0 else f'{x[4]} píxeles distintos'}; "
-                      f"{json.dumps(x[3], ensure_ascii=False)}")
-        sys.exit(1 if any(x[4] for x in filas) else 0)
-    if not manifiesto():
-        sys.exit(f"no hay arte nuevo en {dir_arte()} (falta arte.json)")
+            rechazadas = [x for x in f if x[3] == "rechazada"]
+            for pasada in ("exacta", "ruido"):
+                g = [x for x in f if x[3] == pasada]
+                mal = [x for x in g if x[5]]
+                bien = [x for x in g if "error" not in x[4]]
+                suma = {k: sum(x[4][k] for x in bien) for k in ("sombra_pintada_quitada", "fuera_de_la_huella", "migas",
+                                                               "motas")}
+                print(f"{res}, {pasada}: {len(g) - len(mal)} de {len(g)} orientaciones salen iguales "
+                      f"({sum(1 for x in bien if x[4]['sombras'])} con sombra de suelo, "
+                      f"{sum(1 for x in bien if x[4]['sombra_ambigua'])} ambiguas); quitados: sombra pintada "
+                      f"{suma['sombra_pintada_quitada']} píxeles ({suma['fuera_de_la_huella']} fuera de la huella), "
+                      f"migas {suma['migas']}, motas {suma['motas']}")
+                for x in mal:
+                    que = {-1: "otro tamaño o sitio", -2: "error"}.get(x[5], f"{x[5]} píxeles distintos")
+                    print(f"  {x[1]} {x[2]}: {que}; {json.dumps(x[4], ensure_ascii=False)}")
+            print(f"{res}: {len(rechazadas)} orientaciones rechazadas (partes semitransparentes que no son sombra): "
+                  f"{', '.join(sorted({x[1] for x in rechazadas}))}")
+        sys.exit(1 if any(x[5] for x in filas if x[3] != "rechazada") else 0)
+    try:
+        if not manifiesto():
+            sys.exit(f"no hay arte nuevo en {dir_arte()} (falta arte.json)")
+    except ValueError as ex:
+        sys.exit(f"ERROR: {ex}")
     for res in ("alta", "baja"):
         try:
             esc, nuevas = aplicar(d, res)
