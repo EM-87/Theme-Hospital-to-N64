@@ -26,7 +26,7 @@ int th_sim_object_at(const th_sim *s, int x, int y, int type)
 
 th_objects th_sim_objects(th_sim *s)
 {
-    return (th_objects){s->w.map, s->w.pf, s->defs, s->obj, s->n_obj, &s->obj_seq};
+    return (th_objects){s->w.map, s->w.pf, s->defs, s->obj, s->n_obj, &s->obj_seq, s->litter, s->n_litter};
 }
 
 static th_rnode orientation(const th_sim *s, const th_object *o)
@@ -411,7 +411,8 @@ static int visit(void *ctx, int x, int y, int dir, int dist)
     if (o == TH_NONE)
         return 0;
     const th_object *ob = &c->s->obj[o];
-    if (c->free_only && (ob->user != TH_NONE || ob->reserved_for != TH_NONE))
+    // getFreeBench pide getObject(x, y, "bench", true): un banco cogido no vale.
+    if (c->free_only && (ob->user != TH_NONE || ob->reserved_for != TH_NONE || (ob->oflags & TH_OBJF_PICKED_UP)))
         return 0;
     if (!allowed_dir(c->s, ob, dir))
         return 0;

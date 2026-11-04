@@ -204,23 +204,12 @@ typedef struct th_hospital {
     uint16_t num_visitors;
     uint16_t num_cured, not_cured;
     int32_t money_in, money_out;
+    int32_t value; // valor del hospital: lo pagado por lo construido (Hospital.value)
 } th_hospital;
 
-// Basura en el suelo (objects/litter.lua): lo que dejan vomitar y orinar y lo
-// que tiran los pacientes por el camino. No la recoge nadie: aún no hay bedeles.
+// Basura en el suelo (th_litter, en objects.h). No la recoge nadie, porque
+// aún no hay bedeles: solo la quita colocar un objeto encima.
 #define TH_SIM_LITTER 512
-enum {
-    TH_LITTER_PEE,
-    TH_LITTER_PUKE,
-    TH_LITTER_SODA_CAN, // los cuatro de litter_types[1..4], en este orden
-    TH_LITTER_BANANA,
-    TH_LITTER_PAPER,
-    TH_LITTER_BOTTLE,
-};
-typedef struct th_litter {
-    uint8_t x, y, type, mirror;
-    uint32_t attach_seq; // cuándo se puso en la casilla (el orden de dibujo)
-} th_litter;
 
 // Sucesos para las trazas (th64sim hito4); punteros nulos = sin traza.
 enum {
@@ -231,12 +220,57 @@ enum {
     TH_EV_DEALT,      // GPRoom:dealtWithPatient (el médico lo despacha)
 };
 enum { TH_HOME_KICKED = 1, TH_HOME_OVER_PRICED, TH_HOME_CURED };
-enum { TH_MONEY_TREATMENT = 1, TH_MONEY_INSURANCE_PENDING, TH_MONEY_INSURANCE, TH_MONEY_WAGES };
+// Motivos de los movimientos de dinero. Con BUY_OBJECT y SELL_OBJECT, who es
+// la definición del objeto (th_rnode) y el valor del hospital cambia en lo
+// mismo que el importe.
+enum {
+    TH_MONEY_TREATMENT = 1,
+    TH_MONEY_INSURANCE_PENDING,
+    TH_MONEY_INSURANCE,
+    TH_MONEY_WAGES,
+    TH_MONEY_BUY_OBJECT,
+    TH_MONEY_SELL_OBJECT,
+};
+
+// La ventana de colocar objetos (UIPlaceObjects de CorsixTH): lo que se ha
+// comprado o cogido y queda por colocar, una fila por tipo de objeto.
+#define TH_SIM_PLACE_ITEMS 8
+#define TH_SIM_PLACE_EXISTING 8
+typedef struct th_place_item {
+    th_rnode def;
+    uint8_t qty;
+    uint8_t existing; // existing_object de la fila: índice + 1 del objeto cogido con el que se abrió, o 0
+    uint8_t n_existing;
+    uint8_t existing_list[TH_SIM_PLACE_EXISTING]; // existing_objects: el primero es el que se coloca
+} th_place_item;
+typedef struct th_place_window {
+    uint8_t open;
+    uint8_t n;      // filas
+    uint8_t active; // active_index, desde 0
+    uint8_t orient; // object_orientation (TH_DIR_*)
+    th_place_item item[TH_SIM_PLACE_ITEMS];
+} th_place_window;
+
+// Una orden del jugador (th/build.h): kind es TH_ORD_* y reason, TH_REASON_*.
+typedef struct th_order {
+    uint32_t tick; // th_sim.hours en el que se aplica (la cola)
+    uint8_t kind;
+    uint8_t x, y, dir;
+    uint8_t qty;
+    th_rnode def; // objetos.<id>, o 0
+} th_order;
+typedef struct th_order_result {
+    uint8_t reason;
+    uint8_t bad; // con TH_REASON_CASILLAS: cuántas casillas de la huella
+} th_order_result;
+#define TH_SIM_ORDERS 16
 
 typedef struct th_sim_events {
     void *ctx;
     void (*patient)(void *ctx, const struct th_sim *s, int who, int event, int arg);
     void (*money)(void *ctx, const struct th_sim *s, int32_t amount, int reason, int who);
+    // Cada orden de la cola, al aplicarla (para grabarla y repetirla).
+    void (*order)(void *ctx, const struct th_sim *s, const th_order *o, const th_order_result *r);
 } th_sim_events;
 
 // Preferencias del jugador para los faxes (lo que hace el arnés de CorsixTH:
@@ -330,6 +364,10 @@ typedef struct th_sim {
     uint16_t litter_lost;      // basura que no cupo (no debería pasar)
     uint16_t would_die;        // pacientes con la salud a 0: aún no se mueren (no hay DieAction)
     uint32_t n_vomit, n_pee;
+    // Construir (th/build.h): la ventana de colocar y la cola de órdenes.
+    th_place_window place;
+    uint8_t n_orders;
+    th_order orders[TH_SIM_ORDERS];
     th_sim_events ev;
 } th_sim;
 
@@ -393,10 +431,23 @@ const th_casebook *th_sim_casebook(const th_sim *s, const char *id);
 // camino) y la basura que dejan vomitar y orinar.
 void th_sim_patient_set_tile(th_sim *s, int who, int x, int y);
 void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror);
+// World:removeAllLitter: quita la basura de la casilla (toda la del juego se
+// puede limpiar). Devuelve cuántas.
+int th_sim_remove_litter_at(th_sim *s, int x, int y);
 // Objetos.
 int th_sim_object_at(const th_sim *s, int x, int y, int type); // TH_NONE si no hay
 // Los objetos de la simulación para th/objects.h.
 th_objects th_sim_objects(th_sim *s);
+// World:newObject: un objeto nuevo con su casilla y lo que la simulación
+// lleva de él (tipo, cola y lista de los mostradores). Devuelve su índice o
+// TH_NONE si no cabe.
+int th_sim_new_object(th_sim *s, th_rnode def, int x, int y, int dir);
+// World:destroyEntity de un objeto: sale del mapa y de la simulación, y su
+// hueco queda libre.
+void th_sim_destroy_object(th_sim *s, int obj);
+// Después de cambiar banderas o radiadores: la temperatura vuelve a mirar el
+// mapa entero.
+void th_sim_map_changed(th_sim *s);
 int th_sim_use_tile(const th_sim *s, int obj, int secondary, int *x, int *y);
 void th_sim_object_set_user(th_sim *s, int obj, int who);
 void th_sim_object_remove_user(th_sim *s, int obj, int who);

@@ -304,7 +304,10 @@ La lista de dibujo cuesta lo mismo, porque se ve la misma porción de mapa. El e
 **Las ratas.**
 - Sus animaciones están en los datos: andar en 8 direcciones y entrar y salir de la ratonera (1908 a 1930).
 - CorsixTH las cita en un comentario de `rathole.lua` y tiene los premios por cazarlas, pero no hay ratas.
-- Se harán cuando llegue la limpieza (hito 6.5), si el original las saca en el nivel 1.
+- **Las ratoneras sí las hace** (lo vio la revisión del 2026-11-04). Cada día, `dailyUpdateRatholes` (`hospital.lua:698-737`) quiere tantas como `round(fracción de basura del pasillo × 200)`. Si faltan, prueba casillas del pasillo junto a una pared, con `math.random`. Las de pared norte u oeste son un objeto (thob 64, sin huella) que se dibuja y abre la lista de `world.objects` de su casilla. Al construir encima se quitan (`removeRatholeXY`).
+  - En el hito 5 salen de 4 a 7 en 9.000 horas; en el hito 4, ninguna.
+  - El motor aún no las tiene. Hace que los pacientes del motor puedan tirar basura en esas casillas, y que CorsixTH gaste números aleatorios que el motor no gasta.
+- Se harán cuando llegue la limpieza (hito 6.5), con las ratoneras, si el original las saca en el nivel 1.
 
 ### El material sin usar
 

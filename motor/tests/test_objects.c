@@ -100,7 +100,7 @@ static void preparar_nivel(int puertas)
     TH_CHECK_EQ(th_map_load(&mapa, tmp, sizeof(tmp), 0), TH_MAP_OK);
     memset(objs, 0, sizeof(objs));
     seq = 0;
-    w = (th_objects){&mapa, &buscador, &defs, objs, 0, &seq};
+    w = (th_objects){&mapa, &buscador, &defs, objs, 0, &seq, NULL, 0};
 }
 
 static void preparar(void)

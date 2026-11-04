@@ -369,11 +369,21 @@ int th64sim_hito4(char **argv)
             if (horas_accion[i][a])
                 fprintf(f, "%s\t%s\t%ld\n", fases[i], acciones[a], horas_accion[i][a]);
     fclose(f);
+    // Las casillas con más de una cosa (la basura se amontona) y lo que no cupo.
+    int pilas = 0, mayor = 0;
+    for (int i = 0; i < TH_MAP_MAX_STACKS; i++) {
+        pilas += sim.w.map->stacks[i].n > 0;
+        if (sim.w.map->stacks[i].n > mayor)
+            mayor = sim.w.map->stacks[i].n;
+    }
+
     printf("hito4: %u pacientes en %d horas; saldo %ld (%+ld); reputación %ld; huella %08lx; %lu vómitos, %lu "
-           "orinadas, %u basuras en el suelo, %u con la salud a 0\n",
+           "orinadas, %u basuras en el suelo, %u con la salud a 0; %d casillas con varias cosas (hasta %d), %u "
+           "sin sitio\n",
            (unsigned)sim.patients_spawned, horas, (long)sim.hosp.balance, (long)(sim.hosp.balance - saldo0),
            (long)sim.hosp.reputation, (unsigned long)th_sim_hash(&sim), (unsigned long)sim.n_vomit,
-           (unsigned long)sim.n_pee, (unsigned)sim.n_litter, (unsigned)sim.would_die);
+           (unsigned long)sim.n_pee, (unsigned)sim.n_litter, (unsigned)sim.would_die, pilas, pilas ? mayor + 1 : 1,
+           (unsigned)sim.w.map->thob_lost);
     return 0;
 }
 

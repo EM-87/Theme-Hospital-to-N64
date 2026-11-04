@@ -954,7 +954,7 @@ static int orden_banderas(char **argv)
 
     static th_object objs[256];
     uint32_t seq = 0;
-    th_objects w = {&mapa, &buscador, &defs, objs, 0, &seq};
+    th_objects w = {&mapa, &buscador, &defs, objs, 0, &seq, NULL, 0};
     const th_rnode lista = th_rules_get(&esc, esc.root, "objetos");
     const th_rnode defs_obj = th_rules_get(&defs, defs.root, "objetos");
     static const char *const dirs[4] = {"north", "east", "south", "west"};
@@ -1036,6 +1036,7 @@ static int orden_reglas(int argc, char **argv)
 
 int th64sim_hito4(char **argv); // hito4.c
 int th64sim_carga(char **argv); // hito4.c
+int th64sim_construir(int argc, char **argv); // construir.c
 th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
 
 // Dibuja el escenario del hito 4 tras unas horas de simulación: el mapa, los
@@ -1150,6 +1151,8 @@ int main(int argc, char **argv)
         }
     if (argc == 7 && strcmp(argv[1], "hito4") == 0)
         return th64sim_hito4(argv);
+    if ((argc == 5 || argc == 6) && strcmp(argv[1], "construir") == 0)
+        return th64sim_construir(argc, argv);
     if (argc == 6 && strcmp(argv[1], "carga") == 0)
         return th64sim_carga(argv);
     if ((argc == 14 || argc == 15) && strcmp(argv[1], "lista") == 0)

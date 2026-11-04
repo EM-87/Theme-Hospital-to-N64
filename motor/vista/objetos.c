@@ -455,8 +455,8 @@ int th_vista_sim_rot(const th_sim *s, int rot, th_view_entity *out, int max)
     int n = 0;
     for (int i = 0; i < s->n_obj && n < max; i++) {
         const th_object *o = &s->obj[i];
-        if (!(o->oflags & TH_OBJF_ON_MAP))
-            continue; // Object:setTile(nil) le quita la animación del mapa
+        if (!(o->oflags & TH_OBJF_ON_MAP) || (o->oflags & TH_OBJF_PICKED_UP))
+            continue; // Object:setTile(nil) le quita la animación del mapa; cogido, es invisible
         colocacion *c = &colocados[i];
         if (c->rot != rot || c->def != o->def || c->ox != o->x || c->oy != o->y || c->odir != o->dir) {
             if (rot)

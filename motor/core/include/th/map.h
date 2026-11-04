@@ -17,11 +17,13 @@
 // Objetos del fichero del nivel: en la campaña solo hay puertas de la entrada,
 // 20 como mucho (nivel 11). Caben en la máscara de th_map_set_parcel_owner.
 #define TH_MAP_MAX_MAP_OBJECTS 32
-// Casillas con más de un objeto a la vez (objetos de borde juntos): sus
-// objetos del segundo en adelante van en una tabla aparte. Caben 5 por
-// casilla: una puerta y un objeto de borde en cada lado.
-#define TH_MAP_MAX_STACKS 64
-#define TH_MAP_STACK_LEN 4
+// Casillas con más de un objeto a la vez (objetos de borde juntos y, sobre
+// todo, la basura, que se amontona: en el hito 5, sin bedeles, hasta 10 cosas
+// en una casilla y 19 casillas así en 9.000 horas): sus objetos del segundo
+// en adelante van en una tabla aparte. Caben 16 por casilla y 128 casillas;
+// lo que no cabe se cuenta en th_map.thob_lost.
+#define TH_MAP_MAX_STACKS 128
+#define TH_MAP_STACK_LEN 15
 
 // Banderas de una casilla. Las 7 primeras son las del fichero del nivel.
 enum {

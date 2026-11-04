@@ -235,14 +235,15 @@ static void test_lista(void)
     TH_CHECK_EQ(th_map_remove_thob(&mapa, 10, 10, 62), 1);
     TH_CHECK_EQ(th_map_remove_thob(&mapa, 10, 10, 44), 1);
     TH_CHECK_EQ(th_map_thob_count(&mapa, 10, 10), 0);
-    for (int k = 0; k < 5; k++)
+    for (int k = 0; k < 1 + TH_MAP_STACK_LEN; k++)
         TH_CHECK_EQ(th_map_add_thob(&mapa, 11, 10, 40 + k), 0);
-    TH_CHECK_EQ(th_map_add_thob(&mapa, 11, 10, 45), -1);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 11, 10, 99), -1);
     TH_CHECK_EQ(mapa.thob_lost, 1);
-    TH_CHECK_EQ(th_map_thob_at(&mapa, 11, 10, 4), 44);
-    for (int k = 0; k < 5; k++)
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 11, 10), 1 + TH_MAP_STACK_LEN);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 11, 10, TH_MAP_STACK_LEN), 40 + TH_MAP_STACK_LEN);
+    for (int k = 0; k < 1 + TH_MAP_STACK_LEN; k++)
         th_map_remove_thob(&mapa, 11, 10, 40 + k);
-    // 64 casillas con dos objetos llenan la tabla; al vaciar una, cabe otra.
+    // TH_MAP_MAX_STACKS casillas con dos objetos llenan la tabla; al vaciar una, cabe otra.
     for (int k = 0; k < TH_MAP_MAX_STACKS; k++) {
         th_map_add_thob(&mapa, 10 + k % 40, 20 + k / 40, 3);
         TH_CHECK_EQ(th_map_add_thob(&mapa, 10 + k % 40, 20 + k / 40, 44), 0);

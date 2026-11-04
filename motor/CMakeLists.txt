@@ -31,14 +31,14 @@ target_include_directories(th_ui PUBLIC ui)
 target_link_libraries(th_ui PUBLIC th_vista m)
 
 add_library(th_core_tests STATIC tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c
-            tests/test_objects.c tests/trg_json.c tests/test_vista.c)
+            tests/test_objects.c tests/trg_json.c tests/test_build.c tests/test_vista.c)
 target_include_directories(th_core_tests PUBLIC tests)
 target_link_libraries(th_core_tests PUBLIC th_core th_vista)
 
 add_executable(test_core tests/main_pc.c)
 target_link_libraries(test_core th_core_tests)
 
-add_executable(th64sim platform/pc/th64sim.c platform/pc/hito4.c)
+add_executable(th64sim platform/pc/th64sim.c platform/pc/hito4.c platform/pc/construir.c)
 target_link_libraries(th64sim th_core_tests th_vista th_ui)
 
 enable_testing()

@@ -2,6 +2,7 @@
 // personal, la temperatura y la carga del escenario. Las salas, los objetos y
 // las colas están en sim_rooms.c; las acciones, en humanoid.c.
 #include "th/sim.h"
+#include "th/build.h"
 
 #include "th/pausa.h"
 
@@ -1003,8 +1004,27 @@ void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror)
         s->litter_lost++;
         return;
     }
+    // World:addObjectToTile: al final de las dos listas de la casilla.
+    th_map_add_thob(s->w.map, x, y, TH_LITTER_THOB);
     s->litter[s->n_litter++] =
-        (th_litter){(uint8_t)x, (uint8_t)y, (uint8_t)type, (uint8_t)mirror, ++s->w.attach_seq};
+        (th_litter){(uint8_t)x, (uint8_t)y, (uint8_t)type, (uint8_t)mirror, ++s->w.attach_seq, ++s->obj_seq};
+}
+
+int th_sim_remove_litter_at(th_sim *s, int x, int y)
+{
+    // Litter:remove de cada una: removeObjectFromTile (el primer 62 de la
+    // lista de tipos) y destroyEntity. Las demás siguen en su orden.
+    int n = 0, k = 0;
+    for (int i = 0; i < s->n_litter; i++) {
+        if (s->litter[i].x == x && s->litter[i].y == y) {
+            th_map_remove_thob(s->w.map, x, y, TH_LITTER_THOB);
+            n++;
+            continue;
+        }
+        s->litter[k++] = s->litter[i];
+    }
+    s->n_litter = (uint16_t)k;
+    return n;
 }
 
 // ---------------------------------------------------------------------------
@@ -1370,6 +1390,9 @@ void th_sim_tick(th_sim *s)
 {
     // La pasada de temperatura de la hora anterior, si quedó a medias.
     th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
+    // Las órdenes del jugador para esta hora (th/build.h).
+    if (s->n_orders)
+        th_sim_apply_orders(s);
     const th_date next = th_date_plus_hours(s->date, s->hours_per_tick);
     if (next.day != s->date.day) {
         end_day(s);
@@ -1497,16 +1520,96 @@ static int object_type(const char *id)
     return TH_OBJ_OTHER;
 }
 
+// Una cola nueva: un hueco libre (el de un mostrador quitado, max_size 0) o
+// una al final.
 static int new_queue(th_sim *s, int max_size, int bench_threshold, int door)
 {
-    if (s->n_queues >= TH_SIM_QUEUES)
+    int i = s->n_queues;
+    for (int k = 0; k < s->n_queues; k++)
+        if (s->queues[k].max_size == 0) {
+            i = k;
+            break;
+        }
+    if (i >= TH_SIM_QUEUES)
         return TH_NONE;
-    th_queue *q = &s->queues[s->n_queues];
+    th_queue *q = &s->queues[i];
     memset(q, 0, sizeof *q);
     q->max_size = (uint8_t)max_size;
     q->bench_threshold = (uint8_t)bench_threshold;
     q->door = (uint8_t)door;
-    return s->n_queues++;
+    if (i == s->n_queues)
+        s->n_queues++;
+    return i;
+}
+
+// Lo que la simulación lleva de un objeto, además de lo de th_object_init.
+static void object_sim_init(th_sim *s, int i)
+{
+    th_object *o = &s->obj[i];
+    const char *id = th_rules_str(s->defs, get(s->defs, o->def, "id"), NULL);
+    o->type = (uint8_t)object_type(id ? id : "");
+    o->user = o->reserved_for = o->queue = o->receptionist = TH_NONE;
+    if (o->type == TH_OBJ_RECEPTION_DESK) {
+        // ReceptionDesk:ReceptionDesk: cola de 20 con 3 de pie aunque haya bancos.
+        o->queue = (uint8_t)new_queue(s, 20, 3, TH_NONE);
+        if (s->n_desks < (int)sizeof s->desks)
+            s->desks[s->n_desks++] = (uint8_t)i;
+    } else if (o->type == TH_OBJ_DOOR) {
+        o->queue = (uint8_t)new_queue(s, 6, 0, i);
+    }
+}
+
+int th_sim_new_object(th_sim *s, th_rnode def, int x, int y, int dir)
+{
+    // Al final, como world.entities; si no queda sitio, en un hueco libre.
+    int i = s->n_obj;
+    if (i >= TH_SIM_OBJECTS)
+        for (i = 0; i < s->n_obj && s->obj[i].def; i++)
+            ;
+    if (i >= TH_SIM_OBJECTS)
+        return TH_NONE;
+    th_object *o = &s->obj[i];
+    memset(o, 0, sizeof *o);
+    if (th_object_init(o, s->defs, def, dir))
+        return TH_NONE;
+    if (i == s->n_obj)
+        s->n_obj++;
+    object_sim_init(s, i);
+    o->room = (uint8_t)th_map_tile_c(s->w.map, x, y)->room;
+    th_objects w = th_sim_objects(s);
+    th_object_set_tile(&w, i, x, y);
+    return i;
+}
+
+void th_sim_destroy_object(th_sim *s, int i)
+{
+    th_object *o = &s->obj[i];
+    // Object:onDestroy: resetUsageAndReservaton (TODO: Humanoid:handleRemovedObject
+    // con gente usándolo; la batería del paso 2 no tiene humanoides),
+    // Entity.onDestroy (setTile(nil)) y rebuildPassableCellFlags.
+    th_objects w = th_sim_objects(s);
+    th_object_set_tile(&w, i, -1, -1);
+    if (o->oclass == TH_OCLASS_SIDE) {
+        th_map_update_pathfinding(s->w.map);
+        th_objects_reset_side(&w);
+    }
+    for (int k = 0; k < s->n_desks; k++)
+        if (s->desks[k] == i) {
+            memmove(&s->desks[k], &s->desks[k + 1], (size_t)(s->n_desks - 1 - k));
+            s->n_desks--;
+            break;
+        }
+    if (o->queue != TH_NONE)
+        s->queues[o->queue].max_size = 0; // hueco libre
+    memset(o, 0, sizeof *o);
+    o->user = o->reserved_for = o->queue = o->receptionist = TH_NONE;
+    while (s->n_obj > 0 && !s->obj[s->n_obj - 1].def)
+        s->n_obj--;
+}
+
+void th_sim_map_changed(th_sim *s)
+{
+    th_sim_temperature_prepare(s);
 }
 
 // Room:calculateHappinessFactor: ventanas y espacio de más (round(log n) / 1000).
@@ -1621,6 +1724,7 @@ static int load_scenario(th_sim *s)
     th_rnode hosp = get(r, root, "hospital");
     th_hospital *h = &s->hosp;
     h->balance = th_rules_int(r, get(r, hosp, "saldo"), 0);
+    h->value = th_rules_int(r, get(r, hosp, "valor"), 0);
     h->reputation = th_rules_int(r, get(r, hosp, "reputacion"), 500);
     h->population = th_rules_micro(r, get(r, hosp, "poblacion"), 250000);
     h->opened = (uint8_t)th_rules_bool(r, get(r, hosp, "abierto"), 0);
@@ -1658,12 +1762,29 @@ static int load_scenario(th_sim *s)
             def = get(s->defs, get(s->defs, s->defs->root, "diagnosticos"), c->id);
         c->cure_price = th_rules_int(s->defs, get(s->defs, def, "cure_price"), 0);
     }
+    // Los dueños de las parcelas («parcelas», de la 1 en adelante): las
+    // casillas ya vienen en «celdas», y los objetos del nivel de una parcela
+    // comprada, en «objetos» (World:setPlotOwner ya los creó), así que solo se
+    // apuntan el dueño y que esos objetos ya están.
+    th_rnode parcelas = get(r, root, "parcelas");
+    th_map *m = s->w.map;
+    for (uint32_t i = 0; i < th_rules_len(r, parcelas) && i + 1 < m->parcel_count; i++) {
+        const int p = (int)i + 1, owner = th_rules_int(r, th_rules_at(r, parcelas, i), 0);
+        if (owner < 0 || owner > TH_MAP_MAX_PLAYERS)
+            return -26;
+        m->parcel_owner[p] = (uint8_t)owner;
+        for (int k = 0; k < m->n_map_objects && owner; k++)
+            if (th_map_tile_c(m, m->map_objects[k].x, m->map_objects[k].y)->parcel == p)
+                m->map_objects[k].placed = 1;
+    }
     // Objetos, en el orden de world.entities.
     th_rnode objs = get(r, root, "objetos"), defs_obj = get(s->defs, s->defs->root, "objetos");
     uint8_t orden[TH_SIM_OBJECTS];
     s->n_obj = 0;
     s->n_desks = 0;
-    s->radiator_thob = -1;
+    // El thob del radiador, haya o no radiadores: la temperatura lo busca en
+    // las listas de las casillas.
+    s->radiator_thob = (int16_t)th_rules_int(s->defs, get(s->defs, get(s->defs, defs_obj, "radiator"), "thob"), -1);
     for (uint32_t i = 0; i < th_rules_len(r, objs) && s->n_obj < TH_SIM_OBJECTS; i++) {
         th_rnode o = th_rules_at(r, objs, i);
         const char *id = th_rules_str(r, get(r, o, "id"), NULL);
@@ -1671,7 +1792,6 @@ static int load_scenario(th_sim *s)
         memset(ob, 0, sizeof *ob);
         if (th_object_init(ob, s->defs, get(s->defs, defs_obj, id ? id : ""), dir_from(r, get(r, o, "direccion"))))
             return -21;
-        ob->type = (uint8_t)object_type(id);
         // Las banderas del mapa ya vienen del escenario: el objeto está en su
         // casilla sin ocuparla otra vez. De los objetos de borde no se sabe
         // si cortaron el paso (set_passable_flags).
@@ -1682,15 +1802,7 @@ static int load_scenario(th_sim *s)
         // Su sitio en world.objects de la casilla (sin él, el de entities).
         orden[s->n_obj] = (uint8_t)th_rules_int(r, get(r, o, "orden"), 255);
         ob->room = (uint8_t)th_rules_int(r, get(r, o, "sala"), 0);
-        ob->user = ob->reserved_for = ob->queue = ob->receptionist = TH_NONE;
-        if (ob->type == TH_OBJ_RECEPTION_DESK) {
-            ob->queue = (uint8_t)new_queue(s, 20, 3, TH_NONE);
-            s->desks[s->n_desks++] = s->n_obj;
-        } else if (ob->type == TH_OBJ_DOOR) {
-            ob->queue = (uint8_t)new_queue(s, 6, 0, s->n_obj);
-        } else if (ob->type == TH_OBJ_RADIATOR) {
-            s->radiator_thob = ob->thob;
-        }
+        object_sim_init(s, s->n_obj);
         s->n_obj++;
     }
     load_object_lists(s, orden);
@@ -1883,6 +1995,24 @@ uint32_t th_sim_hash(const th_sim *s)
     for (int i = 0; i < s->n_litter; i++) {
         const th_litter *l = &s->litter[i];
         h = fnv(h, (uint32_t)l->x << 24 | (uint32_t)l->y << 16 | (uint32_t)l->type << 8 | l->mirror);
+        h = fnv(h, l->seq);
+    }
+    // Construir: el valor del hospital, la ventana de colocar y las órdenes en cola.
+    h = fnv(h, (uint32_t)s->hosp.value);
+    const th_place_window *pw = &s->place;
+    h = fnv(h, (uint32_t)pw->open << 24 | (uint32_t)pw->n << 16 | (uint32_t)pw->active << 8 | pw->orient);
+    for (int k = 0; k < pw->n; k++) {
+        const th_place_item *it = &pw->item[k];
+        h = fnv(h, it->def);
+        h = fnv(h, (uint32_t)it->qty << 16 | (uint32_t)it->existing << 8 | it->n_existing);
+        for (int j = 0; j < it->n_existing; j++)
+            h = fnv(h, it->existing_list[j]);
+    }
+    for (int k = 0; k < s->n_orders; k++) {
+        const th_order *o = &s->orders[k];
+        h = fnv(h, o->tick);
+        h = fnv(h, (uint32_t)o->kind << 24 | (uint32_t)o->x << 16 | (uint32_t)o->y << 8 | o->dir);
+        h = fnv(h, (uint32_t)o->qty << 24 ^ o->def);
     }
     uint32_t t = 0;
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)

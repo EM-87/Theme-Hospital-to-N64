@@ -12,9 +12,9 @@
 // existe (th_map_has_object_list): una casilla que tuvo un objeto o basura
 // sigue teniendo su lista, vacía, cuando se van.
 //
-// La basura (Litter) todavía no entra en la lista de tipos del mapa: la
-// simulación la lleva en su propia lista (th_sim.litter) y solo abre la de
-// world.objects.
+// La basura (Litter) es una Entity y no un Object, pero también entra en las
+// dos listas de su casilla (Litter:setTile): la simulación la lleva en
+// th_sim.litter, con su seq, y este módulo la ve en th_objects.litter.
 #ifndef TH_OBJECTS_H
 #define TH_OBJECTS_H
 
@@ -52,7 +52,42 @@ enum {
     TH_OBJF_ON_MAP = 1,        // tiene casilla (tile_x ~= nil en CorsixTH)
     TH_OBJF_SIDE_PASSABLE = 2, // set_passable_flags: un objeto de borde que cortó el paso
     TH_OBJF_MASTER = 4,        // is_master: la hoja derecha de las puertas dobles y de la entrada
+    TH_OBJF_PICKED_UP = 8,     // picked_up: cogido en el pasillo; sigue en el mapa, invisible
 };
+
+// Basura en el suelo (objects/litter.lua): lo que dejan vomitar y orinar y lo
+// que tiran los pacientes por el camino. thob 62.
+#define TH_LITTER_THOB 62
+enum {
+    TH_LITTER_PEE,
+    TH_LITTER_PUKE,
+    TH_LITTER_SODA_CAN, // los cuatro de litter_types[1..4], en este orden
+    TH_LITTER_BANANA,
+    TH_LITTER_PAPER,
+    TH_LITTER_BOTTLE,
+};
+typedef struct th_litter {
+    uint8_t x, y, type, mirror;
+    uint32_t attach_seq; // cuándo se puso en la casilla (el orden de dibujo)
+    uint32_t seq;        // su sitio en world.objects de la casilla, como th_object.seq
+} th_litter;
+
+// Las casillas de la huella de una orientación (self.footprint), con sus
+// etiquetas.
+enum {
+    TH_FP_COMPLETE = 1,   // complete_cell
+    TH_FP_PASSABLE = 2,   // only_passable
+    TH_FP_SIDE = 4,       // only_side
+    TH_FP_OPTIONAL = 8,   // optional
+    TH_FP_SHAREABLE = 16, // shareable
+    TH_FP_INVISIBLE = 32, // invisible (solo cambia el plano)
+};
+#define TH_FOOTPRINT_MAX 16 // la mayor de las definiciones tiene 10 casillas
+typedef struct th_fp_tile {
+    int8_t dx, dy;
+    uint8_t f;    // TH_FP_*
+    uint8_t need; // need_<dir>_side: bit 0 norte, 1 este, 2 sur, 3 oeste
+} th_fp_tile;
 
 typedef struct th_object {
     uint8_t type;      // TH_OBJ_*
@@ -72,9 +107,10 @@ typedef struct th_object {
 } th_object;
 
 // Lo que necesitan las funciones de ocupar: el mapa, el buscador de caminos
-// (isTilePartOfNearbyObject e isReachableFromHospital), las definiciones y los
-// objetos, en el orden de world.entities. seq cuenta las llegadas a una
-// casilla (World:addObjectToTile).
+// (isTilePartOfNearbyObject e isReachableFromHospital), las definiciones, los
+// objetos y la basura. seq cuenta las llegadas a una casilla
+// (World:addObjectToTile). Los huecos de obj sin definición (def 0) están
+// libres.
 typedef struct th_objects {
     th_map *map;
     th_pathfinder *pf;
@@ -82,7 +118,13 @@ typedef struct th_objects {
     th_object *obj;
     int n_obj;
     uint32_t *seq;
+    const th_litter *litter;
+    int n_litter;
 } th_objects;
+
+// La huella de la definición en la orientación dir: devuelve cuántas
+// casillas, o 0 si no tiene esa orientación.
+int th_object_footprint(const th_rules *defs, th_rnode def, int dir, th_fp_tile *fp);
 
 // Rellena la parte de th_object que usa este módulo (oclass, la maestra de
 // las puertas dobles, thob y def) a partir de la definición; el objeto queda
@@ -108,7 +150,21 @@ void th_objects_reset_side(th_objects *w);
 int th_objects_part_of_nearby(th_objects *w, int x, int y, int distance);
 
 // El primer objeto con origen en (x, y) (World:getObject sin tipo), o -1.
+// Si lo primero de la lista es basura, TH_OBJECTS_FIRST_LITTER.
+#define TH_OBJECTS_FIRST_LITTER (-2)
 int th_objects_first_at(const th_objects *w, int x, int y);
+
+// World:isTileExclusivelyPassable: 0 si (x, y) es casilla de uso exclusiva
+// (only_passable sin shareable) de un objeto no cogido cuyo origen está a
+// distance pasos o menos, o casilla de paso de una puerta.
+int th_objects_exclusively_passable(th_objects *w, int x, int y, int distance);
+
+// occupyTilesByObjectFootprintAt y deoccupyTilesByObjectFootprintAt sueltos,
+// sin lo que hace Object:setTile alrededor: los usa UIPlaceObjects al
+// comprobar el sitio nuevo de un objeto cogido. Solo para objetos que no son
+// puertas.
+void th_object_occupy(th_objects *w, int i, int x, int y);
+void th_object_deoccupy(th_objects *w, int i);
 
 // Las casillas de paso del objeto (getWalkableTiles): devuelve cuántas,
 // TH_OBJECT_MAX_WALKABLE como mucho.

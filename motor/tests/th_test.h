@@ -39,6 +39,8 @@ void th_test_humanoid(void);
 void th_test_rules(void);
 // Pruebas de ocupar y desocupar casillas (test_objects.c).
 void th_test_objects(void);
+// Pruebas de las órdenes de amueblar el pasillo (test_build.c).
+void th_test_build(void);
 // Un TRG1 a partir de un JSON pequeño (trg_json.c); devuelve su tamaño, o 0
 // si el JSON no vale o no cabe.
 size_t th_test_trg(const char *json, uint8_t *out, size_t cap);

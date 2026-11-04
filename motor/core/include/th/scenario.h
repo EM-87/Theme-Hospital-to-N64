@@ -12,6 +12,7 @@
 //              sitio en la lista world.objects de su casilla (puede faltar);
 //   listas     las casillas (y * 128 + x) con lista en world.objects, aunque
 //              esté vacía (puede faltar);
+//   parcelas   el dueño de cada parcela, de la 1 en adelante (puede faltar);
 //   salas      [{num, id, x, y, ancho, alto, puerta = {x, y, direccion}}];
 //   personal   [{clase, x, y, perfil = {habilidad, atencion, sueldo, ...}}];
 //   fecha, mundo y hospital: el reloj, las llegadas y el dinero.

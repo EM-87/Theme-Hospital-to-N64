@@ -12,22 +12,6 @@ static const uint32_t buildable_flag[4] = {TH_TILE_BUILDABLE_N, TH_TILE_BUILDABL
                                            TH_TILE_BUILDABLE_W};
 static const uint32_t travel_flag[4] = {TH_TILE_TRAVEL_N, TH_TILE_TRAVEL_E, TH_TILE_TRAVEL_S, TH_TILE_TRAVEL_W};
 
-// Etiquetas de una casilla de la huella.
-enum {
-    FP_COMPLETE = 1,  // complete_cell
-    FP_PASSABLE = 2,  // only_passable
-    FP_SIDE = 4,      // only_side
-    FP_OPTIONAL = 8,  // optional
-    FP_NEED_N = 16,   // need_north_side; las siguientes, este, sur y oeste
-};
-
-#define FOOTPRINT_MAX 16 // la mayor de las definiciones tiene 10 casillas
-
-typedef struct fp_tile {
-    int8_t dx, dy;
-    uint8_t f;
-} fp_tile;
-
 static int in_map(int x, int y)
 {
     return x >= 0 && y >= 0 && x < TH_MAP_WIDTH && y < TH_MAP_HEIGHT;
@@ -46,22 +30,20 @@ static uint32_t flags_at(const th_map *m, int x, int y)
     return in_map(x, y) ? th_map_tile_c(m, x, y)->flags : 0;
 }
 
-// La huella de la orientación del objeto (self.footprint), o 0 casillas.
-static int footprint(const th_objects *w, const th_object *o, fp_tile *fp)
+int th_object_footprint(const th_rules *r, th_rnode def, int dir, th_fp_tile *fp)
 {
-    const th_rules *r = w->defs;
-    const th_rnode ori = th_rules_get(r, th_rules_get(r, o->def, "orientations"), dir_names[o->dir & 3]);
+    const th_rnode ori = th_rules_get(r, th_rules_get(r, def, "orientations"), dir_names[dir & 3]);
     const th_rnode list = th_rules_get(r, ori, "footprint");
     uint32_t n = th_rules_len(r, list);
     if (th_rules_type(r, list) != TH_RULES_LIST)
         return 0;
-    if (n > FOOTPRINT_MAX)
-        n = FOOTPRINT_MAX;
+    if (n > TH_FOOTPRINT_MAX)
+        n = TH_FOOTPRINT_MAX;
     static const char *const need[4] = {"need_north_side", "need_east_side", "need_south_side", "need_west_side"};
     for (uint32_t i = 0; i < n; i++) {
         const th_rnode t = th_rules_at(r, list, i);
-        fp_tile *p = &fp[i];
-        p->f = 0;
+        th_fp_tile *p = &fp[i];
+        p->f = p->need = 0;
         if (th_rules_type(r, t) == TH_RULES_LIST) {
             p->dx = (int8_t)th_rules_int(r, th_rules_at(r, t, 0), 0);
             p->dy = (int8_t)th_rules_int(r, th_rules_at(r, t, 1), 0);
@@ -69,17 +51,25 @@ static int footprint(const th_objects *w, const th_object *o, fp_tile *fp)
         }
         p->dx = (int8_t)th_rules_int(r, th_rules_geti(r, t, 1), 0);
         p->dy = (int8_t)th_rules_int(r, th_rules_geti(r, t, 2), 0);
-        p->f |= th_rules_bool(r, th_rules_get(r, t, "complete_cell"), 0) ? FP_COMPLETE : 0;
-        p->f |= th_rules_bool(r, th_rules_get(r, t, "only_passable"), 0) ? FP_PASSABLE : 0;
-        p->f |= th_rules_bool(r, th_rules_get(r, t, "only_side"), 0) ? FP_SIDE : 0;
-        p->f |= th_rules_bool(r, th_rules_get(r, t, "optional"), 0) ? FP_OPTIONAL : 0;
+        p->f |= th_rules_bool(r, th_rules_get(r, t, "complete_cell"), 0) ? TH_FP_COMPLETE : 0;
+        p->f |= th_rules_bool(r, th_rules_get(r, t, "only_passable"), 0) ? TH_FP_PASSABLE : 0;
+        p->f |= th_rules_bool(r, th_rules_get(r, t, "only_side"), 0) ? TH_FP_SIDE : 0;
+        p->f |= th_rules_bool(r, th_rules_get(r, t, "optional"), 0) ? TH_FP_OPTIONAL : 0;
+        p->f |= th_rules_bool(r, th_rules_get(r, t, "shareable"), 0) ? TH_FP_SHAREABLE : 0;
+        p->f |= th_rules_bool(r, th_rules_get(r, t, "invisible"), 0) ? TH_FP_INVISIBLE : 0;
         for (int d = 0; d < 4; d++)
-            p->f |= th_rules_bool(r, th_rules_get(r, t, need[d]), 0) ? (uint8_t)(FP_NEED_N << d) : 0;
+            p->need |= th_rules_bool(r, th_rules_get(r, t, need[d]), 0) ? (uint8_t)(1u << d) : 0;
     }
     return (int)n;
 }
 
-static int in_footprint(const fp_tile *fp, int n, int dx, int dy)
+// La huella de la orientación del objeto (self.footprint), o 0 casillas.
+static int footprint(const th_objects *w, const th_object *o, th_fp_tile *fp)
+{
+    return th_object_footprint(w->defs, o->def, o->dir, fp);
+}
+
+static int in_footprint(const th_fp_tile *fp, int n, int dx, int dy)
 {
     for (int i = 0; i < n; i++)
         if (fp[i].dx == dx && fp[i].dy == dy)
@@ -89,12 +79,12 @@ static int in_footprint(const fp_tile *fp, int n, int dx, int dy)
 
 // Los bordes de la casilla k que la huella ocupa: los que dan a otra casilla
 // de la huella, todos con complete_cell y los need_<dir>_side.
-static uint32_t footprint_sides(const fp_tile *fp, int n, int k)
+static uint32_t footprint_sides(const th_fp_tile *fp, int n, int k)
 {
     uint32_t sides = 0;
     for (int d = 0; d < 4; d++)
-        if (in_footprint(fp, n, fp[k].dx + dir_dx[d], fp[k].dy + dir_dy[d]) || (fp[k].f & FP_COMPLETE) ||
-            (fp[k].f & (FP_NEED_N << d)))
+        if (in_footprint(fp, n, fp[k].dx + dir_dx[d], fp[k].dy + dir_dy[d]) || (fp[k].f & TH_FP_COMPLETE) ||
+            (fp[k].need & (1u << d)))
             sides |= buildable_flag[d];
     return sides;
 }
@@ -135,10 +125,20 @@ int th_object_init(th_object *o, const th_rules *defs, th_rnode def, int dir)
 int th_objects_first_at(const th_objects *w, int x, int y)
 {
     int best = -1;
+    uint32_t best_seq = 0;
     for (int i = 0; i < w->n_obj; i++) {
         const th_object *o = &w->obj[i];
-        if ((o->oflags & TH_OBJF_ON_MAP) && o->x == x && o->y == y && (best < 0 || o->seq < w->obj[best].seq))
+        if ((o->oflags & TH_OBJF_ON_MAP) && o->x == x && o->y == y && (best < 0 || o->seq < best_seq)) {
             best = i;
+            best_seq = o->seq;
+        }
+    }
+    for (int k = 0; k < w->n_litter; k++) {
+        const th_litter *l = &w->litter[k];
+        if (l->x == x && l->y == y && (best == -1 || l->seq < best_seq)) {
+            best = TH_OBJECTS_FIRST_LITTER;
+            best_seq = l->seq;
+        }
     }
     return best;
 }
@@ -177,10 +177,10 @@ int th_object_walkable_tiles(const th_objects *w, int i, int *xs, int *ys)
         return n;
     }
     default: {
-        fp_tile fp[FOOTPRINT_MAX];
+        th_fp_tile fp[TH_FOOTPRINT_MAX];
         const int nf = footprint(w, o, fp);
         for (int j = 0; j < nf && n < TH_OBJECT_MAX_WALKABLE; j++)
-            if (fp[j].f & FP_PASSABLE) {
+            if (fp[j].f & TH_FP_PASSABLE) {
                 xs[n] = x + fp[j].dx;
                 ys[n++] = y + fp[j].dy;
             }
@@ -196,6 +196,8 @@ typedef struct near_ctx {
 
 // El visitante de findAllObjectsNear: el primer objeto de la casilla
 // (getObject sin tipo) y, si una de sus casillas de paso es la buscada, se acaba.
+// La basura no tiene casillas de paso para ipairs (Litter:getWalkableTiles las
+// pone desde el índice 0): si va primera, tapa a los objetos de su casilla.
 static int near_visit(void *ctx, int tx, int ty, int dir, int dist)
 {
     (void)dir;
@@ -218,6 +220,47 @@ int th_objects_part_of_nearby(th_objects *w, int x, int y, int distance)
         return 0;
     near_ctx c = {w, x, y};
     return th_path_visit_objects(w->pf, w->map, x, y, 0, distance, near_visit, &c) != 0;
+}
+
+// isTileExclusivelyPassable, sobre lo que da findAllObjectsNear: el primer
+// objeto de cada casilla vista. Los objetos con huella (los que tienen
+// orientaciones) cuentan por sus casillas only_passable sin shareable; los
+// demás (las puertas), por sus casillas de paso. La basura y lo cogido, no.
+static int exclusive_visit(void *ctx, int tx, int ty, int dir, int dist)
+{
+    (void)dir;
+    (void)dist;
+    const near_ctx *c = ctx;
+    const th_objects *w = c->w;
+    const int i = th_objects_first_at(w, tx, ty);
+    if (i < 0)
+        return 0;
+    const th_object *o = &w->obj[i];
+    if (o->oflags & TH_OBJF_PICKED_UP)
+        return 0;
+    th_fp_tile fp[TH_FOOTPRINT_MAX];
+    const int nf = footprint(w, o, fp);
+    if (o->oclass != TH_OCLASS_DOOR && o->oclass != TH_OCLASS_SWING_DOOR && o->oclass != TH_OCLASS_ENTRANCE_DOOR) {
+        for (int k = 0; k < nf; k++)
+            if (o->x + fp[k].dx == c->x && o->y + fp[k].dy == c->y && (fp[k].f & TH_FP_PASSABLE) &&
+                !(fp[k].f & TH_FP_SHAREABLE))
+                return 1;
+        return 0;
+    }
+    int xs[TH_OBJECT_MAX_WALKABLE], ys[TH_OBJECT_MAX_WALKABLE];
+    const int n = th_object_walkable_tiles(w, i, xs, ys);
+    for (int k = 0; k < n; k++)
+        if (xs[k] == c->x && ys[k] == c->y)
+            return 1;
+    return 0;
+}
+
+int th_objects_exclusively_passable(th_objects *w, int x, int y, int distance)
+{
+    if (!in_map(x, y))
+        return 1;
+    near_ctx c = {w, x, y};
+    return th_path_visit_objects(w->pf, w->map, x, y, 0, distance, exclusive_visit, &c) == 0;
 }
 
 // La casilla del objeto y su sitio, el último, entre los objetos con ese
@@ -244,21 +287,21 @@ static void occupy(th_objects *w, th_object *o, int x, int y)
     th_map *m = w->map;
     const int dir = side_dir(o);
     add_to_tile(w, o, x, y);
-    fp_tile fp[FOOTPRINT_MAX];
+    th_fp_tile fp[TH_FOOTPRINT_MAX];
     const int n = footprint(w, o, fp);
     const int room = in_map(x, y) ? th_map_tile_c(m, x, y)->room : 0; // world:getRoom(x, y)
     int optional_found = 0;
     for (int k = 0; k < n; k++) {
         const int lx = x + fp[k].dx, ly = y + fp[k].dy;
         int change = 1;
-        if (fp[k].f & FP_OPTIONAL) {
+        if (fp[k].f & TH_FP_OPTIONAL) {
             if (optional_found)
                 change = 0;
             else {
                 int allowed = 1;
                 if (room && (!in_map(lx, ly) || th_map_tile_c(m, lx, ly)->room != room))
                     allowed = 0;
-                else if ((fp[k].f & FP_PASSABLE) && !th_path_reachable_from_hospital(w->pf, m, lx, ly))
+                else if ((fp[k].f & TH_FP_PASSABLE) && !th_path_reachable_from_hospital(w->pf, m, lx, ly))
                     allowed = 0;
                 change = allowed;
                 optional_found = allowed;
@@ -266,7 +309,7 @@ static void occupy(th_objects *w, th_object *o, int x, int y)
         }
         if (!change)
             continue;
-        if (fp[k].f & FP_SIDE) {
+        if (fp[k].f & TH_FP_SIDE) {
             set_flags(m, lx, ly, 0, buildable_flag[dir]);
             // setPassableFlags: la vecina es el origen más la dirección.
             if (flags_at(m, lx, ly) & travel_flag[dir]) {
@@ -275,7 +318,7 @@ static void occupy(th_objects *w, th_object *o, int x, int y)
                 set_flags(m, x + dir_dx[dir], y + dir_dy[dir], 0, travel_flag[(dir + 2) & 3]);
             }
         } else {
-            const uint32_t passable = (fp[k].f & FP_PASSABLE) ? TH_TILE_PASSABLE : 0;
+            const uint32_t passable = (fp[k].f & TH_FP_PASSABLE) ? TH_TILE_PASSABLE : 0;
             set_flags(m, lx, ly, passable, TH_TILE_BUILDABLE | (TH_TILE_PASSABLE & ~passable));
             set_flags(m, lx, ly, 0, footprint_sides(fp, n, k));
         }
@@ -289,11 +332,11 @@ static void deoccupy(th_objects *w, th_object *o)
     const int dir = side_dir(o), x = o->x, y = o->y;
     th_map_remove_thob(m, x, y, o->thob);
     o->oflags &= (uint8_t)~TH_OBJF_ON_MAP;
-    fp_tile fp[FOOTPRINT_MAX];
+    th_fp_tile fp[TH_FOOTPRINT_MAX];
     const int n = footprint(w, o, fp);
     for (int k = 0; k < n; k++) {
         const int xp = x + fp[k].dx, yp = y + fp[k].dy;
-        if (fp[k].f & FP_SIDE) {
+        if (fp[k].f & TH_FP_SIDE) {
             if (o->oflags & TH_OBJF_SIDE_PASSABLE) {
                 o->oflags &= (uint8_t)~TH_OBJF_SIDE_PASSABLE;
                 set_flags(m, xp, yp, travel_flag[dir], 0);
@@ -318,6 +361,17 @@ static void object_set_tile(th_objects *w, th_object *o, int x, int y)
         deoccupy(w, o);
     if (x >= 0)
         occupy(w, o, x, y);
+}
+
+void th_object_occupy(th_objects *w, int i, int x, int y)
+{
+    occupy(w, &w->obj[i], x, y);
+}
+
+void th_object_deoccupy(th_objects *w, int i)
+{
+    if (w->obj[i].oflags & TH_OBJF_ON_MAP)
+        deoccupy(w, &w->obj[i]);
 }
 
 // Door:setTile, también para las dos hojas de la puerta doble.
@@ -414,25 +468,38 @@ void th_objects_reset_side(th_objects *w)
             break;
         last = tile;
         const int x = tile % TH_MAP_WIDTH, y = tile / TH_MAP_WIDTH;
+        // world.objects de la casilla, en orden: los objetos (índice >= 0) y
+        // la basura (-1 - índice), que no hace nada pero ocupa su sitio.
         int list[TH_OBJECT_MAX_WALKABLE], n = 0;
-        // world.objects de la casilla, en orden.
-        for (int i = 0; i < w->n_obj && n < TH_OBJECT_MAX_WALKABLE; i++) {
-            const th_object *o = &w->obj[i];
-            if (!(o->oflags & TH_OBJF_ON_MAP) || o->x != x || o->y != y)
-                continue;
+        uint32_t seqs[TH_OBJECT_MAX_WALKABLE];
+        for (int j = 0; j < w->n_obj + w->n_litter && n < TH_OBJECT_MAX_WALKABLE; j++) {
+            uint32_t sq;
+            if (j < w->n_obj) {
+                const th_object *o = &w->obj[j];
+                if (!(o->oflags & TH_OBJF_ON_MAP) || o->x != x || o->y != y)
+                    continue;
+                sq = o->seq;
+            } else {
+                const th_litter *l = &w->litter[j - w->n_obj];
+                if (l->x != x || l->y != y)
+                    continue;
+                sq = l->seq;
+            }
             int k = n++;
-            while (k > 0 && w->obj[list[k - 1]].seq > o->seq) {
+            while (k > 0 && seqs[k - 1] > sq) {
                 list[k] = list[k - 1];
+                seqs[k] = seqs[k - 1];
                 k--;
             }
-            list[k] = i;
+            list[k] = j < w->n_obj ? j : -1 - (j - w->n_obj);
+            seqs[k] = sq;
         }
         // for _, obj in ipairs(objects): setTile saca al objeto de la lista y
         // lo pone al final, así que se salta el que venía detrás y el último
         // objeto de borde puede pasar dos veces.
         for (int k = 0; k < n; k++) {
             const int i = list[k];
-            if (w->obj[i].oclass != TH_OCLASS_SIDE)
+            if (i < 0 || w->obj[i].oclass != TH_OCLASS_SIDE)
                 continue;
             object_set_tile(w, &w->obj[i], x, y);
             memmove(&list[k], &list[k + 1], (size_t)(n - 1 - k) * sizeof list[0]);
