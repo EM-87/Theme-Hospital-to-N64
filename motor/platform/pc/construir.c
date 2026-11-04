@@ -242,7 +242,10 @@ static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reas
     m->valor = -amount;
     const char *id = th_rules_str(s->defs, th_rules_get(s->defs, (th_rnode)who, "id"), NULL);
     snprintf(m->motivo, sizeof m->motivo, "%s:%s",
-             reason == TH_MONEY_BUY_OBJECT ? "buy_object" : reason == TH_MONEY_SELL_OBJECT ? "sell_object" : "?",
+             reason == TH_MONEY_BUY_OBJECT    ? "buy_object"
+             : reason == TH_MONEY_SELL_OBJECT ? "sell_object"
+             : reason == TH_MONEY_BUILD_ROOM  ? "build_room"
+                                              : "?",
              id ? id : "?");
     (void)sim_actual;
 }
@@ -420,9 +423,110 @@ static int leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *
         o->kind = TH_ORD_VENDER;
     else if (!strcmp(nombre, "deshacer"))
         o->kind = TH_ORD_DESHACER;
+    else if (!strcmp(nombre, "sala") && nc >= 7) {
+        o->kind = TH_ORD_SALA;
+        o->def = th_rules_get(s->defs, th_rules_get(s->defs, s->defs->root, "salas"), campos[2]);
+        o->x = (uint8_t)atoi(campos[3]);
+        o->y = (uint8_t)atoi(campos[4]);
+        o->w = (uint8_t)atoi(campos[5]);
+        o->h = (uint8_t)atoi(campos[6]);
+    } else if ((!strcmp(nombre, "puerta") || !strcmp(nombre, "ventana") || !strcmp(nombre, "quitar_ventana")) && nc >= 5) {
+        o->kind = nombre[0] == 'p' ? TH_ORD_PUERTA : nombre[0] == 'v' ? TH_ORD_VENTANA : TH_ORD_QUITAR_VENTANA;
+        o->x = (uint8_t)atoi(campos[2]);
+        o->y = (uint8_t)atoi(campos[3]);
+        o->dir = 0;
+        for (int d = 0; d < 4; d++)
+            if (!strcmp(campos[4], dir_nombres[d]))
+                o->dir = (uint8_t)d;
+    } else if (!strcmp(nombre, "fin_ventanas"))
+        o->kind = TH_ORD_FIN_VENTANAS;
+    else if (!strcmp(nombre, "comprar_sala") && nc >= 4) {
+        o->kind = TH_ORD_COMPRAR_SALA;
+        o->def = th_rules_get(s->defs, objs, campos[2]);
+        const long q = strtol(campos[3], NULL, 10);
+        o->qty = (uint8_t)(q > 255 ? 255 : q < 0 ? 0 : q);
+    } else if (!strcmp(nombre, "fin_sala"))
+        o->kind = TH_ORD_FIN_SALA;
+    else if (!strcmp(nombre, "atras"))
+        o->kind = TH_ORD_ATRAS;
     else
         o->kind = TH_ORD_NONE;
     return 1;
+}
+
+// ---------------------------------------------------------------------------
+// Las salas (salas.tsv: n, id, tipo, x, y, ancho, alto, puerta_x, puerta_y,
+// puerta_lado, construida, activa, fase), en el orden de world.rooms (el id).
+
+static const char *const fase_nombres[] = {"-", "walls", "door", "windows", "clear_area", "objects"};
+
+static int booleano(const char *v)
+{
+    return !strcmp(v, "1") || !strcmp(v, "true");
+}
+
+static void describir_sala(const th_sim *s, int i, char *out, size_t tam)
+{
+    const th_room *r = &s->rooms[i];
+    char puerta[32] = "- - -";
+    if (r->door != TH_NONE && (s->obj[r->door].oflags & TH_OBJF_ON_MAP)) {
+        const th_object *d = &s->obj[r->door];
+        // El lado desde dentro: norte u oeste si la casilla de la puerta es
+        // de la sala; si no, sur o este.
+        const int inside = th_map_tile_c(s->w.map, d->x, d->y)->room == r->num;
+        const char *lado = d->dir == TH_DIR_WEST ? (inside ? "west" : "east") : (inside ? "north" : "south");
+        snprintf(puerta, sizeof puerta, "%d %d %s", d->x, d->y, lado);
+    }
+    const int fase = s->obra.phase != TH_OBRA_NONE && s->obra.room == i ? s->obra.phase : 0;
+    snprintf(out, tam, "%d %s %d %d %d %d %s %d %d %s", r->num, s->room_types[r->type], r->x, r->y, r->w, r->h, puerta,
+             r->built, r->is_active, fase_nombres[fase]);
+}
+
+static int comparar_salas(const th_sim *s, tabla *t, long n, int mostrar)
+{
+    if (!t->f || (!t->hay && !leer_fila(t)))
+        return 0;
+    if (t->n_fila != n) {
+        while (t->hay && t->n_fila < n)
+            if (!leer_fila(t))
+                return 0;
+        if (!t->hay || t->n_fila != n)
+            return 0; // esta orden no cambió las salas
+    }
+    // Las salas del núcleo por id, que es el orden de world.rooms.
+    int orden[TH_SIM_ROOMS], nn = 0;
+    for (int i = 0; i < s->n_rooms; i++) {
+        int j = nn++;
+        while (j > 0 && s->rooms[orden[j - 1]].num > s->rooms[i].num) {
+            orden[j] = orden[j - 1];
+            j--;
+        }
+        orden[j] = i;
+    }
+    int k = 0, distintos = 0;
+    while (t->hay && t->n_fila == n) {
+        char suyo[160], mio[160] = "(nada)";
+        const char *px = campo(t, "puerta_x"), *py = campo(t, "puerta_y"), *pl = campo(t, "puerta_lado");
+        snprintf(suyo, sizeof suyo, "%s %s %s %s %s %s %s %s %s %d %d %s", campo(t, "id"), campo(t, "tipo"), campo(t, "x"),
+                 campo(t, "y"), campo(t, "ancho"), campo(t, "alto"), *px ? px : "-", *py ? py : "-", *pl ? pl : "-",
+                 booleano(campo(t, "construida")), booleano(campo(t, "activa")), campo(t, "fase"));
+        if (k < nn)
+            describir_sala(s, orden[k], mio, sizeof mio);
+        if (strcmp(suyo, mio)) {
+            distintos++;
+            if (mostrar && distintos <= 5)
+                anotar("    sala %d: th64 %s; CorsixTH %s\n", k, mio, suyo);
+        }
+        k++;
+        if (!leer_fila(t))
+            break;
+    }
+    if (k != nn) {
+        distintos++;
+        if (mostrar)
+            anotar("    salas: th64 %d, CorsixTH %d\n", nn, k);
+    }
+    return distintos;
 }
 
 int th64sim_construir(int argc, char **argv)
@@ -445,7 +549,7 @@ int th64sim_construir(int argc, char **argv)
     printf("inicio: %d casillas distintas\n%s", dif, nota);
     if (dif && !seguir)
         return 1;
-    tabla t_res, t_din, t_cam, t_obj;
+    tabla t_res, t_din, t_cam, t_obj, t_sal;
     if (abrir_tabla(&t_res, dir, "resultados.tsv")) {
         fprintf(stderr, "no se puede leer %s/resultados.tsv\n", dir);
         return 1;
@@ -453,6 +557,7 @@ int th64sim_construir(int argc, char **argv)
     abrir_tabla(&t_din, dir, "dinero.tsv");
     abrir_tabla(&t_cam, dir, "cambios.tsv");
     abrir_tabla(&t_obj, dir, "objetos.tsv");
+    abrir_tabla(&t_sal, dir, "salas.tsv");
     snprintf(ruta, sizeof ruta, "%s/ordenes.tsv", dir);
     FILE *f = fopen(ruta, "r");
     if (!f) {
@@ -509,7 +614,8 @@ int th64sim_construir(int argc, char **argv)
         const int din = comparar_dinero(&t_din, n, mostrar);
         const int cas = comparar_mapa(s->w.map, mostrar);
         const int obj = comparar_objetos(s, &t_obj, n, mostrar);
-        distinto |= din || cas || obj;
+        const int sal = comparar_salas(s, &t_sal, n, mostrar);
+        distinto |= din || cas || obj || sal;
         printf("%3ld %-40s %s%s%s", n, texto, acept ? "aceptada" : "rechazada ", acept ? "" : motivo,
                distinto ? "  DISTINTA" : "");
         if (cas)

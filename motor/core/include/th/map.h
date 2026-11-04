@@ -47,6 +47,7 @@ enum {
     TH_TILE_DOOR_N = 1u << 17,
     TH_TILE_DOOR_W = 1u << 18,
     TH_TILE_DO_NOT_IDLE = 1u << 19,
+    TH_TILE_BLUEPRINT = 1u << 20, // passable_if_not_for_blueprint: el transitable de antes del plano de una sala
 };
 
 #define TH_TILE_FILE_FLAGS 0x7fu
@@ -170,6 +171,18 @@ void th_map_entrance_door(th_map *m, int x, int y, int thob, int west, int on);
 int th_map_entrance_door_tiles(int thob, int west, int8_t dx[3], int8_t dy[3]);
 void th_map_update_pathfinding(th_map *m);
 void th_map_update_shadows(th_map *m);
+
+// El plano de una sala en obra (UIEditRoom:enterDoorPhase y setBlueprintRect
+// con updateRoomBlueprint, th_lua_map.cpp): cerrar guarda passable en
+// TH_TILE_BLUEPRINT y lo apaga en el rectángulo; abrir lo devuelve.
+void th_map_blueprint_close(th_map *m, int x, int y, int w, int h);
+void th_map_blueprint_open(th_map *m, int x, int y, int w, int h);
+// markRoom y unmarkRoom (th_lua_map.cpp:754-814): el suelo de la sala (o el
+// original del nivel), TH_TILE_ROOM y el número de sala en cada casilla; al
+// marcar, passable vuelve a lo guardado en el plano. Los dos recalculan el
+// paso y las sombras de todo el mapa. unmarkRoom no toca passable.
+void th_map_mark_room(th_map *m, int x, int y, int w, int h, int floor, int id);
+void th_map_unmark_room(th_map *m, int x, int y, int w, int h);
 // Huella de las capas, banderas, salas, objetos, listas de world.objects y
 // dueños: para comparar el PC con la N64.
 uint32_t th_map_hash(const th_map *m);

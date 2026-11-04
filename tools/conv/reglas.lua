@@ -1,12 +1,13 @@
 -- Extractor de las reglas de CorsixTH para el conversor (fase 5, hito 0).
 --
 -- Carga con lua5.4 de serie, y unos stubs mínimos, las definiciones de
--- CorsixTH (objetos, salas, enfermedades y diagnósticos), las procesa como
--- hace el juego al arrancar (Object.processTypeDefinition) y calcula la
--- configuración de cada nivel de la campaña como Map:_loadOriginalCampaignLevel:
--- base_config.lua, después DIFF00.SAM, DIFFnn.SAM y, en algunos niveles, el
--- originalNN.level de CorsixTH. Lo escribe todo en un JSON canónico que
--- reglas.py pasa al formato binario TRG1.
+-- CorsixTH (objetos, salas, enfermedades, diagnósticos y los juegos de
+-- paredes de walls/*.lua), las procesa como hace el juego al arrancar
+-- (Object.processTypeDefinition) y calcula la configuración de cada nivel de
+-- la campaña como Map:_loadOriginalCampaignLevel: base_config.lua, después
+-- DIFF00.SAM, DIFFnn.SAM y, en algunos niveles, el originalNN.level de
+-- CorsixTH. Lo escribe todo en un JSON canónico que reglas.py pasa al formato
+-- binario TRG1.
 --
 -- Uso: lua5.4 reglas.lua <dir Lua de CorsixTH> <dir LEVELS del juego> <salida.json>
 --
@@ -159,7 +160,7 @@ local function list_lua(dir)
   return files
 end
 
-local defs = {objects = {}, rooms = {}, diseases = {}, diagnosis = {}}
+local defs = {objects = {}, rooms = {}, diseases = {}, diagnosis = {}, walls = {}}
 local order = {objects = {}}
 local function load_folder(kind, dir)
   for _, f in ipairs(list_lua(base .. "/" .. dir)) do
@@ -175,6 +176,26 @@ load_folder("objects", "objects/doors")
 load_folder("rooms", "rooms")
 load_folder("diseases", "diseases")
 load_folder("diagnosis", "diagnosis")
+-- Los juegos de paredes (walls/*.lua), como App:loadLuaFolder("walls"): por su
+-- id (white, yellow, blue y green, los de las salas, y external, el de fuera
+-- del hospital), cada uno con las tablas inside_tiles, outside_tiles y
+-- window_tiles (las que recorre World:initWallTypes) y, los de las salas,
+-- swing_inside_tiles y swing_outside_tiles; cada entrada es el bloque de la
+-- hoja del mapa de esa pieza. El de fuera no tiene batientes y su window_tiles
+-- está vacía. Van tal cual a las reglas, como «paredes».
+load_folder("walls", "walls")
+for id, w in pairs(defs.walls) do
+  for _, set in ipairs({"inside_tiles", "outside_tiles", "window_tiles"}) do
+    assert(type(w[set]) == "table", "walls/" .. id .. ".lua: falta " .. set)
+  end
+  for set, t in pairs(w) do
+    if type(t) == "table" then
+      for cara, bloque in pairs(t) do
+        assert(math.type(bloque) == "integer", ("walls/%s.lua: %s.%s no es un bloque entero"):format(id, set, cara))
+      end
+    end
+  end
+end
 
 -- Posproceso de app.lua: slave_type y Object.processTypeDefinition, en el
 -- orden en que el juego carga los objetos.
@@ -311,6 +332,7 @@ local doc = {
   salas = defs.rooms,
   enfermedades = enfermedades,
   diagnosticos = defs.diagnosis,
+  paredes = defs.walls,
   marcadores = report.markers,
   duraciones = report.anim_lengths,
   caminar = walk,

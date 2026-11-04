@@ -43,8 +43,9 @@
 // tiene 305). Con índices de 8 bits y TH_NONE = 255 caben 254; más exige
 // índices de 16 bits (las acciones, las colas, las salas y la ventana de colocar).
 #define TH_SIM_OBJECTS 254
-#define TH_SIM_ROOMS 16
-#define TH_SIM_QUEUES 24 // las de las puertas y los mostradores: un mostrador sin cola no cabe
+// Salas: el hospital «lleno» tiene 36 (docs/01_mediciones.md); los ids de sala van en un uint8_t.
+#define TH_SIM_ROOMS 32
+#define TH_SIM_QUEUES 40 // las de las puertas y los mostradores: lo que no tiene cola no cabe
 #define TH_SIM_QUEUE_LEN 30
 #define TH_SIM_SPAWN_POINTS 32
 #define TH_SIM_DISEASES 40
@@ -102,7 +103,9 @@ typedef struct th_room {
     uint8_t num;  // id de la sala en CorsixTH: lo que guardan las casillas
     uint8_t type; // índice en las definiciones (salas)
     uint8_t x, y, w, h;
-    uint8_t door;          // objeto
+    uint8_t door;          // objeto (la hoja maestra de una puerta doble)
+    uint8_t door2;         // la esclava de una puerta doble, o TH_NONE
+    uint8_t built;         // Room.built: terminada (roomFinished); 0 mientras se edita desde la puerta
     uint8_t is_active;
     uint8_t staff_member;  // humanoide (TH_NONE)
     int8_t max_times;      // GP: veces que el médico puede no acabar de diagnosticar
@@ -234,16 +237,18 @@ enum {
     TH_MONEY_WAGES,
     TH_MONEY_BUY_OBJECT,
     TH_MONEY_SELL_OBJECT,
+    TH_MONEY_BUILD_ROOM, // who es la definición de la sala (salas.<id>)
 };
 
 // La ventana de colocar objetos (UIPlaceObjects de CorsixTH): lo que se ha
 // comprado o cogido y queda por colocar, una fila por tipo de objeto.
-#define TH_SIM_PLACE_ITEMS 8
+#define TH_SIM_PLACE_ITEMS 12 // una sala: sus obligatorios más los opcionales comprados
 #define TH_SIM_PLACE_EXISTING 8
 typedef struct th_place_item {
     th_rnode def;
     uint8_t qty;
     uint8_t existing; // existing_object de la fila: índice + 1 del objeto cogido con el que se abrió, o 0
+    uint8_t picked;   // la fila se abrió con un objeto cogido (existing_object): al cerrar se vende, no se devuelve
     uint8_t n_existing;
     uint8_t existing_list[TH_SIM_PLACE_EXISTING]; // existing_objects: el primero es el que se coloca
 } th_place_item;
@@ -255,13 +260,42 @@ typedef struct th_place_window {
     th_place_item item[TH_SIM_PLACE_ITEMS];
 } th_place_window;
 
+// Una sala en obra (UIEditRoom de CorsixTH, dialogs/edit_room.lua): el plano,
+// la fase, la puerta y las ventanas elegidas. Es también una ventana «main»:
+// con ella abierta, th_sim.place es su lista de objetos (en la fase de
+// objetos). Un borde es la casilla de dentro de la sala y su lado (TH_DIR_*).
+enum { TH_OBRA_NONE, TH_OBRA_WALLS, TH_OBRA_DOOR, TH_OBRA_WINDOWS, TH_OBRA_CLEAR, TH_OBRA_OBJECTS };
+typedef struct th_edge {
+    uint8_t x, y, side;
+} th_edge;
+#define TH_SIM_WINDOWS 32
+typedef struct th_obra {
+    uint8_t phase;      // TH_OBRA_*
+    uint8_t type;       // índice en room_types
+    uint8_t x, y, w, h; // el plano (blueprint_rect), desde 0
+    uint8_t paid;
+    uint8_t room;     // índice en rooms desde finishRoom, o TH_NONE
+    uint8_t has_door; // la puerta elegida (blueprint_door)
+    th_edge door;
+    uint8_t n_windows;
+    th_edge windows[TH_SIM_WINDOWS];
+    // objects_backup: lo que había en la lista al volver de la fase de objetos
+    // a la de la puerta (se devolvió), para cobrarlo otra vez al volver a ella.
+    uint8_t n_backup;
+    struct {
+        th_rnode def;
+        uint8_t qty;
+    } backup[TH_SIM_PLACE_ITEMS];
+} th_obra;
+
 // Una orden del jugador (th/build.h): kind es TH_ORD_* y reason, TH_REASON_*.
 typedef struct th_order {
     uint32_t tick; // th_sim.hours en el que se aplica (la cola)
     uint8_t kind;
-    uint8_t x, y, dir;
+    uint8_t x, y, dir; // dir: orientación del objeto, o el lado de una puerta o ventana
     uint8_t qty;
-    th_rnode def; // objetos.<id>, o 0
+    uint8_t w, h;  // el plano de una sala
+    th_rnode def;  // objetos.<id>, salas.<id>, o 0
 } th_order;
 typedef struct th_order_result {
     uint8_t reason;
@@ -372,8 +406,9 @@ typedef struct th_sim {
     uint16_t litter_lost;      // basura que no cupo (no debería pasar)
     uint16_t would_die;        // pacientes con la salud a 0: aún no se mueren (no hay DieAction)
     uint32_t n_vomit, n_pee;
-    // Construir (th/build.h): la ventana de colocar y la cola de órdenes.
+    // Construir (th/build.h): la ventana de colocar, la sala en obra y la cola de órdenes.
     th_place_window place;
+    th_obra obra;
     uint8_t n_orders;
     th_order orders[TH_SIM_ORDERS];
     th_sim_events ev;
@@ -457,6 +492,15 @@ int th_sim_object_fits(const th_sim *s, th_rnode def);
 // World:destroyEntity de un objeto: sale del mapa y de la simulación, y su
 // hueco queda libre.
 void th_sim_destroy_object(th_sim *s, int obj);
+// World:newRoom y Room:initRoom sin markRoom: una sala nueva con el id de
+// CorsixTH (#rooms + 1), inactiva y sin terminar, con su puerta (y la
+// esclava de una doble, o TH_NONE); con existing (índice en rooms), se
+// reutiliza esa sala, como al volver a la fase de la puerta. Devuelve su
+// índice en rooms, o TH_NONE si no caben más.
+int th_sim_new_room(th_sim *s, int type, int x, int y, int w, int h, int door, int door2, int existing);
+// World:markRoomAsBuilt: roomFinished (built, is_active, el ánimo por
+// ventanas y espacio), el libro de casos descubre diag_<id> y notifyNewRoom.
+void th_sim_room_mark_built(th_sim *s, int room);
 // Después de cambiar banderas o radiadores: la temperatura vuelve a mirar el
 // mapa entero.
 void th_sim_map_changed(th_sim *s);

@@ -51,6 +51,60 @@ void th_map_update_pathfinding(th_map *m)
     }
 }
 
+void th_map_blueprint_close(th_map *m, int x, int y, int w, int h)
+{
+    for (int yy = y; yy < y + h; yy++)
+        for (int xx = x; xx < x + w; xx++) {
+            if (xx < 0 || yy < 0 || xx >= TH_MAP_WIDTH || yy >= TH_MAP_HEIGHT)
+                continue;
+            th_tile *t = th_map_tile(m, xx, yy);
+            t->flags = (t->flags & ~(TH_TILE_BLUEPRINT | TH_TILE_PASSABLE)) |
+                       ((t->flags & TH_TILE_PASSABLE) ? TH_TILE_BLUEPRINT : 0);
+        }
+}
+
+void th_map_blueprint_open(th_map *m, int x, int y, int w, int h)
+{
+    for (int yy = y; yy < y + h; yy++)
+        for (int xx = x; xx < x + w; xx++) {
+            if (xx < 0 || yy < 0 || xx >= TH_MAP_WIDTH || yy >= TH_MAP_HEIGHT)
+                continue;
+            th_tile *t = th_map_tile(m, xx, yy);
+            if (t->flags & TH_TILE_BLUEPRINT)
+                t->flags |= TH_TILE_PASSABLE;
+            t->flags &= ~TH_TILE_BLUEPRINT;
+        }
+}
+
+void th_map_mark_room(th_map *m, int x, int y, int w, int h, int floor, int id)
+{
+    for (int yy = y; yy < y + h; yy++)
+        for (int xx = x; xx < x + w; xx++) {
+            th_tile *t = th_map_tile(m, xx, yy);
+            t->floor = (uint8_t)floor;
+            t->flags |= TH_TILE_ROOM;
+            if (t->flags & TH_TILE_BLUEPRINT)
+                t->flags |= TH_TILE_PASSABLE;
+            t->flags &= ~TH_TILE_BLUEPRINT;
+            t->room = (uint16_t)id;
+        }
+    th_map_update_pathfinding(m);
+    th_map_update_shadows(m);
+}
+
+void th_map_unmark_room(th_map *m, int x, int y, int w, int h)
+{
+    for (int yy = y; yy < y + h; yy++)
+        for (int xx = x; xx < x + w; xx++) {
+            th_tile *t = th_map_tile(m, xx, yy);
+            t->floor = t->orig_floor;
+            t->flags &= ~TH_TILE_ROOM;
+            t->room = 0;
+        }
+    th_map_update_pathfinding(m);
+    th_map_update_shadows(m);
+}
+
 // Para las sombras, una casilla tiene pared si hay un objeto alto (o una
 // puerta) en ese lado o si el bloque está entre 82 y 164.
 static int is_wall(uint8_t block, int tall)

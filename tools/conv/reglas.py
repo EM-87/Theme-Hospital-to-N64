@@ -1,7 +1,7 @@
 """Reglas de CorsixTH al formato TRG1 del motor (fase 5, hito 0).
 
 reglas.lua (con lua5.4) extrae de CorsixTH las definiciones de objetos, salas,
-enfermedades y diagnósticos, los marcadores, las duraciones fijadas a mano,
+enfermedades, diagnósticos y juegos de paredes, los marcadores, las duraciones fijadas a mano,
 las animaciones de caminar, base_config.lua y la configuración de los 36
 niveles de la campaña (3 dificultades × 12), en un JSON canónico. Aquí:
   * se resuelven las duraciones que dependen de otra animación

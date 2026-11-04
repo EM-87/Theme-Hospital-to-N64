@@ -1391,7 +1391,9 @@ void th_sim_tick(th_sim *s)
 {
     // La pasada de temperatura de la hora anterior, si quedó a medias.
     th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
-    // Las órdenes del jugador para esta hora (th/build.h).
+    // Las órdenes del jugador para esta hora (th/build.h), y la obra que
+    // espera a que se despeje el área.
+    th_build_tick(s);
     if (s->n_orders)
         th_sim_apply_orders(s);
     const th_date next = th_date_plus_hours(s->date, s->hours_per_tick);
@@ -1650,6 +1652,78 @@ void th_sim_map_changed(th_sim *s)
     th_sim_temperature_prepare(s);
 }
 
+static int32_t happiness_factor(const th_sim *s, const th_room *r, int minimum_size);
+
+int th_sim_new_room(th_sim *s, int type, int x, int y, int w, int h, int door, int door2, int existing)
+{
+    int i = existing;
+    uint8_t num;
+    if (i == TH_NONE || i >= s->n_rooms) {
+        if (s->n_rooms >= TH_SIM_ROOMS)
+            return TH_NONE;
+        // id = #world.rooms + 1: sin huecos, el mayor más uno.
+        num = 0;
+        for (int k = 0; k < s->n_rooms; k++)
+            if (s->rooms[k].num > num)
+                num = s->rooms[k].num;
+        num++;
+        i = s->n_rooms++;
+    } else
+        num = s->rooms[i].num;
+    th_room *rm = &s->rooms[i];
+    memset(rm, 0, sizeof *rm);
+    rm->num = num;
+    rm->type = (uint8_t)type;
+    rm->x = (uint8_t)x;
+    rm->y = (uint8_t)y;
+    rm->w = (uint8_t)w;
+    rm->h = (uint8_t)h;
+    rm->door = (uint8_t)door;
+    rm->door2 = (uint8_t)door2;
+    rm->staff_member = rm->just_dealt_with = rm->call_staff = TH_NONE;
+    rm->maximum_patients = 1;
+    if (door != TH_NONE)
+        s->obj[door].room = num;
+    if (door2 != TH_NONE)
+        s->obj[door2].room = num;
+    return i;
+}
+
+void th_sim_room_mark_built(th_sim *s, int room)
+{
+    th_room *rm = &s->rooms[room];
+    const th_rules *d = s->defs;
+    const char *id = s->room_types[rm->type];
+    // Room:roomFinished: built, is_active y el ánimo por ventanas y espacio
+    // (calculateHappinessFactor). tryToFindNearbyPatients y la llamada de
+    // personal con cola solo importan al editar (paso 4).
+    rm->built = 1;
+    rm->is_active = 1;
+    const th_rnode defs_salas = get(d, d->root, "salas");
+    rm->happiness_factor = happiness_factor(s, rm, th_rules_int(d, get(d, get(d, defs_salas, id), "minimum_size"), 0));
+    // El libro de casos descubre diag_<id>.
+    char diag[48] = "diag_";
+    strncat(diag, id, sizeof diag - 6);
+    for (int k = 0; k < s->n_case; k++)
+        if (!strcmp(s->casebook[k].id, diag))
+            s->casebook[k].discovered = 1;
+    // notifyNewRoom: el personal que esperaba una sala de personal y los
+    // pacientes que no tenían aseos. Quien espera una sala en seek_room
+    // vuelve a buscar al acabar su paseo (CorsixTH lo avisa al momento:
+    // diferencia apuntada en docs/06_juego_base.md).
+    const int staff_room = !strcmp(id, "staff_room"), toilets = !strcmp(id, "toilets");
+    for (int k = 0; k < s->n_order; k++) {
+        th_person *p = &s->hum[s->order[k]];
+        if (!p->alive)
+            continue;
+        if (p->kind == TH_HUM_PATIENT) {
+            if (toilets && p->u.p.going_to_toilet == TH_TOILET_NO_TOILETS)
+                p->u.p.going_to_toilet = TH_TOILET_NO;
+        } else if (staff_room)
+            p->u.s.waiting_for_staffroom = 0;
+    }
+}
+
 // Room:calculateHappinessFactor: ventanas y espacio de más (round(log n) / 1000).
 static int32_t happiness_factor(const th_sim *s, const th_room *r, int minimum_size)
 {
@@ -1881,6 +1955,20 @@ static int load_scenario(th_sim *s)
         if (rm->door == TH_NONE)
             return -23;
         s->obj[rm->door].room = rm->num;
+        rm->built = 1;
+        // La esclava de una puerta doble: swing_door_left en la casilla de
+        // antes (x−1 si la pared es norte, y−1 si es oeste).
+        rm->door2 = TH_NONE;
+        if (s->obj[rm->door].oclass == TH_OCLASS_SWING_DOOR) {
+            const th_object *dr = &s->obj[rm->door];
+            const int sx = dr->dir == TH_DIR_WEST ? dr->x : dr->x - 1, sy = dr->dir == TH_DIR_WEST ? dr->y - 1 : dr->y;
+            for (int k = 0; k < s->n_obj; k++)
+                if (s->obj[k].def && s->obj[k].oclass == TH_OCLASS_SWING_DOOR && !(s->obj[k].oflags & TH_OBJF_MASTER) &&
+                    s->obj[k].x == sx && s->obj[k].y == sy) {
+                    rm->door2 = (uint8_t)k;
+                    s->obj[k].room = rm->num;
+                }
+        }
         const int min_size = th_rules_int(s->defs, get(s->defs, get(s->defs, defs_salas, id), "minimum_size"), 0);
         rm->happiness_factor = happiness_factor(s, rm, min_size);
         s->n_rooms++;
@@ -2037,6 +2125,18 @@ uint32_t th_sim_hash(const th_sim *s)
         const th_room *rm = &s->rooms[i];
         h = fnv(h, (uint32_t)rm->num << 24 | (uint32_t)rm->type << 16 | (uint32_t)rm->door << 8 | rm->is_active);
         h = fnv(h, (uint32_t)rm->x << 24 | (uint32_t)rm->y << 16 | (uint32_t)rm->w << 8 | rm->h);
+        h = fnv(h, (uint32_t)rm->door2 << 8 | rm->built);
+    }
+    // La obra (th_obra): el plano, la fase, la puerta y las ventanas.
+    const th_obra *ob = &s->obra;
+    if (ob->phase != TH_OBRA_NONE) {
+        h = fnv(h, (uint32_t)ob->phase << 24 | (uint32_t)ob->type << 16 | (uint32_t)ob->paid << 8 | ob->room);
+        h = fnv(h, (uint32_t)ob->x << 24 | (uint32_t)ob->y << 16 | (uint32_t)ob->w << 8 | ob->h);
+        h = fnv(h, (uint32_t)ob->has_door << 24 | (uint32_t)ob->door.x << 16 | (uint32_t)ob->door.y << 8 | ob->door.side);
+        for (int k = 0; k < ob->n_windows; k++)
+            h = fnv(h, (uint32_t)ob->windows[k].x << 16 | (uint32_t)ob->windows[k].y << 8 | ob->windows[k].side);
+        for (int k = 0; k < ob->n_backup; k++)
+            h = fnv(h, ob->backup[k].def ^ (uint32_t)ob->backup[k].qty << 24);
     }
     h = fnv(h, th_map_hash(s->w.map));
     for (int q = 0; q < s->n_queues; q++)
