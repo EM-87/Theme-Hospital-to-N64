@@ -635,12 +635,15 @@ El que falta es el hospital del README del hito 4: su partida guardada no es la 
 | La simulación | El motor de antes, en los hospitales de los hitos 4 (3.000 horas) y 5 (9.000 horas) y en el de las vistas (2.000 horas) | **Trazas idénticas**, con la basura en las listas de su casilla. Solo cambia la huella |
 | Las banderas del paso 1 | `tools/hito6/banderas.sh` | 12 niveles, el nivel 1 completo y **52 de 52 hospitales con 0 casillas distintas** |
 | El exportador | El de antes, con 3 partidas; una del nivel 2 con la parcela 2 comprada | Mismos ficheros, más los campos nuevos. La parcela comprada se carga con su dueño y volver a comprarla no repite sus puertas. Con basura, el núcleo rechaza el escenario |
+| `tools/motor_check.sh` | Pruebas, huellas y píxeles, en el PC y en la N64 | Todo bien: **209.292 comprobaciones, 0 fallos** también en la N64 y con ASan y UBSan; la huella de referencia (d38fbaef) y la del hito 4 (a5fe99fa), iguales en el PC y en la N64; **0 píxeles distintos** en todas las comparaciones de dibujo. Dos arreglos por el camino: la ROM de pruebas necesita ahora 10.944 B de relleno para que el dibujo no choque con rdpq en la caché de instrucciones, y las pruebas de las órdenes guardan su estado en el montón (unos 825 KB en memoria estática dejaban sin memoria la comparación de la interfaz) |
 
 ### Coste y memoria
 
 - **El mapa:** 266.864 B, 1.792 más que con el paso 1. La tabla de casillas con varias cosas crece a 128 casillas de 16: en el hito 5, sin bedeles, los vómitos amontonan hasta 10 cosas en una casilla, y 19 casillas tienen más de una en 9.000 horas. Lo que no cabe se cuenta (`thob_lost`); en esas corridas, 0.
 - **La simulación:** 218.192 B, 2.448 más. Son la ventana de colocar, la cola de 16 órdenes y el orden de cada basura en su casilla.
 - **En el PC:** `th64sim construir` repite y compara las 175 órdenes en 2,2 s, casi todo en comparar el mapa entero tras cada orden.
+- **La ROM:** el mapa estático pasa a 260 KiB, y el montón libre de la ROM normal, de 6.851 a 6.826 KiB.
+- **La simulación cuesta lo mismo en la N64**, con la basura en las listas: el hospital del hito 4 tarda 6,14 ms por tick de media en sus 3.000 horas (con el paso 1, 6,12) y 49,5 ms el tick más largo (49,2); en los 275 ticks del recorrido, 0,632 ms (0,626); la temperatura entre fotogramas, 9,67 ms (9,65).
 - **En la N64, una orden aún no se ha medido.** Lo que puede costar: el bloqueo de zonas (una búsqueda de camino por cada par de vecinas), `isTileExclusivelyPassable` (una búsqueda de hasta 10 pasos por casilla de la huella) y la temperatura, que tras cada orden vuelve a mirar el mapa entero. Se medirá con la interfaz (paso 7).
 
 ### Pendiente
