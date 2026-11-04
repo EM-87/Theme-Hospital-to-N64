@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos, y el importador de arte nuevo ([`06_juego_base.md`](06_juego_base.md)); el siguiente es el 6.3, construir, por pasos ([abajo](#construir-hito-63-por-pasos)). Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
+Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos, el importador de arte nuevo y el paso 1 del 6.3 ([`06_juego_base.md`](06_juego_base.md)); sigue el 6.3, construir, por pasos ([abajo](#construir-hito-63-por-pasos)): el siguiente es el 2, las órdenes y amueblar el pasillo. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
 
 **Objetivo: el nivel 1 de Theme Hospital, de principio a fin, en la ROM.**
 - Se empieza con el edificio vacío y 40.000 $.
@@ -216,6 +216,7 @@ La lectura del código de CorsixTH (2026-11-04) dice cómo girarlos: el sur es e
 
 **Los pasos.** Cada uno, con su commit, sus cifras y su comparación con CorsixTH:
 1. **Los objetos en el mapa.** Ocupar y desocupar casillas con la huella como `Object:setTile` de CorsixTH, la lista de objetos por casilla y las puertas de la entrada al cargar el nivel. La huella de la simulación pasa a incluir el mapa, los objetos y las salas. Se comprueba con el mapa del nivel 1 (las 3 casillas junto a las puertas de la entrada, que hoy no se comparan) y con las casillas de los escenarios: calculadas por el núcleo, las 16.384 tienen que salir iguales que en CorsixTH.
+   - **Hecho** el 2026-11-04 ([cifras](06_juego_base.md#hito-63-paso-1--los-objetos-en-el-mapa)): los 12 niveles y los 52 hospitales exportados de CorsixTH, rehechos desde sus salas y objetos, salen con 0 casillas distintas. Queda para el paso 2 meter la basura en la lista de su casilla.
 2. **Las órdenes y amueblar el pasillo.**
    - La cola de órdenes: cada orden lleva su tick, se aplica al empezarlo y se graba para repetirla.
    - Comprar, colocar y vender objetos de pasillo, con las validaciones de CorsixTH y el bloqueo de zonas en el modo 2. El bloqueo usa una búsqueda propia, porque el buscador de la simulación puede estar a medias.

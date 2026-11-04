@@ -51,7 +51,8 @@ ifdef MEDIR
   CFLAGS += -DTH_MEDIR
 endif
 ifdef PRUEBAS
-  C_FILES += tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c tests/test_vista.c
+  C_FILES += tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c tests/test_objects.c \
+    tests/trg_json.c tests/test_vista.c
   CFLAGS += -DTH_PRUEBAS
 endif
 OBJS := $(addprefix $(BUILD_DIR)/,$(C_FILES:.c=.o))

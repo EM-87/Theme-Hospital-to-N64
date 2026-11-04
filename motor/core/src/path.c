@@ -346,14 +346,57 @@ int th_path_visit_objects(th_pathfinder *pf, const th_map *m, int sx, int sy, in
             const int nb = neighbour_no_doors(m, node, f, d);
             if (nb < 0)
                 continue;
-            if (m->tiles[nb].object == thob) {
-                const int r = fn(ctx, nb % TH_MAP_WIDTH, nb / TH_MAP_WIDTH, d, pf->nodes[node].distance);
+            // object_visitor::try_node: una llamada por cada objeto de ese tipo
+            // de la casilla; con thob 0 (cualquier tipo), una por casilla, haya
+            // objetos o no.
+            const int nx = nb % TH_MAP_WIDTH, ny = nb / TH_MAP_WIDTH;
+            int calls = thob == 0;
+            if (thob != 0) {
+                const int n = th_map_thob_count(m, nx, ny);
+                for (int k2 = 0; k2 < n; k2++)
+                    calls += th_map_thob_at(m, nx, ny, k2) == thob;
+            }
+            for (int c = 0; c < calls; c++) {
+                const int r = fn(ctx, nx, ny, d, pf->nodes[node].distance);
                 if (r)
                     return r;
             }
             if (pf->nodes[node].distance < max_dist && !door_blocks(m, node, (unsigned)nb, f, d))
                 record(pf, m, node, (f & TH_TILE_PASSABLE) != 0, (unsigned)nb);
         }
+        if (pf->heap_size == 0)
+            return 0;
+        node = pop(pf);
+    }
+}
+
+int th_path_reachable_from_hospital(th_pathfinder *pf, const th_map *m, int sx, int sy)
+{
+    if (sx < 0 || sy < 0 || sx >= TH_MAP_WIDTH || sy >= TH_MAP_HEIGHT ||
+        !(m->tiles[sy * TH_MAP_WIDTH + sx].flags & TH_TILE_PASSABLE))
+        return 0;
+    unsigned node = init_search(pf, sx, sy);
+    for (;;) {
+        set_visited(pf, node);
+        pf->total_expanded++;
+        if ((++pf->expanded & 127) == 0)
+            th_pausar();
+        const uint32_t f = m->tiles[node].flags;
+        if (f & TH_TILE_HOSPITAL) {
+            pf->dest = (uint16_t)node;
+            return 1;
+        }
+        // hospital_finder::try_node: cualquier vecino al que dejen ir las
+        // banderas de tránsito, con o sin puerta.
+        const int passable = (f & TH_TILE_PASSABLE) != 0;
+        if (f & TH_TILE_TRAVEL_W)
+            record(pf, m, node, passable, node - 1);
+        if (f & TH_TILE_TRAVEL_E)
+            record(pf, m, node, passable, node + 1);
+        if (f & TH_TILE_TRAVEL_N)
+            record(pf, m, node, passable, node - TH_MAP_WIDTH);
+        if (f & TH_TILE_TRAVEL_S)
+            record(pf, m, node, passable, node + TH_MAP_WIDTH);
         if (pf->heap_size == 0)
             return 0;
         node = pop(pf);

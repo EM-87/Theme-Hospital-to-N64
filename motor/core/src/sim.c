@@ -1141,7 +1141,9 @@ void th_sim_temperature_prepare(th_sim *s)
         }
         unsigned type = TEMP_AIR;
         if (f & TH_TILE_HOSPITAL)
-            type = s->radiator_thob >= 0 && tiles[i].object == s->radiator_thob ? TEMP_RADIATOR : TEMP_HOSPITAL;
+            type = s->radiator_thob >= 0 && th_map_has_thob(s->w.map, i % TH_MAP_WIDTH, i / TH_MAP_WIDTH, s->radiator_thob)
+                       ? TEMP_RADIATOR
+                       : TEMP_HOSPITAL;
         s->temp[i].cell = (uint16_t)(code | type << 8 | count << 10);
         const uint32_t bit = 1u << (i & 31);
         if (type == TEMP_AIR)
@@ -1623,14 +1625,16 @@ static int load_scenario(th_sim *s)
         const char *id = th_rules_str(r, get(r, o, "id"), NULL);
         th_object *ob = &s->obj[s->n_obj];
         memset(ob, 0, sizeof *ob);
-        ob->def = get(s->defs, defs_obj, id ? id : "");
-        if (!ob->def)
+        if (th_object_init(ob, s->defs, get(s->defs, defs_obj, id ? id : ""), dir_from(r, get(r, o, "direccion"))))
             return -21;
         ob->type = (uint8_t)object_type(id);
-        ob->thob = (uint8_t)th_rules_int(s->defs, get(s->defs, ob->def, "thob"), 0);
+        // Las banderas del mapa ya vienen del escenario: el objeto está en su
+        // casilla sin ocuparla otra vez. De los objetos de borde no se sabe
+        // si cortaron el paso (set_passable_flags).
         ob->x = (uint8_t)th_rules_int(r, get(r, o, "x"), 0);
         ob->y = (uint8_t)th_rules_int(r, get(r, o, "y"), 0);
-        ob->dir = (uint8_t)dir_from(r, get(r, o, "direccion"));
+        ob->oflags |= TH_OBJF_ON_MAP;
+        ob->seq = ++s->obj_seq;
         ob->room = (uint8_t)th_rules_int(r, get(r, o, "sala"), 0);
         ob->user = ob->reserved_for = ob->queue = ob->receptionist = TH_NONE;
         if (ob->type == TH_OBJ_RECEPTION_DESK) {
@@ -1814,8 +1818,18 @@ uint32_t th_sim_hash(const th_sim *s)
     for (int i = 0; i < s->n_rooms; i++)
         h = fnv(h, (uint32_t)s->rooms[i].call_open << 16 | (uint32_t)s->rooms[i].call_staff << 8 |
                        s->rooms[i].call_serial);
-    for (int i = 0; i < s->n_obj; i++)
-        h = fnv(h, (uint32_t)s->obj[i].user << 8 | s->obj[i].reserved_for);
+    for (int i = 0; i < s->n_obj; i++) {
+        const th_object *o = &s->obj[i];
+        h = fnv(h, (uint32_t)o->user << 8 | o->reserved_for);
+        h = fnv(h, (uint32_t)o->thob << 24 | (uint32_t)o->x << 16 | (uint32_t)o->y << 8 | o->dir);
+        h = fnv(h, (uint32_t)o->room << 16 | (uint32_t)o->oflags << 8 | o->oclass);
+    }
+    for (int i = 0; i < s->n_rooms; i++) {
+        const th_room *rm = &s->rooms[i];
+        h = fnv(h, (uint32_t)rm->num << 24 | (uint32_t)rm->type << 16 | (uint32_t)rm->door << 8 | rm->is_active);
+        h = fnv(h, (uint32_t)rm->x << 24 | (uint32_t)rm->y << 16 | (uint32_t)rm->w << 8 | rm->h);
+    }
+    h = fnv(h, th_map_hash(s->w.map));
     for (int q = 0; q < s->n_queues; q++)
         for (int i = 0; i < s->queues[q].size; i++)
             h = fnv(h, (uint32_t)q << 8 | s->queues[q].member[i]);

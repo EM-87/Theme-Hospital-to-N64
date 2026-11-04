@@ -14,6 +14,14 @@
 #define TH_MAP_HEIGHT 128
 #define TH_MAP_MAX_PARCELS 64
 #define TH_MAP_MAX_PLAYERS 4
+// Objetos del fichero del nivel: en la campaña solo hay puertas de la entrada,
+// 20 como mucho (nivel 11).
+#define TH_MAP_MAX_MAP_OBJECTS 32
+// Casillas con más de un objeto a la vez (objetos de borde juntos): sus
+// objetos del segundo en adelante van en una tabla aparte. Caben 5 por
+// casilla: una puerta y un objeto de borde en cada lado.
+#define TH_MAP_MAX_STACKS 64
+#define TH_MAP_STACK_LEN 4
 
 // Banderas de una casilla. Las 7 primeras son las del fichero del nivel.
 enum {
@@ -51,9 +59,26 @@ typedef struct th_tile {
     // Tal como vienen en el nivel (original_cells de CorsixTH): se restauran
     // al comprar la parcela. Las paredes originales incluyen las divisorias.
     uint8_t orig_floor, orig_wall_n, orig_wall_w, orig_flags;
-    uint8_t object, object_dir; // objeto del mapa (thob) y su dirección
-    uint16_t room;              // 0 = ninguna
+    // Los objetos de la casilla, como la lista de map_tile de CorsixTH: el
+    // primero (thob, 0 = ninguno) y, si hay más, el índice + 1 de su pila en
+    // th_map.stacks (0 = no hay más). Solo los anota la casilla de origen del
+    // objeto (World:addObjectToTile).
+    uint8_t object, stack;
+    uint16_t room; // 0 = ninguna
 } th_tile;
+
+// Un objeto del fichero del nivel (los que CorsixTH pasa a World:createMapObjects).
+typedef struct th_map_object {
+    uint8_t x, y, thob;
+    uint8_t flags;  // del fichero: par = norte, impar = oeste (Object:Object, "map object")
+    uint8_t placed; // ya está en el mapa (los de parcelas sin dueño esperan a que se compre)
+} th_map_object;
+
+typedef struct th_tile_stack {
+    uint16_t tile; // índice de la casilla
+    uint8_t n;     // cuántos objetos hay aquí (0 = pila libre)
+    uint8_t thob[TH_MAP_STACK_LEN];
+} th_tile_stack;
 
 typedef struct th_map {
     th_tile tiles[TH_MAP_WIDTH * TH_MAP_HEIGHT]; // por filas: tiles[y * TH_MAP_WIDTH + x]
@@ -66,6 +91,10 @@ typedef struct th_map {
     // Cambia cada vez que se recalculan las sombras, que es después de tocar
     // las capas o las banderas: así la vista girada sabe cuándo rehacerse.
     uint32_t version;
+    uint8_t n_map_objects;
+    th_map_object map_objects[TH_MAP_MAX_MAP_OBJECTS];
+    th_tile_stack stacks[TH_MAP_MAX_STACKS];
+    uint16_t thob_lost; // objetos que no cupieron en la lista de su casilla
 } th_map;
 
 enum {
@@ -76,9 +105,11 @@ enum {
     TH_MAP_ERR_PARCELS = -4, // demasiadas parcelas
 };
 
-// Carga un nivel TMP1 y lo deja como CorsixTH tras Map:load: la parcela p es
-// del jugador p si p <= jugadores y si no queda sin dueño. 'level' es el
-// número del nivel de la campaña (activa Map:_fixTiles) o 0.
+// Carga un nivel TMP1 y lo deja como CorsixTH tras Map:load y
+// World:createMapObjects: la parcela p es del jugador p si p <= jugadores y si
+// no queda sin dueño, y los objetos del nivel (las puertas de la entrada) se
+// colocan en las parcelas con dueño y en la 0. 'level' es el número del nivel
+// de la campaña (activa Map:_fixTiles) o 0.
 int th_map_load(th_map *m, const uint8_t *data, size_t len, int level);
 
 static inline th_tile *th_map_tile(th_map *m, int x, int y)
@@ -92,13 +123,34 @@ static inline const th_tile *th_map_tile_c(const th_map *m, int x, int y)
 }
 
 int th_map_parcel_owner(const th_map *m, int parcel);
-// Map:setPlotOwner. Devuelve cuántas paredes divisorias se quitaron
-// (CorsixTH cierra con ellas las salas que quedan abiertas; eso llegará con
-// las salas) o -1 si los argumentos no valen.
+// Map:setPlotOwner y World:setPlotOwner: con dueño, se colocan los objetos del
+// nivel de la parcela que esperaban. Devuelve cuántas paredes divisorias se
+// quitaron (CorsixTH cierra con ellas las salas que quedan abiertas; eso
+// llegará con las salas) o -1 si los argumentos no valen.
 int th_map_set_parcel_owner(th_map *m, int parcel, int owner);
+
+// La lista de objetos de una casilla (map_tile.objects de CorsixTH).
+// Añadir va al final (setCellFlags{thob}); quitar quita el primero igual
+// (removeObjectType). th_map_add_thob devuelve -1 si no cabe, y lo cuenta en
+// thob_lost.
+int th_map_add_thob(th_map *m, int x, int y, int thob);
+int th_map_remove_thob(th_map *m, int x, int y, int thob);
+int th_map_has_thob(const th_map *m, int x, int y, int thob);
+// Cuántos objetos tiene la casilla y el k-ésimo (desde 0).
+int th_map_thob_count(const th_map *m, int x, int y);
+int th_map_thob_at(const th_map *m, int x, int y, int k);
+
+// Una puerta de la entrada en (x, y): EntranceDoor:setTile de CorsixTH
+// (objects/doors/entrance_*_door.lua). thob 59 es la derecha (la maestra) y
+// 58 la izquierda; west, si mira al oeste. Con on = 0 la quita.
+void th_map_entrance_door(th_map *m, int x, int y, int thob, int west, int on);
+// Las casillas de paso de esa puerta además de la suya
+// (additional_walkable_tiles): cuántas son y sus desplazamientos.
+int th_map_entrance_door_tiles(int thob, int west, int8_t dx[3], int8_t dy[3]);
 void th_map_update_pathfinding(th_map *m);
 void th_map_update_shadows(th_map *m);
-// Huella de las capas, banderas y dueños: para comparar el PC con la N64.
+// Huella de las capas, banderas, salas, objetos y dueños: para comparar el PC
+// con la N64.
 uint32_t th_map_hash(const th_map *m);
 
 #endif

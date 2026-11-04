@@ -1,11 +1,12 @@
 # Herramientas de la fase 6
 
-Comprobaciones de la interfaz del juego base ([`docs/06_plan.md`](../../docs/06_plan.md)). Resultados en [`docs/06_juego_base.md`](../../docs/06_juego_base.md).
+Comprobaciones de la interfaz y del mapa del juego base ([`docs/06_plan.md`](../../docs/06_plan.md)). Resultados en [`docs/06_juego_base.md`](../../docs/06_juego_base.md).
 
 ```bash
 source tools/env.sh
 tools/hito6/panel.sh        # el panel inferior contra CorsixTH (unos 30 s)
 tools/hito6/vistas.sh       # las cuatro vistas contra el hospital girado en CorsixTH (unos 2 minutos)
+tools/hito6/banderas.sh     # hito 6.3: las banderas del mapa calculadas por el núcleo contra CorsixTH (unos 17 s)
 ```
 
 | Fichero | Qué hace |
@@ -16,6 +17,9 @@ tools/hito6/vistas.sh       # las cuatro vistas contra el hospital girado en Cor
 | [`bench/scenarios/crear_vistas.lua`](../../bench/scenarios/crear_vistas.lua) | El hospital de prueba: nivel 1, las 8 salas que trae (con estantería, mesa de billar y una cama más), bancos, máquina de bebidas, extintor, plantas y papelera en el pasillo; corre 50 horas y guarda `vistas.sav` |
 | [`bench/scenarios/captura_girada.lua`](../../bench/scenarios/captura_girada.lua) | Gira el hospital de una partida dentro de CorsixTH y hace la captura: lleva cada pieza del mapa a su sitio girado (las paredes, con las tablas de `walls/*.lua` de CorsixTH, y con la pareja en espejo si la luz de la vista lo pide), vuelve a crear los objetos con la orientación girada (o la opuesta, el sustituto) y quita las sombras, que CorsixTH solo sabe calcular con la luz girada. Es otra lógica que la del motor: la del motor busca, para cada casilla de la vista, lo que le toca |
 | `comparar_giro.py <captura> <vista> <entidades> <mezcla> [dif]` | Compara por zonas: el mapa (igual, salvo algún píxel a 5 o menos en el borde de una sombra), las sombras (el redondeo de la mezcla, 5 o menos) y las entidades con 2 píxeles alrededor (el filtrado lineal de CorsixTH, 7 o menos) |
+| `banderas.sh [dir]` | Hito 6.3, paso 1. Compara con CorsixTH las banderas que calcula el núcleo: los 12 niveles recién cargados (con los volcados del hito 2), el nivel 1 con todas las columnas de `getCellFlags` y los hospitales exportados de las campañas de los hitos 4 y 5 y el de las vistas, rehechos desde sus salas y sus objetos con `th64sim banderas` |
+| [`bench/scenarios/celdas_nivel.lua`](../../bench/scenarios/celdas_nivel.lua) | Las 16.384 casillas de un nivel recién cargado, con todas las columnas de `getCellFlags` (`--th64-nivel=N`) |
+| [`bench/scenarios/rarezas_objetos.lua`](../../bench/scenarios/rarezas_objetos.lua) | Las rarezas de ocupar y desocupar de CorsixTH que copian las pruebas del núcleo (`motor/tests/test_objects.c`): `resetSideObjects` con dos objetos de borde en una casilla, dos radiadores en el mismo borde, casillas de uso compartidas y el primer objeto que tapa a los demás |
 | `comparar_panel.py <dir> [--dif]` | Compara las capturas con lo que dibuja `th64sim panel alta`, donde pinta la interfaz. Las letras y los rectángulos tienen que ser iguales; las piezas del panel se cuentan por la mayor diferencia de un componente, porque CorsixTH las dibuja con filtrado lineal |
 
 En la ROM de pruebas (`make -C motor PRUEBAS=1`):

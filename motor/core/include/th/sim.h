@@ -32,6 +32,7 @@
 #include "th/anim.h"
 #include "th/humanoid.h"
 #include "th/map.h"
+#include "th/objects.h"
 #include "th/path.h"
 #include "th/rng.h"
 #include "th/rules.h"
@@ -84,32 +85,6 @@ static inline void th_hset_del(th_hset *c, int i)
 {
     c->w[i >> 5] &= ~(1u << (i & 31));
 }
-
-// Tipos de objeto que la lógica distingue; los demás son TH_OBJ_OTHER.
-enum {
-    TH_OBJ_OTHER,
-    TH_OBJ_DOOR,
-    TH_OBJ_BENCH,
-    TH_OBJ_RECEPTION_DESK,
-    TH_OBJ_DESK,
-    TH_OBJ_CABINET,
-    TH_OBJ_CHAIR,
-    TH_OBJ_RADIATOR,
-};
-
-typedef struct th_object {
-    uint8_t type;      // TH_OBJ_*
-    uint8_t thob;      // número de objeto del mapa (object_type.thob)
-    uint8_t x, y, dir; // dir: TH_DIR_*
-    uint8_t room;      // sala (número) o 0
-    uint8_t user;      // humanoide que lo usa (TH_NONE)
-    uint8_t reserved_for;
-    uint8_t queue;        // cola de las puertas y los mostradores (TH_NONE)
-    uint8_t receptionist; // mostrador: quien lo atiende
-    uint16_t queue_advance_timer;
-    uint16_t times_used;
-    th_rnode def; // objetos.<id> en las definiciones
-} th_object;
 
 typedef struct th_queue {
     uint8_t member[TH_SIM_QUEUE_LEN];
@@ -304,6 +279,7 @@ typedef struct th_sim {
     th_hospital hosp;
     uint8_t n_obj, n_rooms, n_queues;
     th_object obj[TH_SIM_OBJECTS];
+    uint32_t obj_seq; // llegadas de objetos a una casilla (th_objects.seq)
     th_room rooms[TH_SIM_ROOMS];
     th_queue queues[TH_SIM_QUEUES];
     th_person hum[TH_SIM_HUMANOIDS];
@@ -366,7 +342,8 @@ int th_sim_init(th_sim *s, th_map *m, th_pathfinder *pf, const th_anims *anims, 
 // Una hora de juego (World:onTick con hours_per_tick 1).
 void th_sim_tick(th_sim *s);
 // Huella del estado: la misma en el PC y en la N64. Con la pasada de
-// temperatura acabada (th_sim_temperature_step).
+// temperatura acabada (th_sim_temperature_step). Incluye el mapa
+// (th_map_hash), los objetos y las salas.
 uint32_t th_sim_hash(const th_sim *s);
 
 // La carga de la simulación antes de un tick, para medir (th64sim carga y la
@@ -418,6 +395,8 @@ void th_sim_patient_set_tile(th_sim *s, int who, int x, int y);
 void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror);
 // Objetos.
 int th_sim_object_at(const th_sim *s, int x, int y, int type); // TH_NONE si no hay
+// Los objetos de la simulación para th/objects.h.
+th_objects th_sim_objects(th_sim *s);
 int th_sim_use_tile(const th_sim *s, int obj, int secondary, int *x, int *y);
 void th_sim_object_set_user(th_sim *s, int obj, int who);
 void th_sim_object_remove_user(th_sim *s, int obj, int who);

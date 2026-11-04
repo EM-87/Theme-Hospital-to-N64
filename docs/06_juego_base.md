@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha de inicio: 2026-10-27. Estado: **hitos 6.1, 6.2 y 6.2b hechos, y el importador de arte nuevo**. Plan, hitos y criterios: [`06_plan.md`](06_plan.md).
+Fecha de inicio: 2026-10-27. Estado: **hitos 6.1, 6.2 y 6.2b hechos, el importador de arte nuevo y el paso 1 del hito 6.3** (los objetos en el mapa). Plan, hitos y criterios: [`06_plan.md`](06_plan.md).
 
 ## Hito 6.1 — Puntero y panel
 
@@ -484,3 +484,78 @@ Al arreglarlo apareció uno más: la referencia dibujaba los elementos con capa,
 - **Las partes semitransparentes que no son sombra** (el cristal de las puertas de la entrada y de vaivén, y los rotores del helicóptero): esas 10 vistas se rechazan. Convertirlas pide sacar del dibujo esas partes como un sprite semitransparente propio.
 - **Los objetos partidos en columnas** (cama, banco, carro de paradas, sofá y ultraescáner en alguna orientación) se dibujan recortados por columnas. En la N64, un sprite que no cabe en la TMEM (2.048 téxeles) va por `rdpq_tex_blit`, que no recorta. El importador rechaza esos casos hasta que el sprite se parta.
 - **Colocar en cuatro direcciones** los objetos que solo tienen norte y este necesita sus huellas al sur y al oeste (hito 6.3); hasta entonces, su arte nuevo no se usa porque la vista pone el sustituto.
+
+## Hito 6.3, paso 1 — Los objetos en el mapa
+
+**Hecho.** El núcleo ya sabe qué ocupa cada objeto en el mapa, como CorsixTH. Es la base para construir (los pasos siguientes, en el [plan](06_plan.md#construir-hito-63-por-pasos)):
+- **cada casilla lleva su lista de objetos**, como `map_tile.objects` de CorsixTH, y **las puertas de la entrada se colocan al cargar el nivel** (`World:createMapObjects`). Las de una parcela sin dueño esperan a que se compre;
+- **el módulo nuevo `objects.c` ocupa y libera casillas con la huella de cada objeto**, como `Object:setTile` y sus variantes de las puertas, y repite `resetSideObjects` e `isTilePartOfNearbyObject`;
+- **con solo sus salas y sus objetos, el núcleo rehace los 52 hospitales exportados de CorsixTH: 851.968 casillas, 0 distintas**, con todas las columnas de `getCellFlags`;
+- **los 12 niveles recién cargados salen iguales que en CorsixTH: 0 casillas distintas.** Antes, 103 casillas junto a las puertas de la entrada quedaban fuera de la comparación;
+- **la huella de la simulación incluye ahora el mapa, los objetos y las salas.** La simulación es la misma: las trazas de tres hospitales son idénticas a las de antes.
+
+### Qué hay
+
+| Parte | Fichero |
+|---|---|
+| La lista de objetos de cada casilla: añadir al final, quitar el primero igual (`removeObjectType`), hasta 5 por casilla y 64 casillas con más de uno. Los objetos del nivel, colocados al cargar o al comprar la parcela. La huella del mapa, con las salas y las listas | [`core/include/th/map.h`](../motor/core/include/th/map.h), [`core/src/map.c`](../motor/core/src/map.c) |
+| Ocupar y desocupar según la clase: los objetos normales, los de borde (`SideObject`), las puertas (`Door`), la puerta doble (`SwingDoor`) y las de la entrada (`EntranceDoor`). También `resetSideObjects`, `isTilePartOfNearbyObject` y el primer objeto de una casilla (`getObject`) | [`core/include/th/objects.h`](../motor/core/include/th/objects.h), [`core/src/objects.c`](../motor/core/src/objects.c) |
+| `th_object` pasa a `objects.h`, con su clase, si cortó el paso (`set_passable_flags`), si es la hoja maestra y su orden en la casilla (`world.objects`) | `objects.h` |
+| `findObject` de cualquier tipo (thob 0) e `isReachableFromHospital` | [`core/src/path.c`](../motor/core/src/path.c) |
+| La huella de la simulación, con el mapa, los objetos y las salas | `th_sim_hash` en [`core/src/sim.c`](../motor/core/src/sim.c) |
+| `th64sim banderas` (rehace un hospital y lo compara) y `th64sim mapa --comparar` | [`platform/pc/th64sim.c`](../motor/platform/pc/th64sim.c) |
+| La comparación entera, de una vez (unos 17 s) | [`tools/hito6/banderas.sh`](../tools/hito6/banderas.sh) |
+| En CorsixTH: el nivel recién cargado con todas las columnas, y las rarezas | [`celdas_nivel.lua`](../bench/scenarios/celdas_nivel.lua), [`rarezas_objetos.lua`](../bench/scenarios/rarezas_objetos.lua) |
+| Las pruebas: ocupar y desocupar con definiciones escritas en JSON, y la lista de la casilla y los objetos del nivel | [`tests/test_objects.c`](../motor/tests/test_objects.c), [`tests/trg_json.c`](../motor/tests/trg_json.c), [`tests/test_map.c`](../motor/tests/test_map.c) |
+
+**Cómo se rehace un hospital** (`th64sim banderas`). Se carga el nivel y se le ponen, del volcado de CorsixTH, solo las capas (suelo y paredes), la bandera `room` y el número de sala: las paredes y las salas son del paso 3. Después:
+1. se rehace el tránsito;
+2. se colocan los objetos del escenario en el orden de `world.entities`. Las puertas de la entrada ya las puso el mapa al cargar;
+3. tras las puertas de cada sala, se rehace el tránsito y se llama a `resetSideObjects`, como al terminar una sala en CorsixTH;
+4. se comparan las 16.384 casillas con el volcado.
+
+Todo lo demás lo calcula el núcleo: `passable`, `buildable` y sus cuatro bordes, el tránsito, las puertas, `tall`, `doNotIdle` y el primer objeto de cada casilla.
+
+### Las rarezas de CorsixTH que se copian
+
+Para que las banderas salgan iguales una a una, se copian también los fallos. Los cuatro primeros se han visto en CorsixTH con `rarezas_objetos.lua`, que coloca y quita objetos en el nivel 1, y las pruebas del núcleo esperan lo mismo:
+1. **`resetSideObjects` con dos objetos de borde en la misma casilla.** Recorre la lista de la casilla con `ipairs` mientras la cambia: el primero pasa dos veces y el segundo ninguna. Con un radiador y un extintor, el primer objeto de la casilla pasa a ser el extintor (thob 43). Si antes se rehízo el tránsito (al terminar una sala), el que no pasa pierde su corte: en CorsixTH, el borde del radiador vuelve a dejar pasar.
+2. **Dos radiadores en el mismo borde, uno a cada lado.** Solo el primero apunta que cortó el paso. Al quitarlo, el borde se abre aunque el otro siga ahí, hasta el siguiente `resetSideObjects`.
+3. **`isTilePartOfNearbyObject` solo mira el primer objeto de cada casilla.** Si en el origen de un banco hay antes un radiador, la casilla de uso del banco no cuenta como suya: al quitar otro banco que la compartía, vuelve a ser construible.
+4. **Las casillas de uso compartidas** (dos bancos frente a frente) siguen sin construir al quitar uno de los dos. Esto no es un fallo: es para lo que sirve la búsqueda anterior.
+5. **La búsqueda solo llega a 10 pasos.** Un objeto con la casilla de uso más lejos no la protege (las pruebas lo comprueban con uno inventado).
+6. **La papelera mirando al este ocupa el borde oeste.**
+7. **Al desocupar, se restauran todas las casillas de la huella**, también las opcionales que no se ocuparon.
+
+**Lo que no es igual:** CorsixTH recorre las casillas en `resetSideObjects` en el orden de `pairs()` de una tabla de Lua, y el núcleo, por su índice. Solo cambia algo con dos objetos de borde que cortan el mismo borde desde las dos casillas: cuál de los dos apunta el corte.
+
+### Comprobaciones
+
+| Qué | Contra qué | Resultado |
+|---|---|---|
+| Los 12 niveles recién cargados | Los volcados de CorsixTH del hito 2: capas, 13 banderas, parcela y objeto | **196.608 casillas, 0 distintas.** Antes, 103 casillas junto a las puertas de la entrada quedaban fuera de la comparación |
+| El nivel 1 recién cargado | `getCellFlags` entero: 17 banderas, sala, parcela, primer objeto y dueño | **16.384 casillas, 0 distintas** |
+| 52 hospitales rehechos desde sus salas y objetos: 40 de la campaña del hito 4, el de su README, 10 de la del hito 5 y el de las vistas | Los volcados de CorsixTH (`celdas.tsv`), con todas las columnas | **851.968 casillas, 0 distintas.** 718 objetos (104 puertas de la entrada y 614 colocados por el núcleo, 10 de ellos de borde) y 59 salas. El de las vistas tiene 8 salas, una con puerta doble, y 53 objetos de 25 tipos |
+| Las rarezas 1 a 4 | CorsixTH (`rarezas_objetos.lua`) | Las cuatro, como esperan las pruebas |
+| La simulación | El motor de antes, en los hospitales de los hitos 4 (3.000 horas) y 5 (9.000 horas) y en el de las vistas (2.000 horas) | **Trazas idénticas** (pacientes, dinero, días y acciones). Solo cambia la huella: hito 4, 8fefaa13 → **eb1be7a3**; hito 5, b5d2aeee → **78b333e5**; vistas, 8f86d688 → **aedf95c3** |
+| Pruebas del núcleo | — | **209.026 comprobaciones, 0 fallos** (283 nuevas) |
+| `tools/motor_check.sh` | Pruebas, huellas y píxeles, en el PC y en la N64 | Todo bien: **209.026 comprobaciones, 0 fallos** también en la N64 y con ASan y UBSan. La huella de referencia (d38fbaef) y la del hito 4 (eb1be7a3), iguales en el PC y en la N64. **0 píxeles distintos** en todas las comparaciones de dibujo, y las listas de las vistas giradas, iguales |
+
+Las pruebas encontraron un fallo antes de esta tabla: la puerta de la entrada colocada por `objects.c` entraba dos veces en la lista de su casilla.
+
+### Coste y memoria
+
+- **El mapa:** 676 B más (263.024 B). La tabla de casillas con más de un objeto ocupa 512 B y la de objetos del nivel, 160 B.
+- **Los objetos:** `th_object` pasa de 20 a 24 B, 384 B más con los 96 de la simulación (215.744 B).
+- **La simulación cuesta lo mismo en la N64.** En la ROM de pruebas, frente al `motor_check` anterior:
+  - el hospital del hito 4 tarda 6,13 ms por tick de media en sus 3.000 horas (antes, 6,09 ms) y 49,3 ms el tick más largo (antes, 47,6 ms);
+  - en los 275 ticks del recorrido, 0,653 ms (antes, 0,631 ms);
+  - la temperatura entre fotogramas baja de 9,71 a 9,67 ms.
+
+  Por tick solo cambia el buscador de objetos, que ahora recorre la lista de la casilla. Las diferencias son de un 1 a un 4 %, y van en los dos sentidos.
+- **Construir aún no se ha medido en la N64.** Ocupar y desocupar es barato. Lo que puede costar es desocupar una casilla de paso (una búsqueda de hasta 10 pasos) y `resetSideObjects`, que recorre las 16.384 casillas. Solo pasa cuando el jugador hace algo, así que se medirá con las órdenes (paso 2).
+
+### Pendiente
+
+- **La basura no entra todavía en la lista de su casilla.** En CorsixTH sí entra (thob 62): cambia el primer objeto de la casilla y tapa en `isTilePartOfNearbyObject` a los objetos de su casilla. Hará falta en el paso 2, cuando colocar un objeto tenga que quitar la basura de debajo (`prepareFootprintTilesForBuild`).
+- **La simulación sigue cargando las banderas que calculó CorsixTH.** Podría rehacerlas como `th64sim banderas`, pero de los objetos de borde no se sabe si cortaron el paso. Cambiará con las órdenes, cuando el motor mueva objetos.

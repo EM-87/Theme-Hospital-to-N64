@@ -18,6 +18,11 @@ int th_sim_object_at(const th_sim *s, int x, int y, int type)
     return TH_NONE;
 }
 
+th_objects th_sim_objects(th_sim *s)
+{
+    return (th_objects){s->w.map, s->w.pf, s->defs, s->obj, s->n_obj, &s->obj_seq};
+}
+
 static th_rnode orientation(const th_sim *s, const th_object *o)
 {
     return th_rules_get(s->defs, th_rules_get(s->defs, o->def, "orientations"), dir_names[o->dir]);

@@ -31,7 +31,7 @@ target_include_directories(th_ui PUBLIC ui)
 target_link_libraries(th_ui PUBLIC th_vista m)
 
 add_library(th_core_tests STATIC tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c
-            tests/test_vista.c)
+            tests/test_objects.c tests/trg_json.c tests/test_vista.c)
 target_include_directories(th_core_tests PUBLIC tests)
 target_link_libraries(th_core_tests PUBLIC th_core th_vista)
 

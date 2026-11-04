@@ -50,11 +50,17 @@ int th_path_idle_tile(th_pathfinder *pf, const th_map *m, int sx, int sy, int n,
 // object_visitor::visit_objects: recorre el mapa desde (sx, sy) sin cruzar
 // puertas, hasta max_dist pasos, y llama a fn por cada casilla vecina con el
 // objeto thob (x, y, dirección del último paso: 0 norte, 1 este, 2 sur, 3
-// oeste, y la distancia del nodo desde el que se ve). Para cuando fn devuelve
-// distinto de 0; devuelve eso, o 0.
+// oeste, y la distancia del nodo desde el que se ve). Con thob 0, como en
+// CorsixTH, la llama una vez por cada casilla vecina, tenga objetos o no. Para
+// cuando fn devuelve distinto de 0; devuelve eso, o 0.
 typedef int (*th_path_visit_fn)(void *ctx, int x, int y, int dir, int dist);
 int th_path_visit_objects(th_pathfinder *pf, const th_map *m, int sx, int sy, int thob, int max_dist,
                           th_path_visit_fn fn, void *ctx);
+
+// hospital_finder::find_path_to_hospital (isReachableFromHospital): 1 si
+// desde (sx, sy), que tiene que ser transitable, se llega a una casilla del
+// hospital por las banderas de tránsito (las puertas no cuentan).
+int th_path_reachable_from_hospital(th_pathfinder *pf, const th_map *m, int sx, int sy);
 
 // Copia las casillas del último camino, del origen al destino (longitud + 1),
 // en xs e ys. Devuelve cuántas son, o -1 si no hay camino o no caben.

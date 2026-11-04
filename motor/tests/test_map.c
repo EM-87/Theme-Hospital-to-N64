@@ -208,6 +208,90 @@ static void test_correcciones(void)
     TH_CHECK_EQ(banderas(57, 71) & TH_TILE_FILE_FLAGS, TH_TILE_FILE_FLAGS & ~TH_TILE_PASSABLE);
 }
 
+// La lista de objetos de una casilla: añadir al final, quitar el primero
+// igual (removeObjectType), 5 como mucho y una tabla de 64 casillas con más
+// de uno.
+static void test_lista(void)
+{
+    tmp_nuevo(2);
+    tmp_interior(5, 5, 60, 60, 1);
+    TH_CHECK_EQ(cargar(0), TH_MAP_OK);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 10, 10), 0);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 10, 44), 0);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 10, 62), 0);
+    const uint32_t h = th_map_hash(&mapa);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 10, 44), 0);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 10, 10), 3);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 10, 10, 1), 62);
+    TH_CHECK_EQ(th_map_remove_thob(&mapa, 10, 10, 44), 1); // el primero: queda [62, 44]
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 10, 10, 0), 62);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 10, 10, 1), 44);
+    TH_CHECK(th_map_hash(&mapa) != h); // el orden cuenta
+    TH_CHECK_EQ(th_map_has_thob(&mapa, 10, 10, 44), 1);
+    TH_CHECK_EQ(th_map_has_thob(&mapa, 10, 10, 4), 0);
+    TH_CHECK_EQ(th_map_remove_thob(&mapa, 10, 10, 4), 0);
+    TH_CHECK_EQ(th_map_remove_thob(&mapa, 10, 10, 62), 1);
+    TH_CHECK_EQ(th_map_remove_thob(&mapa, 10, 10, 44), 1);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 10, 10), 0);
+    for (int k = 0; k < 5; k++)
+        TH_CHECK_EQ(th_map_add_thob(&mapa, 11, 10, 40 + k), 0);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 11, 10, 45), -1);
+    TH_CHECK_EQ(mapa.thob_lost, 1);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 11, 10, 4), 44);
+    for (int k = 0; k < 5; k++)
+        th_map_remove_thob(&mapa, 11, 10, 40 + k);
+    // 64 casillas con dos objetos llenan la tabla; al vaciar una, cabe otra.
+    for (int k = 0; k < TH_MAP_MAX_STACKS; k++) {
+        th_map_add_thob(&mapa, 10 + k % 40, 20 + k / 40, 3);
+        TH_CHECK_EQ(th_map_add_thob(&mapa, 10 + k % 40, 20 + k / 40, 44), 0);
+    }
+    th_map_add_thob(&mapa, 10, 30, 3);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 30, 44), -1);
+    TH_CHECK_EQ(mapa.thob_lost, 2);
+    th_map_remove_thob(&mapa, 10, 20, 44);
+    TH_CHECK_EQ(th_map_add_thob(&mapa, 10, 30, 44), 0);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 10, 30, 1), 44);
+}
+
+// Los objetos del fichero (World:createMapObjects): las puertas de la entrada
+// van a su casilla al cargar si su parcela es la 0 o tiene dueño; las de una
+// parcela sin dueño, al comprarla. Los demás tipos no se crean.
+static void test_objetos_del_nivel(void)
+{
+    tmp_nuevo(3);
+    tmp_interior(10, 10, 20, 20, 1);
+    tmp_interior(30, 10, 40, 20, 2);
+    tmp_casilla(15, 15)[6] = 59; // derecha, al norte (banderas pares)
+    tmp_casilla(35, 15)[6] = 58; // izquierda, al oeste (banderas impares)
+    tmp_casilla(35, 15)[7] = 1;
+    tmp_casilla(12, 12)[6] = 4; // un banco: CorsixTH no lo crea
+    tmp_casilla(2, 2)[6] = 59;  // en el exterior
+    TH_CHECK_EQ(cargar(0), TH_MAP_OK);
+    TH_CHECK_EQ(mapa.n_map_objects, 4);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 15, 15, 0), 59);
+    TH_CHECK_EQ(banderas(15, 15) & (TH_TILE_TALL_N | TH_TILE_DO_NOT_IDLE | TH_TILE_BUILDABLE),
+                TH_TILE_TALL_N | TH_TILE_DO_NOT_IDLE);
+    static const int8_t de_la_maestra[3][2] = {{0, -1}, {1, 0}, {1, -1}};
+    for (int k = 0; k < 3; k++)
+        TH_CHECK_EQ(banderas(15 + de_la_maestra[k][0], 15 + de_la_maestra[k][1]) &
+                        (TH_TILE_DO_NOT_IDLE | TH_TILE_BUILDABLE),
+                    TH_TILE_DO_NOT_IDLE);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 12, 12), 0);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 2, 2, 0), 59);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 35, 15), 0); // la parcela 2 no tiene dueño
+    const uint32_t h = th_map_hash(&mapa);
+    TH_CHECK_EQ(th_map_set_parcel_owner(&mapa, 2, 1) >= 0, 1);
+    TH_CHECK(th_map_hash(&mapa) != h);
+    TH_CHECK_EQ(th_map_thob_at(&mapa, 35, 15, 0), 58);
+    TH_CHECK_EQ(banderas(35, 15) & (TH_TILE_TALL_W | TH_TILE_DO_NOT_IDLE | TH_TILE_BUILDABLE),
+                TH_TILE_TALL_W | TH_TILE_DO_NOT_IDLE);
+    TH_CHECK_EQ(banderas(34, 15) & (TH_TILE_DO_NOT_IDLE | TH_TILE_BUILDABLE), TH_TILE_DO_NOT_IDLE);
+    // Solo una vez: venderla y volver a comprarla no la duplica.
+    th_map_set_parcel_owner(&mapa, 2, 0);
+    th_map_set_parcel_owner(&mapa, 2, 1);
+    TH_CHECK_EQ(th_map_thob_count(&mapa, 35, 15), 1);
+}
+
 void th_test_map(void)
 {
     test_formato();
@@ -215,4 +299,6 @@ void th_test_map(void)
     test_sombras();
     test_parcelas();
     test_correcciones();
+    test_lista();
+    test_objetos_del_nivel();
 }

@@ -3,6 +3,7 @@
 #ifndef TH_TEST_H
 #define TH_TEST_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 extern void (*th_test_log)(const char *fmt, ...);
@@ -36,6 +37,11 @@ void th_test_map(void);
 void th_test_humanoid(void);
 // Pruebas del lector de reglas (test_rules.c).
 void th_test_rules(void);
+// Pruebas de ocupar y desocupar casillas (test_objects.c).
+void th_test_objects(void);
+// Un TRG1 a partir de un JSON pequeño (trg_json.c); devuelve su tamaño, o 0
+// si el JSON no vale o no cabe.
+size_t th_test_trg(const char *json, uint8_t *out, size_t cap);
 // Pruebas de las cuatro vistas (test_vista.c).
 void th_test_vista(void);
 // Simulación de referencia: huella del estado tras 'ticks' pasos.

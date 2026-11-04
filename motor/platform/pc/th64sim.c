@@ -2,8 +2,8 @@
 // - huella: la de la simulación de referencia, para compararla con la de la
 //   ROM (tools/motor_check.sh);
 // - mapa: carga un nivel convertido (TMP1), escribe su huella y, si se le da
-//   el volcado del oráculo de CorsixTH (bench/scenarios/volcar_mapa.lua), lo
-//   compara casilla a casilla;
+//   el volcado del oráculo de CorsixTH (bench/scenarios/volcar_mapa.lua, o
+//   celdas_nivel.lua con --comparar), lo compara casilla a casilla;
 // - caminos: repite con el A* del núcleo los caminos que pidió el oráculo de
 //   CorsixTH (bench/scenarios/caminos.lua) y los compara casilla a casilla;
 // - caminata: repite la caminata que volcó el oráculo de CorsixTH
@@ -15,6 +15,8 @@
 //   conversor, para comprobar el lector del núcleo (tools/conv/reglas.py);
 // - escenario: carga un nivel con un escenario exportado de CorsixTH
 //   (tools/oraculo_hito4) y compara sus casillas con las de CorsixTH;
+// - banderas: lo mismo, pero con las banderas calculadas por el núcleo a
+//   partir de las salas y los objetos (th/objects.h);
 // - hito4: corre ese escenario con la simulación y escribe la traza de
 //   bench/scenarios/traza_hito4.lua (hito4.c).
 // Más adelante cargará un escenario y escribirá el mismo volcado que el
@@ -28,6 +30,7 @@
 #include "th/anim.h"
 #include "th/humanoid.h"
 #include "th/map.h"
+#include "th/objects.h"
 #include "th/path.h"
 #include "th/rules.h"
 #include "th/scenario.h"
@@ -49,8 +52,10 @@ static int uso(void)
     fprintf(stderr,
             "th64sim %s\n"
             "Uso: th64sim huella <semilla> <ticks>\n"
-            "     th64sim mapa <nivel.tmp> <número de nivel> [mapa_nivelN.tsv | --volcar celdas.tsv]\n"
+            "     th64sim mapa <nivel.tmp> <número de nivel> [mapa_nivelN.tsv | --volcar celdas.tsv | --comparar "
+            "celdas.tsv]\n"
             "     th64sim escenario <nivel.tmp> <escenario.trg> <celdas.tsv>\n"
+            "     th64sim banderas <assets> <escenario.trg> <celdas.tsv>\n"
             "     th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>\n"
             "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
@@ -119,25 +124,8 @@ static void valores(const th_tile *t, int x, int y, long v[C_NUM])
     for (int i = 0; i < 13; i++)
         v[C_PASSABLE + i] = (t->flags & bits[i]) != 0;
     v[C_PARCELA] = t->parcel;
-    // Los objetos del mapa aún no se colocan: se compara el del fichero, que
-    // CorsixTH solo coloca si la parcela tiene dueño.
-    v[C_THOB] = th_map_parcel_owner(&mapa, t->parcel) || t->parcel == 0 ? t->object : 0;
-}
-
-// ¿Hay un objeto del mapa colocado a 3 casillas o menos? Sus huellas cambian
-// banderas que este hito todavía no calcula.
-static int cerca_de_objeto(int x, int y)
-{
-    for (int dy = -3; dy <= 3; dy++)
-        for (int dx = -3; dx <= 3; dx++) {
-            int nx = x + dx, ny = y + dy;
-            if (nx < 0 || ny < 0 || nx >= TH_MAP_WIDTH || ny >= TH_MAP_HEIGHT)
-                continue;
-            const th_tile *t = th_map_tile_c(&mapa, nx, ny);
-            if (t->object && (t->parcel == 0 || th_map_parcel_owner(&mapa, t->parcel)))
-                return 1;
-        }
-    return 0;
+    // El primero de la lista, como getCellFlags().thob de CorsixTH.
+    v[C_THOB] = t->object;
 }
 
 static int comparar(const char *ruta)
@@ -152,8 +140,8 @@ static int comparar(const char *ruta)
         fclose(f);
         return 1;
     }
-    long dif[C_NUM] = {0}, dif_obj[C_NUM] = {0};
-    int filas = 0, casillas_dif = 0, casillas_obj = 0, mostradas = 0;
+    long dif[C_NUM] = {0};
+    int filas = 0, casillas_dif = 0, mostradas = 0;
     while (fgets(linea, sizeof(linea), f)) {
         long o[C_NUM], v[C_NUM];
         char *p = linea;
@@ -163,28 +151,22 @@ static int comparar(const char *ruta)
             continue;
         filas++;
         valores(th_map_tile_c(&mapa, (int)o[C_X], (int)o[C_Y]), (int)o[C_X], (int)o[C_Y], v);
-        int distinta = 0, obj = cerca_de_objeto((int)o[C_X], (int)o[C_Y]);
+        int distinta = 0;
         for (int i = C_SUELO; i < C_NUM; i++) {
             if (o[i] == v[i])
                 continue;
             distinta = 1;
-            if (obj) {
-                dif_obj[i]++;
-            } else {
-                dif[i]++;
-                if (mostradas++ < 10)
-                    printf("  (%ld,%ld) %s: th64 %ld, CorsixTH %ld\n", o[C_X], o[C_Y], nombres[i], v[i], o[i]);
-            }
+            dif[i]++;
+            if (mostradas++ < 10)
+                printf("  (%ld,%ld) %s: th64 %ld, CorsixTH %ld\n", o[C_X], o[C_Y], nombres[i], v[i], o[i]);
         }
-        casillas_dif += distinta && !obj;
-        casillas_obj += distinta && obj;
+        casillas_dif += distinta;
     }
     fclose(f);
-    printf("oráculo: %d casillas; %d distintas lejos de objetos, %d junto a objetos del mapa\n", filas,
-           casillas_dif, casillas_obj);
+    printf("oráculo: %d casillas; %d distintas\n", filas, casillas_dif);
     for (int i = C_SUELO; i < C_NUM; i++)
-        if (dif[i] || dif_obj[i])
-            printf("  %-15s %5ld lejos de objetos, %5ld junto a objetos\n", nombres[i], dif[i], dif_obj[i]);
+        if (dif[i])
+            printf("  %-15s %5ld\n", nombres[i], dif[i]);
     return filas == TH_MAP_WIDTH * TH_MAP_HEIGHT && casillas_dif == 0 ? 0 : 1;
 }
 
@@ -225,7 +207,9 @@ static long valor_celda(int x, int y, const char *col)
     if (!strcmp(col, "parcela"))
         return t->parcel;
     if (!strcmp(col, "thob"))
-        return th_map_parcel_owner(&mapa, t->parcel) || t->parcel == 0 ? t->object : 0;
+        return t->object;
+    if (!strcmp(col, "owner"))
+        return th_map_parcel_owner(&mapa, t->parcel);
     for (int i = 0; i < N_BANDERAS; i++)
         if (!strcmp(col, banderas_celdas[i].nombre))
             return (t->flags & banderas_celdas[i].bit) != 0;
@@ -280,6 +264,14 @@ static int comparar_celdas(const char *ruta)
         fprintf(stderr, "%s no empieza por x, y\n", ruta);
         return 1;
     }
+    // Las columnas que el núcleo no tiene (la capa de la interfaz, «ui») no
+    // se comparan; se dice cuáles son.
+    int usar[32] = {0};
+    for (int i = 2; i < ncols; i++) {
+        usar[i] = valor_celda(0, 0, cols[i]) != -1;
+        if (!usar[i])
+            printf("  sin comparar: %s\n", cols[i]);
+    }
     long dif[32] = {0};
     int filas = 0, distintas = 0, mostradas = 0;
     while (fgets(linea, sizeof linea, f)) {
@@ -292,6 +284,8 @@ static int comparar_celdas(const char *ruta)
         filas++;
         int distinta = 0;
         for (int i = 2; i < ncols; i++) {
+            if (!usar[i])
+                continue;
             const long nuestro = valor_celda((int)v[0], (int)v[1], cols[i]);
             if (nuestro == v[i])
                 continue;
@@ -875,6 +869,150 @@ static int orden_escenario(char **argv)
     return n < 0 ? 1 : comparar_celdas(argv[4]);
 }
 
+// Las capas, la bandera room y la sala de cada casilla de un celdas.tsv: lo
+// que dejan en el mapa las paredes, las ventanas y markRoom. Devuelve cuántas
+// casillas son de una sala, o -1.
+static int aplicar_salas(const char *ruta)
+{
+    FILE *f = fopen(ruta, "r");
+    if (!f) {
+        fprintf(stderr, "no se puede abrir %s\n", ruta);
+        return -1;
+    }
+    static char linea[1024];
+    static const char *const quiero[] = {"x", "y", "suelo", "norte", "oeste", "room", "sala"};
+    int col[7], ncols = 0;
+    for (int k = 0; k < 7; k++)
+        col[k] = -1;
+    if (fgets(linea, sizeof linea, f))
+        for (char *tok = strtok(linea, "\t\r\n"); tok; tok = strtok(NULL, "\t\r\n"), ncols++)
+            for (int k = 0; k < 7; k++)
+                if (!strcmp(tok, quiero[k]))
+                    col[k] = ncols;
+    for (int k = 0; k < 7; k++)
+        if (col[k] < 0 || col[k] >= 32) {
+            fclose(f);
+            fprintf(stderr, "%s: falta la columna %s\n", ruta, quiero[k]);
+            return -1;
+        }
+    int en_sala = 0;
+    while (fgets(linea, sizeof linea, f)) {
+        long v[32] = {0};
+        char *p = linea;
+        for (int i = 0; i < ncols && i < 32; i++)
+            v[i] = strtol(p, &p, 10);
+        const long x = v[col[0]], y = v[col[1]];
+        if (x < 0 || x >= TH_MAP_WIDTH || y < 0 || y >= TH_MAP_HEIGHT)
+            continue;
+        th_tile *t = th_map_tile(&mapa, (int)x, (int)y);
+        t->floor = (uint8_t)v[col[2]];
+        t->wall_n = (uint8_t)v[col[3]];
+        t->wall_w = (uint8_t)v[col[4]];
+        t->flags = v[col[5]] ? t->flags | TH_TILE_ROOM : t->flags & ~(uint32_t)TH_TILE_ROOM;
+        t->room = (uint16_t)v[col[6]];
+        en_sala += v[col[5]] != 0;
+    }
+    fclose(f);
+    return en_sala;
+}
+
+static int es_puerta(const char *id)
+{
+    return id && (!strcmp(id, "door") || !strcmp(id, "swing_door_left") || !strcmp(id, "swing_door_right"));
+}
+
+// Las banderas de un hospital calculadas por el núcleo (hito 6.3): carga el
+// nivel, le pone las capas y las salas del celdas.tsv de CorsixTH, rehace el
+// tránsito y coloca los objetos del escenario en el orden de world.entities.
+// Las puertas de la entrada ya las puso th_map_load. Tras las puertas de una
+// sala (finishRoom) van update_pathfinding y resetSideObjects, como al
+// terminarla. Después compara las 16.384 casillas con el mismo celdas.tsv.
+static int orden_banderas(char **argv)
+{
+    char ruta[1024];
+    size_t len;
+    snprintf(ruta, sizeof ruta, "%s/reglas/definiciones.trg", argv[2]);
+    uint8_t *dd = leer_fichero(ruta, &len);
+    th_rules defs, esc;
+    if (!dd || th_rules_init(&defs, dd, len) != 0) {
+        fprintf(stderr, "%s no vale\n", ruta);
+        return 1;
+    }
+    uint8_t *de = leer_fichero(argv[3], &len);
+    if (!de || th_rules_init(&esc, de, len) != 0) {
+        fprintf(stderr, "%s no es un escenario válido\n", argv[3]);
+        return 1;
+    }
+    const int nivel = th_rules_int(&esc, th_rules_get(&esc, esc.root, "nivel"), 0);
+    snprintf(ruta, sizeof ruta, "%s/niveles/nivel%02d.tmp", argv[2], nivel);
+    if (cargar_mapa(ruta, nivel))
+        return 1;
+    const int en_sala = aplicar_salas(argv[4]);
+    if (en_sala < 0)
+        return 1;
+    th_map_update_pathfinding(&mapa);
+
+    static th_object objs[256];
+    uint32_t seq = 0;
+    th_objects w = {&mapa, &buscador, &defs, objs, 0, &seq};
+    const th_rnode lista = th_rules_get(&esc, esc.root, "objetos");
+    const th_rnode defs_obj = th_rules_get(&defs, defs.root, "objetos");
+    static const char *const dirs[4] = {"north", "east", "south", "west"};
+    const uint32_t n = th_rules_len(&esc, lista);
+    int adoptados = 0, colocados = 0, de_borde = 0, salas = 0, errores = 0;
+    for (uint32_t i = 0; i < n && w.n_obj < (int)(sizeof objs / sizeof objs[0]); i++) {
+        const th_rnode o = th_rules_at(&esc, lista, i);
+        const char *id = th_rules_str(&esc, th_rules_get(&esc, o, "id"), NULL);
+        const char *dn = th_rules_str(&esc, th_rules_get(&esc, o, "direccion"), NULL);
+        int dir = 0;
+        while (dn && dir < 3 && strcmp(dn, dirs[dir]))
+            dir++;
+        const int x = th_rules_int(&esc, th_rules_get(&esc, o, "x"), -1);
+        const int y = th_rules_int(&esc, th_rules_get(&esc, o, "y"), -1);
+        th_object *ob = &objs[w.n_obj];
+        memset(ob, 0, sizeof *ob);
+        if (th_object_init(ob, &defs, th_rules_get(&defs, defs_obj, id ? id : ""), dir)) {
+            fprintf(stderr, "objeto %s sin definición\n", id ? id : "?");
+            return 1;
+        }
+        const int k = w.n_obj++;
+        if (ob->oclass == TH_OCLASS_ENTRANCE_DOOR) {
+            if (!th_map_has_thob(&mapa, x, y, ob->thob)) {
+                printf("  la puerta de la entrada %s de (%d,%d) no está en el mapa\n", id, x, y);
+                errores++;
+            }
+            th_object_adopt(&w, k, x, y);
+            adoptados++;
+            continue;
+        }
+        th_object_set_tile(&w, k, x, y);
+        colocados++;
+        de_borde += ob->oclass == TH_OCLASS_SIDE;
+        const th_rnode sig = i + 1 < n ? th_rules_at(&esc, lista, i + 1) : 0;
+        if (es_puerta(id) && !es_puerta(th_rules_str(&esc, th_rules_get(&esc, sig, "id"), NULL))) {
+            th_map_update_pathfinding(&mapa);
+            th_objects_reset_side(&w);
+            salas++;
+        }
+    }
+    if (w.n_obj < (int)n) {
+        fprintf(stderr, "demasiados objetos: %u\n", n);
+        return 1;
+    }
+    th_map_update_shadows(&mapa);
+    printf("banderas: nivel %d; %d casillas de sala, %d salas terminadas; %u objetos: %d de la entrada, %d colocados "
+           "(%d de borde); huella del mapa %08lx\n",
+           nivel, en_sala, salas, n, adoptados, colocados, de_borde, (unsigned long)th_map_hash(&mapa));
+    if (mapa.thob_lost) {
+        printf("  %u objetos no cupieron en la lista de su casilla\n", (unsigned)mapa.thob_lost);
+        errores++;
+    }
+    free(dd);
+    free(de);
+    const int r = comparar_celdas(argv[4]);
+    return r || errores;
+}
+
 static int orden_reglas(int argc, char **argv)
 {
     size_t len;
@@ -1029,10 +1167,17 @@ int main(int argc, char **argv)
             return 1;
         return volcar_celdas(argv[5]);
     }
+    if (argc == 6 && strcmp(argv[1], "mapa") == 0 && strcmp(argv[4], "--comparar") == 0) {
+        if (cargar_mapa(argv[2], atoi(argv[3])))
+            return 1;
+        return comparar_celdas(argv[5]);
+    }
     if ((argc == 4 || argc == 5) && strcmp(argv[1], "mapa") == 0)
         return orden_mapa(argc, argv);
     if (argc == 5 && strcmp(argv[1], "escenario") == 0)
         return orden_escenario(argv);
+    if (argc == 5 && strcmp(argv[1], "banderas") == 0)
+        return orden_banderas(argv);
     if (argc >= 15 && argc <= 17 && strcmp(argv[1], "escena") == 0)
         return orden_escena(argc, argv);
     if (argc == 5 && strcmp(argv[1], "caminata") == 0)
