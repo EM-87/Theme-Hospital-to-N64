@@ -11,7 +11,11 @@
 --     lista world.objects de su casilla («orden», desde 0), que puede no ser el
 --     de world.entities; y en «listas», las casillas (y * ancho + x) que tienen
 --     esa lista, aunque se haya quedado vacía: Patient:setTile no tira basura
---     en ellas.
+--     en ellas. También el dueño de cada parcela («parcelas», de la 1 en
+--     adelante), la basura del suelo («basura»: casilla, animación, banderas
+--     y sitio en world.objects) y, en los objetos cogidos (picked_up),
+--     «recogido». El motor aún no carga ni la basura ni los objetos cogidos:
+--     rechaza esos escenarios.
 -- Coordenadas desde 0, como en el motor.
 local th64 = th64
 local canonico = dofile(th64.bench_dir .. "/../tools/conv/json_canonico.lua")
@@ -69,13 +73,19 @@ end
 --! El documento de escenario.json y un resumen para el registro.
 function E.documento(world)
   local h = world.hospitals[1]
-  local objetos, salas, personal = {}, {}, {}
+  local objetos, salas, personal, basura = {}, {}, {}, {}
   for _, e in ipairs(world.entities) do
     if class.is(e, Object) then
       objetos[#objetos + 1] = {id = e.object_type.id, x = e.tile_x - 1, y = e.tile_y - 1, direccion = e.direction,
-        sala = sala_de(e), orden = E.orden_en_casilla(world, e)}
+        sala = sala_de(e), orden = E.orden_en_casilla(world, e), recogido = e.picked_up and true or nil}
+    elseif class.is(e, Litter) and e.tile_x then
+      basura[#basura + 1] = {x = e.tile_x - 1, y = e.tile_y - 1, animacion = e.animation_idx,
+        banderas = e.animation_flags, orden = E.orden_en_casilla(world, e)}
     end
   end
+  -- El dueño de cada parcela (Map:setPlotOwner), de la 1 en adelante.
+  local parcelas = {}
+  for p = 1, world.map.th:getPlotCount() do parcelas[p] = world.map.th:getPlotOwner(p) end
   -- world.objects[(y - 1) * ancho + x], desde 1: la casilla y * ancho + x desde 0.
   local listas = {}
   for indice in pairs(world.objects) do listas[#listas + 1] = indice - 1 end
@@ -125,11 +135,13 @@ function E.documento(world)
       seguros = h.insurance, saldo_seguros = h.insurance_balance, entrada = {x = h.x and h.x - 1 or nil}},
     objetos = objetos,
     listas = listas,
+    parcelas = parcelas,
+    basura = basura,
     salas = salas,
     personal = personal,
   }
-  local resumen = ("%d objetos, %d listas de world.objects, %d salas, %d en plantilla, %d puntos de aparición, " ..
-    "fecha %s"):format(#objetos, #listas, #salas, #personal, #puntos, d:tostring())
+  local resumen = ("%d objetos, %d listas de world.objects, %d basuras, %d salas, %d en plantilla, " ..
+    "%d puntos de aparición, fecha %s"):format(#objetos, #listas, #basura, #salas, #personal, #puntos, d:tostring())
   return doc, resumen
 end
 

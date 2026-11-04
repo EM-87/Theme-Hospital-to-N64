@@ -1802,9 +1802,16 @@ static int load_scenario(th_sim *s)
         // Su sitio en world.objects de la casilla (sin él, el de entities).
         orden[s->n_obj] = (uint8_t)th_rules_int(r, get(r, o, "orden"), 255);
         ob->room = (uint8_t)th_rules_int(r, get(r, o, "sala"), 0);
+        // Un objeto cogido al guardar (con su ventana de colocar abierta): aún no.
+        if (th_rules_bool(r, get(r, o, "recogido"), 0))
+            return -27;
         object_sim_init(s, s->n_obj);
         s->n_obj++;
     }
+    // La basura del suelo: aún no se carga (su sitio en las listas, su
+    // animación y que tras cargar CorsixTH no tiene su thob en la lista de tipos).
+    if (th_rules_len(r, get(r, root, "basura")) > 0)
+        return -28;
     load_object_lists(s, orden);
     // Salas.
     th_rnode salas = get(r, root, "salas"), defs_salas = get(s->defs, s->defs->root, "salas");

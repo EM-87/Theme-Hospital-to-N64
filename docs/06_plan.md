@@ -1,6 +1,6 @@
 # Fase 6 — Juego base: el nivel 1 jugable
 
-Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos, el importador de arte nuevo y el paso 1 del 6.3 ([`06_juego_base.md`](06_juego_base.md)); sigue el 6.3, construir, por pasos ([abajo](#construir-hito-63-por-pasos)): el siguiente es el 2, las órdenes y amueblar el pasillo. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
+Fecha: 2026-10-27; revisado el 2026-10-28 con lo que decidió Eduardo tras ver el hito 6.2 ([abajo](#lo-que-decidió-eduardo-tras-el-hito-62)). Estado: **en curso**: hitos 6.1, 6.2 y 6.2b hechos, el importador de arte nuevo y los pasos 1 y 2 del 6.3 ([`06_juego_base.md`](06_juego_base.md)); sigue el 6.3, construir, por pasos ([abajo](#construir-hito-63-por-pasos)): el siguiente es el 3, las salas rectangulares. Eduardo dejó elegir el orden ([abajo](#el-orden-la-interfaz-primero)): la interfaz va primero.
 
 **Objetivo: el nivel 1 de Theme Hospital, de principio a fin, en la ROM.**
 - Se empieza con el edificio vacío y 40.000 $.
@@ -221,6 +221,7 @@ La lectura del código de CorsixTH (2026-11-04) dice cómo girarlos: el sur es e
    - La cola de órdenes: cada orden lleva su tick, se aplica al empezarlo y se graba para repetirla.
    - Comprar, colocar y vender objetos de pasillo, con las validaciones de CorsixTH y el bloqueo de zonas en el modo 2. El bloqueo usa una búsqueda propia, porque el buscador de la simulación puede estar a medias.
    - `th64sim construir` y la batería en CorsixTH: aceptadas y rechazadas una a una, las 16.384 casillas y el dinero movimiento a movimiento.
+   - **Hecho** el 2026-11-04 ([cifras](06_juego_base.md#hito-63-paso-2--amueblar-el-pasillo)): las 175 órdenes del pasillo del nivel 1 dan lo mismo en el núcleo que en CorsixTH. La comprobación de la vista previa con una búsqueda propia queda para la interfaz (paso 7): las órdenes se aplican al empezar el tick, donde el buscador de la simulación no está a medias.
 3. **Las salas rectangulares.**
    - El plano, la puerta, las ventanas y las paredes, con los juegos de paredes en las reglas.
    - Despejar, los objetos de la sala y confirmar.

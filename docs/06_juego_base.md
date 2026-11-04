@@ -585,5 +585,68 @@ El que falta es el hospital del README del hito 4: su partida guardada no es la 
 
 ### Pendiente
 
-- **La basura no entra todavía en las listas de su casilla**, salvo para abrir la de `world.objects`. En CorsixTH entra en las dos (thob 62): cambia el primer objeto de la casilla, tapa en `isTilePartOfNearbyObject` a los objetos de su casilla y cuenta en el `ipairs` de `resetSideObjects`. Hará falta en el paso 2, cuando colocar un objeto tenga que quitar la basura de debajo (`prepareFootprintTilesForBuild`). Entonces habrá que tratar también la tabla llena ([La revisión](#la-revisión)).
+- ~~**La basura no entra todavía en las listas de su casilla**~~: entra desde el [paso 2](#hito-63-paso-2--amueblar-el-pasillo), con la tabla de casillas con varias cosas más grande.
 - **La simulación sigue cargando las banderas que calculó CorsixTH.** Podría rehacerlas como `th64sim banderas`, pero de los objetos de borde no se sabe si cortaron el paso. Cambiará con las órdenes, cuando el motor mueva objetos.
+
+## Hito 6.3, paso 2 — Amueblar el pasillo
+
+**Hecho** (falta la revisión adversarial). El núcleo aplica las órdenes de amueblar el pasillo como las ventanas de CorsixTH, y una batería las compara una a una:
+- **las órdenes**: comprar, colocar, cerrar, coger, vender y deshacer. Copian `UIFurnishCorridor`, `UIPlaceObjects` y `Object:onClick`, con sus comprobaciones: casilla a casilla, el bloqueo de zonas en el modo 2, los objetos de borde, las casillas de uso exclusivas y alguien delante;
+- **el dinero**: lo que se paga y se devuelve, con el valor del hospital;
+- **la cola de órdenes**: cada orden se aplica al empezar el tick de su hora;
+- **la batería**: CorsixTH aplica una lista de órdenes llamando a lo mismo que su interfaz, y `th64sim construir` la repite con el núcleo. **Las 175 órdenes del pasillo del nivel 1 dan lo mismo en los dos**: el resultado, el motivo, el dinero, las 16.384 casillas tras cada orden y los objetos;
+- **la basura entra en las listas de su casilla**, y colocar un objeto encima la quita (`prepareFootprintTilesForBuild`).
+
+### Qué hay
+
+| Parte | Fichero |
+|---|---|
+| Las órdenes, sus comprobaciones y sus motivos de rechazo; la ventana de colocar; el dinero; la cola | [`core/include/th/build.h`](../motor/core/include/th/build.h), [`core/src/build.c`](../motor/core/src/build.c) |
+| Crear y quitar objetos en marcha (`th_sim_new_object`, `th_sim_destroy_object`), con las colas de los mostradores, que se reutilizan. Quitar la basura de una casilla. La huella, con el valor del hospital, la ventana de colocar y la cola | [`core/src/sim.c`](../motor/core/src/sim.c) |
+| La huella de una definición, `isTileExclusivelyPassable`, ocupar y desocupar sueltos (para comprobar el sitio nuevo de un objeto cogido) y la basura en `world.objects` | [`core/src/objects.c`](../motor/core/src/objects.c) |
+| La batería en CorsixTH: el intérprete de órdenes y el guion, que escribe el punto de partida y, orden a orden, el resultado, el dinero, las casillas que cambian y los objetos | [`bench/lib/ordenes.lua`](../bench/lib/ordenes.lua), [`bench/scenarios/construir.lua`](../bench/scenarios/construir.lua) |
+| La lista del pasillo: 175 órdenes escritas a mano, cada caso con un comentario que dice qué prueba | [`tools/hito6/ordenes/pasillo.tsv`](../tools/hito6/ordenes/pasillo.tsv) |
+| `th64sim construir`, que repite la lista con el núcleo y la compara; todo junto, `construir.sh` | [`platform/pc/construir.c`](../motor/platform/pc/construir.c), [`tools/hito6/construir.sh`](../tools/hito6/construir.sh) |
+| El exportador de escenarios, compartido por `exportar_escenario.lua` y la batería. Ahora saca también los dueños de las parcelas, la basura y los objetos cogidos | [`bench/lib/escenario.lua`](../bench/lib/escenario.lua) |
+| Las pruebas de las órdenes, sin datos del juego | [`tests/test_build.c`](../motor/tests/test_build.c) |
+
+### Lo que se copia de CorsixTH
+
+- **Una ventana cierra a la otra.** Las dos son «main» (`UI:addWindow`). Por eso comprar con la ventana de colocar abierta la cierra primero, aunque la compra se rechace después: lo comprado y sin colocar se devuelve al 100 %, y lo cogido se vende.
+- **Con la ventana de colocar abierta no se puede coger nada.** La ventana apaga los clics sobre el mundo, y el clic derecho gira el plano. Es el motivo `otra_ventana`.
+- **Comprar n es pulsar n veces «+».** Cada pulsación mira el dinero (el saldo tiene que llegar al total) y el tope de 99. Si falla una, no se compra nada: `sin_dinero`, o `maximo` si se piden más de 99.
+- **Cerrar y vender son lo mismo en el pasillo**, `close(false)`: devuelven lo comprado y venden lo cogido. **Deshacer**, `close(true)`, devuelve lo comprado y pone lo cogido en su sitio, sin comprobar nada. Mover y girar son gratis.
+- **Un objeto cogido sigue en el mapa**, invisible, con sus banderas. Al comprobar su sitio nuevo, las casillas se miran sin su huella antigua, pero el bloqueo de zonas se mira con ella.
+- **Las rarezas de las comprobaciones**:
+  - `isIsolated` deja la huella pasable el resto de la comprobación;
+  - comprobar un objeto de borde deja el tránsito de las dos casillas a 1, no como estaba;
+  - la papelera al este ocupa el borde oeste;
+  - una casilla mala invisible (la de uso del banco) no cuenta en `casillas:n`, y entonces el motivo es `bloqueo`;
+  - una casilla de uso compartible se salta la regla de una sola cosa por casilla.
+
+### Comprobaciones
+
+| Qué | Contra qué | Resultado |
+|---|---|---|
+| La lista del pasillo: 175 órdenes (comprar 38, colocar 96, coger 19, cerrar 14, vender 4 y deshacer 4) | CorsixTH, con `tools/hito6/construir.sh` | **175 de 175 iguales**: el resultado y el motivo, el saldo, el valor del hospital, `money_in`, `money_out`, los 330 movimientos de dinero, las 16.384 casillas tras cada orden y la lista de objetos. **0 casillas distintas** al final. Son 130 aceptadas y 45 rechazadas por 10 motivos (`casillas:n` 16, `bloqueo` 10, `sin_ventana` 5, `sin_dinero` 4, `sin_objeto` 3, `no_se_puede` 2, `orientacion` 2, `maximo`, `no_es_de_pasillo` y `otra_ventana` 1) |
+| La batería misma | Tres ejecuciones; el punto de partida más los cambios; el saldo con sus movimientos | **Los 9 ficheros iguales byte a byte**; el inicio más los 139 cambios da el final, con **0 casillas distintas**; cada saldo es el anterior más sus movimientos |
+| `persona` y la cola de órdenes | Pruebas del núcleo (la batería no tiene gente) | Alguien en el origen, o en una vecina caminando hacia él, rechaza la orden; la cola aplica cada orden en su hora |
+| Pruebas del núcleo | — | **209.291 comprobaciones, 0 fallos**, también con ASan y UBSan (101 nuevas de las órdenes y 78 del paso 1) |
+| La simulación | El motor de antes, en los hospitales de los hitos 4 (3.000 horas) y 5 (9.000 horas) y en el de las vistas (2.000 horas) | **Trazas idénticas**, con la basura en las listas de su casilla. Solo cambia la huella |
+| Las banderas del paso 1 | `tools/hito6/banderas.sh` | 12 niveles, el nivel 1 completo y **52 de 52 hospitales con 0 casillas distintas** |
+| El exportador | El de antes, con 3 partidas; una del nivel 2 con la parcela 2 comprada | Mismos ficheros, más los campos nuevos. La parcela comprada se carga con su dueño y volver a comprarla no repite sus puertas. Con basura, el núcleo rechaza el escenario |
+
+### Coste y memoria
+
+- **El mapa:** 266.864 B, 1.792 más que con el paso 1. La tabla de casillas con varias cosas crece a 128 casillas de 16: en el hito 5, sin bedeles, los vómitos amontonan hasta 10 cosas en una casilla, y 19 casillas tienen más de una en 9.000 horas. Lo que no cabe se cuenta (`thob_lost`); en esas corridas, 0.
+- **La simulación:** 218.192 B, 2.448 más. Son la ventana de colocar, la cola de 16 órdenes y el orden de cada basura en su casilla.
+- **En el PC:** `th64sim construir` repite y compara las 175 órdenes en 2,2 s, casi todo en comparar el mapa entero tras cada orden.
+- **En la N64, una orden aún no se ha medido.** Lo que puede costar: el bloqueo de zonas (una búsqueda de camino por cada par de vecinas), `isTileExclusivelyPassable` (una búsqueda de hasta 10 pasos por casilla de la huella) y la temperatura, que tras cada orden vuelve a mirar el mapa entero. Se medirá con la interfaz (paso 7).
+
+### Pendiente
+
+- **Los pacientes no se enteran todavía de lo que se construye.** Coger o vender un objeto que alguien usa (`Humanoid:handleRemovedObject`) y el aviso de un banco nuevo (`Hospital:objectPlaced`) quedan para cuando se construya con gente: la batería no tiene humanoides.
+- **Las ratoneras.** CorsixTH las hace cada día según la basura ([plan](06_plan.md#theme-hospital-64-no-corsixth-64)), y colocar encima las quita. El motor aún no las tiene.
+- **Los escenarios con basura o con un objeto cogido** se exportan, pero el núcleo los rechaza hasta que sepa cargarlos.
+- **El orden de los mostradores.** CorsixTH los recorre con `pairs(world.objects)`, y el orden cambia cuando se abren listas nuevas; el núcleo usa el de creación. Con un empate de puntuación, un paciente puede ir a otro mostrador. Es otra diferencia de `pairs()`, como las del paso 1.
+- **La vista previa de la interfaz** no puede usar el buscador de la simulación, que puede estar a medias. Necesitará una búsqueda propia (paso 7).
