@@ -1,0 +1,377 @@
+# Hito 6.3, paso 2: amueblar el pasillo del nivel 1, sin salas y sin gente.
+# Una orden por línea, con tabuladores (bench/lib/ordenes.lua); coordenadas
+# desde 0. Encima de cada caso, qué prueba y qué da en CorsixTH v0.70.1. El
+# dinero empieza en 40.000 (el valor del hospital, en 43.525) y los precios son
+# los del nivel 1: mostrador 150, banco 40, máquina de bebidas 500, extintor 25,
+# radiador 20, papelera 5 y planta 5. Comprar cobra al confirmar; devolver o
+# vender da el precio entero; colocar, mover, girar y deshacer no cuestan nada.
+#
+# El hospital del nivel 1: el ala norte (57..70, 50..57), la sala grande
+# (49..78, 58..70), el ala este (83..93, 58..70), unida a la sala grande solo
+# por un estrecho de 3 casillas (79..82, 68..70), y el vestíbulo (57..70,
+# 71..78), con las dos puertas de la entrada en (63,79) y (64,79), fuera del
+# hospital. Sus casillas de paso son (63..65,78) y (63..65,79): no se puede
+# construir en las de dentro y ninguna huella puede usarlas
+# (World:isTileExclusivelyPassable).
+#
+# Motivos que no salen aquí: «persona» necesita gente en el mapa y «pausa»,
+# que el mundo no deje actuar (world.user_actions_allowed): la batería va en
+# pausa con allow_user_actions_while_paused y sin nadie.
+
+# --- El dinero al empezar: el límite exacto ------------------------------------
+# 81 máquinas de bebidas son 40.500 y el saldo es 40.000: la pulsación 81 de
+# «+» falla (purchaseItem exige saldo ≥ total). Rechazada, sin_dinero; se cancela
+# la ventana de amueblar y no se compra nada.
+comprar	drinks_machine	81
+# 80 son 40.000, justo el saldo: aceptada. El saldo queda en 0.
+comprar	drinks_machine	80
+# Colocar una (ya está pagada), en el ala este: aceptada.
+colocar	drinks_machine	90	66	north
+# Con saldo 0 y 79 máquinas en la ventana, comprar una planta: la ventana de
+# amueblar cierra antes la de colocar, que devuelve las 79 (+500 × 79), y
+# después la planta ya se puede pagar (-5). Aceptada.
+comprar	plant	1
+colocar	plant	91	64	north
+
+# --- Las órdenes del pasillo del prototipo (1-8), en el vestíbulo ---------------
+# Comprar un mostrador: cobra 150 al confirmar y abre la ventana de colocar.
+comprar	reception_desk	1
+# El mostrador en la puerta de la entrada: las 5 casillas de su huella, malas
+# (3 fuera del hospital, la de paso de dentro es de la puerta y la de fuera es
+# de otro dueño): rechazada, casillas:5.
+colocar	reception_desk	63	79	north
+# En el vestíbulo: aceptada; era la última unidad y la ventana se cierra.
+colocar	reception_desk	62	74	north
+# Tres bancos: 120.
+comprar	bench	3
+# Un banco mirando al norte (su casilla de uso, la de arriba): aceptada.
+colocar	bench	66	76	north
+# Otro en la misma casilla, al este: la casilla ya no es construible.
+# Rechazada, casillas:1.
+colocar	bench	66	76	east
+# Al sur, con su uso en (68,77): aceptada.
+colocar	bench	68	76	south
+# Cerrar con un banco sin colocar: lo devuelve (+40). Aceptada.
+cerrar
+
+# --- Sin ventana y lo que no se puede coger -------------------------------------
+# Sin ventana de colocar: cerrar, vender, deshacer y colocar dan sin_ventana.
+cerrar
+vender
+deshacer
+colocar	bench	60	60	north
+# Un objeto de las salas no está en la ventana de amueblar el pasillo:
+# rechazada, no_es_de_pasillo.
+comprar	desk	1
+# Recoger donde no hay ningún objeto: rechazada, sin_objeto.
+recoger	60	60
+# Las puertas de la entrada son objetos, pero no de pasillo: Object:onClick no
+# hace nada (object.lua:772-775). Rechazadas, no_se_puede.
+recoger	63	79
+recoger	64	79
+
+# --- Fuera del mapa y fuera del hospital ----------------------------------------
+comprar	bench	1
+# El banco en (0,0), fuera del hospital, con su uso en (0,-1), fuera del mapa:
+# las dos casillas cuentan (la de fuera del mapa, aunque sea invisible).
+# Rechazada, casillas:2.
+colocar	bench	0	0	north
+# Igual en la esquina de abajo a la derecha: el uso en (128,127). Casillas:2.
+colocar	bench	127	127	east
+# En la calle, delante de la entrada: (64,80) no es construible ni del jugador.
+# Su uso, (64,79), la casilla de fuera de la puerta, también falla (su borde sur
+# no es construible), pero es invisible y no se cuenta. Casillas:1.
+colocar	bench	64	80	north
+cerrar
+
+# --- Un pasillo de una casilla, hecho con plantas (prototipo, 38-49) ------------
+# En el ala norte, dos filas de plantas, en x = 60 y x = 62 de y = 50 a 53, dejan
+# un pasillo sin salida en x = 61 que solo se abre por (61,54). Cada planta deja
+# sus vecinas unidas: aceptadas. La octava cierra la ventana.
+comprar	plant	8
+colocar	plant	60	50	north
+colocar	plant	60	51	north
+colocar	plant	60	52	north
+colocar	plant	60	53	north
+colocar	plant	62	50	north
+colocar	plant	62	51	north
+colocar	plant	62	52	north
+colocar	plant	62	53	north
+comprar	bench	3
+# En la ventana solo hay bancos: colocar una planta da sin_objeto.
+colocar	plant	61	55	north
+# Un banco al fondo del pasillo deja (61,50..51) sin salida: el modo estricto del
+# pasillo no deja (World:wouldNonSideObjectBreakPathfindingIfSpawnedAt).
+# Rechazada, bloqueo.
+colocar	bench	61	52	north
+# Uno más abajo deja (61,52) sin salida: bloqueo.
+colocar	bench	61	53	north
+# Fuera del pasillo, con el uso en su boca (61,54): aceptada.
+colocar	bench	61	55	north
+# Dos bancos sin colocar: +40 +40.
+cerrar
+comprar	radiator	3
+# Un radiador en el borde norte de (61,54) corta la única entrada del pasillo:
+# (61,53) queda sin camino a (61,54). Rechazada, bloqueo.
+colocar	radiator	61	54	north
+# En el ala norte, lejos del pasillo: aceptada.
+colocar	radiator	65	55	north
+# Contra la fachada norte, al fondo del pasillo: el borde ya no tiene paso
+# (travelNorth es 0), así que vale sin más. Aceptada.
+colocar	radiator	61	50	north
+# En la misma casilla, al oeste (contra una planta): una sola cosa por casilla
+# (la comprobación 4 mira el thob). Rechazada, casillas:1.
+colocar	radiator	61	50	west
+# Un radiador sin colocar: +20.
+cerrar
+
+# --- La entrada -------------------------------------------------------------------
+comprar	drinks_machine	1
+# La máquina con su uso (exclusivo) en la casilla de paso de la puerta (64,78):
+# World:isTileExclusivelyPassable lo prohíbe. Rechazada, casillas:1.
+colocar	drinks_machine	64	77	south
+# Deshacer con una máquina comprada y sin colocar: también la devuelve (+500);
+# solo lo cogido vuelve a su sitio.
+deshacer
+comprar	bench	1
+# Un banco igual: su uso es compartible y se salta esa comprobación. Aceptada.
+colocar	bench	64	77	south
+comprar	plant	2
+# En la casilla de paso de la puerta (no es construible): casillas:1.
+colocar	plant	64	78	north
+# Junto a la puerta, en (66,77): aceptada.
+colocar	plant	66	77	north
+# Devuelve la otra planta: +5.
+cerrar
+comprar	radiator	4
+# En el borde de la puerta, dentro: las casillas de paso de la puerta no
+# admiten nada. Rechazadas, casillas:1.
+colocar	radiator	64	78	south
+colocar	radiator	63	78	south
+colocar	radiator	65	78	east
+# Contra la fachada sur, al lado de la puerta: aceptada.
+colocar	radiator	62	78	south
+# En (66,78), el borde oeste da a la casilla de paso (65,78): la casilla del
+# radiador es buena y hay camino alrededor. Aceptada.
+colocar	radiator	66	78	west
+# Devuelve dos radiadores: +20 +20.
+cerrar
+
+# --- Los 7 objetos de pasillo en todas sus orientaciones ------------------------
+# Mostradores, al oeste de la sala grande. Aceptadas.
+comprar	reception_desk	4
+colocar	reception_desk	51	60	north
+colocar	reception_desk	55	60	east
+colocar	reception_desk	51	65	south
+colocar	reception_desk	55	65	west
+# Bancos: usos en (58,59), (62,60), (64,61) y (66,60). Aceptadas.
+comprar	bench	4
+colocar	bench	58	60	north
+colocar	bench	61	60	east
+colocar	bench	64	60	south
+colocar	bench	67	60	west
+# Máquinas de bebidas: usos en (58,62), (62,63), (64,64) y (66,63). Aceptadas.
+comprar	drinks_machine	4
+colocar	drinks_machine	58	63	north
+colocar	drinks_machine	61	63	east
+colocar	drinks_machine	64	63	south
+colocar	drinks_machine	67	63	west
+# Plantas (las cuatro orientaciones tienen la misma huella). Aceptadas.
+comprar	plant	4
+colocar	plant	58	66	north
+colocar	plant	61	66	east
+colocar	plant	64	66	south
+colocar	plant	67	66	west
+# Extintores, en un borde de su casilla. Aceptadas.
+comprar	extinguisher	4
+colocar	extinguisher	70	60	north
+colocar	extinguisher	73	60	east
+colocar	extinguisher	76	60	south
+colocar	extinguisher	70	63	west
+# Radiadores. Aceptadas.
+comprar	radiator	4
+colocar	radiator	73	63	north
+colocar	radiator	76	63	east
+colocar	radiator	70	66	south
+colocar	radiator	73	66	west
+# La papelera solo tiene norte y este: sur y oeste se rechazan (orientacion).
+comprar	bin	3
+colocar	bin	76	66	south
+colocar	bin	76	66	west
+colocar	bin	76	66	north
+# Al este se pone en el borde oeste de su casilla (el apaño de la papelera,
+# place_objects.lua:803-805 y object.lua:468-471). Aceptada.
+colocar	bin	76	69	east
+# Al este en (57,52): su borde oeste es la pared del ala norte, sin paso. Aceptada.
+colocar	bin	57	52	east
+
+# --- Radiadores y complete_cell -------------------------------------------------
+comprar	plant	2
+# En la casilla del radiador del borde este de (76,63): el borde ya no es
+# construible y la casilla ya tiene objeto. Rechazada, casillas:1.
+colocar	plant	76	63	north
+# Al otro lado de ese mismo borde, en (77,63): el radiador solo quita
+# buildableEast de su casilla, no buildableWest de la vecina. Aceptada.
+colocar	plant	77	63	north
+# Devuelve la otra planta: +5.
+cerrar
+comprar	radiator	3
+# Dos radiadores en el mismo borde, espalda con espalda: el borde sur de
+# (73,62) es el norte de (73,63), que ya tiene uno. Su casilla es buena y el
+# borde ya no tiene paso, así que vale. Aceptada.
+colocar	radiator	73	62	south
+# El mismo borde, desde la misma casilla: casillas:1.
+colocar	radiator	70	66	south
+# Otro borde de una casilla que ya tiene radiador: una sola cosa por casilla.
+# Casillas:1.
+colocar	radiator	73	66	north
+cerrar
+comprar	bench	1
+# Un banco al sur en (73,61) tiene su uso en (73,62), la casilla del radiador
+# de espalda (thob 44): una casilla de uso compartible se salta la comprobación
+# de una sola cosa por casilla, y su borde norte, el que da al banco, sigue
+# construible. Aceptada.
+colocar	bench	73	61	south
+
+# --- Usos compartidos, en el ala este ---------------------------------------------
+comprar	bench	3
+# Dos bancos frente a frente comparten la casilla de uso (85,61), que es
+# compartible. Aceptadas.
+colocar	bench	85	62	north
+colocar	bench	85	60	south
+# Comprar con la ventana de colocar abierta: la ventana de amueblar la cierra
+# antes (UI:addWindow, ui.lua:1048-1054) y devuelve el banco que quedaba (+40);
+# después cobra las dos máquinas (-1.000). Aceptada.
+comprar	drinks_machine	2
+colocar	drinks_machine	88	62	north
+# Su uso caería en el uso exclusivo de la otra máquina, (88,61). Rechazada,
+# casillas:1.
+colocar	drinks_machine	88	60	south
+# Una máquina con su uso en (85,61), el de los dos bancos: el uso de los bancos
+# es compartible y no cuenta. Aceptada (y cierra la ventana).
+colocar	drinks_machine	84	61	east
+comprar	bench	1
+# Un banco con su uso (compartible) en el uso exclusivo de la máquina de
+# (88,62): el banco se salta esa comprobación. Aceptada.
+colocar	bench	88	60	south
+
+# --- El estrecho del este (79..82, 68..70) --------------------------------------
+comprar	reception_desk	1
+# Un mostrador al este en (80,69) ocupa las tres casillas del estrecho y parte
+# el pasillo en dos: rechazada, bloqueo.
+colocar	reception_desk	80	69	east
+# Devuelve el mostrador: +150.
+cerrar
+comprar	plant	3
+# Una planta arriba y otra abajo dejan una sola casilla de paso, (80,69).
+# Aceptadas.
+colocar	plant	80	68	north
+colocar	plant	80	70	north
+# Una tercera en (80,69) parte el pasillo: rechazada, bloqueo.
+colocar	plant	80	69	north
+cerrar
+comprar	bench	1
+# Un banco en (80,69) mirando al norte tiene su uso en la planta de (80,68): la
+# casilla de uso falla, pero es invisible y no se cuenta. Rechazada, bloqueo.
+colocar	bench	80	69	north
+# Mirando al este, el banco corta el último paso: rechazada, bloqueo.
+colocar	bench	80	69	east
+# Vender con un banco comprado y sin colocar: en el pasillo es lo mismo que
+# cerrar (UIPlaceObjects:sell), lo devuelve (+40).
+vender
+comprar	radiator	3
+# Un radiador en el borde oeste o este de (80,69) corta el único paso
+# (_isSideObjectPlacementValid: no hay camino de un lado al otro y el otro lado
+# es pasable). Rechazadas, bloqueo.
+colocar	radiator	80	69	west
+colocar	radiator	80	69	east
+# En el borde norte da a la planta, que no es pasable: vale. Aceptada.
+colocar	radiator	80	69	north
+cerrar
+# Mover la planta de (80,68) a (81,69): las casillas se miran sin la planta,
+# pero el no bloquear se mira con la planta todavía en su sitio
+# (place_objects.lua:778-782, 856-859), y así (80,69) queda aislada. Rechazada,
+# bloqueo, aunque sin la planta vieja habría paso.
+recoger	80	68
+colocar	plant	81	69	north
+# A (82,68) sí: aceptada, sin dinero.
+colocar	plant	82	68	north
+
+# --- Recoger, mover, girar, deshacer y vender -----------------------------------
+# Recoger el banco de (58,60): aceptada; queda en el mapa, invisible.
+recoger	58	60
+# Con la ventana de colocar abierta no se puede coger otro objeto (la ventana
+# apaga la prueba del mundo y se queda el clic derecho para girar). Rechazada,
+# otra_ventana.
+recoger	61	60
+# Moverlo a (58,57), en el ala norte: aceptada, gratis.
+colocar	bench	58	57	north
+# Girar el banco de (61,60) en su casilla, de este a sur: aceptada.
+recoger	61	60
+colocar	bench	61	60	south
+# Moverlo a su misma casilla y orientación: aceptada, no cambia nada.
+recoger	64	60
+colocar	bench	64	60	south
+# Recoger el banco de (67,60) y soltarlo encima de la máquina de (64,63): no
+# cabe (casillas:1) y la ventana sigue abierta con el banco cogido. Deshacer lo
+# devuelve a su sitio sin comprobar nada y sin dinero. Aceptada.
+recoger	67	60
+colocar	bench	64	63	north
+deshacer
+# Recoger y vender (las órdenes 61-62 del prototipo): el banco de (66,76)
+# devuelve su precio (+40) y se destruye. Aceptadas.
+recoger	66	76
+vender
+# Recoger y cerrar: el botón de cancelar también vende lo cogido (+500, la
+# máquina de (61,63)).
+recoger	61	63
+cerrar
+# Mover el mostrador de (51,60) una casilla al sur: su casilla de paso (51,61)
+# pasa a ser sólida; las casillas se miran sin el mostrador. Aceptada.
+recoger	51	60
+colocar	reception_desk	51	61	north
+# Un radiador a su mismo borde (same_placement): aceptada.
+recoger	70	66
+colocar	radiator	70	66	south
+# Girarlo en su casilla, de sur a este: aceptada.
+recoger	70	66
+colocar	radiator	70	66	east
+# Pasar el radiador del borde oeste de (73,66) al otro lado del mismo borde, el
+# este de (72,66): ese borde no tiene paso mientras el radiador está (invisible)
+# en su sitio, así que vale. Aceptada.
+recoger	73	66
+colocar	radiator	72	66	east
+# Vender un radiador: +20, y rehace el paso de todo el mapa
+# (rebuildPassableCellFlags).
+recoger	76	63
+vender
+# Un extintor, recoger y deshacer.
+recoger	73	60
+deshacer
+
+# --- Dinero: 99 unidades, el máximo y sin dinero --------------------------------
+# 99 plantas: -495. Aceptada.
+comprar	plant	99
+# 100: la ventana de amueblar cierra antes la de las 99 plantas (+5 × 99) y la
+# pulsación 100 falla con 99 ya en la ventana. Rechazada, maximo.
+comprar	plant	100
+comprar	plant	99
+# Comprar 0 de algo: la ventana de amueblar cierra la de colocar (+5 × 99) y se
+# confirma sin nada. Aceptada, y no queda ninguna ventana.
+comprar	bin	0
+# Así que cerrar ya no tiene ventana: sin_ventana.
+cerrar
+# 99 máquinas son 49.500: rechazada, sin_dinero.
+comprar	drinks_machine	99
+# Las 80 máquinas que al principio se pagaban justas, con lo gastado desde
+# entonces (quedan 35.430): rechazada, sin_dinero.
+comprar	drinks_machine	80
+
+# --- Comprar mientras se mueve un objeto ----------------------------------------
+# Con un banco cogido, abrir la ventana de amueblar cierra la de colocar con
+# close(nil): el banco se vende (+40) y se destruye, aunque la compra se
+# rechace después por falta de dinero.
+recoger	58	57
+comprar	drinks_machine	99
+# El banco ya no está: sin_objeto.
+recoger	58	57

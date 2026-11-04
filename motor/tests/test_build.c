@@ -168,6 +168,12 @@ static void test_comprar_colocar(void)
     // Sin dinero, no compra; y lo que no es de pasillo, tampoco. Las dos
     // cierran antes la ventana de colocar (el banco vuelve: +40).
     TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 99, NULL), TH_REASON_SIN_DINERO);
+    // Más de 99, con dinero para 99: la centésima pulsación falla y no se compra nada.
+    sim.hosp.balance += 1000;
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 100, NULL), TH_REASON_MAXIMO);
+    TH_CHECK_EQ(sim.place.open, 0);
+    TH_CHECK_EQ(sim.hosp.balance, 1140);
+    sim.hosp.balance -= 1000;
     TH_CHECK_EQ(sim.hosp.balance, 140);
     TH_CHECK_EQ(sim.place.open, 0);
     TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "desk", 0, 0, 0, 1, NULL), TH_REASON_NO_ES_DE_PASILLO);
@@ -183,6 +189,11 @@ static void test_coger(void)
     orden(TH_ORD_COLOCAR, "bench", 10, 10, TH_DIR_NORTH, 0, NULL);
     TH_CHECK(banderas(10, 9) != antes);
     TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 11, 11, 0, 0, NULL), TH_REASON_SIN_OBJETO);
+    // Con la ventana de colocar abierta, el clic no llega al banco.
+    orden(TH_ORD_COMPRAR, "plant", 0, 0, 0, 1, NULL);
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 10, 10, 0, 0, NULL), TH_REASON_OTRA_VENTANA);
+    TH_CHECK_EQ(sim.place.open, 1);
+    orden(TH_ORD_CERRAR, NULL, 0, 0, 0, 0, NULL);
     TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 10, 10, 0, 0, NULL), TH_REASON_OK);
     TH_CHECK_EQ(sim.obj[0].oflags & TH_OBJF_PICKED_UP, TH_OBJF_PICKED_UP);
     TH_CHECK_EQ(th_map_thob_at(&mapa, 10, 10, 0), 4); // sigue en el mapa

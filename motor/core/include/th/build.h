@@ -36,7 +36,8 @@ enum {
     TH_REASON_BLOQUEO,
     TH_REASON_PERSONA,
     TH_REASON_NO_SE_PUEDE,
-    TH_REASON_ORDEN, // orden que no existe
+    TH_REASON_ORDEN,        // orden que no existe
+    TH_REASON_OTRA_VENTANA, // con la ventana de colocar abierta, el clic no llega al mundo
 };
 
 // th_order y th_order_result están en th/sim.h, que los guarda en la cola.

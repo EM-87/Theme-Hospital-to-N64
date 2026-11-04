@@ -7,6 +7,7 @@ source tools/env.sh
 tools/hito6/panel.sh        # el panel inferior contra CorsixTH (unos 30 s)
 tools/hito6/vistas.sh       # las cuatro vistas contra el hospital girado en CorsixTH (unos 2 minutos)
 tools/hito6/banderas.sh     # hito 6.3: las banderas del mapa calculadas por el núcleo contra CorsixTH (unos 17 s)
+tools/hito6/construir.sh    # hito 6.3: las órdenes de construir, CorsixTH contra el núcleo (unos 20 s por lista)
 ```
 
 | Fichero | Qué hace |
@@ -20,6 +21,11 @@ tools/hito6/banderas.sh     # hito 6.3: las banderas del mapa calculadas por el 
 | `banderas.sh [dir]` | Hito 6.3, paso 1. Compara con CorsixTH las banderas que calcula el núcleo: los 12 niveles recién cargados (con los volcados del hito 2), el nivel 1 con todas las columnas de `getCellFlags` y los hospitales exportados de las campañas de los hitos 4 y 5 y el de las vistas, rehechos desde sus salas y sus objetos con `th64sim banderas` |
 | [`bench/scenarios/celdas_nivel.lua`](../../bench/scenarios/celdas_nivel.lua) | Las 16.384 casillas de un nivel recién cargado, con todas las columnas de `getCellFlags` (`--th64-nivel=N`) |
 | [`bench/scenarios/rarezas_objetos.lua`](../../bench/scenarios/rarezas_objetos.lua) | Las rarezas de ocupar y desocupar de CorsixTH que copian las pruebas del núcleo (`motor/tests/test_objects.c`): `resetSideObjects` con dos objetos de borde en una casilla, dos radiadores en el mismo borde, casillas de uso compartidas y el primer objeto que tapa a los demás |
+| `construir.sh [lista.tsv ...]` | Hito 6.3, paso 2. La batería de construir: para cada lista de órdenes (por defecto, las de `ordenes/`), CorsixTH la aplica como su interfaz, el punto de partida pasa a TRG1 con `tools/oraculo_hito4/escenario.py` y `th64sim construir` la repite con el núcleo y la compara orden a orden. Para en la primera orden distinta (con `SEGUIR=1`, sigue). Salida en `$TH64_WORK/resultados/hito6/construir/<lista>` |
+| [`bench/scenarios/construir.lua`](../../bench/scenarios/construir.lua) | El lado de CorsixTH (`--th64-ordenes=<lista>`, con la ruta absoluta; `--th64-nivel=N`, por defecto 1): carga el nivel en pausa, sin gente y con el bloqueo de zonas en el modo 2, y aplica las órdenes. Escribe el punto de partida (`inicio/celdas.tsv` e `inicio/escenario.json`, en el formato de `exportar_escenario.lua`) y, orden a orden, el resultado y el motivo (`resultados.tsv`), el dinero movimiento a movimiento (`dinero.tsv`), las casillas que cambian (`cambios.tsv`) y la lista de objetos cuando cambia (`objetos.tsv`); al final, el estado entero. Unos 17 s para las 175 órdenes del pasillo; dos ejecuciones dan los mismos ficheros byte a byte |
+| [`bench/lib/ordenes.lua`](../../bench/lib/ordenes.lua) | El intérprete de órdenes: `comprar`, `colocar`, `cerrar`, `recoger`, `vender` y `deshacer` llaman a lo mismo que la interfaz de CorsixTH, con sus mismas condiciones, y dan el motivo del rechazo. Cuenta qué ventana cierra a cuál y qué se devuelve o se vende al cerrarla |
+| [`bench/lib/escenario.lua`](../../bench/lib/escenario.lua) | El formato de `celdas.tsv` y `escenario.json`, que comparten `exportar_escenario.lua` y la batería de construir |
+| [`ordenes/pasillo.tsv`](ordenes/pasillo.tsv) | La lista del paso 2, escrita a mano: amueblar el pasillo del nivel 1 sin salas. 175 órdenes, 130 aceptadas y 45 rechazadas por 10 motivos, con un comentario encima de cada caso que dice qué prueba y qué da en CorsixTH |
 | `comparar_panel.py <dir> [--dif]` | Compara las capturas con lo que dibuja `th64sim panel alta`, donde pinta la interfaz. Las letras y los rectángulos tienen que ser iguales; las piezas del panel se cuentan por la mayor diferencia de un componente, porque CorsixTH las dibuja con filtrado lineal |
 
 En la ROM de pruebas (`make -C motor PRUEBAS=1`):

@@ -48,9 +48,10 @@ static int has_orientation(const th_sim *s, th_rnode def, int dir)
 
 const char *th_build_reason_name(int reason)
 {
-    static const char *const names[] = {"-",           "no_es_de_pasillo", "sin_dinero", "maximo",
+    static const char *const names[] = {"-",           "no_es_de_pasillo", "sin_dinero",  "maximo",
                                         "sin_ventana", "sin_objeto",       "orientacion", "casillas",
-                                        "bloqueo",     "persona",          "no_se_puede", "orden"};
+                                        "bloqueo",     "persona",          "no_se_puede", "orden",
+                                        "otra_ventana"};
     return reason >= 0 && reason < (int)(sizeof names / sizeof names[0]) ? names[reason] : "?";
 }
 
@@ -492,13 +493,15 @@ static int order_comprar(th_sim *s, const th_order *o)
         close_window(s, 0);
     if (!o->def || !th_rules_get(s->defs, o->def, "corridor_object"))
         return TH_REASON_NO_ES_DE_PASILLO;
-    // purchaseItem(i, n): hasta 99, y solo si llega el dinero (no cobra aún).
-    int qty = o->qty;
-    if (qty > 99)
-        qty = 99;
+    // Cada unidad es una pulsación de «+» (purchaseItem(i, 1)), que no cobra:
+    // falla si el saldo no llega al total o, en la centésima, porque ya hay 99.
+    // Si falla una, se cierra la ventana y no se compra nada.
+    const int qty = o->qty;
     const int32_t price = th_build_object_cost(s, o->def);
-    if (s->hosp.balance < (int64_t)qty * price)
-        return TH_REASON_SIN_DINERO; // también con 0 y el saldo en negativo
+    if (s->hosp.balance < (int64_t)(qty < 99 ? qty : 99) * price)
+        return TH_REASON_SIN_DINERO;
+    if (qty > 99)
+        return TH_REASON_MAXIMO;
     if (qty <= 0)
         return TH_REASON_OK; // confirm sin nada que comprar: cierra
     // confirm: cobra y abre la ventana de colocar.
@@ -535,6 +538,10 @@ static int order_colocar(th_sim *s, const th_order *o, th_order_result *r)
 
 static int order_recoger(th_sim *s, const th_order *o)
 {
+    // Con la ventana de colocar abierta no hay prueba del mundo
+    // (setWorldHitTest(false)) y el clic derecho gira el plano.
+    if (s->place.open)
+        return TH_REASON_OTRA_VENTANA;
     // El objeto con ese origen que va el último en world.entities.
     int obj = -1;
     for (int i = 0; i < s->n_obj; i++) {
