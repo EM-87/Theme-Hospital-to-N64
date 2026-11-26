@@ -1,0 +1,554 @@
+# Hito 6.3, paso 3: las 8 salas rectangulares del nivel 1, sin gente.
+# Una orden por línea, con tabuladores (bench/lib/ordenes.lua); coordenadas
+# desde 0. Encima de cada caso, qué prueba y qué da en CorsixTH v0.70.1 (lo
+# marcado «por confirmar» está deducido de su código y aún no se ha corrido).
+# El dinero empieza en 40.000 y los precios son los del nivel 1: consulta (gp)
+# 2.500 (escritorio 100, archivador 100, silla 20: 220 al entrar en los objetos
+# y 2.280 al confirmar), psiquiatría (psych) 2.500 (biombo 30, diván 100,
+# sillón 100: 230 + 2.270), hinchado (inflation) 4.000 (hinchador 2.500 +
+# 1.500), farmacia (pharmacy) 1.500 (armario 1.000 + 500), diagnóstico general
+# (general_diag) 1.000 (biombo 30, camilla 250: 280 + 720), enfermería (ward)
+# 2.000 (escritorio 100, cama 200: 300 + 1.700; puerta doble, mínimo 6 × 6),
+# aseos (toilets) 1.500 (váter 300, lavabo 30: 330 + 1.170) y sala de personal
+# (staff_room) 1.500 (sofá 150 + 1.350). Opcionales: extintor 25, radiador 20,
+# planta 5 y papelera 5; estantería 350 y esqueleto 450 (psych); mesa de
+# billar 150 y televisor 50 (staff_room). La puerta y las ventanas no cuestan.
+# Del pasillo: mostrador 150, banco 40, máquina de bebidas 500.
+#
+# El hospital del nivel 1: el ala norte (57..70, 50..57), la sala grande
+# (49..78, 58..70), el ala este (83..93, 58..70), unida a la sala grande solo
+# por el estrecho (79..82, 68..70), y el vestíbulo (57..70, 71..78), con la
+# entrada en (63..65, 78) y sus dos puertas en (63,79) y (64,79). Las salas
+# que quedan, por su id: 1 consulta (57,50) 4×4, 2 aseos (61,50) 4×4 pared con
+# pared con la consulta, 3 psiquiatría (66,50) 5×5, 4 enfermería (60,60) 6×6 en
+# medio de la sala grande, 5 farmacia (49,67) 4×4, 6 diagnóstico general
+# (72,66) 5×5, 7 sala de personal (83,58) 5×5, 8 una consulta cerrada sin
+# terminar que se queda en world.rooms, 9..14 seis salas de hinchado (para
+# gastar el dinero) y 15 un diagnóstico general que deja el saldo en negativo.
+#
+# Lo que no sale aquí: «persona» y la fase clear_area con gente (la batería
+# va sin nadie), «pausa», la basura (no hay) y bajar cantidades en la ventana
+# de comprar de la obra (el doble reembolso de CorsixTH, fuera del paso 3).
+
+# --- Sin obra, y salas que no se pueden elegir ----------------------------------
+# Sin obra, las órdenes de una fase dan fase; atras y cerrar, sin_ventana.
+puerta	58	53	south
+ventana	58	50	north
+fin_ventanas
+fin_sala
+atras
+cerrar
+# Una sala que el nivel 1 no tiene descubierta (cardiograma) no está en la
+# ventana de construir: no_disponible. Un objeto tampoco es una sala.
+sala	cardiogram	57	50	5	5
+sala	bench	57	50	4	4
+
+# --- El plano ------------------------------------------------------------------------
+# Pequeño: el ancho y el alto se miran por separado contra minimum_size
+# (consulta 4, psiquiatría 5, enfermería 6). Rechazados, pequena.
+sala	gp	57	50	3	4
+sala	gp	57	50	4	3
+sala	psych	66	50	4	5
+sala	ward	60	60	5	6
+# En el borde del mapa el plano se recorta (x + ancho no puede pasar de 128):
+# 4 de ancho en x = 125 se quedan en 2. Rechazada, pequena.
+sala	gp	125	60	4	4
+# En la calle: las 16 casillas no son construibles ni del jugador. casillas:16.
+sala	gp	40	60	4	4
+# A caballo de la fachada oeste del ala norte: las dos columnas de fuera
+# (55 y 56), 8 casillas malas.
+sala	gp	55	50	4	4
+# En la entrada: las filas 79 y 80 están fuera (8) y las tres casillas de
+# paso de la puerta (63..65,78) no son construibles. casillas:11.
+sala	gp	62	77	4	4
+# Un plano de 14 × 4 que cruza el vestíbulo entero deja la entrada sin camino
+# a la sala grande (checkReachability al confirmar). Rechazada,
+# zonas_inaccesibles; la obra se cierra.
+sala	gp	57	71	14	4
+# Objetos de pasillo bajo el plano (R3): una planta, un banco (su casilla y
+# la de uso no son construibles) y un radiador (de borde: solo quita
+# buildableWest y no impide el plano).
+comprar	plant	1
+colocar	plant	62	62	north
+comprar	bench	1
+colocar	bench	64	64	north
+comprar	radiator	1
+colocar	radiator	61	64	west
+# La enfermería en (60,60) 6×6 cubre los tres: la planta, el banco y su uso
+# son 3 casillas malas; el radiador, no. casillas:3.
+sala	ward	60	60	6	6
+# Una consulta en (60,63) 4×4 cubre solo el radiador: aceptada, y queda en
+# la fase de la puerta.
+sala	gp	60	63	4	4
+# Atrás desde la puerta: al plano (las casillas vuelven a ser transitables);
+# atrás desde el plano: se abandona (sin sala y sin dinero).
+atras
+atras
+# Fuera la planta y el banco: se recogen y se venden (+5, +40).
+recoger	62	62
+vender
+recoger	64	64
+vender
+
+# --- La consulta (gp) en (57,50) 4×4: la puerta y las ventanas --------------------
+# El plano vale: fase door. Cerrar en esa fase cancela hasta el plano y cierra
+# la obra (UIEditRoom:close), sin dinero y sin sala.
+sala	gp	57	50	4	4
+cerrar
+sala	gp	57	50	4	4
+# Fuera de fase: ventana, quitar_ventana, fin_ventanas, comprar_sala y
+# fin_sala dan fase; colocar y recoger con la obra fuera de la fase de
+# objetos, fase; vender y deshacer con una obra, no_se_puede.
+ventana	58	50	north
+quitar_ventana	58	50	north
+fin_ventanas
+comprar_sala	plant	1
+fin_sala
+colocar	desk	58	51	north
+recoger	63	79
+vender
+deshacer
+# La puerta en una esquina (las cuatro): el puntero nunca la da ahí.
+# posicion.
+puerta	57	50	north
+puerta	60	50	east
+puerta	57	53	south
+puerta	60	53	east
+# Una casilla que no es del borde, un lado que no toca a esa casilla y una
+# casilla de fuera del plano: posicion.
+puerta	58	51	north
+puerta	58	50	south
+puerta	56	51	west
+# En la fachada norte y en la oeste ya hay pared (D1): puerta_invalida.
+puerta	58	50	north
+puerta	57	51	west
+# Al este, junto a la esquina de arriba: vale (la casilla de fuera, (61,51),
+# está libre). Pasa a las ventanas.
+puerta	60	51	east
+# La puerta ya está: fase.
+puerta	58	53	south
+# Ventanas: no en la fachada (W2: pared de fuera), no donde está la puerta
+# (W1: etiqueta door). ventana_invalida.
+ventana	58	50	north
+ventana	57	52	west
+ventana	60	51	east
+# Al este, debajo de la puerta: aceptada. Repetida: ventana_invalida.
+ventana	60	52	east
+ventana	60	52	east
+# En una esquina, o con el lado que no toca: posicion.
+ventana	57	50	north
+ventana	58	51	south
+# Quitarla: aceptada; otra vez, sin_ventana; donde está la puerta (no es
+# una ventana), sin_ventana; en una esquina, posicion.
+quitar_ventana	60	52	east
+quitar_ventana	60	52	east
+quitar_ventana	60	51	east
+quitar_ventana	57	50	west
+# Volver a ponerla, y dos más al sur. Aceptadas.
+ventana	60	52	east
+ventana	58	53	south
+ventana	59	53	south
+# Atrás desde las ventanas: al plano, y se pierden la puerta y las ventanas.
+atras
+# Con la obra en el plano, sala la cierra y empieza otra.
+sala	gp	57	50	4	4
+# La puerta al sur, junto a la esquina; dos ventanas al este; y las paredes.
+# fin_ventanas pasa por clear_area sin esperar (no hay nadie) y cobra los
+# obligatorios: -100 escritorio, -100 archivador, -20 silla.
+puerta	58	53	south
+ventana	60	51	east
+ventana	60	52	east
+fin_ventanas
+
+# --- La consulta: los objetos ----------------------------------------------------------
+# Fuera de fase: puerta, ventana y fin_ventanas dan fase; vender y deshacer,
+# no_se_puede; fin_sala sin nada colocado, faltan_objetos.
+puerta	58	53	south
+ventana	58	50	north
+fin_ventanas
+vender
+deshacer
+fin_sala
+# El archivador con la huella fuera de la sala (su casilla y su uso, en
+# x = 61): casillas:2.
+colocar	cabinet	61	50	north
+# La silla con su uso fuera (57,54): el uso es invisible y no se cuenta.
+# bloqueo.
+colocar	chair	57	53	south
+# La silla sobre la casilla de paso de la puerta (58,53): casillas:1.
+colocar	chair	58	53	north
+# La silla al sur en (58,52), con su uso en la casilla de paso de la puerta:
+# el uso de la silla es compartible y se salta isTileExclusivelyPassable, y la
+# puerta sigue teniendo acceso. Aceptada.
+colocar	chair	58	52	south
+# El escritorio: aceptado. Su uso, (59,51).
+colocar	desk	58	51	north
+# Uso sobre uso: el archivador al sur en (59,52) tiene su uso en (59,51), el
+# del escritorio, que es exclusivo. casillas:1. En (59,50), su casilla es del
+# escritorio y su uso (59,51) el del escritorio: casillas:2.
+colocar	cabinet	59	52	south
+colocar	cabinet	59	50	north
+# El archivador en la esquina, con su uso en (60,51): aceptado.
+colocar	cabinet	60	50	north
+# Opcionales: una planta en (59,52) deja al uso del escritorio (59,51) un
+# solo camino a la puerta, por (60,51) y (60,52): aceptada. Otra junto a la
+# puerta, aceptada.
+comprar_sala	plant	2
+colocar	plant	59	52	north
+colocar	plant	57	53	north
+# Radiadores: contra la fachada oeste, aceptado; otro en la misma casilla,
+# casillas:1 (una sola cosa por casilla); en el borde norte de (58,52), la
+# casilla de la silla, casillas:1.
+comprar_sala	radiator	2
+colocar	radiator	57	51	west
+colocar	radiator	57	51	north
+colocar	radiator	58	52	north
+# Comprar lo que no es de la consulta: no_es_de_sala. 99 plantas: aceptada
+# (-495). Una más: maximo.
+comprar_sala	bed	1
+comprar_sala	skeleton	1
+comprar_sala	plant	99
+comprar_sala	plant	1
+# Una planta en (57,52) quedaría encerrada entre el escritorio, la silla y la
+# planta de (57,53), sin camino a la puerta (el bloqueo blando del modo 2 en
+# una sala en obras). bloqueo.
+colocar	plant	57	52	north
+# Recoger dentro de la obra: la puerta, no (no_se_puede); el radiador del
+# pasillo de (61,64), que no es de esta sala, tampoco; donde no hay nada,
+# sin_objeto. El escritorio sí: se destruye y vuelve a la lista sin cobrar,
+# y ya no se puede confirmar (faltan_objetos). Colocarlo otra vez no cuesta.
+recoger	58	54
+recoger	61	64
+recoger	60	60
+recoger	58	51
+fin_sala
+colocar	desk	58	51	north
+# Confirmar: -2.280 (build_room:gp) y se devuelven las 99 plantas y el
+# radiador que quedan (+5 × 99, +20). La sala queda construida y activa.
+fin_sala
+# En una sala hecha, sin obra: el escritorio no se puede coger
+# (no_se_puede); la planta, que es de pasillo, sí, y deshacer la devuelve.
+recoger	58	51
+recoger	57	53
+deshacer
+# Sobre una sala: las 4 casillas de la consulta en (59..60, 52..53).
+# casillas:4.
+sala	gp	59	52	4	4
+
+# --- Los aseos (toilets) en (61,50) 4×4, pared con pared con la consulta ---------
+# Con la ventana de colocar del pasillo abierta (queda una planta), sala la
+# cierra antes (+5) y abre la obra. El plano no mira la pared este de la
+# consulta, que está en la capa oeste de la columna 61 (R2): aceptado.
+comprar	plant	2
+colocar	plant	58	59	north
+sala	toilets	61	50	4	4
+# La puerta al oeste daría a la pared de la consulta, que ya existe (D1):
+# puerta_invalida.
+puerta	61	51	west
+puerta	61	52	west
+# Al sur: aceptada. Las ventanas en la pared compartida (W2), no; en la
+# fachada, tampoco. Al este, sí.
+puerta	62	53	south
+ventana	61	51	west
+ventana	61	52	west
+ventana	62	50	north
+ventana	64	51	east
+# Con la obra en las ventanas, sala la cierra (sin dinero, sin sala) y
+# empieza otra.
+sala	toilets	61	50	4	4
+puerta	62	53	south
+ventana	64	51	east
+# Las paredes: la del oeste sobrescribe la pared este de la consulta con la
+# pared verde de los aseos (y su ventana de (60,51) pasa a ser verde). Cobra
+# -300 váter, -30 lavabo.
+fin_ventanas
+colocar	loo	61	50	north
+colocar	sink	64	50	north
+# El váter y el lavabo también son opcionales: -300, -30.
+comprar_sala	loo	1
+colocar	loo	62	50	north
+comprar_sala	sink	1
+colocar	sink	63	50	north
+# Cerrar con todo lo obligatorio colocado termina la sala: -1.170
+# (build_room:toilets).
+cerrar
+
+# --- La psiquiatría (psych) en (66,50) 5×5 --------------------------------------
+sala	psych	66	50	5	5
+# La puerta al oeste, a la columna 65. Una ventana sobre ella: ventana_invalida.
+puerta	66	52	west
+ventana	66	52	west
+# Al oeste encima de la puerta y al sur, aceptadas; en la fachada este,
+# ventana_invalida.
+ventana	66	51	west
+ventana	67	54	south
+ventana	70	52	east
+# -30 biombo, -100 diván, -100 sillón.
+fin_ventanas
+# El biombo (uso en (69,50)), el diván (usos en (68,52) y (68,53)) y el
+# sillón (uso en (69,54)).
+colocar	screen	69	51	north
+colocar	couch	67	53	north
+colocar	comfortable_chair	69	53	north
+# 99 esqueletos son 44.550: sin_dinero. Una estantería (-350) y un esqueleto
+# (-450).
+comprar_sala	skeleton	99
+comprar_sala	bookcase	1
+colocar	bookcase	66	50	north
+comprar_sala	skeleton	1
+# El esqueleto con su uso (69,50) sobre el del biombo, exclusivo: casillas:1.
+colocar	skeleton	68	50	north
+colocar	skeleton	70	53	east
+# -2.270 (build_room:psych).
+fin_sala
+# Con las tres salas, la columna 65 (50..53) es un pasillo sin salida que
+# solo se abre por (65,54). Un plano de 14 × 4 en (57,55) lo deja, con la
+# fila 54, sin camino al resto del hospital: zonas_inaccesibles.
+sala	gp	57	55	14	4
+
+# --- La enfermería (ward) en (60,60) 6×6: la puerta doble por los cuatro lados --------
+# Una planta en (62,59), delante de donde iría la hoja izquierda de una
+# puerta al norte en (63,60).
+comprar	plant	1
+colocar	plant	62	59	north
+# El plano cubre el radiador de (61,64) (R3): aceptado.
+sala	ward	60	60	6	6
+# La puerta doble se da por su hoja central: al norte solo desde rx+3 = 63
+# (R6), al sur desde rx+2 = 62, al oeste y al este desde ry+2 = 62; nunca en
+# las esquinas. posicion.
+puerta	61	60	north
+puerta	62	60	north
+puerta	65	60	north
+puerta	61	65	south
+puerta	60	61	west
+# Al norte en (63,60): la hoja izquierda, (62,60), da a la planta (D3).
+# puerta_invalida. En (64,60) (hojas 63, 64 y la pieza «nothing» en la
+# esquina 65): aceptada.
+puerta	63	60	north
+puerta	64	60	north
+# Ventanas al norte: en (61,60) y (62,60), aceptadas; sobre las hojas de la
+# puerta, ventana_invalida.
+ventana	61	60	north
+ventana	62	60	north
+ventana	63	60	north
+ventana	64	60	north
+# Las paredes blancas, las dos hojas (swing_door_left en (63,60) y
+# swing_door_right en (64,60)) y el cobro: -100 escritorio, -200 cama.
+fin_ventanas
+# Atrás desde los objetos: la sala sale del mapa (las hojas se destruyen, las
+# paredes se quitan) pero sigue en world.rooms sin levantar; se devuelven el
+# escritorio y la cama (+300) y también el radiador del pasillo que la sala
+# tapaba, que removeRoom barre con los demás (+20): entra en la lista de la
+# obra. Vuelve a la fase de la puerta.
+atras
+# Al este en (65,62): aceptada. Al volver a levantar la sala se cobran los
+# tres de la lista: -320.
+puerta	65	62	east
+fin_ventanas
+atras
+# Al sur en (62,65): aceptada. Ventanas sobre la pieza «nothing» (63,65) y la
+# hoja izquierda (61,65): ventana_invalida; en (64,65), aceptada.
+puerta	62	65	south
+ventana	63	65	south
+ventana	61	65	south
+ventana	64	65	south
+fin_ventanas
+atras
+# Al oeste en (60,62), con una ventana al oeste y otra al este. La sala se
+# levanta por cuarta vez: -320.
+puerta	60	62	west
+ventana	60	64	west
+ventana	65	63	east
+fin_ventanas
+# El radiador ya no está en el mapa: sin_objeto.
+recoger	61	64
+# El escritorio, la cama y el radiador de la lista. Una cama más (-200) y un
+# extintor (-25) contra la pared este.
+colocar	desk	61	61	north
+colocar	bed	64	64	north
+colocar	radiator	61	64	west
+comprar_sala	bed	1
+colocar	bed	64	61	north
+comprar_sala	extinguisher	1
+colocar	extinguisher	65	65	east
+# -1.700 (build_room:ward).
+fin_sala
+
+# --- La farmacia (pharmacy) en (49,67) 4×4: la casilla de fuera de la puerta ---------
+# Delante de la pared norte de la farmacia, una máquina de bebidas en (51,65)
+# mirando al sur (su uso exclusivo en (51,66)) y un banco en (50,65) (su uso,
+# compartible, en (50,66)); una planta en (53,68), delante de la pared este.
+comprar	drinks_machine	1
+colocar	drinks_machine	51	65	south
+comprar	bench	1
+colocar	bench	50	65	south
+comprar	plant	1
+colocar	plant	53	68	north
+sala	pharmacy	49	67	4	4
+# La puerta en (51,67) daría al uso exclusivo de la máquina
+# (isTileExclusivelyPassable): puerta_invalida. En (50,67) da al uso del
+# banco, que es compartible: aceptada.
+puerta	51	67	north
+puerta	50	67	north
+# Atrás dos veces: al plano y abandonar.
+atras
+atras
+sala	pharmacy	49	67	4	4
+# La puerta al este en (52,68) daría a la planta: puerta_invalida. En (52,69),
+# aceptada.
+puerta	52	68	east
+puerta	52	69	east
+# -1.000 el armario.
+fin_ventanas
+colocar	pharmacy_cabinet	51	67	north
+# Con la obra completa en la fase de objetos, sala la termina (-500,
+# build_room:pharmacy) y empieza el diagnóstico general.
+sala	general_diag	72	66	5	5
+
+# --- El diagnóstico general (general_diag) en (72,66) 5×5 --------------------------
+puerta	74	66	north
+ventana	72	67	west
+# -30 biombo, -250 camilla.
+fin_ventanas
+# El biombo en (76,66) saca de la sala su uso (76,65) y dos casillas
+# (77,65) y (77,66): casillas:3.
+colocar	screen	76	66	north
+colocar	screen	73	68	north
+colocar	crash_trolley	75	69	north
+comprar_sala	bin	1
+colocar	bin	72	70	north
+# -720 (build_room:general_diag).
+fin_sala
+
+# --- La sala de personal (staff_room) en (83,58) 5×5 ------------------------------
+sala	staff_room	83	58	5	5
+puerta	85	62	south
+# -150 el sofá.
+fin_ventanas
+# El sofá al norte en (83,58) tiene su uso en (83,57), fuera: casillas:1.
+colocar	sofa	83	58	north
+# Comprar para el pasillo con la obra sin terminar la abandona
+# (setEditRoom(false) → verifyOrAbortRoom → abortRoom): se devuelve el sofá
+# (+150), la sala sale del mapa y de world.rooms, y se compra la planta (-5).
+comprar	plant	1
+colocar	plant	93	70	north
+sala	staff_room	83	58	5	5
+puerta	87	60	east
+fin_ventanas
+# Atrás desde los objetos (+150), desde la puerta y desde el plano: la sala
+# se borra de world.rooms.
+atras
+atras
+atras
+sala	staff_room	83	58	5	5
+puerta	87	60	east
+ventana	87	61	east
+fin_ventanas
+# El sofá al sur (uso en (83,59)); otra vez, sin_objeto (ya no queda).
+colocar	sofa	83	58	south
+colocar	sofa	83	58	south
+# La mesa de billar (-150) en (85,60), con sus 8 casillas de alrededor; el
+# televisor (-50); la videoconsola no está disponible en el nivel 1:
+# no_es_de_sala.
+comprar_sala	pool_table	1
+colocar	pool_table	85	60	north
+comprar_sala	tv	1
+colocar	tv	83	62	north
+comprar_sala	video_game	1
+# Comprar para el pasillo con la obra completa la termina (-1.350,
+# build_room:staff_room) y compra el banco (-40); cerrar lo devuelve (+40).
+comprar	bench	1
+cerrar
+
+# --- Una obra cerrada sin terminar se queda en world.rooms (por confirmar) ---------
+# Una consulta en el ala este, con las paredes levantadas (-220) y nada
+# colocado. Cerrar (UIEditRoom:close) cancela hasta el plano: la sala sale del
+# mapa, se devuelven los tres objetos (+220) y la obra se cierra, pero la sala
+# 8 sigue en world.rooms sin levantar, sin puerta ni paredes (salas.tsv la
+# lista con - - - y fase -), y la siguiente sala es la 9.
+sala	gp	89	64	4	4
+puerta	90	67	south
+fin_ventanas
+cerrar
+
+# --- El dinero: seis salas de hinchado para gastarlo (por confirmar) ------------------
+# Saldo 25.330. Cada sala de hinchado cuesta 4.000 (-2.500 al levantarla,
+# -1.500 al confirmar), con el hinchador (3 × 3 con sus casillas de uso) en
+# la esquina de arriba a la izquierda. Al acabar quedan 1.330.
+# La 9, en la esquina de arriba a la derecha de la sala grande.
+sala	inflation	75	58	4	4
+puerta	76	61	south
+fin_ventanas
+colocar	inflator	76	59	north
+fin_sala
+# La 10, en la de arriba a la izquierda, con la puerta al este a la columna 53.
+sala	inflation	49	58	4	4
+puerta	52	59	east
+fin_ventanas
+colocar	inflator	50	59	north
+fin_sala
+# La 11, a su lado, en (54,58): la columna 53 queda como pasillo de una
+# casilla entre las dos, con la puerta de la 10, y sigue comunicada por
+# abajo; la casilla (57,57) del ala norte está en su anillo y también.
+sala	inflation	54	58	4	4
+puerta	55	61	south
+fin_ventanas
+colocar	inflator	55	59	north
+fin_sala
+# La 12, en la esquina de arriba a la derecha del ala este, con la puerta al
+# oeste.
+sala	inflation	90	58	4	4
+puerta	90	59	west
+fin_ventanas
+colocar	inflator	92	59	north
+fin_sala
+# La 13 y la 14, en los dos rincones de arriba del vestíbulo: dejan un
+# pasillo de 6 casillas (61..66) hasta la entrada.
+sala	inflation	57	71	4	4
+puerta	60	72	east
+fin_ventanas
+colocar	inflator	58	72	north
+fin_sala
+sala	inflation	67	71	4	4
+puerta	67	72	west
+fin_ventanas
+colocar	inflator	69	72	north
+fin_sala
+# Dos mostradores en el ala este (-300) y siete plantas en el ala norte
+# (-35): el saldo queda en 995, cinco por debajo del diagnóstico general.
+comprar	reception_desk	2
+colocar	reception_desk	90	69	north
+colocar	reception_desk	92	66	north
+comprar	plant	7
+colocar	plant	58	55	north
+colocar	plant	59	55	north
+colocar	plant	60	55	north
+colocar	plant	58	56	north
+colocar	plant	59	56	north
+colocar	plant	60	56	north
+colocar	plant	61	55	north
+# Sin dinero para la sala: UIBuildRoom:buildRoom exige saldo ≥ build_cost
+# (1.000) y no abre la obra. sin_dinero. Para una de hinchado, igual.
+sala	general_diag	83	64	5	5
+sala	inflation	83	64	4	4
+# Vender una planta (+5) deja el saldo justo en 1.000: la sala se abre (el
+# saldo no se vuelve a mirar). La puerta al norte, las paredes (-280: saldo
+# 720), dos plantas (-10: 710) y los objetos.
+recoger	61	55
+vender
+sala	general_diag	83	64	5	5
+puerta	85	64	north
+fin_ventanas
+comprar_sala	plant	2
+colocar	screen	84	66	north
+colocar	crash_trolley	86	67	north
+colocar	plant	83	68	north
+colocar	plant	87	65	north
+# Confirmar cobra los 720 que faltan sin mirar el saldo: queda en -10.
+fin_sala
+# Con el saldo en negativo: ni una sala (sin_dinero) ni una planta
+# (sin_dinero); comprar 0 son cero pulsaciones de «+» y solo cierra la
+# ventana: aceptada.
+sala	gp	88	64	4	4
+comprar	plant	1
+comprar	plant	0

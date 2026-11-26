@@ -14,10 +14,10 @@
 --   comprar <objeto> <cantidad>        amueblar el pasillo: elegir y confirmar
 --   colocar <objeto> <x> <y> <orient.> soltar un objeto de la ventana de colocar
 --                                      (la del pasillo o la de una obra)
---   cerrar                             cerrar la ventana de colocar; en una obra,
---                                      lo que hace abrir otra ventana desde el
---                                      panel: termina la sala si se puede y si
---                                      no la abandona (verifyOrAbortRoom)
+--   cerrar                             cerrar la ventana de colocar (close):
+--                                      en una obra en la fase de objetos con
+--                                      todo lo obligatorio, termina la sala; si
+--                                      no, cancela hasta el plano y cierra
 --   recoger <x> <y>                    clic derecho en el objeto con ese origen;
 --                                      en una obra, el botón de coger y clic
 --   vender                             tecla de vender el objeto cogido
@@ -68,8 +68,9 @@
 --                     partido (checkReachability)
 --   fase              la obra no está en la fase de la orden (o no hay obra):
 --                     puerta, ventana, quitar_ventana, fin_ventanas,
---                     comprar_sala, fin_sala; y recoger con una obra que no
---                     está en la fase de objetos (el botón de coger está apagado)
+--                     comprar_sala, fin_sala; y colocar o recoger con una obra
+--                     que no está en la fase de objetos (la lista está vacía y
+--                     el botón de coger, apagado)
 --   posicion          la puerta o la ventana no está donde el puntero puede
 --                     ponerla (screenToWall): ni en las esquinas ni, con la
 --                     puerta doble, en las casillas que se salta
@@ -99,22 +100,28 @@
 -- window.lua:1715-1721 no lo deja pasar a UI:onMouseUp, ui.lua:911-917).
 -- El núcleo tiene que copiar todo esto.
 --
--- Con una obra abierta (UIEditRoom), los botones del panel que abren otra
--- ventana (construir, bottom_panel.lua:721-743; amueblar, 745-767) llaman
--- antes a GameUI:setEditRoom(false) (game_ui.lua:1259-1284), que es
--- UIEditRoom:verifyOrAbortRoom (edit_room.lua:131-139): si la obra está en la
--- fase de objetos con todos los obligatorios colocados, close() la termina
--- (confirm(true): se cobra la sala, markRoomAsBuilt); si no, abortRoom
--- (141-164): close() cancela hasta el plano (los objetos vuelven a la lista
--- y se devuelven; la sala, si ya estaba levantada, sale del mapa) y la sala
--- se borra de world.rooms, sin dinero porque no está pagada. Es lo que hacen
--- aquí sala y comprar con una obra abierta, y también cerrar, que llama a
--- verifyOrAbortRoom: un close() a secas de la obra dejaría en world.rooms una
--- sala sin levantar (el caso raro de UIPlaceObjects:undo, que en la interfaz
--- no se da porque Escape dispara antes setEditRoom(false), game_ui.lua:155).
--- Las ventanas de construir (UIBuildRoom) y de comprar de la obra
--- (UIFurnishCorridor con edit_dialog, modal «furnish») no quedan abiertas
--- entre dos órdenes: la orden las cierra si se rechaza.
+-- Con una obra abierta (UIEditRoom), UIEditRoom:close (edit_room.lua:98-124)
+-- es lo que hace UI:addWindow al abrir otra ventana «main» (la de construir
+-- de sala, UIBuildRoom, modal «main» en build_room.lua:33) y lo que hace aquí
+-- cerrar: si la obra está en la fase de objetos con todos los obligatorios
+-- colocados, confirm(true) la termina (se cobra la sala, markRoomAsBuilt); si
+-- no, cancel() hasta el plano (los objetos colocados y los de la lista se
+-- devuelven; la sala, si ya estaba levantada, sale del mapa con removeRoom) y
+-- la ventana se cierra. La sala que ya existía (la obra llegó a los objetos)
+-- SE QUEDA en world.rooms sin levantar, sin puerta ni paredes: close() no la
+-- borra; solo abortRoom lo hace (141-164), y el id de la siguiente sala
+-- (#world.rooms + 1, world.lua:623) la cuenta. En cambio el botón de amueblar
+-- del panel (bottom_panel.lua:745-767) llama antes a GameUI:setEditRoom(false)
+-- (game_ui.lua:1259-1284), que es verifyOrAbortRoom (131-139): termina la
+-- sala si se puede y si no abortRoom, que sí la borra de world.rooms (sin
+-- dinero: no está pagada). Es lo que hace aquí comprar con una obra abierta.
+-- (El botón de construir del panel, bottom_panel.lua:721-743, también pasa
+-- por setEditRoom(false); la orden sala sigue el diseño del paso 3, que es
+-- UIBuildRoom + addWindow a secas, lo mismo que hace el núcleo: la sala de la
+-- obra anterior se queda en world.rooms.) Las ventanas de construir
+-- (UIBuildRoom) y de comprar de la obra (UIFurnishCorridor con edit_dialog,
+-- modal «furnish») no quedan abiertas entre dos órdenes: la orden las cierra
+-- si se rechaza.
 local O = {}
 
 O.orientaciones = {north = true, east = true, south = true, west = true}
@@ -319,10 +326,12 @@ function O.nuevo(app)
   -- 1635-1640): la huella tiene que quedar dentro de su sala (las casillas de
   -- fuera son malas, world.lua:1870-1890), el bloqueo de zonas es el «blando»
   -- del modo 2 mientras la sala no está activa (place_objects.lua:875-897,
-  -- 972-988) y el objeto entra en room.objects (582-584).
+  -- 972-988) y el objeto entra en room.objects (582-584). Con la obra fuera
+  -- de la fase de objetos la lista está vacía: fase.
   function A.colocar(id, x, y, orient)
     local win = ventana()
     if not win then return false, "sin_ventana" end
+    if class.is(win, UIEditRoom) and win.phase ~= "objects" then return false, "fase" end
     local i
     for k, o in ipairs(win.objects) do
       if o.object.id == id and o.qty > 0 then
@@ -350,17 +359,18 @@ function O.nuevo(app)
 
   -- El botón de cancelar de la ventana de colocar del pasillo
   -- (UIPlaceObjects:cancel, close(false)): devuelve lo comprado sin colocar y
-  -- vende lo cogido. En una obra, lo que hace abrir otra ventana desde el
-  -- panel, verifyOrAbortRoom (ver arriba): la termina si está en la fase de
-  -- objetos con todo lo obligatorio colocado (se cobra la sala) y si no la
-  -- abandona; en los dos casos lo comprado sin colocar se devuelve y lo
-  -- cogido dentro de la obra, que ya está destruido, se «vende» a precio
-  -- entero (sale_previously_placed, place_objects.lua:250, 269-273).
+  -- vende lo cogido. En una obra, UIEditRoom:close() (ver arriba): la termina
+  -- si está en la fase de objetos con todo lo obligatorio colocado (se cobra
+  -- la sala) y si no cancela hasta el plano y cierra, con la sala, si la
+  -- había, en world.rooms sin levantar; en los dos casos lo comprado sin
+  -- colocar se devuelve y lo cogido dentro de la obra, que ya está destruido,
+  -- se «vende» a precio entero (sale_previously_placed, place_objects.lua:250,
+  -- 269-273).
   function A.cerrar()
     local win = ventana()
     if not win then return false, "sin_ventana" end
     if class.is(win, UIEditRoom) then
-      win:verifyOrAbortRoom()
+      win:close()
     else
       win:cancel()
     end
@@ -438,10 +448,12 @@ function O.nuevo(app)
     return true
   end
 
-  -- UIBottomPanel:dialogBuildRoom (bottom_panel.lua:721-743): setEditRoom(
-  -- false) (la obra que hubiera se termina o se abandona) y la ventana de
-  -- construir, que cierra la «main» que hubiera (la de colocar del pasillo,
-  -- con sus devoluciones). La sala se busca en las cuatro categorías
+  -- La ventana de construir (UIBuildRoom(ui) + UI:addWindow, lo que hace el
+  -- botón del panel en bottom_panel.lua:737-739 sin el setEditRoom(false) de
+  -- antes: ver arriba): cierra la «main» que hubiera, la de colocar del
+  -- pasillo (con sus devoluciones) o la obra anterior (UIEditRoom:close: la
+  -- termina si se puede, o cancela hasta el plano y la deja en world.rooms
+  -- si ya existía). La sala se busca en las cuatro categorías
   -- (UIBuildRoom:setCategory, build_room.lua:153-173: solo las descubiertas,
   -- updateBuildableRooms, 109-125); si no está, se cierra la ventana
   -- (no_disponible). UIBuildRoom:buildRoom (175-196) exige saldo ≥ build_cost
@@ -459,8 +471,9 @@ function O.nuevo(app)
   -- (zonas_inaccesibles) y la obra se cierra igual.
   function A.sala(tipo, x, y, w, h)
     assert(not ui:getWindow(UIBuildRoom), "la ventana de construir ya estaba abierta")
-    ui.bottom_panel:dialogBuildRoom()
-    local dlg = assert(ui:getWindow(UIBuildRoom), "no se abrió la ventana de construir")
+    local dlg = UIBuildRoom(ui)
+    ui:addWindow(dlg)
+    assert(ui:getWindow(UIBuildRoom) == dlg and not obra(), "la ventana de construir no cerró la obra")
     local categoria, indice
     for c = 1, 4 do
       dlg:setCategory(c)
@@ -653,7 +666,8 @@ function O.nuevo(app)
   end
 
   -- Las órdenes que exigen world.user_actions_allowed (world.lua:813-817): los
-  -- botones de amueblar y de construir del panel (bottom_panel.lua:722, 746),
+  -- botones de amueblar y de construir del panel (bottom_panel.lua:722, 746;
+  -- sala abre la ventana de construir como ese botón),
   -- el clic en el mapa con la ventana de colocar (place_objects.lua:503), el
   -- clic en un objeto (ui.lua:936) y el clic en el mapa con una obra
   -- (UIEditRoom:onMouseDown, edit_room.lua:1135: la puerta y las ventanas).

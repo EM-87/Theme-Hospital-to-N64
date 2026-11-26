@@ -17,6 +17,9 @@
 //   (tools/oraculo_hito4) y compara sus casillas con las de CorsixTH;
 // - banderas: lo mismo, pero con las banderas calculadas por el núcleo a
 //   partir de las salas y los objetos (th/objects.h);
+// - salas: lo mismo, pero con las salas levantadas por el núcleo como
+//   UIEditRoom:finishRoom (th/build.h), capas incluidas: el oráculo de las
+//   paredes del hito 6.3;
 // - hito4: corre ese escenario con la simulación y escribe la traza de
 //   bench/scenarios/traza_hito4.lua (hito4.c).
 // Más adelante cargará un escenario y escribirá el mismo volcado que el
@@ -28,6 +31,7 @@
 
 #include "raster.h"
 #include "th/anim.h"
+#include "th/build.h"
 #include "th/humanoid.h"
 #include "th/map.h"
 #include "th/objects.h"
@@ -56,6 +60,7 @@ static int uso(void)
             "celdas.tsv]\n"
             "     th64sim escenario <nivel.tmp> <escenario.trg> <celdas.tsv>\n"
             "     th64sim banderas <assets> <escenario.trg> <celdas.tsv>\n"
+            "     th64sim salas <assets> <vacio.trg> <escenario.trg> <celdas.tsv> [--volcar celdas.tsv]\n"
             "     th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>\n"
             "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
@@ -1013,6 +1018,374 @@ static int orden_banderas(char **argv)
     return r || errores;
 }
 
+th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
+
+// --- th64sim salas: el oráculo de las paredes (hito 6.3, paso 3)
+//
+// salas <assets> <vacio.trg> <escenario.trg> <celdas.tsv> [--volcar fichero]
+//
+// El núcleo levanta las salas de un hospital exportado de CorsixTH igual que
+// UIEditRoom:finishRoom (th_build_rebuild_room: las paredes por tramos con
+// los juegos de paredes de las reglas, check_external_window, las puertas
+// como objetos, markRoom y resetSideObjects) y las 16.384 casillas se comparan
+// con TODAS las columnas de celdas.tsv, las capas (suelo, norte y oeste)
+// incluidas; la orden «banderas» las copiaba del volcado.
+//   - vacio.trg es el mismo escenario sin «salas», sin «listas», sin personal
+//     y solo con los objetos que se crean desde el mapa (las puertas de la
+//     entrada, supports_creation_for_map): th64sim_cargar_escenario deja la
+//     simulación con el nivel recién cargado, los dueños de las parcelas y
+//     nada más. Se comprueba que el inicio es eso: el nivel con esas parcelas
+//     (todavía no tiene que coincidir con celdas.tsv).
+//   - Después se recorren los objetos de escenario.trg en su orden (el de
+//     world.entities, que es el de construcción). Una puerta (door o
+//     swing_door_right; la hoja esclava se salta, la crea la sala) es la sala
+//     cuya «puerta» está en su casilla: de la puerta sale el borde (la casilla
+//     de dentro y el lado) y de las capas de celdas.tsv las ventanas, y
+//     th_build_rebuild_room la levanta. Los demás objetos entran con
+//     th_sim_new_object (World:newObject → Object:setTile), como los colocó
+//     el jugador, y así resetSideObjects cae donde en CorsixTH: al terminar
+//     cada sala, antes de sus objetos.
+
+// Las capas de pared de celdas.tsv (0 = norte, 1 = oeste), para las ventanas.
+static uint8_t capas_tsv[2][TH_MAP_WIDTH * TH_MAP_HEIGHT];
+
+static int leer_capas(const char *ruta)
+{
+    FILE *f = fopen(ruta, "r");
+    if (!f) {
+        fprintf(stderr, "no se puede abrir %s\n", ruta);
+        return 1;
+    }
+    static char linea[1024];
+    static const char *const quiero[4] = {"x", "y", "norte", "oeste"};
+    int col[4] = {-1, -1, -1, -1}, ncols = 0;
+    if (fgets(linea, sizeof linea, f))
+        for (char *tok = strtok(linea, "\t\r\n"); tok; tok = strtok(NULL, "\t\r\n"), ncols++)
+            for (int k = 0; k < 4; k++)
+                if (!strcmp(tok, quiero[k]))
+                    col[k] = ncols;
+    for (int k = 0; k < 4; k++)
+        if (col[k] < 0 || col[k] >= 32) {
+            fclose(f);
+            fprintf(stderr, "%s: falta la columna %s\n", ruta, quiero[k]);
+            return 1;
+        }
+    memset(capas_tsv, 0, sizeof capas_tsv);
+    int filas = 0;
+    while (fgets(linea, sizeof linea, f)) {
+        long v[32] = {0};
+        char *p = linea;
+        for (int i = 0; i < ncols && i < 32; i++)
+            v[i] = strtol(p, &p, 10);
+        const long x = v[col[0]], y = v[col[1]];
+        if (x < 0 || x >= TH_MAP_WIDTH || y < 0 || y >= TH_MAP_HEIGHT)
+            continue;
+        // Las capas van sin las banderas de dibujo del byte alto (escenario.py
+        // rechaza los volcados que las llevan).
+        capas_tsv[0][y * TH_MAP_WIDTH + x] = (uint8_t)v[col[2]];
+        capas_tsv[1][y * TH_MAP_WIDTH + x] = (uint8_t)v[col[3]];
+        filas++;
+    }
+    fclose(f);
+    if (filas != TH_MAP_WIDTH * TH_MAP_HEIGHT) {
+        fprintf(stderr, "%s: %d casillas, no %d\n", ruta, filas, TH_MAP_WIDTH * TH_MAP_HEIGHT);
+        return 1;
+    }
+    return 0;
+}
+
+// Un bloque de pared es ventana si está en window_tiles de algún juego de
+// paredes (defs.paredes): el de la sala o el de una vecina con otro juego
+// (finishRoom respeta la ventana del vecino: existing == "window_tiles").
+static int es_ventana(const th_rules *defs, int block)
+{
+    if (!block)
+        return 0;
+    const th_rnode sets = th_rules_get(defs, defs->root, "paredes");
+    for (uint32_t i = 0; i < th_rules_len(defs, sets); i++) {
+        const th_rnode grp = th_rules_get(defs, th_rules_entry_value(defs, sets, i), "window_tiles");
+        for (uint32_t k = 0; k < th_rules_len(defs, grp); k++)
+            if (th_rules_int(defs, th_rules_entry_value(defs, grp, k), -1) == block)
+                return 1;
+    }
+    return 0;
+}
+
+// Las ventanas de la sala (rx, ry, w, h) deducidas de las capas finales: los
+// tramos del borde que admite er:screenToWall (sin las esquinas: x en
+// rx+1..rx+w-2 al norte y al sur, y en ry+1..ry+h-2 al oeste y al este) cuya
+// pared es una ventana. El tramo de cada lado es el de
+// doorWallOffsetCalculations: al norte, la capa norte de la casilla de
+// dentro; al sur, la capa norte de la casilla de abajo (ry + h); al oeste, la
+// capa oeste de la de dentro; al este, la capa oeste de la casilla de la
+// derecha (rx + w). Devuelve cuántas.
+static int ventanas_de(const th_rules *defs, int rx, int ry, int w, int h, th_edge *out, int cap)
+{
+    int n = 0;
+    for (int i = 1; i <= w - 2; i++) {
+        const int x = rx + i;
+        if (n < cap && es_ventana(defs, capas_tsv[0][ry * TH_MAP_WIDTH + x]))
+            out[n++] = (th_edge){(uint8_t)x, (uint8_t)ry, TH_DIR_NORTH};
+        if (n < cap && ry + h < TH_MAP_HEIGHT && es_ventana(defs, capas_tsv[0][(ry + h) * TH_MAP_WIDTH + x]))
+            out[n++] = (th_edge){(uint8_t)x, (uint8_t)(ry + h - 1), TH_DIR_SOUTH};
+    }
+    for (int i = 1; i <= h - 2; i++) {
+        const int y = ry + i;
+        if (n < cap && es_ventana(defs, capas_tsv[1][y * TH_MAP_WIDTH + rx]))
+            out[n++] = (th_edge){(uint8_t)rx, (uint8_t)y, TH_DIR_WEST};
+        if (n < cap && rx + w < TH_MAP_WIDTH && es_ventana(defs, capas_tsv[1][y * TH_MAP_WIDTH + rx + w]))
+            out[n++] = (th_edge){(uint8_t)(rx + w - 1), (uint8_t)y, TH_DIR_EAST};
+    }
+    return n;
+}
+
+// El borde de la puerta (la casilla de dentro y su lado) desde el objeto
+// puerta de CorsixTH, que en la doble es la hoja maestra (room.door): una
+// puerta «north» cuya casilla es de la sala está en el lado norte y, si está
+// en la fila de abajo (ry + h), en el sur; una «west», en el oeste o, en la
+// columna rx + w, en el este (doorWallOffsetCalculations al revés). Devuelve
+// 0 si la casilla no es un tramo del borde de esa sala.
+static int borde_puerta(int rx, int ry, int w, int h, int dx, int dy, int west, th_edge *e)
+{
+    if (!west && dy == ry && rx <= dx && dx < rx + w)
+        *e = (th_edge){(uint8_t)dx, (uint8_t)dy, TH_DIR_NORTH};
+    else if (!west && dy == ry + h && rx <= dx && dx < rx + w)
+        *e = (th_edge){(uint8_t)dx, (uint8_t)(dy - 1), TH_DIR_SOUTH};
+    else if (west && dx == rx && ry <= dy && dy < ry + h)
+        *e = (th_edge){(uint8_t)dx, (uint8_t)dy, TH_DIR_WEST};
+    else if (west && dx == rx + w && ry <= dy && dy < ry + h)
+        *e = (th_edge){(uint8_t)(dx - 1), (uint8_t)dy, TH_DIR_EAST};
+    else
+        return 0;
+    return 1;
+}
+
+// El inicio del oráculo: la simulación cargada con vacio.trg tiene que ser el
+// nivel recién cargado con los dueños de las parcelas que trae el escenario,
+// y nada más. Devuelve cuántas casillas difieren de eso (capas, banderas,
+// parcela, primer objeto y sala), o -1 si el nivel no se puede cargar.
+static int comprobar_inicio(const th_sim *s, const char *assets, int nivel)
+{
+    char ruta[1024];
+    snprintf(ruta, sizeof ruta, "%s/niveles/nivel%02d.tmp", assets, nivel);
+    if (cargar_mapa(ruta, nivel))
+        return -1;
+    const th_map *m = s->w.map;
+    for (int p = 1; p < mapa.parcel_count && p < m->parcel_count; p++)
+        if (m->parcel_owner[p] != mapa.parcel_owner[p])
+            th_map_set_parcel_owner(&mapa, p, m->parcel_owner[p], NULL);
+    int dif = 0;
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
+        const th_tile *a = &m->tiles[i], *b = &mapa.tiles[i];
+        dif += a->floor != b->floor || a->wall_n != b->wall_n || a->wall_w != b->wall_w || a->flags != b->flags ||
+               a->parcel != b->parcel || a->object != b->object || a->room != b->room;
+    }
+    return dif;
+}
+
+// La sala del escenario cuya puerta está en (x, y), o 0.
+static th_rnode sala_con_puerta(const th_rules *esc, th_rnode salas, int x, int y)
+{
+    for (uint32_t k = 0; k < th_rules_len(esc, salas); k++) {
+        const th_rnode sa = th_rules_at(esc, salas, k), pu = th_rules_get(esc, sa, "puerta");
+        if (th_rules_int(esc, th_rules_get(esc, pu, "x"), -1) == x && th_rules_int(esc, th_rules_get(esc, pu, "y"), -1) == y)
+            return sa;
+    }
+    return 0;
+}
+
+static int orden_salas(int argc, char **argv)
+{
+    const char *volcar = argc == 8 && strcmp(argv[6], "--volcar") == 0 ? argv[7] : NULL;
+    if (argc != 6 && !volcar)
+        return uso();
+    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], NULL, 1);
+    if (!s)
+        return 1;
+    size_t len;
+    uint8_t *dv = leer_fichero(argv[3], &len);
+    th_rules vac, esc;
+    if (!dv || th_rules_init(&vac, dv, len) != 0) {
+        fprintf(stderr, "%s no es un escenario válido\n", argv[3]);
+        return 1;
+    }
+    uint8_t *de = leer_fichero(argv[4], &len);
+    if (!de || th_rules_init(&esc, de, len) != 0) {
+        fprintf(stderr, "%s no es un escenario válido\n", argv[4]);
+        return 1;
+    }
+    const th_rules *defs = s->defs;
+    const int nivel = th_rules_int(&esc, th_rules_get(&esc, esc.root, "nivel"), 0);
+    int errores = 0;
+    // 1. El inicio: el nivel con sus parcelas.
+    const uint32_t v_celdas = th_rules_len(&vac, th_rules_get(&vac, vac.root, "celdas"));
+    const uint32_t v_salas = th_rules_len(&vac, th_rules_get(&vac, vac.root, "salas"));
+    const uint32_t v_objetos = th_rules_len(&vac, th_rules_get(&vac, vac.root, "objetos"));
+    if (v_celdas || v_salas || th_rules_int(&vac, th_rules_get(&vac, vac.root, "nivel"), 0) != nivel) {
+        printf("  el escenario vacío trae %u casillas y %u salas (tiene que traer solo los objetos del nivel) o es de "
+               "otro nivel\n",
+               v_celdas, v_salas);
+        errores++;
+    }
+    const int dif_inicio = comprobar_inicio(s, argv[2], nivel);
+    if (dif_inicio < 0)
+        return 1;
+    if (dif_inicio) {
+        printf("  el inicio no es el nivel %d con sus parcelas: %d casillas distintas\n", nivel, dif_inicio);
+        errores++;
+    }
+    // 2. Las capas finales de CorsixTH, para deducir las ventanas.
+    if (leer_capas(argv[5]))
+        return 1;
+    // 3. Los objetos del escenario, en el orden de world.entities.
+    const th_rnode lista = th_rules_get(&esc, esc.root, "objetos");
+    const th_rnode salas = th_rules_get(&esc, esc.root, "salas");
+    const th_rnode defs_obj = th_rules_get(defs, defs->root, "objetos");
+    static const char *const dirs[4] = {"north", "east", "south", "west"};
+    const uint32_t n = th_rules_len(&esc, lista), n_salas = th_rules_len(&esc, salas);
+    int entrada = 0, colocados = 0, de_borde = 0, rehechas = 0, puertas = 0, ventanas = 0, esclavas = 0;
+    for (uint32_t i = 0; i < n; i++) {
+        const th_rnode o = th_rules_at(&esc, lista, i);
+        const char *id = th_rules_str(&esc, th_rules_get(&esc, o, "id"), NULL);
+        const char *dn = th_rules_str(&esc, th_rules_get(&esc, o, "direccion"), NULL);
+        int dir = 0;
+        while (dn && dir < 3 && strcmp(dn, dirs[dir]))
+            dir++;
+        const int x = th_rules_int(&esc, th_rules_get(&esc, o, "x"), -1);
+        const int y = th_rules_int(&esc, th_rules_get(&esc, o, "y"), -1);
+        const th_rnode def = th_rules_get(defs, defs_obj, id ? id : "");
+        th_object ob;
+        memset(&ob, 0, sizeof ob);
+        if (x < 0 || x >= TH_MAP_WIDTH || y < 0 || y >= TH_MAP_HEIGHT || th_object_init(&ob, defs, def, dir)) {
+            fprintf(stderr, "objeto %s de (%d,%d) sin definición o fuera del mapa\n", id ? id : "?", x, y);
+            return 1;
+        }
+        if (ob.oclass == TH_OCLASS_ENTRANCE_DOOR) {
+            // Las puso th_map_load, y vacio.trg las trae: tienen que estar ya.
+            if (!th_map_has_thob(s->w.map, x, y, ob.thob)) {
+                printf("  la puerta de la entrada %s de (%d,%d) no está en el mapa\n", id, x, y);
+                errores++;
+            }
+            entrada++;
+            continue;
+        }
+        if (ob.oclass == TH_OCLASS_SWING_DOOR && !(ob.oflags & TH_OBJF_MASTER)) {
+            esclavas++; // la crea finishRoom con la maestra (door2); se comprueba al final
+            continue;
+        }
+        if (ob.oclass == TH_OCLASS_DOOR || ob.oclass == TH_OCLASS_SWING_DOOR) {
+            const th_rnode sa = sala_con_puerta(&esc, salas, x, y);
+            if (!sa) {
+                printf("  la puerta %s de (%d,%d) no es de ninguna sala del escenario\n", id, x, y);
+                errores++;
+                continue;
+            }
+            const char *sid = th_rules_str(&esc, th_rules_get(&esc, sa, "id"), NULL);
+            const int type = th_sim_room_type(s, sid ? sid : "");
+            const int num = th_rules_int(&esc, th_rules_get(&esc, sa, "num"), 0);
+            const int rx = th_rules_int(&esc, th_rules_get(&esc, sa, "x"), 0);
+            const int ry = th_rules_int(&esc, th_rules_get(&esc, sa, "y"), 0);
+            const int w = th_rules_int(&esc, th_rules_get(&esc, sa, "ancho"), 0);
+            const int h = th_rules_int(&esc, th_rules_get(&esc, sa, "alto"), 0);
+            th_edge door;
+            if (type == TH_NONE || !borde_puerta(rx, ry, w, h, x, y, dir == TH_DIR_WEST, &door)) {
+                printf("  la sala %d (%s) de (%d,%d) %dx%d: la puerta %s de (%d,%d) %s no está en su borde, o el tipo no "
+                       "existe\n",
+                       num, sid ? sid : "?", rx, ry, w, h, id, x, y, dirs[dir]);
+                errores++;
+                continue;
+            }
+            th_edge win[TH_SIM_WINDOWS];
+            const int nw = ventanas_de(defs, rx, ry, w, h, win, TH_SIM_WINDOWS);
+            if (s->n_rooms >= TH_SIM_ROOMS) {
+                printf("  la sala %d (%s): no caben más salas en el motor (TH_SIM_ROOMS = %d)\n", num, sid, TH_SIM_ROOMS);
+                errores++;
+                continue;
+            }
+            const int antes = s->n_rooms;
+            int ri = th_build_rebuild_room(s, type, rx, ry, w, h, door, win, nw);
+            // Una sala sin objetos obligatorios ni opcionales se confirma sola
+            // en enterObjectsPhase y th_build_rebuild_room devuelve -1 aunque
+            // la haya levantado (ninguna sala de las reglas es así): la sala
+            // nueva es la última de rooms.
+            if (ri < 0 && s->n_rooms == antes + 1)
+                ri = antes;
+            if (ri < 0 || ri >= s->n_rooms || s->n_rooms != antes + 1) {
+                printf("  la sala %d (%s) de (%d,%d) %dx%d no se pudo rehacer (%d)\n", num, sid, rx, ry, w, h, ri);
+                errores++;
+                continue;
+            }
+            const th_room *r = &s->rooms[ri];
+            rehechas++;
+            ventanas += nw;
+            puertas += (r->door != TH_NONE) + (r->door2 != TH_NONE);
+            if (r->door == TH_NONE || !th_map_has_thob(s->w.map, x, y, ob.thob)) {
+                printf("  la sala %d (%s): la puerta %s no quedó en (%d,%d)\n", num, sid, id, x, y);
+                errores++;
+            }
+            if (r->num != num) {
+                printf("  la sala %d (%s) quedó con el número %d\n", num, sid, r->num);
+                errores++;
+            }
+            continue;
+        }
+        // Los demás objetos, como los colocó el jugador (World:newObject).
+        if (!th_sim_object_fits(s, def)) {
+            printf("  el objeto %s de (%d,%d) no cabe en el motor (TH_SIM_OBJECTS = %d, TH_SIM_QUEUES = %d)\n", id, x, y,
+                   TH_SIM_OBJECTS, TH_SIM_QUEUES);
+            errores++;
+            continue;
+        }
+        if (th_sim_new_object(s, def, x, y, dir) == TH_NONE) {
+            printf("  el objeto %s de (%d,%d) no se pudo crear\n", id, x, y);
+            errores++;
+            continue;
+        }
+        colocados++;
+        de_borde += ob.oclass == TH_OCLASS_SIDE;
+    }
+    // Las hojas esclavas, al final: en world.entities pueden ir antes que la maestra.
+    for (uint32_t i = 0; i < n; i++) {
+        const th_rnode o = th_rules_at(&esc, lista, i);
+        const char *id = th_rules_str(&esc, th_rules_get(&esc, o, "id"), NULL);
+        th_object ob;
+        memset(&ob, 0, sizeof ob);
+        if (th_object_init(&ob, defs, th_rules_get(defs, defs_obj, id ? id : ""), 0) || ob.oclass != TH_OCLASS_SWING_DOOR ||
+            (ob.oflags & TH_OBJF_MASTER))
+            continue;
+        const int x = th_rules_int(&esc, th_rules_get(&esc, o, "x"), -1);
+        const int y = th_rules_int(&esc, th_rules_get(&esc, o, "y"), -1);
+        if (!th_map_has_thob(s->w.map, x, y, ob.thob)) {
+            printf("  la hoja esclava %s de (%d,%d) no la puso ninguna sala\n", id, x, y);
+            errores++;
+        }
+    }
+    if (rehechas != (int)n_salas) {
+        printf("  %u salas en el escenario, %d rehechas\n", n_salas, rehechas);
+        errores++;
+    }
+    th_map_update_shadows(s->w.map);
+    printf("salas: nivel %d; inicio: el nivel con sus parcelas y %u objetos del nivel (%d casillas distintas); %d salas "
+           "rehechas (%d puertas, %d esclavas, %d ventanas); %u objetos: %d de la entrada, %d colocados (%d de borde); "
+           "huella del mapa %08lx\n",
+           nivel, v_objetos, dif_inicio, rehechas, puertas, esclavas, ventanas, n, entrada, colocados, de_borde,
+           (unsigned long)th_map_hash(s->w.map));
+    if (s->w.map->thob_lost) {
+        printf("  %u objetos no cupieron en la lista de su casilla\n", (unsigned)s->w.map->thob_lost);
+        errores++;
+    }
+    // Las comparaciones y el volcado leen el mapa estático de este fichero.
+    memcpy(&mapa, s->w.map, sizeof mapa);
+    free(dv);
+    free(de);
+    if (volcar && volcar_celdas(volcar)) {
+        fprintf(stderr, "no se puede escribir %s\n", volcar);
+        return 1;
+    }
+    const int r = comparar_celdas(argv[5]);
+    return r || errores;
+}
+
 static int orden_reglas(int argc, char **argv)
 {
     size_t len;
@@ -1037,7 +1410,6 @@ static int orden_reglas(int argc, char **argv)
 int th64sim_hito4(char **argv); // hito4.c
 int th64sim_carga(char **argv); // hito4.c
 int th64sim_construir(int argc, char **argv); // construir.c
-th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
 
 // Dibuja el escenario del hito 4 tras unas horas de simulación: el mapa, los
 // objetos y, si se pide, las personas.
@@ -1181,6 +1553,8 @@ int main(int argc, char **argv)
         return orden_escenario(argv);
     if (argc == 5 && strcmp(argv[1], "banderas") == 0)
         return orden_banderas(argv);
+    if ((argc == 6 || argc == 8) && strcmp(argv[1], "salas") == 0)
+        return orden_salas(argc, argv);
     if (argc >= 15 && argc <= 17 && strcmp(argv[1], "escena") == 0)
         return orden_escena(argc, argv);
     if (argc == 5 && strcmp(argv[1], "caminata") == 0)

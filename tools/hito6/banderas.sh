@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Hito 6.3, paso 1: las banderas del mapa calculadas por el núcleo contra
-# CorsixTH, en tres partes:
+# Hito 6.3, pasos 1 y 3: las banderas y las paredes del mapa calculadas por el
+# núcleo contra CorsixTH, en cuatro partes:
 #   1. los 12 niveles recién cargados (th64sim mapa) contra los volcados del
 #      hito 2 (bench/scenarios/volcar_mapa.lua): capas, 13 banderas, parcela y
 #      objeto;
@@ -8,8 +8,18 @@
 #      (bench/scenarios/celdas_nivel.lua, que se ejecuta si no está);
 #   3. los hospitales exportados de CorsixTH (exportar_escenario.lua) de las
 #      campañas de los hitos 4 y 5 y el de las vistas: th64sim banderas rehace
-#      las banderas desde las salas y los objetos y compara las 16.384 casillas
-#      con todas las columnas.
+#      las banderas desde las salas y los objetos (las capas, copiadas del
+#      volcado) y compara las 16.384 casillas con todas las columnas;
+#   4. los mismos hospitales con las salas levantadas por el núcleo (paso 3,
+#      th64sim salas): desde el nivel recién cargado, el núcleo pone el suelo,
+#      las paredes, las ventanas y las puertas de cada sala como
+#      UIEditRoom:finishRoom (th_build_rebuild_room) y coloca los objetos en el
+#      orden de world.entities, y se comparan las 16.384 casillas con todas
+#      las columnas, también suelo, norte y oeste. El punto de partida es el
+#      escenario «vacío»: el mismo escenario.json sin salas, sin listas, sin
+#      personal y solo con los objetos que se crean desde el mapa (las puertas
+#      de la entrada, supports_creation_for_map), pasado a TRG1 contra el
+#      volcado del propio motor para que no lleve casillas.
 # Los escenarios se pasan a TRG1 aquí (tools/oraculo_hito4/escenario.py), sin
 # tocar los directorios de las campañas.
 # Uso: tools/hito6/banderas.sh [dir_salida]   (por defecto $TH64_WORK/resultados/hito6/banderas)
@@ -75,5 +85,55 @@ done
 objetos=$(cat "$OUT"/escenarios/*.txt | sed -n 's/.*; \([0-9]*\) objetos: .*/\1/p' | awk '{s += $1} END {print s + 0}')
 borde=$(cat "$OUT"/escenarios/*.txt | sed -n 's/.*(\([0-9]*\) de borde).*/\1/p' | awk '{s += $1} END {print s + 0}')
 echo "   $iguales de $total hospitales con las 16.384 casillas iguales ($objetos objetos, $borde de borde)"
+
+echo "== 4. Hospitales de CorsixTH con las salas levantadas por el núcleo (paredes, ventanas y puertas)"
+# Los objetos que se crean desde el mapa (supports_creation_for_map): lo único
+# que conserva el escenario vacío, porque ya los pone th_map_load.
+del_mapa=$("$SIM" reglas "$A/reglas/definiciones.trg" objetos 2>/dev/null | python3 -I -c '
+import json, sys
+print(" ".join(sorted(k for k, v in json.load(sys.stdin).items() if v.get("supports_creation_for_map"))))')
+# Lo de esta parte va en $OUT/salas, aparte de los .txt de la parte 3 (que suma sus cifras de $OUT/escenarios/*.txt).
+mkdir -p "$OUT/salas"
+total4=0
+iguales4=0
+for E in "$R"/hito4/campana/escenario_* "$R"/hito4/escenario_1 "$R"/hito5/campana/escenario_* "$R"/hito6/vistas/escenario; do
+  [ -f "$E/celdas.tsv" ] && [ -f "$E/escenario.json" ] || continue
+  nombre=$(echo "${E#"$R"/}" | tr '/' '_')
+  nivel=$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["nivel"])' "$E/escenario.json")
+  motor_tsv=$OUT/motor_nivel$nivel.tsv
+  [ -f "$motor_tsv" ] || "$SIM" mapa "$A/niveles/nivel$(printf %02d "$nivel").tmp" "$nivel" --volcar "$motor_tsv"
+  V=$OUT/salas/${nombre}_vacio
+  mkdir -p "$V"
+  # shellcheck disable=SC2086
+  python3 -I - "$E/escenario.json" "$V/escenario.json" $del_mapa <<'EOF'
+import json, sys
+doc = json.load(open(sys.argv[1]))
+del_mapa = set(sys.argv[3:])
+doc["salas"] = []
+doc["personal"] = []
+doc.pop("listas", None)
+doc["objetos"] = [o for o in doc["objetos"] if o["id"] in del_mapa]
+json.dump(doc, open(sys.argv[2], "w"), ensure_ascii=False, sort_keys=True)
+EOF
+  # Contra el volcado del propio motor: ninguna casilla difiere y el TRG1 no lleva «celdas».
+  ln -sf "$motor_tsv" "$V/celdas.tsv"
+  python3 -I "$REPO_DIR/tools/oraculo_hito4/escenario.py" "$V" "$motor_tsv" "$OUT/salas/${nombre}_vacio.trg" > /dev/null
+  total4=$((total4 + 1))
+  if "$SIM" salas "$A" "$OUT/salas/${nombre}_vacio.trg" "$OUT/escenarios/$nombre.trg" "$E/celdas.tsv" \
+      > "$OUT/salas/$nombre.txt"; then
+    iguales4=$((iguales4 + 1))
+  else
+    fallos=$((fallos + 1))
+    echo "   $nombre:"
+    sed 's/^/     /' "$OUT/salas/$nombre.txt"
+  fi
+done
+# Las cifras de la línea «salas: ...» de cada hospital, sumadas.
+suma4() { cat "$OUT"/salas/*.txt | sed -n "s/$1/\1/p" | awk '{s += $1} END {print s + 0}'; }
+salas4=$(suma4 '.*; \([0-9]*\) salas rehechas.*')
+puertas4=$(suma4 '.*(\([0-9]*\) puertas, .*')
+ventanas4=$(suma4 '.*, \([0-9]*\) ventanas).*')
+objetos4=$(suma4 '.*, \([0-9]*\) colocados (.*')
+echo "   $iguales4 de $total4 hospitales con las 16.384 casillas iguales, capas incluidas ($salas4 salas rehechas, $puertas4 puertas, $ventanas4 ventanas, $objetos4 objetos colocados)"
 [ "$fallos" -eq 0 ] || { echo "FALLOS: $fallos"; exit 1; }
 echo "todo igual"

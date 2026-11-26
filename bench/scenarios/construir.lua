@@ -34,9 +34,11 @@
 --   salas.tsv       tras cada orden que cambia algo de las salas, todas las de
 --       world.rooms por id: n, id, tipo (room_info.id), x, y, ancho, alto,
 --       puerta_x, puerta_y (la casilla del objeto puerta, la maestra en la
---       doble; - si la obra la ha quitado), puerta_lado (su direction, north o
---       west, el wall de blueprint_door), construida (built), activa
---       (is_active) y fase (la de la obra si es la suya, o -);
+--       doble), puerta_lado (el lado de la orden puerta: north, east, south o
+--       west; los tres son - si la sala está fuera del mapa, sin puerta),
+--       construida (built), activa (is_active) y fase (la de la obra si es la
+--       suya, o -; una sala que una obra cerró sin terminar sigue en
+--       world.rooms con -);
 --   celdas.tsv, escenario.json  el estado final, como inicio/.
 local th64 = th64
 local escenario = dofile(th64.bench_dir .. "/lib/escenario.lua")
@@ -208,9 +210,22 @@ local function foto_salas()
   local filas = {}
   for _, id in ipairs(ids) do
     local r = world.rooms[id]
+    -- La puerta: el objeto (la maestra en la doble) y su lado visto desde
+    -- dentro, el de la orden puerta: north o west si su casilla es de la
+    -- sala (la primera fila o columna), y si no south o east (el objeto de
+    -- una puerta al sur o al este está en la fila o columna de fuera). Sin
+    -- puerta en el mapa (la sala salió del mapa con removeRoom), -.
     local d = r.door
-    filas[#filas + 1] = table.concat({id, r.room_info.id, r.x - 1, r.y - 1, r.width, r.height,
-      d and d.tile_x and d.tile_x - 1 or "-", d and d.tile_y and d.tile_y - 1 or "-", d and d.direction or "-",
+    local px, py, lado = "-", "-", "-"
+    if d and d.tile_x then
+      px, py = d.tile_x - 1, d.tile_y - 1
+      if d.direction == "north" then
+        lado = d.tile_y == r.y and "north" or "south"
+      else
+        lado = d.tile_x == r.x and "west" or "east"
+      end
+    end
+    filas[#filas + 1] = table.concat({id, r.room_info.id, r.x - 1, r.y - 1, r.width, r.height, px, py, lado,
       r.built and 1 or 0, r.is_active and 1 or 0, win and win.room == r and win.phase or "-"}, "\t")
   end
   return filas, table.concat(filas, "\n")

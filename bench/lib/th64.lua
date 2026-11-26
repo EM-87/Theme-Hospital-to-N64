@@ -20,6 +20,7 @@ local M = {}
 -- cargar este módulo; se toma la referencia en M.start().
 local tracy
 local opts, out_dir, log_fh
+local quitting = false
 local script_co, req
 local hours_done = 0
 local sampler = nil
@@ -46,8 +47,13 @@ function M.log(fmt, ...)
   local s = select("#", ...) > 0 and fmt:format(...) or tostring(fmt)
   io.stdout:write("[th64] ", s, "\n")
   io.stdout:flush()
-  log_fh:write(s, "\n")
-  log_fh:flush()
+  -- Tras quit, th64.log está cerrado: lo que el guion diga en los ticks de
+  -- gracia va solo a la salida estándar (si no, escribir en el fichero cerrado
+  -- tiraba el manejador del temporizador y CorsixTH no salía nunca).
+  if log_fh then
+    log_fh:write(s, "\n")
+    log_fh:flush()
+  end
 end
 
 function M.hours_done()
@@ -89,10 +95,15 @@ end
 function M.quit(code)
   M.log("fin (código %d)", code or 0)
   log_fh:close()
+  log_fh = nil
   if code and code ~= 0 then
     os.exit(code, true)
   end
   -- Un segundo más de bucle para que Tracy envíe lo pendiente antes de salir.
+  -- El mundo sigue dando ticks mientras tanto, y un gancho del guion puede
+  -- fallar sobre lo que el guion ya cerró: con quitting, ese fallo termina en
+  -- vez de abortar (se vio con receiveMoney de traza_hito4.lua).
+  quitting = true
   if coroutine.isyieldable() then
     M.autorun_speed = nil
     for _ = 1, 55 do coroutine.yield({kind = "ticks", n = 1}) end
@@ -225,6 +236,10 @@ function M.start()
   app.eventHandlers.timer = function(self, ...)
     local ok, res = xpcall(step, debug.traceback, self, orig_timer, ...)
     if not ok then
+      if quitting then
+        TheApp:abandon()
+        return true
+      end
       M.log("ERROR en el guion:\n%s", tostring(res))
       M.quit(3)
     end

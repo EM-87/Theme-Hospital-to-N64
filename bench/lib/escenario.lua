@@ -92,8 +92,12 @@ function E.documento(world)
   table.sort(listas)
   for _, r in pairs(world.rooms) do
     if r then
+      -- Una sala que una obra cerró sin terminar sigue en world.rooms fuera
+      -- del mapa, con la puerta destruida (bench/lib/ordenes.lua): sin puerta.
+      local d = r.door
       salas[#salas + 1] = {num = r.id, id = r.room_info.id, x = r.x - 1, y = r.y - 1, ancho = r.width, alto = r.height,
-        puerta = {x = r.door.tile_x - 1, y = r.door.tile_y - 1, direccion = r.door.direction}, activa = r.is_active}
+        puerta = d and d.tile_x and {x = d.tile_x - 1, y = d.tile_y - 1, direccion = d.direction} or nil,
+        activa = r.is_active}
     end
   end
   table.sort(salas, function(a, b) return a.num < b.num end)
