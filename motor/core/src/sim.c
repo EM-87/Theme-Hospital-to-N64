@@ -1682,10 +1682,12 @@ int th_sim_new_room(th_sim *s, int type, int x, int y, int w, int h, int door, i
     rm->door2 = (uint8_t)door2;
     rm->staff_member = rm->just_dealt_with = rm->call_staff = TH_NONE;
     rm->maximum_patients = 1;
+    // Room:initRoom: solo la hoja maestra pasa por Door:setupDoor (su sala);
+    // la esclava (door2) se queda sin sala, y así la exporta CorsixTH.
     if (door != TH_NONE)
         s->obj[door].room = num;
     if (door2 != TH_NONE)
-        s->obj[door2].room = num;
+        s->obj[door2].room = 0;
     return i;
 }
 
@@ -1950,6 +1952,15 @@ static int load_scenario(th_sim *s)
         rm->staff_member = rm->just_dealt_with = rm->call_staff = TH_NONE;
         rm->maximum_patients = 1;
         th_rnode pu = get(r, sa, "puerta");
+        rm->door = rm->door2 = TH_NONE;
+        if (!pu) {
+            // Una sala que una obra cerró sin terminar (UIEditRoom:close →
+            // cancel → removeRoom) sigue en world.rooms sin puerta, fuera del
+            // mapa, sin built ni is_active: solo ocupa su número.
+            rm->is_active = (uint8_t)th_rules_bool(r, get(r, sa, "activa"), 0);
+            s->n_rooms++;
+            continue;
+        }
         rm->door = (uint8_t)th_sim_object_at(s, th_rules_int(r, get(r, pu, "x"), 0), th_rules_int(r, get(r, pu, "y"), 0),
                                              TH_OBJ_DOOR);
         if (rm->door == TH_NONE)
@@ -1957,8 +1968,8 @@ static int load_scenario(th_sim *s)
         s->obj[rm->door].room = rm->num;
         rm->built = 1;
         // La esclava de una puerta doble: swing_door_left en la casilla de
-        // antes (x−1 si la pared es norte, y−1 si es oeste).
-        rm->door2 = TH_NONE;
+        // antes (x−1 si la pared es norte, y−1 si es oeste). Sin sala, como
+        // en Room:initRoom (solo la maestra pasa por setupDoor).
         if (s->obj[rm->door].oclass == TH_OCLASS_SWING_DOOR) {
             const th_object *dr = &s->obj[rm->door];
             const int sx = dr->dir == TH_DIR_WEST ? dr->x : dr->x - 1, sy = dr->dir == TH_DIR_WEST ? dr->y - 1 : dr->y;
@@ -1966,7 +1977,7 @@ static int load_scenario(th_sim *s)
                 if (s->obj[k].def && s->obj[k].oclass == TH_OCLASS_SWING_DOOR && !(s->obj[k].oflags & TH_OBJF_MASTER) &&
                     s->obj[k].x == sx && s->obj[k].y == sy) {
                     rm->door2 = (uint8_t)k;
-                    s->obj[k].room = rm->num;
+                    s->obj[k].room = 0;
                 }
         }
         const int min_size = th_rules_int(s->defs, get(s->defs, get(s->defs, defs_salas, id), "minimum_size"), 0);

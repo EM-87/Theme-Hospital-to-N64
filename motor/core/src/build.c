@@ -1725,11 +1725,14 @@ static int order_recoger_obra(th_sim *s, const th_order *o)
     if (obj < 0)
         return TH_REASON_SIN_OBJETO;
     const th_object *ob = &s->obj[obj];
+    // setWorldHitTest(self.room) (er:enterObjectsPhase; GameUI:onCursorWorldPositionChange):
+    // solo se puede pinchar lo que está en la sala (getRoom, la de su casilla:
+    // también un objeto de pasillo que la sala tapa) y no es su puerta. Las
+    // demás puertas son de otra sala, y la hoja esclava no tiene sala.
     const int room = th_map_tile_c(s->w.map, ob->x, ob->y)->room;
-    const int corridor = th_rules_get(s->defs, ob->def, "corridor_object") != 0;
     if (ob->oclass == TH_OCLASS_DOOR || ob->oclass == TH_OCLASS_SWING_DOOR || ob->oclass == TH_OCLASS_ENTRANCE_DOOR)
         return TH_REASON_NO_SE_PUEDE;
-    if (!room || (room != s->rooms[b->room].num && !corridor))
+    if (room != s->rooms[b->room].num)
         return TH_REASON_NO_SE_PUEDE;
     const th_rnode def = ob->def;
     const int dir = ob->dir;

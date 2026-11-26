@@ -134,6 +134,7 @@ salas4=$(suma4 '.*; \([0-9]*\) salas rehechas.*')
 puertas4=$(suma4 '.*(\([0-9]*\) puertas, .*')
 ventanas4=$(suma4 '.*, \([0-9]*\) ventanas).*')
 objetos4=$(suma4 '.*, \([0-9]*\) colocados (.*')
-echo "   $iguales4 de $total4 hospitales con las 16.384 casillas iguales, capas incluidas ($salas4 salas rehechas, $puertas4 puertas, $ventanas4 ventanas, $objetos4 objetos colocados)"
+sinpuerta4=$(suma4 '.*) y \([0-9]*\) sin puerta;.*')
+echo "   $iguales4 de $total4 hospitales con las 16.384 casillas iguales, capas incluidas ($salas4 salas rehechas, $puertas4 puertas, $ventanas4 ventanas, $objetos4 objetos colocados; $sinpuerta4 salas sin puerta)"
 [ "$fallos" -eq 0 ] || { echo "FALLOS: $fallos"; exit 1; }
 echo "todo igual"

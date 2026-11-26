@@ -320,6 +320,17 @@ static int sitio(const th_sim *s, int i)
     return k;
 }
 
+// Un objeto del núcleo como lo escribe la batería: id x,y dirección sala recogido.
+static void describir_objeto(const th_sim *s, int i, char *out, size_t tam)
+{
+    const th_object *o = &s->obj[i];
+    const char *id = th_rules_str(s->defs, th_rules_get(s->defs, o->def, "id"), NULL);
+    snprintf(out, tam, "%s %d,%d %s sala %d recogido %d", id ? id : "?", o->x, o->y, dir_nombres[o->dir & 3], o->room,
+             (o->oflags & TH_OBJF_PICKED_UP) != 0);
+}
+
+#define FILAS_OBJETOS 512
+
 static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
 {
     if (!t->f || (!t->hay && !leer_fila(t)))
@@ -343,37 +354,61 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
             }
             nuestros[j] = i;
         }
-    int k = 0, distintos = 0;
+    // Las filas de CorsixTH de esta orden (world.entities), con su sitio en la
+    // lista de su casilla («orden»; -1 si la columna no está).
+    static char suyos[FILAS_OBJETOS][160];
+    static int sitios[FILAS_OBJETOS];
+    int ns = 0;
     while (t->hay && t->n_fila == n) {
-        char suyo[160], mio[160] = "(nada)";
-        snprintf(suyo, sizeof suyo, "%s %s,%s %s sala %s recogido %s", campo(t, "id"), campo(t, "x"), campo(t, "y"),
-                 campo(t, "direccion"), campo(t, "sala"), campo(t, "recogido"));
-        if (k < nn) {
-            const th_object *o = &s->obj[nuestros[k]];
-            const char *id = th_rules_str(s->defs, th_rules_get(s->defs, o->def, "id"), NULL);
-            snprintf(mio, sizeof mio, "%s %d,%d %s sala %d recogido %d", id ? id : "?", o->x, o->y,
-                     dir_nombres[o->dir & 3], o->room, (o->oflags & TH_OBJF_PICKED_UP) != 0);
+        if (ns < FILAS_OBJETOS) {
+            snprintf(suyos[ns], sizeof suyos[0], "%s %s,%s %s sala %s recogido %s", campo(t, "id"), campo(t, "x"),
+                     campo(t, "y"), campo(t, "direccion"), campo(t, "sala"), campo(t, "recogido"));
+            const char *orden = campo(t, "orden");
+            sitios[ns] = *orden ? atoi(orden) : -1;
         }
+        ns++;
+        if (!leer_fila(t))
+            break;
+    }
+    int distintos = 0;
+    for (int k = 0; k < nn || k < ns; k++) {
+        char mio[160] = "(nada)";
+        const char *suyo = k < ns && k < FILAS_OBJETOS ? suyos[k] : "(nada)";
+        if (k < nn)
+            describir_objeto(s, nuestros[k], mio, sizeof mio);
         int igual = !strcmp(suyo, mio);
-        const char *orden = campo(t, "orden");
-        if (igual && *orden && k < nn && atoi(orden) != sitio(s, nuestros[k])) {
+        // Las dos hojas de una puerta doble van seguidas en world.entities,
+        // en el orden en que pairs(blueprint_wall_anims) las recorre en
+        // er:finishRoom: el de la tabla de Lua (ltable.c), que depende de las
+        // coordenadas (la clave módulo el tamaño de la tabla). El núcleo no
+        // copia ese accidente: la pareja se compara sin orden.
+        if (!igual && k + 1 < nn && k + 1 < ns && k + 1 < FILAS_OBJETOS &&
+            s->obj[nuestros[k]].oclass == TH_OCLASS_SWING_DOOR && s->obj[nuestros[k + 1]].oclass == TH_OCLASS_SWING_DOOR) {
+            char otro[160];
+            describir_objeto(s, nuestros[k + 1], otro, sizeof otro);
+            if (!strcmp(suyos[k], otro) && !strcmp(suyos[k + 1], mio)) {
+                const int tmp = nuestros[k];
+                nuestros[k] = nuestros[k + 1];
+                nuestros[k + 1] = tmp;
+                describir_objeto(s, nuestros[k], mio, sizeof mio);
+                igual = 1;
+            }
+        }
+        if (igual && k < nn && k < FILAS_OBJETOS && sitios[k] >= 0 && sitios[k] != sitio(s, nuestros[k])) {
             igual = 0;
-            snprintf(mio + strlen(mio), sizeof mio - strlen(mio), " (sitio %d, CorsixTH %s)", sitio(s, nuestros[k]),
-                     orden);
+            snprintf(mio + strlen(mio), sizeof mio - strlen(mio), " (sitio %d, CorsixTH %d)", sitio(s, nuestros[k]),
+                     sitios[k]);
         }
         if (!igual) {
             distintos++;
             if (mostrar && distintos <= 5)
                 anotar("    objeto %d: th64 %s; CorsixTH %s\n", k, mio, suyo);
         }
-        k++;
-        if (!leer_fila(t))
-            break;
     }
-    if (k != nn) {
+    if (ns != nn) {
         distintos++;
         if (mostrar)
-            anotar("    objetos: th64 %d, CorsixTH %d\n", nn, k);
+            anotar("    objetos: th64 %d, CorsixTH %d\n", nn, ns);
     }
     return distintos;
 }

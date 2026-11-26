@@ -1194,6 +1194,52 @@ static th_rnode sala_con_puerta(const th_rules *esc, th_rnode salas, int x, int 
     return 0;
 }
 
+// Las salas sin puerta del escenario (una obra cerrada sin terminar,
+// UIEditRoom:close → cancel → removeRoom, sigue en world.rooms fuera del mapa
+// y ocupa su número): se crean en su turno, por número, para que las demás
+// reciban el suyo (#world.rooms + 1). Crea las de número menor que «hasta»
+// (todas las que quedan, con hasta 0) y devuelve cuántas.
+static int crear_sin_puerta(th_sim *s, const th_rules *esc, th_rnode salas, int hasta, int *errores)
+{
+    int creadas = 0;
+    for (;;) {
+        int mayor = 0;
+        for (int k = 0; k < s->n_rooms; k++)
+            if (s->rooms[k].num > mayor)
+                mayor = s->rooms[k].num;
+        th_rnode sa = 0;
+        int num = 0;
+        for (uint32_t k = 0; k < th_rules_len(esc, salas); k++) {
+            const th_rnode c = th_rules_at(esc, salas, k);
+            const int nc = th_rules_int(esc, th_rules_get(esc, c, "num"), 0);
+            if (th_rules_get(esc, c, "puerta") || nc <= mayor || (hasta && nc >= hasta) || (sa && nc >= num))
+                continue;
+            sa = c;
+            num = nc;
+        }
+        if (!sa)
+            return creadas;
+        const char *sid = th_rules_str(esc, th_rules_get(esc, sa, "id"), NULL);
+        const int type = th_sim_room_type(s, sid ? sid : "");
+        if (type == TH_NONE || s->n_rooms >= TH_SIM_ROOMS) {
+            printf("  la sala %d (%s) sin puerta: el tipo no existe o no caben más salas (TH_SIM_ROOMS = %d)\n", num,
+                   sid ? sid : "?", TH_SIM_ROOMS);
+            (*errores)++;
+            return creadas;
+        }
+        const int ri = th_sim_new_room(s, type, th_rules_int(esc, th_rules_get(esc, sa, "x"), 0),
+                                       th_rules_int(esc, th_rules_get(esc, sa, "y"), 0),
+                                       th_rules_int(esc, th_rules_get(esc, sa, "ancho"), 0),
+                                       th_rules_int(esc, th_rules_get(esc, sa, "alto"), 0), TH_NONE, TH_NONE, TH_NONE);
+        if (ri < 0 || s->rooms[ri].num != num) {
+            printf("  la sala %d (%s) sin puerta quedó con el número %d\n", num, sid ? sid : "?",
+                   ri < 0 ? -1 : s->rooms[ri].num);
+            (*errores)++;
+        }
+        creadas++;
+    }
+}
+
 static int orden_salas(int argc, char **argv)
 {
     const char *volcar = argc == 8 && strcmp(argv[6], "--volcar") == 0 ? argv[7] : NULL;
@@ -1243,7 +1289,7 @@ static int orden_salas(int argc, char **argv)
     const th_rnode defs_obj = th_rules_get(defs, defs->root, "objetos");
     static const char *const dirs[4] = {"north", "east", "south", "west"};
     const uint32_t n = th_rules_len(&esc, lista), n_salas = th_rules_len(&esc, salas);
-    int entrada = 0, colocados = 0, de_borde = 0, rehechas = 0, puertas = 0, ventanas = 0, esclavas = 0;
+    int entrada = 0, colocados = 0, de_borde = 0, rehechas = 0, puertas = 0, ventanas = 0, esclavas = 0, sin_puerta = 0;
     for (uint32_t i = 0; i < n; i++) {
         const th_rnode o = th_rules_at(&esc, lista, i);
         const char *id = th_rules_str(&esc, th_rules_get(&esc, o, "id"), NULL);
@@ -1297,6 +1343,7 @@ static int orden_salas(int argc, char **argv)
             }
             th_edge win[TH_SIM_WINDOWS];
             const int nw = ventanas_de(defs, rx, ry, w, h, win, TH_SIM_WINDOWS);
+            sin_puerta += crear_sin_puerta(s, &esc, salas, num, &errores);
             if (s->n_rooms >= TH_SIM_ROOMS) {
                 printf("  la sala %d (%s): no caben más salas en el motor (TH_SIM_ROOMS = %d)\n", num, sid, TH_SIM_ROOMS);
                 errores++;
@@ -1360,16 +1407,17 @@ static int orden_salas(int argc, char **argv)
             errores++;
         }
     }
-    if (rehechas != (int)n_salas) {
-        printf("  %u salas en el escenario, %d rehechas\n", n_salas, rehechas);
+    sin_puerta += crear_sin_puerta(s, &esc, salas, 0, &errores);
+    if (rehechas + sin_puerta != (int)n_salas) {
+        printf("  %u salas en el escenario, %d rehechas y %d sin puerta\n", n_salas, rehechas, sin_puerta);
         errores++;
     }
     th_map_update_shadows(s->w.map);
     printf("salas: nivel %d; inicio: el nivel con sus parcelas y %u objetos del nivel (%d casillas distintas); %d salas "
-           "rehechas (%d puertas, %d esclavas, %d ventanas); %u objetos: %d de la entrada, %d colocados (%d de borde); "
-           "huella del mapa %08lx\n",
-           nivel, v_objetos, dif_inicio, rehechas, puertas, esclavas, ventanas, n, entrada, colocados, de_borde,
-           (unsigned long)th_map_hash(s->w.map));
+           "rehechas (%d puertas, %d esclavas, %d ventanas) y %d sin puerta; %u objetos: %d de la entrada, %d colocados "
+           "(%d de borde); huella del mapa %08lx\n",
+           nivel, v_objetos, dif_inicio, rehechas, puertas, esclavas, ventanas, sin_puerta, n, entrada, colocados,
+           de_borde, (unsigned long)th_map_hash(s->w.map));
     if (s->w.map->thob_lost) {
         printf("  %u objetos no cupieron en la lista de su casilla\n", (unsigned)s->w.map->thob_lost);
         errores++;

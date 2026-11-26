@@ -1366,7 +1366,7 @@ static void test_puerta_doble(void)
         TH_CHECK_EQ(esclava->x, casos[i].sx);
         TH_CHECK_EQ(esclava->y, casos[i].sy);
         TH_CHECK_EQ(esclava->dir, casos[i].dir);
-        TH_CHECK_EQ(esclava->room, 1);
+        TH_CHECK_EQ(esclava->room, 0); // Room:initRoom solo hace setupDoor con la maestra: la esclava no tiene sala
         TH_CHECK_EQ(esclava->queue, TH_NONE);
         TH_CHECK_EQ(sim.n_obj, 2);
         TH_CHECK_EQ(th_map_thob_at(&mapa, tx, ty, 0), 53);
@@ -1568,6 +1568,11 @@ static void test_objetos_obra(void)
     TH_CHECK_EQ(orden0(TH_ORD_FIN_VENTANAS), TH_REASON_OK);
     TH_CHECK_EQ(sim.n_rooms, 2);
     TH_CHECK_EQ(sim.rooms[1].num, 2);
+    // Desde esta obra no se puede coger la planta de la sala 1 aunque sea un
+    // objeto de pasillo: el hit test del mundo solo da lo que está en la sala
+    // en obra (setWorldHitTest(self.room), game_ui.lua:437-444).
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 13, 12, 0, 0, NULL), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(sim.obj[objeto_en(13, 12)].thob, 45);
     for (int y = 10; y <= 13; y++)
         TH_CHECK_EQ(bloque_w(10, y), 83);
     TH_CHECK_EQ(bloque_n(6, 10), 82);
