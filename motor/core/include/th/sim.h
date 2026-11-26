@@ -242,7 +242,11 @@ enum {
 
 // La ventana de colocar objetos (UIPlaceObjects de CorsixTH): lo que se ha
 // comprado o cogido y queda por colocar, una fila por tipo de objeto.
-#define TH_SIM_PLACE_ITEMS 12 // una sala: sus obligatorios más los opcionales comprados
+// Filas (tipos de objeto) de la lista: los tipos distintos de una sala (9
+// como mucho, psiquiatría e investigación) más los 7 objetos de pasillo que
+// una sala nueva puede tapar y removeRoom devuelve a la lista: window_add no
+// se queda sin sitio con las reglas del juego.
+#define TH_SIM_PLACE_ITEMS 16
 #define TH_SIM_PLACE_EXISTING 8
 typedef struct th_place_item {
     th_rnode def;

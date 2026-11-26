@@ -42,7 +42,9 @@ static th_rules defs, nivel;
 // Las definiciones que importan para colocar: clase, thob, corridor_object y
 // las huellas con su adjacent_to_solid_footprint, como las de CorsixTH. Para
 // las salas: gp (minimum_size 4, paredes blancas, suelo 18, un escritorio
-// obligatorio, planta y radiador opcionales, level_config_id 7), ward (6,
+// obligatorio; opcionales la planta, el radiador, el sofá y un analizador, los
+// dos últimos con StartAvail 0 en el nivel: el sofá se vende porque no es
+// investigable y el analizador no; level_config_id 7), ward (6,
 // suelo 21, puerta doble, id 9) y staff_room (necesita un sofá que el nivel
 // no da: no está descubierta). Los juegos de paredes white y external son
 // los de walls/white.lua y walls/external.lua.
@@ -66,6 +68,8 @@ static const char *const definiciones =
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}], \"use_position\": [0, 1]}}},"
     " \"sofa\": {\"id\": \"sofa\", \"thob\": 19, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}]}}},"
+    " \"analyser\": {\"id\": \"analyser\", \"thob\": 20, \"research_category\": \"diagnosis\", \"orientations\": {"
+    "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}]}}},"
     " \"reception_desk\": {\"id\": \"reception_desk\", \"thob\": 2, \"corridor_object\": 1, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true},"
     "                             {\"#1\": 0, \"#2\": 1, \"only_passable\": true}],"
@@ -78,7 +82,8 @@ static const char *const definiciones =
     " \"swing_door_right\": {\"id\": \"swing_door_right\", \"thob\": 53, \"class\": \"SwingDoor\"}"
     "}, \"salas\": {"
     " \"gp\": {\"id\": \"gp\", \"level_config_id\": 7, \"minimum_size\": 4, \"wall_type\": \"white\","
-    "  \"floor_tile\": 18, \"objects_needed\": {\"desk\": 1}, \"objects_additional\": [\"plant\", \"radiator\"]},"
+    "  \"floor_tile\": 18, \"objects_needed\": {\"desk\": 1},"
+    "  \"objects_additional\": [\"plant\", \"radiator\", \"sofa\", \"analyser\"]},"
     " \"ward\": {\"id\": \"ward\", \"level_config_id\": 9, \"minimum_size\": 6, \"wall_type\": \"white\","
     "  \"floor_tile\": 21, \"swing_doors\": true, \"objects_needed\": {\"desk\": 1},"
     "  \"objects_additional\": [\"plant\"]},"
@@ -102,7 +107,7 @@ static const char *const definiciones =
 
 // El nivel: los precios de los objetos (level_config.objects[thob].StartCost,
 // del thob 1 al 50), todos disponibles desde el principio (AvailableForLevel y
-// StartAvail) salvo el sofá (19), y el precio de las salas (rooms[id].Cost,
+// StartAvail) salvo el sofá (19) y el analizador (20), y el precio de las salas (rooms[id].Cost,
 // un mapa con claves enteras como el del conversor): el GP 2.280, la
 // enfermería 1.700 y la sala de personal 1.350, los del nivel 1.
 static size_t nivel_trg(void)
@@ -116,7 +121,7 @@ static size_t nivel_trg(void)
                       "%s{\"StartCost\": %d, \"AvailableForLevel\": 1, \"StartAvail\": %d}", thob > 1 ? ", " : "",
                       thob == 4 ? 40 : thob == 44 ? 20 : thob == 45 ? 5 : thob == 8 ? 100 : thob == 2 ? 150
                       : thob == 19 ? 150 : 0,
-                      thob == 19 ? 0 : 1);
+                      thob == 19 || thob == 20 ? 0 : 1);
     snprintf(json + k, sizeof json - (size_t)k, "]}");
     return th_test_trg(json, trg_nivel, sizeof trg_nivel);
 }
@@ -1612,6 +1617,33 @@ static void test_objetos_obra(void)
 // verifyOrAbortRoom (game_ui.lua:1259-1284; edit_room.lua:131-164), que con
 // abortRoom quita la sala de world.rooms; UIEditRoom:close() a secas, que la
 // dejaría en world.rooms sin levantar, no lo llama la interfaz nunca.
+// La tienda de la obra (er:purchaseItems): un opcional con StartAvail 0 se
+// vende si no es investigable (sin research_category no tiene entrada en
+// research_progress: la videoconsola del nivel 5) y no, si lo es (discovered
+// empieza en StartAvail). Y el tope de la lista (TH_SIM_PLACE_ITEMS) antes de
+// cobrar.
+static void test_tienda_descubierta(void)
+{
+    preparar_salas();
+    gp_hasta(TH_OBRA_OBJECTS);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR_SALA, "analyser", 0, 0, 0, 1, NULL), TH_REASON_NO_ES_DE_SALA);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR_SALA, "sofa", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hosp.balance, SALDO - 100 - 150);
+    TH_CHECK_EQ(sim.place.n, 2); // el escritorio obligatorio y el sofá
+    TH_CHECK_EQ(sim.place.item[1].def, def("sofa"));
+    // Con la lista llena, un tipo nuevo es lleno y no cobra; uno que ya está, sí.
+    const int n = sim.place.n;
+    sim.place.n = TH_SIM_PLACE_ITEMS;
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR_SALA, "plant", 0, 0, 0, 1, NULL), TH_REASON_LLENO);
+    TH_CHECK_EQ(sim.hosp.balance, SALDO - 250);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR_SALA, "sofa", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hosp.balance, SALDO - 400);
+    sim.place.n = (uint8_t)n;
+    TH_CHECK_EQ(sim.place.item[1].qty, 2);
+    TH_CHECK_EQ(orden0(TH_ORD_ATRAS), TH_REASON_OK); // se devuelven el escritorio y los dos sofás
+    TH_CHECK_EQ(sim.hosp.balance, SALDO);
+}
+
 static void test_cerrar_obra(void)
 {
     preparar_salas();
@@ -1907,6 +1939,7 @@ void th_test_build(void)
     test_fin_ventanas();
     test_puerta_doble();
     test_objetos_obra();
+    test_tienda_descubierta();
     test_cerrar_obra();
     test_atras();
     test_vender_comprar_obra();

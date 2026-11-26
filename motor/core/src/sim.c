@@ -1661,7 +1661,10 @@ int th_sim_new_room(th_sim *s, int type, int x, int y, int w, int h, int door, i
     if (i == TH_NONE || i >= s->n_rooms) {
         if (s->n_rooms >= TH_SIM_ROOMS)
             return TH_NONE;
-        // id = #world.rooms + 1: sin huecos, el mayor más uno.
+        // id = #world.rooms + 1: sin huecos, el mayor más uno. Con huecos en
+        // medio (vender una sala hecha, paso 4) el # de Lua es una búsqueda de
+        // borde y puede dar menos: decidirlo entonces (copiar luaH_getn o
+        // fijar «el mayor más uno» como regla propia).
         num = 0;
         for (int k = 0; k < s->n_rooms; k++)
             if (s->rooms[k].num > num)
@@ -1879,13 +1882,19 @@ static int load_scenario(th_sim *s)
     // Los dueños de las parcelas («parcelas», de la 1 en adelante): las
     // casillas ya vienen en «celdas», y los objetos del nivel de una parcela
     // comprada, en «objetos» (World:setPlotOwner ya los creó), así que solo se
-    // apuntan el dueño y que esos objetos ya están.
+    // apuntan el dueño y que esos objetos ya están. Un escenario sin «celdas»
+    // (el «vacío» del oráculo de las paredes, th64sim salas) parte del nivel
+    // recién cargado: ahí la parcela comprada se compra de verdad
+    // (th_map_set_parcel_owner, como Map:setPlotOwner).
     th_rnode parcelas = get(r, root, "parcelas");
     th_map *m = s->w.map;
+    const int sin_celdas = th_rules_len(r, get(r, root, "celdas")) == 0;
     for (uint32_t i = 0; i < th_rules_len(r, parcelas) && i + 1 < m->parcel_count; i++) {
         const int p = (int)i + 1, owner = th_rules_int(r, th_rules_at(r, parcelas, i), 0);
         if (owner < 0 || owner > TH_MAP_MAX_PLAYERS)
             return -26;
+        if (sin_celdas && owner != m->parcel_owner[p])
+            th_map_set_parcel_owner(m, p, owner, NULL);
         m->parcel_owner[p] = (uint8_t)owner;
         for (int k = 0; k < m->n_map_objects && owner; k++)
             if (th_map_tile_c(m, m->map_objects[k].x, m->map_objects[k].y)->parcel == p)

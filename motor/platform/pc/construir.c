@@ -4,8 +4,10 @@
 // que aplicó CorsixTH (bench/scenarios/construir.lua) y la compara orden a
 // orden: aceptada o rechazada y el motivo, la fase en la que queda la obra, el
 // saldo, el valor del hospital y el dinero que entra y sale, los movimientos
-// de dinero, las 16.384 casillas (con todas las columnas de celdas.tsv), la
-// lista de objetos y las salas.
+// de dinero (importe, motivo y cambio del valor), las 16.384 casillas (con
+// todas las columnas de celdas.tsv), la lista de objetos y las salas (tras
+// cada orden, contra la última foto que escribió CorsixTH: la escribe solo
+// cuando cambian, así que vale hasta la siguiente).
 //
 // <inicio.trg> es inicio/escenario.json de CorsixTH pasado a TRG1 con
 // tools/oraculo_hito4/escenario.py. Del directorio de CorsixTH se leen
@@ -229,6 +231,7 @@ typedef struct movimiento {
 static movimiento movs[MOVS_MAX];
 static int n_movs, movs_perdidos;
 static const th_sim *sim_actual;
+static int32_t valor_visto; // el valor del hospital tras el último movimiento (o al empezar la orden)
 
 static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reason, int who)
 {
@@ -239,9 +242,10 @@ static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reas
     }
     movimiento *m = &movs[n_movs++];
     m->importe = amount;
-    // El valor del hospital cambia en lo mismo que el importe, con el signo de
-    // spendMoney (sube) o receiveMoney (baja).
-    m->valor = -amount;
+    // Lo que cambió el valor del hospital con este movimiento (en CorsixTH,
+    // el valueChange de spendMoney o receiveMoney): money() ya lo aplicó.
+    m->valor = s->hosp.value - valor_visto;
+    valor_visto = s->hosp.value;
     const char *id = th_rules_str(s->defs, th_rules_get(s->defs, (th_rnode)who, "id"), NULL);
     snprintf(m->motivo, sizeof m->motivo, "%s:%s",
              reason == TH_MONEY_BUY_OBJECT    ? "buy_object"
@@ -277,27 +281,31 @@ static int comparar_dinero(tabla *t, long n, int mostrar)
         if (mostrar)
             anotar("    movimientos: th64 %d, CorsixTH %d\n", n_movs + movs_perdidos, suyos_total);
     }
-    // Como conjunto: el orden de los movimientos de una orden sale de pairs.
+    // Como conjunto (el orden de los movimientos de una orden sale de pairs):
+    // importe, motivo y cambio del valor.
     static int usados[MOVS_MAX];
     memset(usados, 0, sizeof usados);
     for (int i = 0; i < n_movs; i++) {
         int hallado = -1;
         for (int j = 0; j < k && hallado < 0; j++)
-            if (!usados[j] && suyos[j].importe == movs[i].importe && !strcmp(suyos[j].motivo, movs[i].motivo))
+            if (!usados[j] && suyos[j].importe == movs[i].importe && suyos[j].valor == movs[i].valor &&
+                !strcmp(suyos[j].motivo, movs[i].motivo))
                 hallado = j;
         if (hallado >= 0)
             usados[hallado] = 1;
         else {
             distintos++;
             if (mostrar)
-                anotar("    dinero: th64 %+ld %s, CorsixTH no\n", movs[i].importe, movs[i].motivo);
+                anotar("    dinero: th64 %+ld %s (valor %+ld), CorsixTH no\n", movs[i].importe, movs[i].motivo,
+                       movs[i].valor);
         }
     }
     for (int j = 0; j < k; j++)
         if (!usados[j]) {
             distintos++;
             if (mostrar)
-                anotar("    dinero: CorsixTH %+ld %s, th64 no\n", suyos[j].importe, suyos[j].motivo);
+                anotar("    dinero: CorsixTH %+ld %s (valor %+ld), th64 no\n", suyos[j].importe, suyos[j].motivo,
+                       suyos[j].valor);
         }
     return distintos;
 }
@@ -333,17 +341,37 @@ static void describir_objeto(const th_sim *s, int i, char *out, size_t tam)
 
 #define FILAS_OBJETOS 512
 
+// La última foto de objetos.tsv: CorsixTH la escribe solo cuando su lista
+// cambia, así que vale hasta la siguiente y se compara en todas las órdenes.
+static char foto_obj[FILAS_OBJETOS][160];
+static int foto_sitios[FILAS_OBJETOS];
+static int foto_obj_n = -1; // filas (-1: CorsixTH no ha escrito ninguna foto)
+
 static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
 {
-    if (!t->f || (!t->hay && !leer_fila(t)))
-        return 0;
-    if (t->n_fila != n) {
+    // Si CorsixTH escribió una foto en esta orden, es la nueva.
+    if (t->f && (t->hay || leer_fila(t))) {
         while (t->hay && t->n_fila < n)
             if (!leer_fila(t))
-                return 0;
-        if (!t->hay || t->n_fila != n)
-            return 0; // esta orden no cambió los objetos
+                break;
+        if (t->hay && t->n_fila == n) {
+            foto_obj_n = 0;
+            while (t->hay && t->n_fila == n) {
+                if (foto_obj_n < FILAS_OBJETOS) {
+                    snprintf(foto_obj[foto_obj_n], sizeof foto_obj[0], "%s %s,%s %s sala %s recogido %s", campo(t, "id"),
+                             campo(t, "x"), campo(t, "y"), campo(t, "direccion"), campo(t, "sala"), campo(t, "recogido"));
+                    const char *orden = campo(t, "orden");
+                    foto_sitios[foto_obj_n] = *orden ? atoi(orden) : -1;
+                }
+                foto_obj_n++;
+                if (!leer_fila(t))
+                    break;
+            }
+        }
     }
+    if (foto_obj_n < 0)
+        return 0; // antes de la primera foto, los dos lados siguen en el inicio
+    const int ns = foto_obj_n;
     // Los objetos vivos del núcleo, en el orden de world.entities (el de alta,
     // entity_seq: el índice no vale, los huecos se reutilizan).
     int nuestros[TH_SIM_OBJECTS], nn = 0;
@@ -356,26 +384,12 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
             }
             nuestros[j] = i;
         }
-    // Las filas de CorsixTH de esta orden (world.entities), con su sitio en la
-    // lista de su casilla («orden»; -1 si la columna no está).
-    static char suyos[FILAS_OBJETOS][160];
-    static int sitios[FILAS_OBJETOS];
-    int ns = 0;
-    while (t->hay && t->n_fila == n) {
-        if (ns < FILAS_OBJETOS) {
-            snprintf(suyos[ns], sizeof suyos[0], "%s %s,%s %s sala %s recogido %s", campo(t, "id"), campo(t, "x"),
-                     campo(t, "y"), campo(t, "direccion"), campo(t, "sala"), campo(t, "recogido"));
-            const char *orden = campo(t, "orden");
-            sitios[ns] = *orden ? atoi(orden) : -1;
-        }
-        ns++;
-        if (!leer_fila(t))
-            break;
-    }
+    // Contra las filas de la foto (world.entities), con su sitio en la lista
+    // de su casilla («orden»; -1 si la columna no está).
     int distintos = 0;
     for (int k = 0; k < nn || k < ns; k++) {
         char mio[160] = "(nada)";
-        const char *suyo = k < ns && k < FILAS_OBJETOS ? suyos[k] : "(nada)";
+        const char *suyo = k < ns && k < FILAS_OBJETOS ? foto_obj[k] : "(nada)";
         if (k < nn)
             describir_objeto(s, nuestros[k], mio, sizeof mio);
         int igual = !strcmp(suyo, mio);
@@ -388,7 +402,7 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
             s->obj[nuestros[k]].oclass == TH_OCLASS_SWING_DOOR && s->obj[nuestros[k + 1]].oclass == TH_OCLASS_SWING_DOOR) {
             char otro[160];
             describir_objeto(s, nuestros[k + 1], otro, sizeof otro);
-            if (!strcmp(suyos[k], otro) && !strcmp(suyos[k + 1], mio)) {
+            if (!strcmp(foto_obj[k], otro) && !strcmp(foto_obj[k + 1], mio)) {
                 const int tmp = nuestros[k];
                 nuestros[k] = nuestros[k + 1];
                 nuestros[k + 1] = tmp;
@@ -396,10 +410,10 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
                 igual = 1;
             }
         }
-        if (igual && k < nn && k < FILAS_OBJETOS && sitios[k] >= 0 && sitios[k] != sitio(s, nuestros[k])) {
+        if (igual && k < nn && k < FILAS_OBJETOS && foto_sitios[k] >= 0 && foto_sitios[k] != sitio(s, nuestros[k])) {
             igual = 0;
             snprintf(mio + strlen(mio), sizeof mio - strlen(mio), " (sitio %d, CorsixTH %d)", sitio(s, nuestros[k]),
-                     sitios[k]);
+                     foto_sitios[k]);
         }
         if (!igual) {
             distintos++;
@@ -519,17 +533,35 @@ static void describir_sala(const th_sim *s, int i, char *out, size_t tam)
              r->built, r->is_active, fase_nombres[fase]);
 }
 
+// La última foto de salas.tsv, como la de los objetos.
+#define FILAS_SALAS 64
+static char foto_salas[FILAS_SALAS][160];
+static int foto_salas_n = -1;
+
 static int comparar_salas(const th_sim *s, tabla *t, long n, int mostrar)
 {
-    if (!t->f || (!t->hay && !leer_fila(t)))
-        return 0;
-    if (t->n_fila != n) {
+    if (t->f && (t->hay || leer_fila(t))) {
         while (t->hay && t->n_fila < n)
             if (!leer_fila(t))
-                return 0;
-        if (!t->hay || t->n_fila != n)
-            return 0; // esta orden no cambió las salas
+                break;
+        if (t->hay && t->n_fila == n) {
+            foto_salas_n = 0;
+            while (t->hay && t->n_fila == n) {
+                if (foto_salas_n < FILAS_SALAS) {
+                    const char *px = campo(t, "puerta_x"), *py = campo(t, "puerta_y"), *pl = campo(t, "puerta_lado");
+                    snprintf(foto_salas[foto_salas_n], sizeof foto_salas[0], "%s %s %s %s %s %s %s %s %s %d %d %s",
+                             campo(t, "id"), campo(t, "tipo"), campo(t, "x"), campo(t, "y"), campo(t, "ancho"),
+                             campo(t, "alto"), *px ? px : "-", *py ? py : "-", *pl ? pl : "-",
+                             booleano(campo(t, "construida")), booleano(campo(t, "activa")), campo(t, "fase"));
+                }
+                foto_salas_n++;
+                if (!leer_fila(t))
+                    break;
+            }
+        }
     }
+    if (foto_salas_n < 0)
+        return 0;
     // Las salas del núcleo por id, que es el orden de world.rooms.
     int orden[TH_SIM_ROOMS], nn = 0;
     for (int i = 0; i < s->n_rooms; i++) {
@@ -540,23 +572,17 @@ static int comparar_salas(const th_sim *s, tabla *t, long n, int mostrar)
         }
         orden[j] = i;
     }
-    int k = 0, distintos = 0;
-    while (t->hay && t->n_fila == n) {
-        char suyo[160], mio[160] = "(nada)";
-        const char *px = campo(t, "puerta_x"), *py = campo(t, "puerta_y"), *pl = campo(t, "puerta_lado");
-        snprintf(suyo, sizeof suyo, "%s %s %s %s %s %s %s %s %s %d %d %s", campo(t, "id"), campo(t, "tipo"), campo(t, "x"),
-                 campo(t, "y"), campo(t, "ancho"), campo(t, "alto"), *px ? px : "-", *py ? py : "-", *pl ? pl : "-",
-                 booleano(campo(t, "construida")), booleano(campo(t, "activa")), campo(t, "fase"));
-        if (k < nn)
-            describir_sala(s, orden[k], mio, sizeof mio);
-        if (strcmp(suyo, mio)) {
+    const int k = foto_salas_n;
+    int distintos = 0;
+    for (int i = 0; i < k && i < FILAS_SALAS; i++) {
+        char mio[160] = "(nada)";
+        if (i < nn)
+            describir_sala(s, orden[i], mio, sizeof mio);
+        if (strcmp(foto_salas[i], mio)) {
             distintos++;
             if (mostrar && distintos <= 5)
-                anotar("    sala %d: th64 %s; CorsixTH %s\n", k, mio, suyo);
+                anotar("    sala %d: th64 %s; CorsixTH %s\n", i, mio, foto_salas[i]);
         }
-        k++;
-        if (!leer_fila(t))
-            break;
     }
     if (k != nn) {
         distintos++;
@@ -611,6 +637,7 @@ int th64sim_construir(int argc, char **argv)
             continue;
         ordenes++;
         n_movs = movs_perdidos = 0;
+        valor_visto = s->hosp.value;
         th_order_result r;
         th_build_apply(s, &o, &r);
         aceptadas += r.reason == TH_REASON_OK;

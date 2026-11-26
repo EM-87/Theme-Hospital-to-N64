@@ -7,7 +7,10 @@
 #   2. el nivel 1 recién cargado contra todas las columnas de getCellFlags
 #      (bench/scenarios/celdas_nivel.lua, que se ejecuta si no está);
 #   3. los hospitales exportados de CorsixTH (exportar_escenario.lua) de las
-#      campañas de los hitos 4 y 5 y el de las vistas: th64sim banderas rehace
+#      campañas de los hitos 4 y 5, el de las vistas y el estado final de cada
+#      lista de la batería de construir (construir.sh; la de las salas trae
+#      ventanas, paredes compartidas y la puerta doble por los cuatro lados,
+#      que los hospitales de las campañas no tienen): th64sim banderas rehace
 #      las banderas desde las salas y los objetos (las capas, copiadas del
 #      volcado) y compara las 16.384 casillas con todas las columnas;
 #   4. los mismos hospitales con las salas levantadas por el núcleo (paso 3,
@@ -17,9 +20,10 @@
 #      orden de world.entities, y se comparan las 16.384 casillas con todas
 #      las columnas, también suelo, norte y oeste. El punto de partida es el
 #      escenario «vacío»: el mismo escenario.json sin salas, sin listas, sin
-#      personal y solo con los objetos que se crean desde el mapa (las puertas
-#      de la entrada, supports_creation_for_map), pasado a TRG1 contra el
-#      volcado del propio motor para que no lleve casillas.
+#      personal, sin basura y solo con los objetos que se crean desde el mapa
+#      (las puertas de la entrada, supports_creation_for_map), pasado a TRG1
+#      contra el volcado del propio motor para que no lleve casillas; las
+#      parcelas compradas se compran al cargar (th_sim_init sin «celdas»).
 # Los escenarios se pasan a TRG1 aquí (tools/oraculo_hito4/escenario.py), sin
 # tocar los directorios de las campañas.
 # Uso: tools/hito6/banderas.sh [dir_salida]   (por defecto $TH64_WORK/resultados/hito6/banderas)
@@ -66,7 +70,8 @@ echo "== 3. Hospitales de CorsixTH rehechos desde sus salas y objetos"
 "$SIM" mapa "$A/niveles/nivel01.tmp" 1 --volcar "$OUT/motor_nivel1.tsv"
 total=0
 iguales=0
-for E in "$R"/hito4/campana/escenario_* "$R"/hito4/escenario_1 "$R"/hito5/campana/escenario_* "$R"/hito6/vistas/escenario; do
+for E in "$R"/hito4/campana/escenario_* "$R"/hito4/escenario_1 "$R"/hito5/campana/escenario_* "$R"/hito6/vistas/escenario \
+    "$R"/hito6/construir/*/corsixth; do
   [ -f "$E/celdas.tsv" ] && [ -f "$E/escenario.json" ] || continue
   nombre=$(echo "${E#"$R"/}" | tr '/' '_')
   nivel=$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["nivel"])' "$E/escenario.json")
@@ -96,7 +101,8 @@ print(" ".join(sorted(k for k, v in json.load(sys.stdin).items() if v.get("suppo
 mkdir -p "$OUT/salas"
 total4=0
 iguales4=0
-for E in "$R"/hito4/campana/escenario_* "$R"/hito4/escenario_1 "$R"/hito5/campana/escenario_* "$R"/hito6/vistas/escenario; do
+for E in "$R"/hito4/campana/escenario_* "$R"/hito4/escenario_1 "$R"/hito5/campana/escenario_* "$R"/hito6/vistas/escenario \
+    "$R"/hito6/construir/*/corsixth; do
   [ -f "$E/celdas.tsv" ] && [ -f "$E/escenario.json" ] || continue
   nombre=$(echo "${E#"$R"/}" | tr '/' '_')
   nivel=$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["nivel"])' "$E/escenario.json")
@@ -111,6 +117,7 @@ doc = json.load(open(sys.argv[1]))
 del_mapa = set(sys.argv[3:])
 doc["salas"] = []
 doc["personal"] = []
+doc["basura"] = []  # th_sim_init no carga basura (-28); no cambia capas ni banderas
 doc.pop("listas", None)
 doc["objetos"] = [o for o in doc["objetos"] if o["id"] in del_mapa]
 json.dump(doc, open(sys.argv[2], "w"), ensure_ascii=False, sort_keys=True)

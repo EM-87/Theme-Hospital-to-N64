@@ -1118,24 +1118,31 @@ static int es_ventana(const th_rules *defs, int block)
 // doorWallOffsetCalculations: al norte, la capa norte de la casilla de
 // dentro; al sur, la capa norte de la casilla de abajo (ry + h); al oeste, la
 // capa oeste de la de dentro; al este, la capa oeste de la casilla de la
-// derecha (rx + w). Devuelve cuántas.
+// derecha (rx + w). Devuelve cuántas hay, aunque solo guarde las cap primeras.
 static int ventanas_de(const th_rules *defs, int rx, int ry, int w, int h, th_edge *out, int cap)
 {
     int n = 0;
+#define VENTANA(X, Y, LADO)                                                                                            \
+    do {                                                                                                               \
+        if (n < cap)                                                                                                   \
+            out[n] = (th_edge){(uint8_t)(X), (uint8_t)(Y), LADO};                                                      \
+        n++;                                                                                                           \
+    } while (0)
     for (int i = 1; i <= w - 2; i++) {
         const int x = rx + i;
-        if (n < cap && es_ventana(defs, capas_tsv[0][ry * TH_MAP_WIDTH + x]))
-            out[n++] = (th_edge){(uint8_t)x, (uint8_t)ry, TH_DIR_NORTH};
-        if (n < cap && ry + h < TH_MAP_HEIGHT && es_ventana(defs, capas_tsv[0][(ry + h) * TH_MAP_WIDTH + x]))
-            out[n++] = (th_edge){(uint8_t)x, (uint8_t)(ry + h - 1), TH_DIR_SOUTH};
+        if (es_ventana(defs, capas_tsv[0][ry * TH_MAP_WIDTH + x]))
+            VENTANA(x, ry, TH_DIR_NORTH);
+        if (ry + h < TH_MAP_HEIGHT && es_ventana(defs, capas_tsv[0][(ry + h) * TH_MAP_WIDTH + x]))
+            VENTANA(x, ry + h - 1, TH_DIR_SOUTH);
     }
     for (int i = 1; i <= h - 2; i++) {
         const int y = ry + i;
-        if (n < cap && es_ventana(defs, capas_tsv[1][y * TH_MAP_WIDTH + rx]))
-            out[n++] = (th_edge){(uint8_t)rx, (uint8_t)y, TH_DIR_WEST};
-        if (n < cap && rx + w < TH_MAP_WIDTH && es_ventana(defs, capas_tsv[1][y * TH_MAP_WIDTH + rx + w]))
-            out[n++] = (th_edge){(uint8_t)(rx + w - 1), (uint8_t)y, TH_DIR_EAST};
+        if (es_ventana(defs, capas_tsv[1][y * TH_MAP_WIDTH + rx]))
+            VENTANA(rx, y, TH_DIR_WEST);
+        if (rx + w < TH_MAP_WIDTH && es_ventana(defs, capas_tsv[1][y * TH_MAP_WIDTH + rx + w]))
+            VENTANA(rx + w - 1, y, TH_DIR_EAST);
     }
+#undef VENTANA
     return n;
 }
 
@@ -1342,7 +1349,14 @@ static int orden_salas(int argc, char **argv)
                 continue;
             }
             th_edge win[TH_SIM_WINDOWS];
-            const int nw = ventanas_de(defs, rx, ry, w, h, win, TH_SIM_WINDOWS);
+            int nw = ventanas_de(defs, rx, ry, w, h, win, TH_SIM_WINDOWS);
+            if (nw > TH_SIM_WINDOWS) {
+                printf("  la sala %d (%s) tiene %d ventanas y el motor admite %d (TH_SIM_WINDOWS): se levantan las "
+                       "primeras\n",
+                       num, sid, nw, TH_SIM_WINDOWS);
+                errores++;
+                nw = TH_SIM_WINDOWS;
+            }
             sin_puerta += crear_sin_puerta(s, &esc, salas, num, &errores);
             if (s->n_rooms >= TH_SIM_ROOMS) {
                 printf("  la sala %d (%s): no caben más salas en el motor (TH_SIM_ROOMS = %d)\n", num, sid, TH_SIM_ROOMS);

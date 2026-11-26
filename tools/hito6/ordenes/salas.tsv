@@ -343,11 +343,17 @@ ventana	64	60	north
 # Las paredes blancas, las dos hojas (swing_door_left en (63,60) y
 # swing_door_right en (64,60)) y el cobro: -100 escritorio, -200 cama.
 fin_ventanas
+# Coger dentro de la obra el radiador del pasillo que la sala tapa: es de la
+# sala por su casilla (Entity:getRoom) y se coge como los demás; vuelve a la
+# lista sin cobrar (existing_object) y se coloca otra vez dentro, en (61,61)
+# contra la pared oeste, gratis.
+recoger	61	64
+colocar	radiator	61	61	west
 # Atrás desde los objetos: la sala sale del mapa (las hojas se destruyen, las
 # paredes se quitan) pero sigue en world.rooms sin levantar; se devuelven el
-# escritorio y la cama (+300) y también el radiador del pasillo que la sala
-# tapaba, que removeRoom barre con los demás (+20): entra en la lista de la
-# obra. Vuelve a la fase de la puerta.
+# escritorio y la cama (+300) y también el radiador, ya de la sala, que
+# removeRoom barre con los demás (+20): entra en la lista de la obra. Vuelve a
+# la fase de la puerta.
 atras
 # Al este en (65,62): aceptada. Al volver a levantar la sala se cobran los
 # tres de la lista: -320.
@@ -459,6 +465,19 @@ colocar	sofa	83	58	north
 # (+150), la sala sale del mapa y de world.rooms, y se compra la planta (-5).
 comprar	plant	1
 colocar	plant	93	70	north
+sala	staff_room	83	58	5	5
+puerta	87	60	east
+fin_ventanas
+# El panel cierra la obra antes de mirar nada: una sala que no está en el
+# nivel (no_disponible) con la obra sin terminar la abandona igual
+# (setEditRoom(false) → verifyOrAbortRoom → abortRoom): se devuelve el sofá
+# (+150) y la sala 7 sale del mapa y de world.rooms. Lo mismo comprar para el
+# pasillo un objeto que no es de pasillo (no_es_de_pasillo) con la obra en las
+# ventanas: se abandona sin dinero (no estaba pagada).
+sala	cardiogram	57	50	5	5
+sala	staff_room	83	58	5	5
+puerta	87	60	east
+comprar	skeleton	1
 sala	staff_room	83	58	5	5
 puerta	87	60	east
 fin_ventanas

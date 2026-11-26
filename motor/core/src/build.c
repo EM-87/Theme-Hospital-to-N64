@@ -1158,6 +1158,14 @@ static void wall_piece(th_sim *s, const th_obra *b, th_rnode ws, int x, int y, i
         set_wall(s, x, y, west, wall_tile(s, ws, tiles, dir));
 }
 
+// Las paredes de la sala tramo a tramo, y sus puertas como objetos. Las dos
+// hojas de la doble nacen al recorrer los tramos en orden, la esclava (_left,
+// el tramo anterior) antes que la maestra: decisión propia. En CorsixTH el
+// orden de las dos en world.entities es el de pairs(blueprint_wall_anims),
+// un accidente de la tabla de Lua que depende de las coordenadas (ltable.c:
+// la clave módulo el tamaño; en la enfermería de la batería, la esclava va
+// antes al norte y la maestra en los otros lados), y th64sim construir
+// compara la pareja sin orden. Nada debe apoyarse en ese orden.
 static void room_walls(th_sim *s, const th_obra *b, int *door, int *door2)
 {
     const int rx = b->x, ry = b->y, w = b->w, h = b->h;
@@ -1366,10 +1374,13 @@ static void remove_room(th_sim *s, int save)
                 }
                 if (first < 0 || first == r->door || s->obj[first].oclass == TH_OCLASS_SWING_DOOR)
                     break;
+                // er:removeRoom («if not obj.master»): las puertas se destruyen
+                // abajo, y la pareja de un objeto doble (la mesa de operaciones,
+                // paso 6) no tendrá que volver a la lista. La lista tiene sitio
+                // para todo lo que cabe en una sala (TH_SIM_PLACE_ITEMS).
                 const th_rnode def = s->obj[first].def;
-                const int slave = s->obj[first].oclass == TH_OCLASS_SWING_DOOR && !(s->obj[first].oflags & TH_OBJF_MASTER);
                 th_sim_destroy_object(s, first);
-                if (save && !slave)
+                if (save)
                     window_add(s, def, 1, 0, 0);
             }
         }
@@ -1520,7 +1531,7 @@ int th_build_rebuild_room(th_sim *s, int type, int x, int y, int w, int h, th_ed
                           int n_windows)
 {
     th_obra *b = &s->obra;
-    if (b->phase != TH_OBRA_NONE || type < 0 || type >= s->n_room_types)
+    if (b->phase != TH_OBRA_NONE || type < 0 || type >= s->n_room_types || n_windows < 0 || n_windows > TH_SIM_WINDOWS)
         return -1;
     memset(b, 0, sizeof *b);
     b->phase = TH_OBRA_WINDOWS;
@@ -1532,8 +1543,8 @@ int th_build_rebuild_room(th_sim *s, int type, int x, int y, int w, int h, th_ed
     b->room = TH_NONE;
     b->has_door = 1;
     b->door = door;
-    b->n_windows = (uint8_t)(n_windows > TH_SIM_WINDOWS ? TH_SIM_WINDOWS : n_windows);
-    memcpy(b->windows, windows, (size_t)b->n_windows * sizeof windows[0]);
+    b->n_windows = (uint8_t)n_windows;
+    memcpy(b->windows, windows, (size_t)n_windows * sizeof windows[0]);
     th_map_blueprint_close(s->w.map, x, y, w, h);
     const th_hospital saved = s->hosp;
     finish_room(s);
@@ -1637,9 +1648,11 @@ static int order_fin_ventanas(th_sim *s)
     th_obra *b = &s->obra;
     if (b->phase != TH_OBRA_WINDOWS)
         return TH_REASON_FASE;
-    // El tope del motor: la sala, la puerta (con cola) y la esclava de una doble.
+    // El tope del motor: la sala, la puerta (con cola), la esclava de una
+    // doble y los obligatorios en la lista de la obra.
     if ((b->room == TH_NONE && s->n_rooms >= TH_SIM_ROOMS) || !th_sim_object_fits(s, def_by_id(s, "door")) ||
-        free_object_slots(s) < 1 + room_swing_doors(s, b->type))
+        free_object_slots(s) < 1 + room_swing_doors(s, b->type) ||
+        th_rules_len(s->defs, th_rules_get(s->defs, room_def(s, b->type), "objects_needed")) > TH_SIM_PLACE_ITEMS)
         return TH_REASON_LLENO;
     b->phase = TH_OBRA_CLEAR;
     if (!area_obscured(s, b))
@@ -1654,19 +1667,23 @@ static int order_comprar_sala(th_sim *s, const th_order *o)
         return TH_REASON_FASE;
     // er:purchaseItems: la tienda son los objects_additional disponibles en el
     // nivel (AvailableForLevel) y descubiertos: en CorsixTH, sin entrada en
-    // research_progress (los objetos sin research_category) o con discovered,
-    // que empieza en StartAvail (research_department.lua:54-61). Sin
-    // investigación en el núcleo, StartAvail hace de descubierto, como en
-    // room_discovered.
+    // research_progress o con discovered. La entrada la tienen solo los
+    // objetos con research_category (research_department.lua:54-61), y
+    // discovered empieza en StartAvail: sin investigación en el núcleo,
+    // StartAvail hace de descubierto para esos. Los demás se venden aunque
+    // StartAvail sea 0 (la videoconsola del nivel 5), al revés que los
+    // obligatorios de room_discovered, donde World:getAvailableRooms sí mira
+    // StartAvail de todos.
     const th_rules *d = s->defs;
     const th_rnode add = th_rules_get(d, room_def(s, b->type), "objects_additional");
     const char *id = o->def ? def_id(s, o->def) : NULL;
+    const int investigable = o->def && th_rules_str(d, th_rules_get(d, o->def, "research_category"), NULL) != NULL;
     int listed = 0;
     for (uint32_t i = 0; i < th_rules_len(d, add) && !listed; i++) {
         const char *a = th_rules_str(d, th_rules_at(d, add, i), NULL);
         const th_rnode spec = level_object(s, def_thob(s, o->def));
         listed = a && id && !strcmp(a, id) && th_rules_int(s->level, th_rules_get(s->level, spec, "AvailableForLevel"), 1) &&
-                 th_rules_int(s->level, th_rules_get(s->level, spec, "StartAvail"), 1);
+                 (!investigable || th_rules_int(s->level, th_rules_get(s->level, spec, "StartAvail"), 1));
     }
     if (!listed)
         return TH_REASON_NO_ES_DE_SALA;
@@ -1676,10 +1693,16 @@ static int order_comprar_sala(th_sim *s, const th_order *o)
     // lista (purchaseItem: el tope 99 antes que el dinero, y el saldo tiene
     // que llegar al total de lo nuevo); si falla una, no se compra nada.
     const th_place_window *p = &s->place;
-    int cur = 0;
+    int cur = 0, en_lista = 0;
     for (int k = 0; k < p->n; k++)
-        if (p->item[k].def == o->def)
+        if (p->item[k].def == o->def) {
             cur = p->item[k].qty;
+            en_lista = 1;
+        }
+    // El tope del motor (TH_SIM_PLACE_ITEMS), antes de cobrar; con las reglas
+    // del juego no se alcanza (una sala tiene 9 tipos como mucho).
+    if (!en_lista && p->n >= TH_SIM_PLACE_ITEMS)
+        return TH_REASON_LLENO;
     const int32_t price = th_build_object_cost(s, o->def);
     int32_t total = 0;
     for (int i = 0; i < o->qty; i++) {

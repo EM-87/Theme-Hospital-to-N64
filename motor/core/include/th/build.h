@@ -58,6 +58,9 @@ enum {
     TH_REASON_VENTANA_INVALIDA,
     TH_REASON_NO_ES_DE_SALA, // el objeto no está en la tienda de la sala (objects_additional)
     TH_REASON_FALTAN_OBJETOS, // faltan objetos obligatorios (checkEnableConfirm)
+    // «pausa» (world.user_actions_allowed), que el intérprete de la batería
+    // devuelve con el juego en pausa, no es un motivo del núcleo: lo sabe la
+    // interfaz de la ROM (paso 7), que no manda órdenes en pausa.
 };
 
 // th_order y th_order_result están en th/sim.h, que los guarda en la cola.
@@ -98,7 +101,8 @@ int32_t th_build_room_cost(const th_sim *s, int type);
 // (th64sim salas: el oráculo de las paredes con los hospitales exportados de
 // CorsixTH): el plano se cierra, se le ponen la puerta y las ventanas,
 // finishRoom levanta las paredes y las puertas y marca la sala, y queda
-// construida y activa. No mueve dinero. Devuelve el índice en rooms, o -1.
+// construida y activa. No mueve dinero. Devuelve el índice en rooms, o -1
+// (también con más de TH_SIM_WINDOWS ventanas).
 int th_build_rebuild_room(th_sim *s, int type, int x, int y, int w, int h, th_edge door, const th_edge *windows,
                           int n_windows);
 
