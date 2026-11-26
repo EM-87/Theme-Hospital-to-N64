@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Hito 6.3, paso 2: la batería de construir. CorsixTH aplica una lista de
+# Hito 6.3, pasos 2 y 3: la batería de construir. CorsixTH aplica una lista de
 # órdenes como su interfaz (bench/scenarios/construir.lua) y escribe, orden a
 # orden, el resultado, el dinero y las casillas que cambian; después el núcleo
 # repite la misma lista desde el mismo punto de partida (th64sim construir) y
 # la compara orden a orden.
 #   1. CorsixTH: <salida>/<lista>/corsixth (inicio/, ordenes.tsv, resultados.tsv,
-#      dinero.tsv, cambios.tsv, objetos.tsv y celdas.tsv);
+#      dinero.tsv, cambios.tsv, objetos.tsv, salas.tsv y celdas.tsv);
 #   2. el punto de partida, inicio/escenario.json, pasado a TRG1 con
 #      tools/oraculo_hito4/escenario.py;
 #   3. th64sim construir, que para en la primera orden distinta.

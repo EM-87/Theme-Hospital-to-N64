@@ -1282,6 +1282,17 @@ static void finish_room(th_sim *s)
     b->room = (uint8_t)ri;
     const int floor = th_rules_int(s->defs, th_rules_get(s->defs, room_def(s, b->type), "floor_tile"), 0);
     th_map_mark_room(s->w.map, b->x, b->y, b->w, b->h, floor, s->rooms[ri].num);
+    // Entity:getRoom es la sala de la casilla: los objetos de pasillo que la
+    // sala tapa (un radiador en su borde, que el plano admite) pasan a ser de
+    // la sala, como los exporta CorsixTH. Las puertas conservan la suya
+    // (Door:getRoom: la maestra la sala, la esclava ninguna).
+    for (int k = 0; k < s->n_obj; k++) {
+        th_object *ob = &s->obj[k];
+        if (ob->def && (ob->oflags & TH_OBJF_ON_MAP) && ob->oclass != TH_OCLASS_DOOR &&
+            ob->oclass != TH_OCLASS_SWING_DOOR && ob->oclass != TH_OCLASS_ENTRANCE_DOOR && ob->x >= b->x &&
+            ob->x < b->x + b->w && ob->y >= b->y && ob->y < b->y + b->h)
+            ob->room = s->rooms[ri].num;
+    }
     for (int y = b->y; y < b->y + b->h; y++)
         for (int x = b->x; x < b->x + b->w; x++)
             th_sim_remove_litter_at(s, x, y);
@@ -1453,26 +1464,6 @@ static void obra_cancel(th_sim *s)
     }
 }
 
-// er:close: en la fase de objetos con todo lo obligatorio, confirma; si no,
-// cancela hasta las paredes y cierra (la sala, si la hubo, se queda en
-// world.rooms fuera del mapa, como en CorsixTH).
-static void obra_close(th_sim *s)
-{
-    th_obra *b = &s->obra;
-    if (b->phase == TH_OBRA_OBJECTS && check_enable_confirm(s)) {
-        confirm_room(s);
-        return;
-    }
-    while (b->phase != TH_OBRA_WALLS && b->phase != TH_OBRA_NONE)
-        obra_cancel(s);
-    if (b->phase == TH_OBRA_WALLS) {
-        close_window(s, 0);
-        th_map_blueprint_open(s->w.map, b->x, b->y, b->w, b->h);
-        memset(b, 0, sizeof *b);
-        b->room = TH_NONE;
-    }
-}
-
 // er:verifyOrAbortRoom (GameUI:setEditRoom(false), al abrir otra ventana desde el panel).
 static void obra_verify_or_abort(th_sim *s)
 {
@@ -1557,10 +1548,12 @@ int th_build_rebuild_room(th_sim *s, int type, int x, int y, int w, int h, th_ed
 
 static int order_sala(th_sim *s, const th_order *o, th_order_result *r)
 {
-    // UIBuildRoom:buildRoom y UIEditRoom: UI:addWindow cierra la ventana
-    // «main» que hubiera (la de colocar del pasillo o la obra anterior).
+    // UIBuildRoom se abre desde el panel (bottom_panel.lua dialogBuildRoom):
+    // GameUI:setEditRoom(false) → verifyOrAbortRoom con la obra que hubiera
+    // (terminarla si se puede, o abandonarla), y UI:addWindow cierra la
+    // ventana «main» que quede (la de colocar del pasillo, con sus devoluciones).
     if (s->obra.phase != TH_OBRA_NONE)
-        obra_close(s);
+        obra_verify_or_abort(s);
     else if (s->place.open)
         close_window(s, 0);
     const int type = room_type_of(s, o->def);
@@ -1659,15 +1652,21 @@ static int order_comprar_sala(th_sim *s, const th_order *o)
     th_obra *b = &s->obra;
     if (b->phase != TH_OBRA_OBJECTS)
         return TH_REASON_FASE;
-    // er:purchaseItems: la tienda son los objects_additional disponibles en el nivel.
+    // er:purchaseItems: la tienda son los objects_additional disponibles en el
+    // nivel (AvailableForLevel) y descubiertos: en CorsixTH, sin entrada en
+    // research_progress (los objetos sin research_category) o con discovered,
+    // que empieza en StartAvail (research_department.lua:54-61). Sin
+    // investigación en el núcleo, StartAvail hace de descubierto, como en
+    // room_discovered.
     const th_rules *d = s->defs;
     const th_rnode add = th_rules_get(d, room_def(s, b->type), "objects_additional");
     const char *id = o->def ? def_id(s, o->def) : NULL;
     int listed = 0;
     for (uint32_t i = 0; i < th_rules_len(d, add) && !listed; i++) {
         const char *a = th_rules_str(d, th_rules_at(d, add, i), NULL);
-        listed = a && id && !strcmp(a, id) &&
-                 th_rules_int(s->level, th_rules_get(s->level, level_object(s, def_thob(s, o->def)), "AvailableForLevel"), 1);
+        const th_rnode spec = level_object(s, def_thob(s, o->def));
+        listed = a && id && !strcmp(a, id) && th_rules_int(s->level, th_rules_get(s->level, spec, "AvailableForLevel"), 1) &&
+                 th_rules_int(s->level, th_rules_get(s->level, spec, "StartAvail"), 1);
     }
     if (!listed)
         return TH_REASON_NO_ES_DE_SALA;
@@ -1757,9 +1756,13 @@ int th_build_apply(th_sim *s, const th_order *o, th_order_result *r)
     switch (o->kind) {
     case TH_ORD_COMPRAR: reason = order_comprar(s, o); break;
     case TH_ORD_COLOCAR: reason = order_colocar(s, o, r); break;
-    case TH_ORD_CERRAR: // UIEditRoom:close con una obra; UIPlaceObjects:close sin ella
+    case TH_ORD_CERRAR: // con una obra, Escape (GameUI:setEditRoom(false) → verifyOrAbortRoom); sin ella, UIPlaceObjects:close
         if (obra) {
-            obra_close(s);
+            // La interfaz nunca llama a UIEditRoom:close() a secas sobre una
+            // obra sin terminar: el panel, Escape y las demás ventanas «main»
+            // pasan antes por setEditRoom(false), que termina la sala si se
+            // puede y, si no, la abandona (abortRoom la quita de world.rooms).
+            obra_verify_or_abort(s);
             reason = TH_REASON_OK;
             break;
         }

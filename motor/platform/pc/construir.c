@@ -1,15 +1,17 @@
 // th64sim construir <assets> <inicio.trg> <dir_corsixth> [--seguir]
 //
-// Hito 6.3, paso 2: repite con el núcleo (th/build.h) la lista de órdenes que
-// aplicó CorsixTH (bench/scenarios/construir.lua) y la compara orden a orden:
-// aceptada o rechazada y el motivo, el saldo, el valor del hospital y el
-// dinero que entra y sale, los movimientos de dinero, las 16.384 casillas
-// (con todas las columnas de celdas.tsv) y la lista de objetos.
+// Hito 6.3, pasos 2 y 3: repite con el núcleo (th/build.h) la lista de órdenes
+// que aplicó CorsixTH (bench/scenarios/construir.lua) y la compara orden a
+// orden: aceptada o rechazada y el motivo, la fase en la que queda la obra, el
+// saldo, el valor del hospital y el dinero que entra y sale, los movimientos
+// de dinero, las 16.384 casillas (con todas las columnas de celdas.tsv), la
+// lista de objetos y las salas.
 //
 // <inicio.trg> es inicio/escenario.json de CorsixTH pasado a TRG1 con
 // tools/oraculo_hito4/escenario.py. Del directorio de CorsixTH se leen
 // ordenes.tsv, resultados.tsv, dinero.tsv, cambios.tsv, objetos.tsv,
-// inicio/celdas.tsv y celdas.tsv. Las columnas se buscan por su nombre.
+// salas.tsv, inicio/celdas.tsv y celdas.tsv. Las columnas se buscan por su
+// nombre.
 // Para en la primera orden distinta, salvo con --seguir.
 #include <stdarg.h>
 #include <stdint.h>
@@ -633,6 +635,14 @@ int th64sim_construir(int argc, char **argv)
                      "    resultado: th64 %s %s, CorsixTH %s %s\n", acept ? "aceptada" : "rechazada",
                      acept ? "" : motivo, su_res, su_mot);
         }
+        // La fase en la que queda la obra (detalle: walls, door, windows,
+        // clear_area, objects o «-»).
+        const char *su_fase = hay_res ? campo(&t_res, "detalle") : "";
+        if (*su_fase && strcmp(su_fase, fase_nombres[s->obra.phase])) {
+            distinto = 1;
+            snprintf(detalle + strlen(detalle), sizeof detalle - strlen(detalle), "    fase: th64 %s, CorsixTH %s\n",
+                     fase_nombres[s->obra.phase], su_fase);
+        }
         static const char *const cifras[] = {"saldo", "valor", "money_in", "money_out"};
         const long nuestras[] = {s->hosp.balance, s->hosp.value, s->hosp.money_in, s->hosp.money_out};
         for (int i = 0; i < 4 && hay_res; i++) {
@@ -673,6 +683,11 @@ int th64sim_construir(int argc, char **argv)
     if (primera)
         printf("; la primera distinta, la %d", primera);
     printf("; huella %08lx\n", (unsigned long)th_sim_hash(s));
+    if (s->obra.phase != TH_OBRA_NONE) {
+        // El lado de CorsixTH asegura que no queda ninguna obra abierta.
+        printf("al final queda una obra abierta (fase %s)\n", fase_nombres[s->obra.phase]);
+        return 1;
+    }
     if (!primera) {
         // Al final, el celdas.tsv entero de CorsixTH.
         if (cargar_celdas(dir, "celdas.tsv") == 0) {

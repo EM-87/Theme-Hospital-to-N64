@@ -227,6 +227,7 @@ La lectura del código de CorsixTH (2026-11-04) dice cómo girarlos: el sur es e
    - Despejar, los objetos de la sala y confirmar.
    - Los avisos a quien espera una sala.
    - La batería, con las 8 salas del nivel 1.
+   - **Hecho** el 2026-11-26 ([cifras](06_juego_base.md#hito-63-paso-3--las-salas-rectangulares)): las 313 órdenes de la lista de las salas dan lo mismo en el núcleo que en CorsixTH, y los 52 hospitales exportados salen con sus paredes y sus puertas levantadas por el núcleo con 0 casillas distintas. La revisión adversarial encontró que `sala` y `cerrar` con una obra abierta seguían un camino que la interfaz no recorre (`UIEditRoom:close`, que deja una sala sin levantar en `world.rooms`) y que la sala de un objeto tapado por una sala nueva no se actualizaba: [arreglados](06_juego_base.md#la-revisión-2). Quedan para el paso 7 despejar con gente y el aviso a quien busca sala.
 4. **Editar y vender** salas y objetos.
 5. **El sur y el oeste** de los 37 objetos de norte y este (arriba).
 6. **Las salas de cualquier forma**, con la máscara y la regla de Eduardo.

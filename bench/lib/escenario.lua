@@ -92,8 +92,9 @@ function E.documento(world)
   table.sort(listas)
   for _, r in pairs(world.rooms) do
     if r then
-      -- Una sala que una obra cerró sin terminar sigue en world.rooms fuera
-      -- del mapa, con la puerta destruida (bench/lib/ordenes.lua): sin puerta.
+      -- Una sala sin puerta: la deja el constructor del arnés al cerrar una
+      -- obra con UIEditRoom:close() (bench/lib/builder.lua; la interfaz pasa
+      -- por verifyOrAbortRoom y la borra), fuera del mapa, en world.rooms.
       local d = r.door
       salas[#salas + 1] = {num = r.id, id = r.room_info.id, x = r.x - 1, y = r.y - 1, ancho = r.width, alto = r.height,
         puerta = d and d.tile_x and {x = d.tile_x - 1, y = d.tile_y - 1, direccion = d.direction} or nil,

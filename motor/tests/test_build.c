@@ -1597,16 +1597,21 @@ static void test_objetos_obra(void)
     TH_CHECK_EQ(marcadas(6, 10, 4, 4, 17, 0), 16);
     TH_CHECK_EQ(marcadas(10, 10, 4, 4, 18, 1), 16);
     TH_CHECK_EQ(plano(6, 10, 4, 4, TH_TILE_PASSABLE), 16);
-    TH_CHECK_EQ(sim.n_rooms, 2); // la sala 2 se queda en world.rooms, sin casillas (close no llama a abortRoom)
-    TH_CHECK_EQ(sim.rooms[1].door, TH_NONE);
+    // cerrar es Escape (setEditRoom(false) → verifyOrAbortRoom): la sala 2,
+    // sin terminar, sale de world.rooms (abortRoom); la 1 sigue como estaba.
+    TH_CHECK_EQ(sim.n_rooms, 1);
+    TH_CHECK_EQ(sim.rooms[0].num, 1);
     TH_CHECK_EQ(sim.rooms[0].is_active, 1);
 }
 
 // cerrar (UIEditRoom:close, edit_room.lua:98-124): en objects con todo lo
 // obligatorio colocado confirma la sala; si no, cancela hasta walls (la sala
 // sale del mapa y todo se devuelve, sin dinero por la sala, que no estaba
-// pagada) y cierra. La sala creada se queda en world.rooms sin casillas
-// (close no llama a abortRoom), así que la siguiente lleva el id 2.
+// pagada) y la abandona. Es lo que hace la interfaz al cerrar la obra con
+// Escape o al abrir otra ventana desde el panel: GameUI:setEditRoom(false) →
+// verifyOrAbortRoom (game_ui.lua:1259-1284; edit_room.lua:131-164), que con
+// abortRoom quita la sala de world.rooms; UIEditRoom:close() a secas, que la
+// dejaría en world.rooms sin levantar, no lo llama la interfaz nunca.
 static void test_cerrar_obra(void)
 {
     preparar_salas();
@@ -1659,17 +1664,15 @@ static void test_cerrar_obra(void)
     TH_CHECK_EQ(paso_puerta(11, 13, 1, 2, 0), 2);
     TH_CHECK_EQ(banderas(13, 12) & TH_TILE_BUILDABLE, TH_TILE_BUILDABLE);
     TH_CHECK_EQ(banderas(12, 10) & TH_TILE_TRAVEL_N, TH_TILE_TRAVEL_N);
-    // La sala sigue en world.rooms, sin puerta ni casillas; la siguiente es
-    // la 2 (#rooms + 1).
-    TH_CHECK_EQ(sim.n_rooms, 1);
-    TH_CHECK_EQ(sim.rooms[0].door, TH_NONE);
-    TH_CHECK_EQ(sim.rooms[0].built, 0);
+    // La sala sale de world.rooms (abortRoom: rooms[id] = nil); la siguiente
+    // vuelve a ser la 1 (#rooms + 1).
+    TH_CHECK_EQ(sim.n_rooms, 0);
     TH_CHECK_EQ(orden_sala("gp", 20, 20, 4, 4, NULL), TH_REASON_OK);
     TH_CHECK_EQ(borde(TH_ORD_PUERTA, 21, 23, TH_DIR_SOUTH), TH_REASON_OK);
     TH_CHECK_EQ(orden0(TH_ORD_FIN_VENTANAS), TH_REASON_OK);
-    TH_CHECK_EQ(sim.n_rooms, 2);
-    TH_CHECK_EQ(sim.rooms[1].num, 2);
-    TH_CHECK_EQ(th_map_tile(&mapa, 21, 21)->room, 2);
+    TH_CHECK_EQ(sim.n_rooms, 1);
+    TH_CHECK_EQ(sim.rooms[0].num, 1);
+    TH_CHECK_EQ(th_map_tile(&mapa, 21, 21)->room, 1);
 }
 
 // atrás (UIEditRoom:cancel, edit_room.lua:171-204): objects → door

@@ -37,8 +37,8 @@
 --       doble), puerta_lado (el lado de la orden puerta: north, east, south o
 --       west; los tres son - si la sala está fuera del mapa, sin puerta),
 --       construida (built), activa (is_active) y fase (la de la obra si es la
---       suya, o -; una sala que una obra cerró sin terminar sigue en
---       world.rooms con -);
+--       suya, o -; una sala sin puerta, que la interfaz no deja, se listaría
+--       con - - - y fase -);
 --   celdas.tsv, escenario.json  el estado final, como inicio/.
 local th64 = th64
 local escenario = dofile(th64.bench_dir .. "/lib/escenario.lua")

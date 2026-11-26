@@ -1,7 +1,6 @@
 # Hito 6.3, paso 3: las 8 salas rectangulares del nivel 1, sin gente.
 # Una orden por línea, con tabuladores (bench/lib/ordenes.lua); coordenadas
-# desde 0. Encima de cada caso, qué prueba y qué da en CorsixTH v0.70.1 (lo
-# marcado «por confirmar» está deducido de su código y aún no se ha corrido).
+# desde 0. Encima de cada caso, qué prueba y qué da en CorsixTH v0.70.1.
 # El dinero empieza en 40.000 y los precios son los del nivel 1: consulta (gp)
 # 2.500 (escritorio 100, archivador 100, silla 20: 220 al entrar en los objetos
 # y 2.280 al confirmar), psiquiatría (psych) 2.500 (biombo 30, diván 100,
@@ -22,9 +21,10 @@
 # que quedan, por su id: 1 consulta (57,50) 4×4, 2 aseos (61,50) 4×4 pared con
 # pared con la consulta, 3 psiquiatría (66,50) 5×5, 4 enfermería (60,60) 6×6 en
 # medio de la sala grande, 5 farmacia (49,67) 4×4, 6 diagnóstico general
-# (72,66) 5×5, 7 sala de personal (83,58) 5×5, 8 una consulta cerrada sin
-# terminar que se queda en world.rooms, 9..14 seis salas de hinchado (para
-# gastar el dinero) y 15 un diagnóstico general que deja el saldo en negativo.
+# (72,66) 5×5, 7 sala de personal (83,58) 5×5, 8..13 seis salas de hinchado
+# (para gastar el dinero) y 14 un diagnóstico general que deja el saldo en
+# negativo. Una consulta cerrada sin terminar (cerrar es Escape:
+# verifyOrAbortRoom → abortRoom) sale de world.rooms y no gasta ningún id.
 #
 # Lo que no sale aquí: «persona» y la fase clear_area con gente (la batería
 # va sin nadie), «pausa», la basura (no hay) y bajar cantidades en la ventana
@@ -53,6 +53,11 @@ sala	ward	60	60	5	6
 # En el borde del mapa el plano se recorta (x + ancho no puede pasar de 128):
 # 4 de ancho en x = 125 se quedan en 2. Rechazada, pequena.
 sala	gp	125	60	4	4
+# Con el plano rechazado la obra sigue abierta en la fase del plano (la
+# ventana no se cierra, como en la interfaz): atrás la abandona, aceptada, sin
+# sala y sin dinero; y después, sin obra, atrás es sin_ventana.
+atras
+atras
 # En la calle: las 16 casillas no son construibles ni del jugador. casillas:16.
 sala	gp	40	60	4	4
 # A caballo de la fachada oeste del ala norte: las dos columnas de fuera
@@ -63,8 +68,10 @@ sala	gp	55	50	4	4
 sala	gp	62	77	4	4
 # Un plano de 14 × 4 que cruza el vestíbulo entero deja la entrada sin camino
 # a la sala grande (checkReachability al confirmar). Rechazada,
-# zonas_inaccesibles; la obra se cierra.
+# zonas_inaccesibles; la obra sigue abierta en la fase del plano, y cerrar
+# (Escape: setEditRoom(false) → verifyOrAbortRoom → abortRoom) la abandona.
 sala	gp	57	71	14	4
+cerrar
 # Objetos de pasillo bajo el plano (R3): una planta, un banco (su casilla y
 # la de uso no son construibles) y un radiador (de borde: solo quita
 # buildableWest y no impide el plano).
@@ -91,8 +98,9 @@ recoger	64	64
 vender
 
 # --- La consulta (gp) en (57,50) 4×4: la puerta y las ventanas --------------------
-# El plano vale: fase door. Cerrar en esa fase cancela hasta el plano y cierra
-# la obra (UIEditRoom:close), sin dinero y sin sala.
+# El plano vale: fase door. Cerrar en esa fase (Escape: setEditRoom(false) →
+# verifyOrAbortRoom → abortRoom) cancela hasta el plano y cierra la obra, sin
+# dinero y sin sala.
 sala	gp	57	50	4	4
 cerrar
 sala	gp	57	50	4	4
@@ -367,6 +375,25 @@ recoger	61	64
 colocar	desk	61	61	north
 colocar	bed	64	64	north
 colocar	radiator	61	64	west
+# Coger dentro de la obra el escritorio (vuelve a la lista sin cobrar y su
+# fila queda activa) y comprar y colocar una planta (-5). Atrás desde los
+# objetos con cosas colocadas: removeRoom destruye y devuelve la cama (+200),
+# el radiador (+20) y la planta (+5), y el escritorio cogido, ya destruido, se
+# «vende» a precio entero (+100); los cuatro vuelven a la lista de la obra.
+recoger	61	61
+comprar_sala	plant	1
+colocar	plant	62	62	north
+atras
+# La puerta al oeste otra vez, con sus dos ventanas; al levantar la sala se
+# cobran los cuatro de la lista (-325) y se colocan.
+puerta	60	62	west
+ventana	60	64	west
+ventana	65	63	east
+fin_ventanas
+colocar	desk	61	61	north
+colocar	bed	64	64	north
+colocar	radiator	61	64	west
+colocar	plant	62	62	north
 comprar_sala	bed	1
 colocar	bed	64	61	north
 comprar_sala	extinguisher	1
@@ -460,49 +487,49 @@ comprar_sala	video_game	1
 comprar	bench	1
 cerrar
 
-# --- Una obra cerrada sin terminar se queda en world.rooms (por confirmar) ---------
+# --- Una obra cerrada sin terminar sale de world.rooms -----------------------------
 # Una consulta en el ala este, con las paredes levantadas (-220) y nada
-# colocado. Cerrar (UIEditRoom:close) cancela hasta el plano: la sala sale del
-# mapa, se devuelven los tres objetos (+220) y la obra se cierra, pero la sala
-# 8 sigue en world.rooms sin levantar, sin puerta ni paredes (salas.tsv la
-# lista con - - - y fase -), y la siguiente sala es la 9.
+# colocado. Cerrar (Escape: setEditRoom(false) → verifyOrAbortRoom) la
+# abandona: abortRoom cancela hasta el plano (la sala sale del mapa, se
+# devuelven los tres objetos, +220), cierra la obra y borra la sala 8 de
+# world.rooms, así que la siguiente sala vuelve a ser la 8.
 sala	gp	89	64	4	4
 puerta	90	67	south
 fin_ventanas
 cerrar
 
-# --- El dinero: seis salas de hinchado para gastarlo (por confirmar) ------------------
-# Saldo 25.330. Cada sala de hinchado cuesta 4.000 (-2.500 al levantarla,
+# --- El dinero: seis salas de hinchado para gastarlo ---------------------------------
+# Saldo 25.525. Cada sala de hinchado cuesta 4.000 (-2.500 al levantarla,
 # -1.500 al confirmar), con el hinchador (3 × 3 con sus casillas de uso) en
-# la esquina de arriba a la izquierda. Al acabar quedan 1.330.
-# La 9, en la esquina de arriba a la derecha de la sala grande.
+# la esquina de arriba a la izquierda. Al acabar quedan 1.525.
+# La 8, en la esquina de arriba a la derecha de la sala grande.
 sala	inflation	75	58	4	4
 puerta	76	61	south
 fin_ventanas
 colocar	inflator	76	59	north
 fin_sala
-# La 10, en la de arriba a la izquierda, con la puerta al este a la columna 53.
+# La 9, en la de arriba a la izquierda, con la puerta al este a la columna 53.
 sala	inflation	49	58	4	4
 puerta	52	59	east
 fin_ventanas
 colocar	inflator	50	59	north
 fin_sala
-# La 11, a su lado, en (54,58): la columna 53 queda como pasillo de una
-# casilla entre las dos, con la puerta de la 10, y sigue comunicada por
+# La 10, a su lado, en (54,58): la columna 53 queda como pasillo de una
+# casilla entre las dos, con la puerta de la 9, y sigue comunicada por
 # abajo; la casilla (57,57) del ala norte está en su anillo y también.
 sala	inflation	54	58	4	4
 puerta	55	61	south
 fin_ventanas
 colocar	inflator	55	59	north
 fin_sala
-# La 12, en la esquina de arriba a la derecha del ala este, con la puerta al
+# La 11, en la esquina de arriba a la derecha del ala este, con la puerta al
 # oeste.
 sala	inflation	90	58	4	4
 puerta	90	59	west
 fin_ventanas
 colocar	inflator	92	59	north
 fin_sala
-# La 13 y la 14, en los dos rincones de arriba del vestíbulo: dejan un
+# La 12 y la 13, en los dos rincones de arriba del vestíbulo: dejan un
 # pasillo de 6 casillas (61..66) hasta la entrada.
 sala	inflation	57	71	4	4
 puerta	60	72	east
@@ -514,19 +541,17 @@ puerta	67	72	west
 fin_ventanas
 colocar	inflator	69	72	north
 fin_sala
-# Dos mostradores en el ala este (-300) y siete plantas en el ala norte
-# (-35): el saldo queda en 995, cinco por debajo del diagnóstico general.
-comprar	reception_desk	2
-colocar	reception_desk	90	69	north
-colocar	reception_desk	92	66	north
-comprar	plant	7
+# Una máquina de bebidas en el ala este (-500) y seis plantas en el ala norte
+# (-30): el saldo queda en 995, cinco por debajo del diagnóstico general.
+comprar	drinks_machine	1
+colocar	drinks_machine	90	69	north
+comprar	plant	6
 colocar	plant	58	55	north
 colocar	plant	59	55	north
 colocar	plant	60	55	north
 colocar	plant	58	56	north
 colocar	plant	59	56	north
 colocar	plant	60	56	north
-colocar	plant	61	55	north
 # Sin dinero para la sala: UIBuildRoom:buildRoom exige saldo ≥ build_cost
 # (1.000) y no abre la obra. sin_dinero. Para una de hinchado, igual.
 sala	general_diag	83	64	5	5
@@ -534,7 +559,7 @@ sala	inflation	83	64	4	4
 # Vender una planta (+5) deja el saldo justo en 1.000: la sala se abre (el
 # saldo no se vuelve a mirar). La puerta al norte, las paredes (-280: saldo
 # 720), dos plantas (-10: 710) y los objetos.
-recoger	61	55
+recoger	60	56
 vender
 sala	general_diag	83	64	5	5
 puerta	85	64	north

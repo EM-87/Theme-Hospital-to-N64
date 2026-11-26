@@ -260,3 +260,21 @@ Dos correcciones respecto a lo descrito arriba:
 
   Además, deja de esperar si la ROM cierra ares.
 - Ver [`04_construccion.md`](04_construccion.md#herramientas) para el resto de herramientas evaluadas.
+
+## Añadido en la fase 6: volver a montarlo todo tras un reinicio del contenedor
+
+A mitad del hito 6.3 el contenedor se reinició y se perdió todo lo que no estaba en el repositorio: `$TH64_WORK` entero (los datos del juego, CorsixTH, ares, los resultados de las campañas), `/opt/libdragon`, `motor/assets` y `motor/build`. Lo que hizo falta para seguir, con sus tiempos (4 vCPU):
+
+| Paso | Orden | Tiempo |
+|---|---|---:|
+| Herramientas sin los datos | `tools/setup.sh apt corsixth lua55 libdragon ares` | 540 s |
+| Los datos (la URL, en `TH_DATA_URL`, no está en el repositorio), los assets y el núcleo del PC | `tools/setup.sh data`, `python3 -I tools/conv/conv.py`, `cmake -S motor -B motor/build/pc -G Ninja && cmake --build motor/build/pc` | 21 s de conversión |
+| Los volcados del hito 2 (12 niveles, para `banderas.sh`) | `tools/bench_run.sh bench/scenarios/volcar_mapa.lua $TH64_WORK/resultados/hito2/oraculo --th64-nivel=N` | 24 s |
+| La campaña del hito 4 (40 semillas) y el motor contra ella (`hito4.trg`) | `tools/oraculo_hito4/campana.sh "$(seq -s ' ' 1 40)" 9000` y `tools/oraculo_hito4/motor.sh "$(seq -s ' ' 1 40)" 9000 10` | 922 s + 113 s |
+| El escenario del README del hito 4 | las cuatro órdenes de [`tools/oraculo_hito4/README.md`](../tools/oraculo_hito4/README.md) con `E=$TH64_WORK/resultados/hito4/escenario_1` | 2 s |
+| La campaña del hito 5 y el motor contra ella (`hito5.trg`) | las dos órdenes del punto 1 de [`tools/hito5/README.md`](../tools/hito5/README.md) | 177 s |
+| El hospital de las vistas (`vistas.trg`) | `tools/hito6/vistas.sh` | 83 s |
+
+Dos cosas que se vieron por el camino:
+- **Las campañas no salen byte a byte iguales** a las de antes: el constructor del arnés (`bench/lib/builder.lua`) recorre tablas con `pairs`, y Lua 5.4 siembra el orden de iteración en cada ejecución. Las estadísticas son las mismas (el hito 5, 17 de 17 cifras dentro del azar), pero las partidas exportadas, y con ellas las huellas del núcleo, cambian ([el paso 3 del hito 6.3](06_juego_base.md#hito-63-paso-3--las-salas-rectangulares)).
+- **Un cuelgue del arnés al salir.** Tras «fin», `bench/lib/th64.lua` deja correr 55 ticks para que Tracy vacíe su traza; si en esos ticks un gancho del guion escribía en un fichero que el guion ya había cerrado (`receiveMoney` en `traza_hito4.lua`), el error tiraba el manejador del temporizador de CorsixTH y el proceso no salía nunca (la semilla 4 de la campaña se quedó 6 minutos colgada). Ahora `M.log` no escribe en `th64.log` cerrado y un fallo en esos ticks termina la ejecución.
