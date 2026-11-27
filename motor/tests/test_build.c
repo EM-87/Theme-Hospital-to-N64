@@ -47,7 +47,8 @@ static th_rules defs, nivel;
 // investigable y el analizador no; level_config_id 7), ward (6,
 // suelo 21, puerta doble, id 9) y staff_room (necesita un sofá que el nivel
 // no da: no está descubierta). Los juegos de paredes white y external son
-// los de walls/white.lua y walls/external.lua.
+// los de walls/white.lua y walls/external.lua. La consulta pide un médico
+// (required_staff, como rooms/gp.lua).
 static const char *const definiciones =
     "{\"objetos\": {"
     " \"bench\": {\"id\": \"bench\", \"thob\": 4, \"class\": \"Bench\", \"corridor_object\": 2, \"orientations\": {"
@@ -66,6 +67,8 @@ static const char *const definiciones =
     "  \"west\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"only_side\": true}]}}},"
     " \"desk\": {\"id\": \"desk\", \"thob\": 8, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}], \"use_position\": [0, 1]}}},"
+    " \"cabinet\": {\"id\": \"cabinet\", \"thob\": 14, \"orientations\": {"
+    "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}], \"use_position\": [0, 1]}}},"
     " \"sofa\": {\"id\": \"sofa\", \"thob\": 19, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}]}}},"
     " \"analyser\": {\"id\": \"analyser\", \"thob\": 20, \"research_category\": \"diagnosis\", \"orientations\": {"
@@ -82,7 +85,7 @@ static const char *const definiciones =
     " \"swing_door_right\": {\"id\": \"swing_door_right\", \"thob\": 53, \"class\": \"SwingDoor\"}"
     "}, \"salas\": {"
     " \"gp\": {\"id\": \"gp\", \"level_config_id\": 7, \"minimum_size\": 4, \"wall_type\": \"white\","
-    "  \"floor_tile\": 18, \"objects_needed\": {\"desk\": 1},"
+    "  \"floor_tile\": 18, \"objects_needed\": {\"desk\": 1}, \"required_staff\": {\"Doctor\": 1},"
     "  \"objects_additional\": [\"plant\", \"radiator\", \"sofa\", \"analyser\"]},"
     " \"ward\": {\"id\": \"ward\", \"level_config_id\": 9, \"minimum_size\": 6, \"wall_type\": \"white\","
     "  \"floor_tile\": 21, \"swing_doors\": true, \"objects_needed\": {\"desk\": 1},"
@@ -109,12 +112,21 @@ static const char *const definiciones =
 // del thob 1 al 50), todos disponibles desde el principio (AvailableForLevel y
 // StartAvail) salvo el sofá (19) y el analizador (20), y el precio de las salas (rooms[id].Cost,
 // un mapa con claves enteras como el del conversor): el GP 2.280, la
-// enfermería 1.700 y la sala de personal 1.350, los del nivel 1.
+// enfermería 1.700 y la sala de personal 1.350, los del nivel 1. Para
+// contratar, staff_levels: en el mes 0, 3 médicos, 2 enfermeras, 1 bedel y 2
+// recepcionistas con las tasas del nivel 1 (junior 1 de 10, psiquiatra 1 de
+// 3); en el mes 3, solo cambian los médicos (2): el resto se hereda. Y lo
+// mínimo que load_level exige (expertise y las listas de visuales).
 static size_t nivel_trg(void)
 {
     static char json[8192];
     int k = snprintf(json, sizeof json,
                      "{\"rooms\": {\"#7\": {\"Cost\": 2280}, \"#9\": {\"Cost\": 1700}, \"#25\": {\"Cost\": 1350}},"
+                     " \"staff_levels\": {\"#0\": {\"Month\": 0, \"Doctors\": 3, \"Nurses\": 2, \"Handymen\": 1,"
+                     " \"Receptionists\": 2, \"JrRate\": 10, \"ShrkRate\": 3, \"SurgRate\": 0, \"RschRate\": 0,"
+                     " \"ConsRate\": 0, \"Seed\": 4953}, \"#1\": {\"Month\": 3, \"Doctors\": 2, \"Seed\": 8654}},"
+                     " \"expertise\": [{\"MaxDiagDiff\": 0}], \"visuals_available\": [{\"Value\": 0}],"
+                     " \"non_visuals_available\": [{\"Value\": 0}],"
                      " \"objects\": [");
     for (int thob = 1; thob <= 50; thob++)
         k += snprintf(json + k, sizeof json - (size_t)k,
@@ -1909,6 +1921,687 @@ static void test_tope_salas(void)
     TH_CHECK_EQ(sim.rooms[0].door + sim.rooms[0].door2, 1); // los huecos 0 y 1
 }
 
+// ---------------------------------------------------------------------------
+// Contratar (la demo jugable): el mercado (World:makeAvailableStaff y
+// StaffProfile:randomise), TH_ORD_CONTRATAR (UIHireStaff:hire y
+// UIPlaceStaff:onMouseUp), el personal que entra en una sala (room.lua:317-412),
+// el aviso a quien espera sala (seek_room.lua: build_callback), las llegadas
+// de una partida nueva (World:new) y discoverDisease (gp.lua:150-153).
+
+static th_anims anims_personal;
+
+// preparar_salas() más lo que load_level lee del nivel para el personal (lo
+// del nivel 1: MinSalary 60/75/25/20, SalaryAdd, umbrales 250 y 750), un
+// armario para la consulta y el mercado del mes 0 del nivel sintético
+// (staff_levels: 3 médicos, 2 enfermeras, 1 bedel y 2 recepcionistas).
+static void preparar_personal(void)
+{
+    preparar_salas();
+    th_test_anims(&anims_personal);
+    sim.w.anims = &anims_personal;
+    static const int32_t minimo[4] = {60, 75, 25, 20};
+    static const int32_t suma[8] = {0, 0, -30, 30, 40, 30, 100, 20};
+    memcpy(sim.min_salary, minimo, sizeof minimo);
+    memcpy(sim.salary_add, suma, sizeof suma);
+    sim.salary_ability_div = 10;
+    sim.doctor_threshold = 250000;
+    sim.consultant_threshold = 750000;
+    sim.max_salary = 2000;
+    sim.seed = 1;
+    th_rng_seed(&sim.rng, 1);
+    sim.hosp.stop_procedure = TH_MICRO;
+    sim.expertise = th_rules_get(&nivel, nivel.root, "expertise");
+    th_sim_make_available_staff(&sim, 0);
+}
+
+// La orden con el resumen del perfil que hay ahora en ese índice (el que ve
+// la interfaz), o 0 si no hay candidato.
+static int contratar_def(int kind, int idx, int x, int y, uint32_t resumen)
+{
+    th_order o = {0, TH_ORD_CONTRATAR, (uint8_t)x, (uint8_t)y, (uint8_t)kind, (uint8_t)idx, 0, 0, resumen};
+    th_order_result r;
+    return th_build_apply(&sim, &o, &r);
+}
+
+static uint32_t resumen_de(int kind, int idx)
+{
+    const th_staff_profile *l;
+    const int n = th_sim_candidates(&sim, kind, &l);
+    return idx >= 0 && idx < n ? th_staff_profile_digest(&l[idx]) : 0;
+}
+
+static int contratar(int kind, int idx, int x, int y)
+{
+    return contratar_def(kind, idx, x, y, resumen_de(kind, idx));
+}
+
+// El último en world.entities (el último contratado).
+static int ultima_persona(void)
+{
+    return sim.n_order ? sim.order[sim.n_order - 1] : -1;
+}
+
+static int tiene_accion(const th_humanoid *h, int kind)
+{
+    for (int i = 0; i < h->queue_len; i++)
+        if (h->queue[i].kind == kind)
+            return 1;
+    return 0;
+}
+
+// Un GP de 4 × 4 en (10, 10) terminado: la puerta al sur (el objeto en
+// (11, 14)), el escritorio en (12, 11) y un armario en (10, 10).
+static void gp_terminada(void)
+{
+    gp_hasta(TH_OBRA_OBJECTS);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "desk", 12, 11, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden0(TH_ORD_FIN_SALA), TH_REASON_OK);
+    TH_CHECK_EQ(sim.rooms[0].built, 1);
+    TH_CHECK(th_sim_new_object(&sim, def("cabinet"), 10, 10, TH_DIR_NORTH) != TH_NONE);
+}
+
+// El mercado: las cuentas de staff_levels, los títulos y el sueldo de cada
+// candidato, determinista y con su propio generador (s->rng no se toca).
+static void test_mercado(void)
+{
+    preparar_personal();
+    static const int cuantos[4] = {3, 2, 1, 2};
+    for (int k = 0; k < TH_SIM_STAFF_CLASSES; k++)
+        TH_CHECK_EQ(sim.n_available[k], cuantos[k]);
+    const th_staff_profile *l = NULL;
+    TH_CHECK_EQ(th_sim_candidates(&sim, TH_HUM_DOCTOR, &l), 3);
+    TH_CHECK(l == sim.available[0]);
+    TH_CHECK_EQ(th_sim_candidates(&sim, TH_HUM_RECEPTIONIST, &l), 2);
+    TH_CHECK_EQ(th_sim_candidates(&sim, TH_HUM_PATIENT, &l), 0);
+    TH_CHECK(l == NULL);
+    TH_CHECK_EQ(th_sim_candidates(&sim, 9, NULL), 0);
+    TH_CHECK_EQ(sim.market_month, 0);
+    for (int k = 0; k < TH_SIM_STAFF_CLASSES; k++)
+        for (int i = 0; i < sim.n_available[k]; i++) {
+            const th_staff_profile *pf = &sim.available[k][i];
+            const int kind = TH_HUM_DOCTOR + k;
+            TH_CHECK_EQ(pf->kind, kind);
+            TH_CHECK(pf->skill >= 0 && pf->skill < TH_MICRO);
+            TH_CHECK(pf->attention >= 0 && pf->attention < TH_MICRO);
+            TH_CHECK(pf->name_seed >= 1 && pf->name_seed <= 1009);
+            // Sin cirujanos ni investigadores (tasas 0); junior y consultor
+            // salen de parseSkillLevel, en todas las clases (en los médicos,
+            // sin consultores: ConsRate 0). El sueldo es getFairWage.
+            TH_CHECK_EQ(pf->titles & (TH_TITLE_SURGEON | TH_TITLE_RESEARCHER), 0);
+            TH_CHECK_EQ((pf->titles & TH_TITLE_JUNIOR) != 0, pf->skill <= 250000);
+            TH_CHECK_EQ((pf->titles & TH_TITLE_CONSULTANT) != 0, pf->skill >= 750000);
+            if (kind == TH_HUM_DOCTOR)
+                TH_CHECK(pf->skill < 750000);
+            TH_CHECK_EQ(pf->wage, th_sim_fair_wage(&sim, kind, pf->skill, pf->titles));
+            const int lo = kind == TH_HUM_DOCTOR ? 0 : kind == TH_HUM_NURSE ? 10 : kind == TH_HUM_HANDYMAN ? 15 : 13;
+            const int hi = kind == TH_HUM_DOCTOR ? 9 : kind == TH_HUM_NURSE ? 12 : kind == TH_HUM_HANDYMAN ? 17 : 14;
+            TH_CHECK(pf->hair >= lo && pf->hair <= hi && pf->face >= lo && pf->face <= hi && pf->chin >= lo &&
+                     pf->chin <= hi);
+            if (kind == TH_HUM_DOCTOR) {
+                // Negro (5-9) con la capa 5 a 4; si no (0-4), 2.
+                TH_CHECK_EQ(pf->layer5, pf->hair >= 5 ? 4 : 2);
+                TH_CHECK_EQ(pf->hair >= 5, pf->face >= 5);
+            } else {
+                TH_CHECK_EQ(pf->layer5, 2);
+                TH_CHECK_EQ(pf->titles & TH_TITLE_PSYCHIATRIST, 0);
+            }
+        }
+    // Determinista y sin gastar el azar de la simulación.
+    static th_staff_profile copia[TH_SIM_STAFF_CLASSES][TH_SIM_CANDIDATES];
+    memcpy(copia, sim.available, sizeof copia);
+    const uint32_t azar = sim.rng.s;
+    th_sim_make_available_staff(&sim, 0);
+    TH_CHECK_EQ(sim.rng.s, azar);
+    TH_CHECK_EQ(memcmp(copia, sim.available, sizeof copia), 0);
+    // El mes 2 sigue en la entrada 0; el 3 usa la 1, que solo trae Doctors:
+    // el resto se busca hacia atrás (makeAvailableStaff y randomise).
+    th_sim_make_available_staff(&sim, 2);
+    TH_CHECK_EQ(sim.n_available[0], 3);
+    TH_CHECK(memcmp(copia, sim.available, sizeof copia) != 0); // otro mes, otro mercado
+    th_sim_make_available_staff(&sim, 3);
+    TH_CHECK_EQ(sim.market_month, 3);
+    TH_CHECK_EQ(sim.n_available[0], 2);
+    TH_CHECK_EQ(sim.n_available[1], 2);
+    TH_CHECK_EQ(sim.n_available[2], 1);
+    TH_CHECK_EQ(sim.n_available[3], 2);
+    // Otra semilla de escenario, otro mercado.
+    sim.seed = 2;
+    th_sim_make_available_staff(&sim, 0);
+    TH_CHECK(memcmp(copia, sim.available, sizeof copia) != 0);
+    TH_CHECK_EQ(sim.rng.s, azar);
+    // getFairWage a mano (staff_profile.lua:240-255) con el nivel 1: los dos
+    // del hito 4 (el médico psiquiatra de 0,697 cobra 204 y la recepcionista
+    // de 0,369, 56), junior (−30: con el máximo de 0,25 da 70, y nunca menos
+    // que MinSalary, así que un junior del nivel 1 cobra 75), un junior
+    // psiquiatra (75 + 20 − 30 + 30), consultor (+100, sin los 30 de doctor)
+    // y cirujano investigador.
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_DOCTOR, 697476, TH_TITLE_PSYCHIATRIST), 204);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_RECEPTIONIST, 368725, 0), 56);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_DOCTOR, 200000, TH_TITLE_JUNIOR), 75);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_DOCTOR, 200000, TH_TITLE_JUNIOR | TH_TITLE_PSYCHIATRIST), 95);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_DOCTOR, 800000, TH_TITLE_CONSULTANT), 255);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_DOCTOR, 500000, TH_TITLE_SURGEON | TH_TITLE_RESEARCHER), 215);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_NURSE, 0, 0), 60);
+    TH_CHECK_EQ(th_sim_fair_wage(&sim, TH_HUM_HANDYMAN, 999999, TH_TITLE_JUNIOR), 124); // los títulos, solo médicos
+}
+
+// TH_ORD_CONTRATAR en el pasillo: los rechazos por orden (candidato, dinero,
+// sitio, hueco) y el alta (setProfile, addStaff, onPlaceInCorridor).
+static void test_contratar(void)
+{
+    preparar_personal();
+    const th_staff_profile d0 = sim.available[0][0], d1 = sim.available[0][1];
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 3, 20, 20), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(contratar(TH_HUM_PATIENT, 0, 20, 20), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(contratar(9, 0, 20, 20), TH_REASON_SIN_CANDIDATO);
+    // hire: «balance < profile.wage» (hire_staff.lua:138).
+    sim.hosp.balance = d0.wage - 1;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_SIN_DINERO);
+    TH_CHECK_EQ(sim.hosp.balance, d0.wage - 1);
+    sim.hosp.balance = d0.wage;
+    // Fuera del hospital o del mapa, y en una casilla no transitable.
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 2, 2), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 200, 20), TH_REASON_NO_SE_PUEDE);
+    th_map_tile(&mapa, 21, 20)->flags &= ~(uint32_t)TH_TILE_PASSABLE;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 21, 20), TH_REASON_NO_SE_PUEDE);
+    th_map_tile(&mapa, 21, 20)->flags |= TH_TILE_PASSABLE;
+    // Sin hueco en hum: el tope del motor.
+    for (int i = 0; i < TH_SIM_HUMANOIDS; i++)
+        sim.hum[i].alive = 1;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_LLENO);
+    for (int i = 0; i < TH_SIM_HUMANOIDS; i++)
+        sim.hum[i].alive = 0;
+    // Nada de lo rechazado tocó el mercado ni el dinero.
+    TH_CHECK_EQ(sim.n_available[0], 3);
+    TH_CHECK_EQ(sim.n_order, 0);
+    TH_CHECK_EQ(sim.hosp.money_out, 0);
+    // Con el saldo justo se contrata: cobra el sueldo (hire_staff) sin
+    // cambiar el valor, y el candidato sale de la lista (table.remove).
+    n_dinero = 0;
+    const uint32_t azar = sim.rng.s;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_OK);
+    TH_CHECK(sim.rng.s != azar); // Humanoid:Humanoid: la salud
+    TH_CHECK_EQ(sim.hosp.balance, 0);
+    TH_CHECK_EQ(sim.hosp.money_out, d0.wage);
+    TH_CHECK_EQ(sim.hosp.value, 0);
+    const int w = ultima_persona();
+    TH_CHECK_EQ(n_dinero, 1);
+    TH_CHECK_EQ(dinero[0].amount, -d0.wage);
+    TH_CHECK_EQ(dinero[0].reason, TH_MONEY_HIRE_STAFF);
+    TH_CHECK_EQ(dinero[0].who, w);
+    TH_CHECK_EQ(sim.n_available[0], 2);
+    TH_CHECK_EQ(memcmp(&sim.available[0][0], &d1, sizeof d1), 0);
+    TH_CHECK(w >= 0);
+    if (w < 0)
+        return;
+    const th_person *p = &sim.hum[w];
+    TH_CHECK_EQ(p->alive, 1);
+    TH_CHECK_EQ(p->kind, TH_HUM_DOCTOR);
+    TH_CHECK_EQ(p->u.s.skill, d0.skill);
+    TH_CHECK_EQ(p->u.s.attention, d0.attention);
+    TH_CHECK_EQ(p->u.s.wage, d0.wage);
+    TH_CHECK_EQ(p->u.s.psychiatrist, (d0.titles & TH_TITLE_PSYCHIATRIST) != 0);
+    TH_CHECK_EQ(p->u.s.junior, (d0.titles & TH_TITLE_JUNIOR) != 0);
+    TH_CHECK_EQ(p->u.s.fatigue, 0);
+    TH_CHECK_EQ(p->u.s.associated_desk, TH_NONE);
+    TH_CHECK_EQ(p->h.layers[5], d0.layer5);
+    TH_CHECK_EQ(p->h.tile_x, 20);
+    TH_CHECK_EQ(p->h.tile_y, 20);
+    TH_CHECK_EQ(p->h.in_room, 0);
+    TH_CHECK(tiene_accion(&p->h, TH_ACTION_MEANDER)); // onPlaceInCorridor
+    // Una enfermera en otra casilla del pasillo: sin dinero para ella.
+    TH_CHECK_EQ(contratar(TH_HUM_NURSE, 0, 22, 20), TH_REASON_SIN_DINERO);
+    sim.hosp.balance = 1000;
+    TH_CHECK_EQ(contratar(TH_HUM_NURSE, 1, 22, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.n_available[1], 1);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].kind, TH_HUM_NURSE);
+    TH_CHECK_EQ(sim.n_order, 2);
+    sim.w.anims = NULL;
+}
+
+// La orden lleva el resumen del perfil (decisión 5 de docs/06_plan.md): con
+// otro resumen, o con el mercado ya regenerado al cambiar de mes, el índice
+// es otra persona y la orden se rechaza sin tocar nada.
+static void test_contratar_resumen(void)
+{
+    preparar_personal();
+    sim.hosp.balance = 100000;
+    const th_staff_profile d0 = sim.available[0][0];
+    const uint32_t visto = th_staff_profile_digest(&d0);
+    TH_CHECK(visto != th_staff_profile_digest(&sim.available[0][1]));
+    th_staff_profile otro = d0;
+    otro.wage++;
+    TH_CHECK(visto != th_staff_profile_digest(&otro));
+    otro = d0;
+    otro.hair ^= 1;
+    TH_CHECK(visto != th_staff_profile_digest(&otro));
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 20, 20, visto ^ 1), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 1, 20, 20, visto), TH_REASON_SIN_CANDIDATO);
+    // end_month regenera el mercado (World:makeAvailableStaff): la orden
+    // vista el mes anterior ya no vale.
+    th_sim_make_available_staff(&sim, 1);
+    TH_CHECK(memcmp(&sim.available[0][0], &d0, sizeof d0) != 0);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 20, 20, visto), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(sim.n_order, 0);
+    TH_CHECK_EQ(sim.hosp.money_out, 0);
+    // Y vuelto al mes 0 (la misma semilla), la misma persona otra vez.
+    th_sim_make_available_staff(&sim, 0);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 20, 20, visto), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].u.s.wage, d0.wage);
+    // onPlaceInCorridor llama a updateSpeed (staff.lua:476): un junior anda
+    // despacio y un consultor deprisa desde el primer momento (descansados:
+    // los umbrales por defecto de th_sim_init, VeryTired 700 y CrackUpTired 800).
+    sim.very_tired = 700;
+    sim.crackup_tired = 800;
+    sim.available[0][0].titles = TH_TITLE_JUNIOR;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 21, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].h.speed, 0);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].h.slow_animation, 1);
+    sim.available[0][0].titles = TH_TITLE_CONSULTANT;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 22, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].h.speed, 2);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].h.slow_animation, 0);
+    sim.w.anims = NULL;
+}
+
+// La recepcionista: soltada en el pasillo va al mostrador libre más cercano
+// (Receptionist:onPlaceInCorridor) y lo reserva; sobre un mostrador sin
+// recepcionista también vale, sobre uno atendido no, y en una sala tampoco.
+static void test_contratar_recepcionista(void)
+{
+    preparar_personal();
+    gp_terminada();
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "reception_desk", 0, 0, 0, 2, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 30, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 40, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    const int m1 = objeto_en(30, 30), m2 = objeto_en(40, 30);
+    TH_CHECK(m1 >= 0 && m2 >= 0);
+    if (m1 < 0 || m2 < 0)
+        return;
+    // En la consulta, no (allow_in_rooms es falso para ella).
+    TH_CHECK_EQ(contratar(TH_HUM_RECEPTIONIST, 0, 12, 12), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(th_build_staff_placement(&sim, TH_HUM_RECEPTIONIST, 12, 12), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(th_build_staff_placement(&sim, TH_HUM_DOCTOR, 12, 12), TH_REASON_OK);
+    // En el pasillo, junto al primero: lo reserva y va a su casilla de uso.
+    TH_CHECK_EQ(contratar(TH_HUM_RECEPTIONIST, 0, 31, 33), TH_REASON_OK);
+    const int r1 = ultima_persona();
+    TH_CHECK_EQ(sim.hum[r1].kind, TH_HUM_RECEPTIONIST);
+    TH_CHECK_EQ(sim.hum[r1].u.s.fatigue, -1);
+    TH_CHECK_EQ(sim.obj[m1].reserved_for, r1);
+    TH_CHECK_EQ(sim.hum[r1].u.s.associated_desk, m1);
+    // El paso del deambular que ya empezó se queda (must_happen); detrás, el
+    // camino a la casilla de uso secundaria (30, 31) y atender el mostrador.
+    int hacia = 0;
+    for (int i = 0; i < sim.hum[r1].h.queue_len; i++)
+        hacia += sim.hum[r1].h.queue[i].kind == TH_ACTION_WALK && sim.hum[r1].h.queue[i].x == 30 &&
+                 sim.hum[r1].h.queue[i].y == 31;
+    TH_CHECK_EQ(hacia, 1);
+    TH_CHECK(tiene_accion(&sim.hum[r1].h, TH_ACTION_STAFF_RECEPTION));
+    TH_CHECK_EQ(sim.obj[m2].reserved_for, TH_NONE);
+    // Sobre el primer mostrador (que no es transitable): vale mientras no
+    // tenga receptionist (reserved_for no cuenta, place_staff.lua:118-121).
+    TH_CHECK_EQ(th_build_staff_placement(&sim, TH_HUM_RECEPTIONIST, 30, 30), TH_REASON_OK);
+    TH_CHECK_EQ(th_build_staff_placement(&sim, TH_HUM_DOCTOR, 30, 30), TH_REASON_NO_SE_PUEDE);
+    sim.obj[m1].receptionist = (uint8_t)r1;
+    TH_CHECK_EQ(th_build_staff_placement(&sim, TH_HUM_RECEPTIONIST, 30, 30), TH_REASON_NO_SE_PUEDE);
+    // La segunda, sobre el otro mostrador: el más cercano libre es ese.
+    TH_CHECK_EQ(contratar(TH_HUM_RECEPTIONIST, 0, 40, 30), TH_REASON_OK);
+    const int r2 = ultima_persona();
+    TH_CHECK_EQ(sim.obj[m2].reserved_for, r2);
+    TH_CHECK_EQ(sim.hum[r2].u.s.associated_desk, m2);
+    TH_CHECK_EQ(sim.n_available[3], 0);
+    TH_CHECK_EQ(contratar(TH_HUM_RECEPTIONIST, 0, 41, 33), TH_REASON_SIN_CANDIDATO);
+    sim.w.anims = NULL;
+}
+
+// Médicos en la consulta (room.lua:370-412): el primero, a la consulta vacía,
+// es su staff_member; el segundo sustituye al de dentro si este no atiende a
+// nadie (el viejo sale a deambular); si lo atiende, sale el nuevo. La
+// enfermera no sirve: sale. Sin puerta, no se puede soltar dentro.
+static void test_contratar_en_sala(void)
+{
+    preparar_personal();
+    gp_terminada();
+    th_room *r = &sim.rooms[0];
+    TH_CHECK_EQ(r->staff_member, TH_NONE);
+    // Sin puerta, nadie dentro (place_staff.lua:107-109).
+    const uint8_t puerta = r->door;
+    r->door = TH_NONE;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 10, 12), TH_REASON_NO_SE_PUEDE);
+    r->door = puerta;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 10, 12), TH_REASON_OK);
+    const int a = ultima_persona();
+    TH_CHECK_EQ(r->staff_member, a);
+    TH_CHECK_EQ(sim.hum[a].h.in_room, r->num);
+    TH_CHECK_EQ(sim.hum[a].u.s.last_room, r->num);
+    TH_CHECK(th_hset_has(&r->humanoids, a));
+    TH_CHECK(tiene_accion(&sim.hum[a].h, TH_ACTION_USE_OBJECT)); // el ciclo del GP
+    TH_CHECK(!tiene_accion(&sim.hum[a].h, TH_ACTION_MEANDER));
+    // El segundo: el de dentro no atiende a nadie, así que lo sustituye.
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 13, 11), TH_REASON_OK);
+    const int b = ultima_persona();
+    TH_CHECK_EQ(r->staff_member, b);
+    TH_CHECK(th_hset_has(&r->humanoids, b));
+    TH_CHECK(tiene_accion(&sim.hum[b].h, TH_ACTION_USE_OBJECT));
+    TH_CHECK(sim.hum[a].h.queue[0].flags & TH_AF_IS_LEAVING);
+    TH_CHECK_EQ(sim.hum[a].h.queue[1].kind, TH_ACTION_MEANDER);
+    // El tercero, con el de dentro atendiendo a un paciente: sale él.
+    sim.hum[b].u.s.dealing_with_patient = 1;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 13, 12), TH_REASON_OK);
+    const int c = ultima_persona();
+    TH_CHECK_EQ(r->staff_member, b);
+    TH_CHECK(th_hset_has(&r->humanoids, c));
+    TH_CHECK(sim.hum[c].h.queue[0].flags & TH_AF_IS_LEAVING);
+    TH_CHECK_EQ(sim.hum[c].h.queue[1].kind, TH_ACTION_MEANDER);
+    TH_CHECK(!(sim.hum[b].h.queue[0].flags & TH_AF_IS_LEAVING));
+    // Una enfermera no es para la consulta: sale.
+    TH_CHECK_EQ(contratar(TH_HUM_NURSE, 0, 11, 11), TH_REASON_OK);
+    const int n = ultima_persona();
+    TH_CHECK_EQ(r->staff_member, b);
+    TH_CHECK(sim.hum[n].h.queue[0].flags & TH_AF_IS_LEAVING);
+    TH_CHECK_EQ(sim.hum[n].h.queue[1].kind, TH_ACTION_MEANDER);
+    sim.w.anims = NULL;
+}
+
+// Un paciente con su SeekRoom en curso para el tipo dado: el estado que deja
+// seek_room_start cuando no hay sala.
+static int paciente_buscando(int x, int y, int tipo, int diagnosticado)
+{
+    int who = -1;
+    for (int i = 0; i < TH_SIM_HUMANOIDS && who < 0; i++)
+        if (!sim.hum[i].alive)
+            who = i;
+    th_person *p = &sim.hum[who];
+    memset(p, 0, sizeof *p);
+    p->alive = 1;
+    p->kind = TH_HUM_PATIENT;
+    p->happiness = TH_MICRO;
+    p->u.p.waiting = -1;
+    p->u.p.litter_countdown = -1;
+    p->u.p.diagnosed = (uint8_t)diagnosticado;
+    p->entity_seq = ++sim.entity_seq;
+    sim.order[sim.n_order++] = (uint8_t)who;
+    th_humanoid_init(&sim.w, &p->h, th_walk_anims_find("Standard Male Patient"));
+    th_humanoid_set_tile(&sim.w, &p->h, x, y);
+    th_action sr = th_action_new(TH_ACTION_SEEK_ROOM);
+    sr.room_type = (uint8_t)tipo;
+    if (diagnosticado)
+        sr.state |= TH_AS_TREATMENT;
+    th_humanoid_set_next_action(&sim.w, &p->h, sr);
+    return who;
+}
+
+static const th_action *seek_room_de(int who)
+{
+    const th_humanoid *h = &sim.hum[who].h;
+    for (int i = 0; i < h->queue_len; i++)
+        if (h->queue[i].kind == TH_ACTION_SEEK_ROOM)
+            return &h->queue[i];
+    return NULL;
+}
+
+// build_callback (seek_room.lua:269-310): quien espera la consulta va a ella
+// en cuanto se termina, sin esperar a acabar su paseo; quien espera otra
+// sala, no.
+static void test_aviso_sala(void)
+{
+    preparar_personal();
+    const int a = paciente_buscando(45, 45, 0, 0); // la consulta (gp = 0)
+    const int b = paciente_buscando(50, 45, 1, 1); // un tratamiento en la enfermería: fax y espera
+    const th_action *sa = seek_room_de(a), *sb = seek_room_de(b);
+    TH_CHECK(sa && (sa->state & TH_AS_DONE_INIT) && (sa->state & TH_AS_DONE_WALK));
+    TH_CHECK(sb && (sb->state & TH_AS_DONE_INIT));
+    TH_CHECK_EQ(sim.hum[a].u.p.next_room, 0);
+    gp_terminada();
+    TH_CHECK_EQ(sim.hum[a].u.p.next_room, sim.rooms[0].num);
+    const th_humanoid *h = &sim.hum[a].h;
+    TH_CHECK(h->queue_len >= 1 && h->queue[h->queue_len - 1].kind == TH_ACTION_WALK &&
+             (h->queue[h->queue_len - 1].flags & TH_AF_IS_ENTERING));
+    sa = seek_room_de(a);
+    TH_CHECK(!sa || (sa->flags & TH_AF_TODO_INTERRUPT)); // y el aviso ya no está registrado
+    TH_CHECK_EQ(sim.hum[b].u.p.next_room, 0);
+    TH_CHECK(seek_room_de(b) != NULL);
+    // La consulta pide médico (callForStaff): con nadie libre, la llamada espera.
+    TH_CHECK_EQ(sim.rooms[0].call_open, 1);
+    sim.w.anims = NULL;
+}
+
+// Una enfermedad sintética que se trata en la consulta (treat[0] = gp): la
+// única forma de que checkDiseaseRequirements se cumpla con las salas que el
+// núcleo modela hoy.
+static void enfermedad_de_consulta(void)
+{
+    sim.n_dis = 1;
+    sim.dis[0].id = "consulta";
+    sim.dis[0].n_treat = 1;
+    sim.dis[0].treat[0] = 0; // gp
+}
+
+// build_callback con un fax abierto: el paciente diagnosticado que buscaba
+// tratamiento y mandó NO_TREATMENT va a la sala nueva y el fax desaparece
+// (removeMessage, seek_room.lua:306).
+static void test_aviso_sala_fax(void)
+{
+    preparar_personal();
+    enfermedad_de_consulta();
+    const int a = paciente_buscando(45, 45, 0, 1);
+    TH_CHECK_EQ(sim.n_fax, 1);
+    TH_CHECK_EQ(sim.fax[0].who, a);
+    TH_CHECK_EQ(sim.hum[a].u.p.message, TH_FAX_NO_TREATMENT);
+    gp_terminada();
+    TH_CHECK_EQ(sim.hum[a].u.p.next_room, sim.rooms[0].num);
+    TH_CHECK_EQ(sim.n_fax, 0);
+    TH_CHECK_EQ(sim.n_shown, 0);
+    TH_CHECK_EQ(sim.hum[a].u.p.message, 0);
+    sim.w.anims = NULL;
+}
+
+// staff_change_callback (seek_room.lua:244-266): con la consulta construida
+// pero sin que el paciente la encuentre al buscar (inactiva), al contratar a
+// un médico vuelve a buscar, la encuentra y va, y su fax desaparece; una
+// recepcionista o un bedel no cuentan (seek_room.lua:289-291).
+static void test_aviso_personal(void)
+{
+    preparar_personal();
+    enfermedad_de_consulta();
+    gp_terminada();
+    th_room *r = &sim.rooms[0];
+    r->is_active = 0;
+    const int a = paciente_buscando(45, 45, 0, 1);
+    const th_action *sa = seek_room_de(a);
+    TH_CHECK(sa && (sa->state & TH_AS_DONE_INIT));
+    TH_CHECK_EQ(sim.n_fax, 1);
+    TH_CHECK_EQ(sim.hum[a].u.p.message, TH_FAX_NO_TREATMENT);
+    r->is_active = 1; // sin build_callback: solo el aviso del personal
+    sim.hosp.balance = 100000;
+    TH_CHECK_EQ(contratar(TH_HUM_RECEPTIONIST, 0, 20, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hum[a].u.p.next_room, 0);
+    TH_CHECK_EQ(contratar(TH_HUM_HANDYMAN, 0, 21, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hum[a].u.p.next_room, 0);
+    TH_CHECK_EQ(sim.n_fax, 1);
+    TH_CHECK(seek_room_de(a) == sa);
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 22, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.hum[a].u.p.next_room, r->num);
+    TH_CHECK_EQ(sim.n_fax, 0);
+    TH_CHECK_EQ(sim.hum[a].u.p.message, 0);
+    sim.w.anims = NULL;
+}
+
+// Room:getMissingStaff (room.lua:254-259): el médico de la sala que atiende
+// la llamada de otra sala no cuenta, así que el contratado dentro cabe
+// (staffFitsInRoom) y no se aplica la sustitución; un bedel que viene por una
+// llamada (on_call) no recibe AnswerCallAction (room.lua:343-356).
+static void test_falta_personal_llamada(void)
+{
+    preparar_personal();
+    gp_terminada();
+    th_room *r = &sim.rooms[0];
+    sim.hosp.balance = 100000;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 10, 12), TH_REASON_OK);
+    const int a = ultima_persona();
+    TH_CHECK_EQ(r->staff_member, a);
+    sim.hum[a].u.s.on_call = (uint8_t)(r->num + 1); // la llamada de otra sala
+    sim.hum[a].u.s.dealing_with_patient = 1;        // sin on_call: el nuevo saldría
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 13, 11), TH_REASON_OK);
+    const int b = ultima_persona();
+    TH_CHECK_EQ(r->staff_member, b);
+    TH_CHECK(!(sim.hum[b].h.queue[0].flags & TH_AF_IS_LEAVING));
+    TH_CHECK(tiene_accion(&sim.hum[b].h, TH_ACTION_USE_OBJECT));
+    // El bedel que entra por una llamada (on_call) no cambia de acción; sin
+    // ella, AnswerCallAction sustituye a la que tenía.
+    TH_CHECK_EQ(contratar(TH_HUM_HANDYMAN, 0, 20, 20), TH_REASON_OK); // en el pasillo
+    const int h = ultima_persona();
+    const uint16_t antes = sim.hum[h].h.queue[0].serial;
+    sim.hum[h].u.s.on_call = r->num;
+    th_sim_room_on_enter(&sim, r, h);
+    TH_CHECK(th_hset_has(&r->humanoids, h));
+    TH_CHECK_EQ(sim.hum[h].h.queue[0].serial, antes);
+    TH_CHECK(!tiene_accion(&sim.hum[h].h, TH_ACTION_ANSWER_CALL));
+    th_hset_del(&r->humanoids, h);
+    sim.hum[h].u.s.on_call = 0;
+    th_sim_room_on_enter(&sim, r, h);
+    TH_CHECK(tiene_accion(&sim.hum[h].h, TH_ACTION_ANSWER_CALL));
+    sim.w.anims = NULL;
+}
+
+// GPRoom:dealtWithPatient con el diagnóstico completo: setDiagnosed, la
+// búsqueda del tratamiento y, si la enfermedad no estaba descubierta,
+// discoverDisease (el libro de casos la marca).
+static void test_descubrir(void)
+{
+    preparar_personal();
+    gp_terminada();
+    sim.n_dis = 1;
+    sim.dis[0].id = "bloaty_head";
+    sim.dis[0].expertise_id = 1;
+    sim.dis[0].n_treat = 1;
+    sim.dis[0].treat[0] = 1;
+    sim.n_case = 1;
+    sim.casebook[0].id = "bloaty_head";
+    sim.casebook[0].price = TH_MICRO;
+    sim.casebook[0].reputation = 500;
+    sim.hosp.balance = 1000;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 10, 12), TH_REASON_OK);
+    const int doc = ultima_persona();
+    th_room *r = &sim.rooms[0];
+    TH_CHECK_EQ(r->staff_member, doc);
+    // El paciente en la silla de la consulta, con el diagnóstico ya hecho.
+    const int pac = paciente_buscando(11, 11, 0, 0);
+    th_person *p = &sim.hum[pac];
+    p->h.in_room = r->num;
+    th_hset_add(&r->humanoids, pac);
+    p->h.user_of = (uint8_t)objeto_en(12, 11);
+    p->u.p.diagnosis_progress = TH_MICRO;
+    r->max_times = 0;
+    th_action vuelta = th_action_new(TH_ACTION_USE_OBJECT);
+    vuelta.val = 1;
+    TH_CHECK_EQ(sim.casebook[0].discovered, 0);
+    th_sim_gp_loop_callback(&sim, doc, &vuelta);
+    TH_CHECK_EQ(p->u.p.diagnosed, 1);
+    TH_CHECK_EQ(sim.casebook[0].discovered, 1);
+    TH_CHECK(tiene_accion(&p->h, TH_ACTION_SEEK_ROOM));
+    sim.w.anims = NULL;
+}
+
+// Las definiciones con las tablas de caminar y de puertas de humanoid.c, que
+// th_sim_init comprueba (load_definitions), y un TRG para ellas.
+static uint8_t trg_defs_init[32768], trg_escena[2048];
+static char json_defs_init[24576];
+
+static size_t defs_init_trg(void)
+{
+    size_t n = strlen(definiciones) - 1; // sin la llave del final
+    memcpy(json_defs_init, definiciones, n);
+    int k = (int)n;
+    const int cap = (int)sizeof json_defs_init;
+    k += snprintf(json_defs_init + k, (size_t)(cap - k), ", \"caminar\": {");
+    for (unsigned i = 0; th_walk_anims_at(i); i++) {
+        const th_walk_anims *a = th_walk_anims_at(i);
+        k += snprintf(json_defs_init + k, (size_t)(cap - k),
+                      "%s\"%s\": {\"walk_north\": %u, \"walk_east\": %u, \"idle_north\": %u, \"idle_east\": %u}",
+                      i ? ", " : "", a->name, a->walk_north, a->walk_east, a->idle_north, a->idle_east);
+    }
+    k += snprintf(json_defs_init + k, (size_t)(cap - k), "}, \"puertas\": {");
+    for (unsigned i = 0; th_walk_anims_at(i); i++) {
+        const th_walk_anims *a = th_walk_anims_at(i);
+        k += snprintf(json_defs_init + k, (size_t)(cap - k),
+                      "%s\"%s\": {\"leaving\": %u, \"entering\": %u, \"knock_north\": %u, \"knock_east\": %u,"
+                      " \"leaving_swing\": %u, \"entering_swing\": %u}",
+                      i ? ", " : "", a->name, a->door_leaving, a->door_entering, a->knock_north, a->knock_east,
+                      a->swing_leaving, a->swing_entering);
+    }
+    k += snprintf(json_defs_init + k, (size_t)(cap - k), "}}");
+    if (k >= cap)
+        return 0;
+    return th_test_trg(json_defs_init, trg_defs_init, sizeof trg_defs_init);
+}
+
+// Una partida nueva por th_sim_init (World:new, world.lua:151-157): sin
+// spawn_dates ni spawn_rate, el ritmo es popn[0].Change y las llegadas del
+// primer mes se calculan ya (con force_arrival, al menos una); con
+// spawn_dates, las del escenario. El mercado es el del mes 0 y se regenera
+// al acabar el mes (con el monthOfGame del mes que acaba).
+static void test_partida_nueva(void)
+{
+    const size_t nd = defs_init_trg();
+    TH_CHECK(nd > 0);
+    if (!nd)
+        return;
+    static th_rules defs_init, escena;
+    TH_CHECK_EQ(th_rules_init(&defs_init, trg_defs_init, nd), 0);
+    th_test_anims(&anims_personal);
+    static const char *const escenas[2] = {
+        "{\"fecha\": {\"anio\": 1, \"mes\": 1, \"dia\": 1, \"hora\": 0},"
+        " \"mundo\": {\"hours_per_tick\": 1, \"popn\": {\"#0\": {\"Month\": 0, \"Change\": 3},"
+        "  \"#1\": {\"Month\": 1, \"Change\": 1}}},"
+        " \"hospital\": {\"saldo\": 40000, \"valor\": 43525, \"reputacion\": 500, \"abierto\": true},"
+        " \"parcelas\": [1]}",
+        "{\"fecha\": {\"anio\": 1, \"mes\": 1, \"dia\": 1, \"hora\": 0},"
+        " \"mundo\": {\"hours_per_tick\": 1, \"spawn_rate\": 24, \"monthly_spawn_increase\": 0,"
+        "  \"spawn_dates\": {\"#5\": 2, \"#9\": 1}, \"popn\": {\"#0\": {\"Month\": 0, \"Change\": 3}}},"
+        " \"hospital\": {\"saldo\": 40000, \"abierto\": true}, \"parcelas\": [1]}"};
+    uint8_t fechas[2][32];
+    for (int e = 0; e < 2; e++) {
+        preparar();
+        const size_t ne = th_test_trg(escenas[e], trg_escena, sizeof trg_escena);
+        TH_CHECK(ne > 0);
+        if (!ne)
+            return;
+        TH_CHECK_EQ(th_rules_init(&escena, trg_escena, ne), 0);
+        TH_CHECK_EQ(th_sim_init(&sim, &mapa, &buscador, &anims_personal, &defs_init, &nivel, &escena, 7), 0);
+        memcpy(fechas[e], sim.spawn_dates, sizeof fechas[e]);
+        int total = 0;
+        for (int d = 1; d <= 31; d++)
+            total += sim.spawn_dates[d];
+        if (e == 0) {
+            TH_CHECK_EQ(sim.spawn_rate, 3 * TH_MICRO);
+            TH_CHECK_EQ(sim.monthly_spawn_increase, 3 * TH_MICRO);
+            TH_CHECK(total >= 1);
+            TH_CHECK_EQ(sim.market_month, 0);
+            TH_CHECK_EQ(sim.n_available[0], 3);
+            TH_CHECK_EQ(sim.n_available[3], 2);
+            TH_CHECK_EQ(sim.seed, 7);
+            // Lo mismo otra vez: determinista.
+            preparar();
+            TH_CHECK_EQ(th_sim_init(&sim, &mapa, &buscador, &anims_personal, &defs_init, &nivel, &escena, 7), 0);
+            TH_CHECK_EQ(memcmp(fechas[0], sim.spawn_dates, sizeof fechas[0]), 0);
+            // Al acabar enero: el mercado de monthOfGame 1 y el ritmo + 1.
+            const th_staff_profile primero = sim.available[0][0];
+            while (sim.date.month == 1)
+                th_sim_tick(&sim);
+            TH_CHECK_EQ(sim.market_month, 1);
+            TH_CHECK_EQ(sim.spawn_rate, 4 * TH_MICRO);
+            TH_CHECK(memcmp(&primero, &sim.available[0][0], sizeof primero) != 0);
+            TH_CHECK_EQ(sim.n_available[0], 3);
+        } else {
+            TH_CHECK_EQ(sim.spawn_rate, 24 * TH_MICRO);
+            TH_CHECK_EQ(total, 3);
+            TH_CHECK_EQ(sim.spawn_dates[5], 2);
+            TH_CHECK_EQ(sim.spawn_dates[9], 1);
+        }
+    }
+}
+
 void th_test_build(void)
 {
     const size_t n = th_test_trg(definiciones, trg_defs, sizeof(trg_defs));
@@ -1944,6 +2637,17 @@ void th_test_build(void)
     test_atras();
     test_vender_comprar_obra();
     test_tope_salas();
+    test_mercado();
+    test_contratar();
+    test_contratar_resumen();
+    test_contratar_recepcionista();
+    test_contratar_en_sala();
+    test_falta_personal_llamada();
+    test_aviso_sala();
+    test_aviso_sala_fax();
+    test_aviso_personal();
+    test_descubrir();
+    test_partida_nueva();
     free(E);
     E = NULL;
 }

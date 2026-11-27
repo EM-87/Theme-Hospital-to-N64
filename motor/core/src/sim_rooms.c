@@ -257,6 +257,10 @@ static int fulfills(const th_person *p, const char *criterion)
         return p->kind == TH_HUM_DOCTOR;
     if (!strcmp(criterion, "Nurse"))
         return p->kind == TH_HUM_NURSE;
+    if (!strcmp(criterion, "Handyman"))
+        return p->kind == TH_HUM_HANDYMAN;
+    if (!strcmp(criterion, "Receptionist"))
+        return p->kind == TH_HUM_RECEPTIONIST;
     if (p->kind != TH_HUM_DOCTOR)
         return 0;
     if (!strcmp(criterion, "Psychiatrist"))
@@ -268,27 +272,55 @@ static int fulfills(const th_person *p, const char *criterion)
     return 0;
 }
 
-// Room:testStaffCriteria(getRequiredStaffCriteria())
-static int staff_criteria_met(const th_sim *s, const th_room *r)
+// Room:getMaximumStaffCriteria (room.lua:305-309): maximum_staff o, si la sala
+// no lo trae, required_staff.
+static th_rnode maximum_staff(const th_sim *s, const th_room *r)
 {
-    th_rnode req = required_staff(s, r);
-    const uint32_t n = th_rules_len(s->defs, req);
+    const th_rnode max = th_rules_get(
+        s->defs, th_rules_get(s->defs, th_rules_get(s->defs, s->defs->root, "salas"), s->room_types[r->type]),
+        "maximum_staff");
+    return max ? max : required_staff(s, r);
+}
+
+// Room:testStaffCriteria(criteria, extra_humanoid) (room.lua:271-296) con
+// getMissingStaff (246-268): sin extra (TH_NONE), 1 si no falta nadie; con
+// extra, 1 si esa persona cubre algo de lo que falta (su clase, o un título
+// del médico). Cuenta quien está en la sala, no se va, no atiende la llamada
+// de otra sala y es su staff_member (isRoomStaffMember: las salas del núcleo
+// tienen un solo miembro), room.lua:254-259. fired y going_to_staffroom no
+// están en el núcleo (no se despide y nadie va a la sala de personal: ver
+// staff_is_idle), así que no descartan a nadie.
+static int test_staff_criteria(const th_sim *s, const th_room *r, th_rnode criteria, int extra)
+{
+    const uint32_t n = th_rules_len(s->defs, criteria);
     for (uint32_t k = 0; k < n; k++) {
-        const char *crit = th_rules_str(s->defs, th_rules_entry_key(s->defs, req, k), NULL);
-        int count = th_rules_int(s->defs, th_rules_entry_value(s->defs, req, k), 0);
+        const char *crit = th_rules_str(s->defs, th_rules_entry_key(s->defs, criteria, k), NULL);
+        int count = th_rules_int(s->defs, th_rules_entry_value(s->defs, criteria, k), 0);
         for (int i = 0; i < TH_SIM_HUMANOIDS && crit; i++) {
             const th_person *p = &s->hum[i];
             if (!in_room(r, i) || p->kind == TH_HUM_PATIENT || !fulfills(p, crit))
                 continue;
             if (p->h.queue_len && (p->h.queue[0].flags & TH_AF_IS_LEAVING))
                 continue;
+            if (p->u.s.on_call && p->u.s.on_call != r->num) // on_call.object ~= self
+                continue;
             if (r->staff_member == i)
                 count--;
         }
-        if (count > 0)
+        if (count <= 0 || !crit)
+            continue;
+        if (extra == TH_NONE)
             return 0;
+        if (fulfills(&s->hum[extra], crit))
+            return 1;
     }
-    return 1;
+    return extra == TH_NONE;
+}
+
+// Room:testStaffCriteria(getRequiredStaffCriteria())
+static int staff_criteria_met(const th_sim *s, const th_room *r)
+{
+    return test_staff_criteria(s, r, required_staff(s, r), TH_NONE);
 }
 
 int th_sim_room_can_enter(th_sim *s, const th_room *r, int who)
@@ -489,6 +521,32 @@ static int desk_occupy(th_sim *s, int desk, int who)
     r.flags |= TH_AF_MUST_HAPPEN;
     th_humanoid_queue_action(&s->hum[who].h, r);
     return 1;
+}
+
+// Receptionist:onPlaceInCorridor (receptionist.lua:70-79): findObjectNear con
+// un callback que ocupa el primer mostrador (por distancia de camino) que se
+// deja (ReceptionDesk:occupy). La caché de mostradores atendidos no hace
+// falta: el núcleo la calcula al pedirla (staffed_desk).
+typedef struct {
+    th_sim *s;
+    int who;
+} desk_ctx;
+
+static int visit_desk(void *ctx, int x, int y, int dir, int dist)
+{
+    desk_ctx *c = ctx;
+    (void)dir;
+    (void)dist;
+    const int o = th_sim_object_at(c->s, x, y, TH_OBJ_RECEPTION_DESK);
+    return o != TH_NONE && desk_occupy(c->s, o, c->who);
+}
+
+int th_sim_receptionist_find_desk(th_sim *s, int who)
+{
+    const th_humanoid *h = &s->hum[who].h;
+    desk_ctx c = {s, who};
+    const int thob = type_thob(s, TH_OBJ_RECEPTION_DESK);
+    return thob >= 0 && th_path_visit_objects(s->w.pf, s->w.map, h->tile_x, h->tile_y, thob, 1 << 30, visit_desk, &c);
 }
 
 // ReceptionDesk:checkForNearbyStaff
@@ -745,6 +803,14 @@ static void dealt_with_patient(th_sim *s, th_room *r, int patient)
             } else {
                 th_sim_go_home(s, patient, TH_HOME_OVER_PRICED);
             }
+            // gp.lua:150-153: si la enfermedad no estaba descubierta,
+            // ResearchDepartment:discoverDisease (research_department.lua:603-619):
+            // el libro de casos la marca; el resto (discovered_diseases, el
+            // consejero, la política de investigación de medicinas y
+            // setResearchConcentration) no lo lleva el núcleo, que no investiga.
+            th_casebook *cb = (th_casebook *)th_sim_casebook(s, d->id);
+            if (cb && !cb->discovered)
+                cb->discovered = 1;
         } else {
             send_to_next_diagnosis_room(s, patient);
         }
@@ -753,21 +819,101 @@ static void dealt_with_patient(th_sim *s, th_room *r, int patient)
         s->hum[r->staff_member].u.s.dealing_with_patient = 0;
 }
 
+// Room:staffMeetsRoomRequirements (room.lua:475-483): cumple alguno de los
+// criterios de required_staff.
+static int test_staff_meets(const th_sim *s, const th_room *r, int who)
+{
+    const th_rnode req = required_staff(s, r);
+    const uint32_t n = th_rules_len(s->defs, req);
+    for (uint32_t k = 0; k < n; k++) {
+        const char *crit = th_rules_str(s->defs, th_rules_entry_key(s->defs, req, k), NULL);
+        if (crit && fulfills(&s->hum[who], crit))
+            return 1;
+    }
+    return 0;
+}
+
+// Humanoid:setCallCompleted
+static void set_call_completed(th_sim *s, int who)
+{
+    const th_person *p = &s->hum[who];
+    if (p->u.s.on_call)
+        checkpoint_completed(s, p->u.s.on_call, th_sim_room(s, p->u.s.on_call)->call_serial);
+}
+
+// Room:createLeaveAction y MeanderAction detrás.
+static void leave_and_meander(th_sim *s, th_room *r, int who)
+{
+    th_humanoid_set_next_action(&s->w, &s->hum[who].h, leave_action(s, r));
+    th_humanoid_queue_action(&s->hum[who].h, th_action_new(TH_ACTION_MEANDER));
+}
+
+// Staff:isMeandering (staff.lua:514-525): [idle o walk, meander].
+static int is_meandering(const th_person *p)
+{
+    const th_humanoid *h = &p->h;
+    return h->queue_len >= 2 && (h->queue[0].kind == TH_ACTION_IDLE || h->queue[0].kind == TH_ACTION_WALK) &&
+           h->queue[1].kind == TH_ACTION_MEANDER;
+}
+
+// Room:onHumanoidEnter con personal (room.lua:317-412). La sala aún no lo
+// cuenta en humanoids cuando mira si cabe (staffFitsInRoom, room.lua:466-472).
+// Sin sala activa, sale (326-336). El bedel siempre entra y, si no venía por
+// una llamada (on_call), contesta llamadas (338-356); con on_call CorsixTH
+// cierra la sala si viene a reparar su máquina (lockRoomOnRepair): el núcleo
+// aún no tiene máquinas ni reparaciones (6.5). Si no cabe pero la sala tiene miembro
+// y el nuevo sirve: sustituye al de dentro si este no atiende a nadie o
+// deambula (el viejo sale a deambular); si no, sale el nuevo. Si no sirve,
+// sale (adviseWrongPersonForThisRoom es del consejero). Los avisos del
+// consejero (investigador y enfermera sin mesa) tampoco.
+static void staff_enter(th_sim *s, th_room *r, int who)
+{
+    th_person *p = &s->hum[who];
+    if (!r->is_active) {
+        th_hset_add(&r->humanoids, who);
+        leave_and_meander(s, r, who);
+        return;
+    }
+    if (p->kind == TH_HUM_HANDYMAN) {
+        th_hset_add(&r->humanoids, who);
+        if (!p->u.s.on_call)
+            th_humanoid_set_next_action(&s->w, &p->h, th_action_new(TH_ACTION_ANSWER_CALL));
+        th_sim_room_try_advance_queue(s, r);
+        return;
+    }
+    const th_rnode max = maximum_staff(s, r);
+    const int fits = !test_staff_criteria(s, r, max, TH_NONE) && test_staff_criteria(s, r, max, who);
+    th_hset_add(&r->humanoids, who);
+    if (fits) {
+        set_call_completed(s, who);
+        command_entering_staff(s, r, who);
+    } else if (r->staff_member != TH_NONE && test_staff_meets(s, r, who)) {
+        const int old = r->staff_member;
+        if (!s->hum[old].u.s.dealing_with_patient || is_meandering(&s->hum[old])) {
+            leave_and_meander(s, r, old);
+            r->staff_member = (uint8_t)who;
+            set_call_completed(s, who);
+            command_entering_staff(s, r, who);
+        } else {
+            leave_and_meander(s, r, who);
+        }
+    } else {
+        leave_and_meander(s, r, who);
+    }
+    th_sim_room_try_advance_queue(s, r);
+}
+
 // Room:onHumanoidEnter
 void th_sim_room_on_enter(th_sim *s, th_room *r, int who)
 {
     th_person *p = &s->hum[who];
     p->h.in_room = r->num;
-    if (p->kind != TH_HUM_PATIENT)
-        p->u.s.last_room = r->num;
-    th_hset_add(&r->humanoids, who);
     if (p->kind != TH_HUM_PATIENT) {
-        if (p->u.s.on_call) // Staff:setCallCompleted
-            checkpoint_completed(s, p->u.s.on_call, th_sim_room(s, p->u.s.on_call)->call_serial);
-        command_entering_staff(s, r, who);
-        th_sim_room_try_advance_queue(s, r);
+        p->u.s.last_room = r->num;
+        staff_enter(s, r, who);
         return;
     }
+    th_hset_add(&r->humanoids, who);
     th_sim_room_try_advance_queue(s, r);
     if (staff_criteria_met(s, r)) {
         if (r->staff_member != TH_NONE)

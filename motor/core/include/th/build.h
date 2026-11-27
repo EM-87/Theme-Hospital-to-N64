@@ -32,7 +32,18 @@ enum {
     TH_ORD_ATRAS,          // cancel
     // Contratar (la demo jugable; hito 6.4): UIHireStaff:hire y UIPlaceStaff:onMouseUp
     // (dialogs/hire_staff.lua, dialogs/place_staff.lua).
-    TH_ORD_CONTRATAR, // dir: clase (TH_HUM_*), qty: índice del candidato en el mercado del núcleo, x, y: dónde se suelta
+    // dir: clase (TH_HUM_DOCTOR..TH_HUM_RECEPTIONIST), qty: índice del
+    // candidato en th_sim.available (th_sim_candidates), def: su resumen
+    // (th_staff_profile_digest), x, y: la casilla donde se suelta. Los
+    // motivos, por orden: TH_REASON_SIN_CANDIDATO (no hay ese candidato, hire
+    // sin perfil, o en ese índice hay otro perfil: el mercado cambió de mes o
+    // la partida no es la misma), TH_REASON_SIN_DINERO (balance < sueldo,
+    // la comparación estricta de hire: con el saldo justo se contrata),
+    // TH_REASON_NO_SE_PUEDE (la casilla no vale: th_build_staff_placement) y
+    // TH_REASON_LLENO (no queda hueco en hum: el tope del motor). Rechazada, el
+    // mercado no cambia (en CorsixTH hire saca el perfil al abrir UIPlaceStaff y
+    // cancelar lo devuelve al final de la lista: la batería lo repone en su sitio).
+    TH_ORD_CONTRATAR,
 };
 
 // Motivos de rechazo, con los nombres de la batería (th_build_reason_name).
@@ -86,6 +97,16 @@ int32_t th_build_object_cost(const th_sim *s, th_rnode def);
 // al empezar el tick. La vista previa de la interfaz de la ROM (paso 7) no la
 // puede llamar con la simulación a medias: necesitará una búsqueda propia.
 int th_build_check_cell(th_sim *s, th_rnode def, int x, int y, int dir, int *bad);
+
+// UIPlaceStaff:_isValidStaffPlacement (place_staff.lua:95-125) para una
+// persona de la clase kind (TH_HUM_*) soltada en (x, y): TH_REASON_OK o
+// TH_REASON_NO_SE_PUEDE (CorsixTH solo tiene un rechazo, staff_cannot_place).
+// Vale una casilla del hospital del jugador y transitable, fuera de las salas
+// o, si no es recepcionista, dentro de una sala con puerta a la que se llegue
+// andando (findDistance); la recepcionista vale además sobre un mostrador sin
+// recepcionista. CorsixTH no mira si hay alguien en la casilla. Busca camino
+// con s->w.pf: la misma advertencia que th_build_check_cell.
+int th_build_staff_placement(th_sim *s, int kind, int x, int y);
 
 // La cola de órdenes: cada una se aplica al empezar el tick de su hora
 // (th_sim_tick), en el orden en que llegó. Devuelve -1 si la cola está llena.

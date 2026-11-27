@@ -1368,6 +1368,7 @@ static void seek_room_start(th_world *w, th_humanoid *h, th_action *a)
     int diag_idx;
     th_room *r = find_room(w, h, a, &diag_idx);
     if (r) {
+        th_sim_remove_message(s, who(w, h)); // seek_room.lua:214 y 226
         goto_room(w, h, r, diag_idx);
         return;
     }
@@ -1401,6 +1402,100 @@ static void seek_room_start(th_world *w, th_humanoid *h, th_action *a)
     } else {
         idle_anim(w, h, h->last_dir);
         set_tile_position_speed(w, h, h->tile_x, h->tile_y, 0, 0, 0, 0);
+    }
+}
+
+// Los avisos de seek_room.lua: el paciente que no encontró sala deja
+// registrados build_callback y staff_change_callback (seek_room.lua:232-310)
+// mientras su SeekRoom tiene done_init; el on_interrupt
+// (action_seek_room_interrupt) y goHome los quitan. En el núcleo, «registrado»
+// es una SeekRoom en la cola con TH_AS_DONE_INIT y sin interrupción pendiente.
+static th_action *registered_seek_room(th_humanoid *h)
+{
+    for (int i = 0; i < h->queue_len; i++) {
+        th_action *a = &h->queue[i];
+        if (a->kind == TH_ACTION_SEEK_ROOM && (a->state & TH_AS_DONE_INIT) && !(a->flags & TH_AF_TODO_INTERRUPT))
+            return a;
+    }
+    return NULL;
+}
+
+// Hospital:checkDiseaseRequirements (hospital.lua:1822-1847): 1 si a la
+// enfermedad le falta alguna sala de tratamiento (o su personal). Las salas
+// que el núcleo no modela cuentan como no construidas (find_modeled_room), y
+// ninguna de tratamiento lo está aún, así que hoy siempre falta: la mitad del
+// personal (countStaffOfCategory) se añadirá con las salas de tratamiento (6.5).
+static int disease_requirements_missing(th_sim *s, int disease)
+{
+    const th_disease *d = &s->dis[disease];
+    for (int i = 0; i < d->n_treat; i++) {
+        if (d->treat[i] != th_sim_room_type(s, "gp"))
+            return 1;
+        int found = 0;
+        for (int k = 0; k < s->n_rooms && !found; k++)
+            found = s->rooms[k].type == d->treat[i] && s->rooms[k].is_active;
+        if (!found)
+            return 1;
+    }
+    return 0;
+}
+
+// World:notifyNewRoom → Patient:notifyNewRoom → build_callback
+// (seek_room.lua:269-310), por world.entities. La sala vale si es la que
+// buscaba o, sin diagnóstico y sin buscar la consulta, una de sus salas de
+// diagnóstico; entonces va a ella (action_seek_room_goto_room con la sala
+// nueva) salvo que, diagnosticado y buscando tratamiento, le falte algo. Las
+// salas que el núcleo no modela no avisan (para los pacientes no existen), y
+// room_type_needed (tratamientos de varias salas) aún no hace falta.
+void th_sim_notify_new_room(th_sim *s, int room)
+{
+    th_room *rm = &s->rooms[room];
+    const int gp = th_sim_room_type(s, "gp");
+    if (rm->type != gp || !rm->is_active || rm->door == TH_NONE)
+        return;
+    for (int k = 0; k < s->n_order; k++) {
+        th_person *p = &s->hum[s->order[k]];
+        if (!p->alive || p->kind != TH_HUM_PATIENT)
+            continue;
+        th_action *a = registered_seek_room(&p->h);
+        if (!a)
+            continue;
+        int found = a->room_type == rm->type;
+        if (!found && !p->u.p.diagnosed && a->room_type != gp)
+            for (int i = 0; i < p->u.p.n_diag && !found; i++)
+                found = p->u.p.diag[i] == rm->type;
+        if (!found)
+            continue;
+        if (p->u.p.diagnosed && (a->state & TH_AS_TREATMENT) && disease_requirements_missing(s, p->u.p.disease))
+            continue;
+        // action_seek_room_goto_room y removeMessage (seek_room.lua:305-306).
+        goto_room(&s->w, &p->h, rm, (a->state & TH_AS_DIAG_ROOM) ? a->diag_idx : -1);
+        th_sim_remove_message(s, s->order[k]);
+    }
+}
+
+// Hospital:notifyOfStaffChange → staff_change_callback (seek_room.lua:244-266),
+// por hospital.patients (el orden de alta: el de world.entities sin el
+// personal). Recepcionistas y bedeles no cuentan; con lo que pide la
+// enfermedad cubierto, vuelve a buscar sala y, si la hay, va.
+void th_sim_notify_staff_change(th_sim *s, int staff)
+{
+    const int kind = s->hum[staff].kind;
+    if (kind == TH_HUM_RECEPTIONIST || kind == TH_HUM_HANDYMAN)
+        return;
+    for (int k = 0; k < s->n_order; k++) {
+        th_person *p = &s->hum[s->order[k]];
+        if (!p->alive || p->kind != TH_HUM_PATIENT)
+            continue;
+        th_action *a = registered_seek_room(&p->h);
+        if (!a || disease_requirements_missing(s, p->u.p.disease))
+            continue;
+        int diag_idx;
+        th_room *r = find_room(&s->w, &p->h, a, &diag_idx);
+        if (r) {
+            th_sim_remove_message(s, s->order[k]); // seek_room.lua:260
+            goto_room(&s->w, &p->h, r, diag_idx);
+        }
     }
 }
 

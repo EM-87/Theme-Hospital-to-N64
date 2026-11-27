@@ -238,7 +238,49 @@ enum {
     TH_MONEY_BUY_OBJECT,
     TH_MONEY_SELL_OBJECT,
     TH_MONEY_BUILD_ROOM, // who es la definición de la sala (salas.<id>)
+    // Hospital:addStaff (hospital.lua:1400-1406): el sueldo de un mes al
+    // contratar, con spendMoney sin changeValue (el valor no cambia); who es
+    // la persona contratada (índice en hum), no un th_rnode: quien lea el
+    // motivo (el gancho de dinero de la batería, platform/pc/construir.c)
+    // solo puede mirar el id del nodo con BUY_OBJECT, SELL_OBJECT y
+    // BUILD_ROOM; este es «hire_staff» (hospital.lua:1405).
+    TH_MONEY_HIRE_STAFF,
 };
+
+// El mercado de candidatos (World:makeAvailableStaff, world.lua:510-532, y
+// StaffProfile, staff_profile.lua). Lo genera un th_rng propio sembrado con la
+// semilla del escenario, la Seed de staff_levels y el mes: nunca s->rng, para
+// que generarlo no cambie la simulación ni la huella de los escenarios que no
+// contratan. Se regenera entero al empezar (el mes 0 en una partida nueva) y
+// al acabar cada mes, como CorsixTH.
+// Hasta 9 por clase en los 36 niveles (staff_levels de full/easy/hard).
+#define TH_SIM_CANDIDATES 12
+#define TH_SIM_STAFF_CLASSES 4 // médicos, enfermeras, bedeles, recepcionistas: TH_HUM_DOCTOR..RECEPTIONIST
+// Títulos del perfil (th_staff_profile.titles): is_junior, is_consultant
+// (parseSkillLevel), is_surgeon, is_psychiatrist, is_researcher (== 1.0).
+enum {
+    TH_TITLE_JUNIOR = 1u << 0,
+    TH_TITLE_CONSULTANT = 1u << 1,
+    TH_TITLE_SURGEON = 1u << 2,
+    TH_TITLE_PSYCHIATRIST = 1u << 3,
+    TH_TITLE_RESEARCHER = 1u << 4,
+};
+typedef struct th_staff_profile {
+    int32_t skill;     // millonésimas, [0, 1.000.000)
+    int32_t attention; // attention_to_detail, millonésimas
+    int32_t wage;      // getFairWage
+    uint8_t kind;      // TH_HUM_*
+    uint8_t titles;    // TH_TITLE_*
+    uint8_t layer5;    // la capa 5 del aspecto (Staff:setProfile): 2, o 4 los médicos negros
+    // El retrato (drawFace): franjas de FACE01 (pelo, cara y barbilla, 0-17).
+    uint8_t hair, face, chin;
+    uint8_t desc_swap; // shuffle de las dos descripciones: 1 = la segunda va delante
+    uint16_t name_seed; // math.random(1, 1009): la inicial es initials[name_seed % #initials]
+    // Los __random de las tablas de textos, que el núcleo no carga: la
+    // interfaz toma el índice como valor % tamaño de la tabla.
+    uint16_t name_rnd[2]; // humanoid_name_starts y humanoid_name_ends
+    uint16_t desc_rnd[2]; // staff_descriptions.bad (habilidad < 0,55) o .good, y .misc
+} th_staff_profile;
 
 // La ventana de colocar objetos (UIPlaceObjects de CorsixTH): lo que se ha
 // comprado o cogido y queda por colocar, una fila por tipo de objeto.
@@ -415,6 +457,15 @@ typedef struct th_sim {
     th_obra obra;
     uint8_t n_orders;
     th_order orders[TH_SIM_ORDERS];
+    // Contratar: la semilla de th_sim_init (para el generador del mercado), el
+    // mes con que se generó el mercado y los candidatos de cada clase
+    // (available[kind - TH_HUM_DOCTOR], en el orden de available_staff).
+    // th_sim_hash NO los mete: son función de la semilla, el nivel y el mes,
+    // y lo que se contrata entra en la huella como persona.
+    uint32_t seed;
+    int16_t market_month;
+    uint8_t n_available[TH_SIM_STAFF_CLASSES];
+    th_staff_profile available[TH_SIM_STAFF_CLASSES][TH_SIM_CANDIDATES];
     th_sim_events ev;
 } th_sim;
 
@@ -551,11 +602,59 @@ int th_sim_staff_meander(th_sim *s, int who, int must_happen);
 void th_sim_call_checkpoint(th_sim *s, int room, int serial);
 void th_sim_call_checkpoint_removed(th_sim *s, int who, int room, int serial);
 int32_t th_sim_random_micro(th_sim *s); // math.random() en millonésimas: [0, 1.000.000)
+// Personal y contratar (sim.c).
+// StaffProfile:getFairWage (staff_profile.lua:236-255): MinSalary de la clase
+// + habilidad · 1000 / SalaryAbilityDivisor + SalaryAdd por título (médicos),
+// con floor y nunca menos que MinSalary. skill en millonésimas, titles TH_TITLE_*.
+int32_t th_sim_fair_wage(const th_sim *s, int kind, int32_t skill, unsigned titles);
+// World:makeAvailableStaff(month): regenera el mercado entero (month es
+// monthOfGame del mes que acaba; 0 al crear el mundo).
+void th_sim_make_available_staff(th_sim *s, int month);
+// Los candidatos de una clase (TH_HUM_DOCTOR..TH_HUM_RECEPTIONIST): cuántos
+// hay y, en *list, el primero. 0 y NULL con otra clase.
+static inline int th_sim_candidates(const th_sim *s, int kind, const th_staff_profile **list)
+{
+    const int k = kind - TH_HUM_DOCTOR;
+    if (k < 0 || k >= TH_SIM_STAFF_CLASSES) {
+        if (list)
+            *list = 0;
+        return 0;
+    }
+    if (list)
+        *list = s->available[k];
+    return s->n_available[k];
+}
+// El resumen de un perfil (th_order.def de TH_ORD_CONTRATAR): un hash de
+// todos sus campos, para que la orden contrate a la persona que vio quien la
+// dio y no a la que ocupe ese índice si el mercado cambió (decisión 5 de
+// docs/06_plan.md).
+uint32_t th_staff_profile_digest(const th_staff_profile *pf);
+// UIPlaceStaff:onMouseUp con un perfil nuevo (place_staff.lua:156-175), sin
+// validar nada (lo valida TH_ORD_CONTRATAR, build.c): newEntity, setProfile,
+// setTile, Hospital:addStaff (cobra el sueldo y avisa a los pacientes que
+// esperan: staff_change_callback) y, según la casilla, Room:onHumanoidEnter o
+// onPlaceInCorridor. Devuelve el índice en hum, o TH_NONE si no cabe.
+int th_sim_hire(th_sim *s, const th_staff_profile *pf, int x, int y);
+// Receptionist:onPlaceInCorridor (receptionist.lua:70-79): el mostrador
+// libre más cercano por el camino (findObjectNear con occupy). 1 si ocupa uno.
+int th_sim_receptionist_find_desk(th_sim *s, int who);
+// Avisos a los pacientes que esperan sala con SeekRoom (seek_room.lua,
+// humanoid.c): build_callback al terminar una sala (th_sim_room_mark_built) y
+// staff_change_callback al contratar a alguien que no es recepcionista ni bedel.
+// Con los datos reales, staff_change_callback aún no tiene efecto: ninguna
+// enfermedad se trata en la consulta, así que checkDiseaseRequirements
+// siempre falla (disease_requirements_missing, humanoid.c) hasta el 6.5.
+// Los dos quitan el fax del paciente que va a la sala (removeMessage).
+void th_sim_notify_new_room(th_sim *s, int room);
+void th_sim_notify_staff_change(th_sim *s, int staff);
 // Pacientes.
 void th_sim_go_home(th_sim *s, int who, int reason);
 void th_sim_destroy(th_sim *s, int who);
 void th_sim_set_diagnosed(th_sim *s, int who);
 int th_sim_agrees_to_pay(th_sim *s, int who, const char *disease_id);
 void th_sim_send_fax(th_sim *s, int who, int kind);
+// PlayerHospital:removeMessage: quita el fax pendiente del paciente (si lo
+// tiene) y pone message a 0.
+void th_sim_remove_message(th_sim *s, int who);
 
 #endif

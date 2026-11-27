@@ -337,6 +337,18 @@ void th_sim_go_home(th_sim *s, int who, int reason)
     despawn(s, who);
 }
 
+// PlayerHospital:removeMessage (hospitals/player_hospital.lua:736-740):
+// con un mensaje pendiente, UIBottomPanel:deleteMessage lo quita (de la cola
+// o de las ventanas) y pone humanoid.message a nil (bottom_panel.lua:593-618).
+void th_sim_remove_message(th_sim *s, int who)
+{
+    th_person *p = &s->hum[who];
+    if (p->kind != TH_HUM_PATIENT || !p->u.p.message)
+        return;
+    drop_faxes(s, who);
+    p->u.p.message = 0;
+}
+
 void th_sim_send_fax(th_sim *s, int who, int kind)
 {
     if (s->n_fax >= TH_SIM_FAXES)
@@ -560,23 +572,201 @@ static void spawn_patient(th_sim *s)
 // ---------------------------------------------------------------------------
 // Personal (staff.lua, receptionist.lua, staff_profile.lua)
 
-// StaffProfile:getFairWage
-static int32_t fair_wage(const th_sim *s, const th_person *p)
+// StaffProfile:getFairWage (staff_profile.lua:236-255). Los SalaryAdd van
+// por ability_conf_id (staff_profile.lua:228-235): is_junior 3, is_doctor 4
+// (si ni junior ni consultor), is_surgeon 5, is_psychiatrist 6,
+// is_consultant 7, is_researcher 8.
+int32_t th_sim_fair_wage(const th_sim *s, int kind, int32_t skill, unsigned titles)
 {
-    const int conf = p->kind == TH_HUM_NURSE ? 0 : p->kind == TH_HUM_DOCTOR ? 1 : p->kind == TH_HUM_HANDYMAN ? 2 : 3;
-    int64_t wage = (int64_t)s->min_salary[conf] * TH_MICRO + (int64_t)p->u.s.skill * 1000 / s->salary_ability_div;
-    if (p->kind == TH_HUM_DOCTOR) {
-        if (p->u.s.surgeon)
-            wage += (int64_t)s->salary_add[5 - 1] * TH_MICRO;
-        if (p->u.s.psychiatrist)
-            wage += (int64_t)s->salary_add[6 - 1] * TH_MICRO;
-        if (p->u.s.researcher)
-            wage += (int64_t)s->salary_add[8 - 1] * TH_MICRO;
-        if (!p->u.s.junior && !p->u.s.consultant)
+    const int conf = kind == TH_HUM_NURSE ? 0 : kind == TH_HUM_DOCTOR ? 1 : kind == TH_HUM_HANDYMAN ? 2 : 3;
+    const int div = s->salary_ability_div ? s->salary_ability_div : 10;
+    int64_t wage = (int64_t)s->min_salary[conf] * TH_MICRO + (int64_t)skill * 1000 / div;
+    if (kind == TH_HUM_DOCTOR) {
+        static const struct {
+            uint8_t title, id;
+        } add[] = {{TH_TITLE_JUNIOR, 3},
+                   {TH_TITLE_SURGEON, 5},
+                   {TH_TITLE_PSYCHIATRIST, 6},
+                   {TH_TITLE_CONSULTANT, 7},
+                   {TH_TITLE_RESEARCHER, 8}};
+        for (unsigned k = 0; k < sizeof add / sizeof add[0]; k++)
+            if (titles & add[k].title)
+                wage += (int64_t)s->salary_add[add[k].id - 1] * TH_MICRO;
+        if (!(titles & (TH_TITLE_JUNIOR | TH_TITLE_CONSULTANT)))
             wage += (int64_t)s->salary_add[4 - 1] * TH_MICRO;
     }
-    const int32_t w = (int32_t)(wage / TH_MICRO);
-    return w > s->min_salary[conf] ? w : s->min_salary[conf];
+    // math.floor
+    const int64_t w = wage >= 0 ? wage / TH_MICRO : -((-wage + TH_MICRO - 1) / TH_MICRO);
+    return w > s->min_salary[conf] ? (int32_t)w : s->min_salary[conf];
+}
+
+static unsigned staff_titles(const th_staff *st)
+{
+    return (st->junior ? TH_TITLE_JUNIOR : 0u) | (st->consultant ? TH_TITLE_CONSULTANT : 0u) |
+           (st->surgeon ? TH_TITLE_SURGEON : 0u) | (st->psychiatrist ? TH_TITLE_PSYCHIATRIST : 0u) |
+           (st->researcher ? TH_TITLE_RESEARCHER : 0u);
+}
+
+static int32_t fair_wage(const th_sim *s, const th_person *p)
+{
+    return th_sim_fair_wage(s, p->kind, p->u.s.skill, staff_titles(&p->u.s));
+}
+
+// ---------------------------------------------------------------------------
+// El mercado de candidatos (World:makeAvailableStaff, world.lua:510-532;
+// StaffProfile, staff_profile.lua:25-36, 89-209)
+
+// math.random() en millonésimas con el generador del mercado.
+static int32_t market_micro(th_rng *r)
+{
+    return (int32_t)(((uint64_t)th_rng_u32(r) * TH_MICRO) >> 32);
+}
+
+// level_config.staff_levels[ind][key], buscando hacia atrás desde ind la
+// primera entrada que lo trae (world.lua:519-524 y staff_profile.lua:122-128;
+// CorsixTH lo exige a base_config: aquí, si no está, 0).
+static int32_t staff_level(const th_sim *s, int ind, const char *key)
+{
+    const th_rules *l = s->level;
+    const th_rnode sl = get(l, l->root, "staff_levels");
+    for (; ind >= 0; ind--) {
+        const th_rnode v = get(l, th_rules_geti(l, sl, ind), key);
+        if (v)
+            return th_rules_int(l, v, 0);
+    }
+    return 0;
+}
+
+// La última entrada de staff_levels con Month <= month (world.lua:513-516).
+static int staff_level_entry(const th_sim *s, int month)
+{
+    const th_rules *l = s->level;
+    const th_rnode sl = get(l, l->root, "staff_levels");
+    int i = 0;
+    for (;;) {
+        const th_rnode e = th_rules_geti(l, sl, i + 1);
+        if (!e || th_rules_int(l, get(l, e, "Month"), INT32_MAX) > month)
+            return i;
+        i++;
+    }
+}
+
+// StaffProfile(world, clase) + StaffProfile:randomise(month), con los
+// math.random en el orden de CorsixTH y el generador del mercado.
+static void randomise_profile(const th_sim *s, th_rng *r, th_staff_profile *pf, int kind, int entry)
+{
+    memset(pf, 0, sizeof *pf);
+    pf->kind = (uint8_t)kind;
+    pf->layer5 = 2;
+    pf->name_seed = (uint16_t)th_rng_range(r, 1, 1009);
+    pf->attention = market_micro(r);
+    int64_t skill = market_micro(r);
+    unsigned titles = 0;
+    if (kind == TH_HUM_DOCTOR) {
+        // mods (staff_profile.lua:107-133): probabilidad 1/rate de cada título
+        // (0 = nunca), siempre con su math.random; is_consultant se anula si
+        // is_junior; y la habilidad se encaja en la franja del título.
+        static const struct {
+            const char *key;
+            uint8_t title;
+        } mods[] = {{"ShrkRate", TH_TITLE_PSYCHIATRIST},
+                    {"SurgRate", TH_TITLE_SURGEON},
+                    {"RschRate", TH_TITLE_RESEARCHER},
+                    {"JrRate", TH_TITLE_JUNIOR},
+                    {"ConsRate", TH_TITLE_CONSULTANT}};
+        for (unsigned k = 0; k < sizeof mods / sizeof mods[0]; k++) {
+            const int32_t rate = staff_level(s, entry, mods[k].key);
+            const int64_t u = market_micro(r);
+            if (rate > 0 && u * rate < TH_MICRO) // math.random() < 1 / rate
+                titles |= mods[k].title;
+        }
+        if (titles & TH_TITLE_JUNIOR)
+            titles &= ~(unsigned)TH_TITLE_CONSULTANT;
+        const int64_t jr = s->doctor_threshold, cons = s->consultant_threshold;
+        if (titles & TH_TITLE_JUNIOR)
+            skill = jr * skill / TH_MICRO;
+        else if (titles & TH_TITLE_CONSULTANT)
+            skill = cons + (TH_MICRO - cons) * skill / TH_MICRO;
+        else
+            skill = jr + (cons - jr) * skill / TH_MICRO;
+    }
+    pf->skill = (int32_t)skill;
+    // getFairWage con los títulos de randomise; después parseSkillLevel
+    // (staff_profile.lua:214-222) rehace junior y consultor con la habilidad,
+    // también fuera de los médicos.
+    pf->wage = th_sim_fair_wage(s, kind, pf->skill, titles);
+    titles &= ~(unsigned)(TH_TITLE_JUNIOR | TH_TITLE_CONSULTANT);
+    if (pf->skill <= s->doctor_threshold)
+        titles |= TH_TITLE_JUNIOR;
+    if (pf->skill >= s->consultant_threshold)
+        titles |= TH_TITLE_CONSULTANT;
+    pf->titles = (uint8_t)titles;
+    // randomiseOrganical (staff_profile.lua:155-200): las dos partes del
+    // nombre, las dos descripciones y su shuffle (un math.random por
+    // descripción; con una sola, por pasar de 96 letras, la interfaz no lo
+    // mira), y la cara.
+    pf->name_rnd[0] = (uint16_t)(th_rng_u32(r) >> 16);
+    pf->name_rnd[1] = (uint16_t)(th_rng_u32(r) >> 16);
+    pf->desc_rnd[0] = (uint16_t)(th_rng_u32(r) >> 16);
+    pf->desc_rnd[1] = (uint16_t)(th_rng_u32(r) >> 16);
+    const int32_t r1 = market_micro(r), r2 = market_micro(r);
+    pf->desc_swap = r2 < r1;
+    int lo, hi;
+    if (kind == TH_HUM_DOCTOR) {
+        const int black = th_rng_range(r, 0, 1) == 0;
+        lo = black ? 5 : 0;
+        hi = black ? 9 : 4;
+        pf->layer5 = black ? 4 : 2;
+    } else if (kind == TH_HUM_NURSE) {
+        lo = 10;
+        hi = 12;
+    } else if (kind == TH_HUM_RECEPTIONIST) {
+        lo = 13;
+        hi = 14;
+    } else {
+        lo = 15;
+        hi = 17;
+    }
+    pf->hair = (uint8_t)th_rng_range(r, lo, hi);
+    pf->face = (uint8_t)th_rng_range(r, lo, hi);
+    pf->chin = (uint8_t)th_rng_range(r, lo, hi);
+}
+
+// La semilla del mercado: la de th_sim_init, la Seed de la entrada de
+// staff_levels y el mes, mezcladas (fmix32 de MurmurHash3). El mercado no
+// puede ser el de CorsixTH (math.random no es th_rng): se compara
+// estadísticamente, como las llegadas.
+static uint32_t market_seed(const th_sim *s, int entry, int month)
+{
+    uint32_t h = s->seed * 0x9e3779b1u;
+    h ^= (uint32_t)staff_level(s, entry, "Seed") * 0x85ebca6bu;
+    h ^= (uint32_t)(month + 1) * 0xc2b2ae35u;
+    h ^= h >> 16;
+    h *= 0x85ebca6bu;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35u;
+    h ^= h >> 16;
+    return h;
+}
+
+void th_sim_make_available_staff(th_sim *s, int month)
+{
+    // staff_to_make: Doctors, Nurses, Handymen, Receptionists (world.lua:503-508).
+    static const char *const conf[TH_SIM_STAFF_CLASSES] = {"Doctors", "Nurses", "Handymen", "Receptionists"};
+    const int entry = staff_level_entry(s, month);
+    th_rng r;
+    th_rng_seed(&r, market_seed(s, entry, month));
+    s->market_month = (int16_t)month;
+    for (int k = 0; k < TH_SIM_STAFF_CLASSES; k++) {
+        int n = staff_level(s, entry, conf[k]);
+        if (n < 0)
+            n = 0;
+        if (n > TH_SIM_CANDIDATES)
+            n = TH_SIM_CANDIDATES; // el tope del motor: hasta 9 en los niveles del juego
+        s->n_available[k] = (uint8_t)n;
+        for (int i = 0; i < n; i++)
+            randomise_profile(s, &r, &s->available[k][i], TH_HUM_DOCTOR + k, entry);
+    }
 }
 
 static int very_tired(const th_sim *s, const th_person *p)
@@ -587,6 +777,97 @@ static int very_tired(const th_sim *s, const th_person *p)
 static int crackup_tired(const th_sim *s, const th_person *p)
 {
     return p->u.s.fatigue >= 0 && (int64_t)p->u.s.fatigue * 1000 >= (int64_t)s->crackup_tired * TH_MICRO;
+}
+
+// Staff:updateSpeed (staff.lua:346-376). La sala de formación (level 1 para
+// un médico dentro) y el truco no_rest_cheat no están en el núcleo.
+static void update_speed(const th_sim *s, th_person *p)
+{
+    int level = p->u.s.junior ? 1 : p->u.s.consultant ? 3 : 2;
+    if (p->kind != TH_HUM_RECEPTIONIST) {
+        if (crackup_tired(s, p))
+            level -= 2;
+        else if (very_tired(s, p))
+            level -= 1;
+    }
+    p->h.speed = (uint8_t)(level >= 3 ? 2 : level <= 1 ? 0 : 1);
+    p->h.slow_animation = level <= 1;
+}
+
+// Resumen del perfil para TH_ORD_CONTRATAR (th_order.def): fmix32 de
+// MurmurHash3 sobre todos los campos, como market_seed.
+static uint32_t mix(uint32_t h, uint32_t v)
+{
+    h ^= v * 0xcc9e2d51u;
+    h = (h << 13 | h >> 19) * 5u + 0xe6546b64u;
+    return h;
+}
+
+uint32_t th_staff_profile_digest(const th_staff_profile *pf)
+{
+    uint32_t h = 0x7f4a7c15u;
+    h = mix(h, (uint32_t)pf->skill);
+    h = mix(h, (uint32_t)pf->attention);
+    h = mix(h, (uint32_t)pf->wage);
+    h = mix(h, (uint32_t)pf->kind | (uint32_t)pf->titles << 8 | (uint32_t)pf->layer5 << 16 |
+                   (uint32_t)pf->desc_swap << 24);
+    h = mix(h, (uint32_t)pf->hair | (uint32_t)pf->face << 8 | (uint32_t)pf->chin << 16);
+    h = mix(h, pf->name_seed);
+    h = mix(h, (uint32_t)pf->name_rnd[0] | (uint32_t)pf->name_rnd[1] << 16);
+    h = mix(h, (uint32_t)pf->desc_rnd[0] | (uint32_t)pf->desc_rnd[1] << 16);
+    h ^= h >> 16;
+    h *= 0x85ebca6bu;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35u;
+    h ^= h >> 16;
+    return h;
+}
+
+// UIPlaceStaff:onMouseUp con un perfil nuevo (place_staff.lua:156-175).
+int th_sim_hire(th_sim *s, const th_staff_profile *pf, int x, int y)
+{
+    static const char *const cls[TH_SIM_STAFF_CLASSES] = {"Doctor", "Nurse", "Handyman", "Receptionist"};
+    if (pf->kind < TH_HUM_DOCTOR || pf->kind > TH_HUM_RECEPTIONIST)
+        return TH_NONE;
+    // newEntity(clase, 2, 2): Humanoid:Humanoid gasta el azar de la salud.
+    const int who = new_person(s, pf->kind, th_walk_anims_find(cls[pf->kind - TH_HUM_DOCTOR]));
+    if (who == TH_NONE)
+        return TH_NONE;
+    th_person *p = &s->hum[who];
+    // Staff:setProfile (staff.lua:320-326) y Receptionist:setProfile
+    // (receptionist.lua:57-60: la fatiga a nil, no se cansa).
+    th_staff *st = &p->u.s;
+    st->skill = pf->skill;
+    st->attention = pf->attention;
+    st->wage = pf->wage;
+    st->junior = (pf->titles & TH_TITLE_JUNIOR) != 0;
+    st->consultant = (pf->titles & TH_TITLE_CONSULTANT) != 0;
+    st->surgeon = (pf->titles & TH_TITLE_SURGEON) != 0;
+    st->psychiatrist = (pf->titles & TH_TITLE_PSYCHIATRIST) != 0;
+    st->researcher = (pf->titles & TH_TITLE_RESEARCHER) != 0;
+    st->fatigue = pf->kind == TH_HUM_RECEPTIONIST ? -1 : 0;
+    st->waiting_for_staffroom = 0;
+    th_humanoid_set_layer(&p->h, 5, pf->layer5);
+    th_humanoid_set_tile(&s->w, &p->h, x, y);
+    // Hospital:addStaff (hospital.lua:1400-1406): spendMoney(wage,
+    // "hire_staff") sin changeValue (el valor no cambia), y notifyOfStaffChange.
+    s->hosp.balance -= pf->wage;
+    s->hosp.money_out += pf->wage;
+    event_money(s, -pf->wage, TH_MONEY_HIRE_STAFF, who);
+    th_sim_notify_staff_change(s, who);
+    th_room *r = th_sim_room_at(s, x, y);
+    if (r) {
+        th_sim_room_on_enter(s, r, who);
+    } else {
+        // Staff:onPlaceInCorridor (staff.lua:467-478). getObjectToNotifyOfOccupants
+        // no hace falta: el núcleo no tiene objetos que miren a sus ocupantes.
+        st->last_room = 0;
+        update_speed(s, p); // staff.lua:476
+        th_humanoid_set_next_action(&s->w, &p->h, th_action_new(TH_ACTION_MEANDER));
+        if (pf->kind == TH_HUM_RECEPTIONIST)
+            th_sim_receptionist_find_desk(s, who);
+    }
+    return who;
 }
 
 static th_room *person_room(th_sim *s, th_person *p)
@@ -671,16 +952,7 @@ static void staff_tick(th_sim *s, int who)
     } else {
         p->u.s.timer_until_raise = -1;
     }
-    // updateSpeed
-    int level = p->u.s.junior ? 1 : p->u.s.consultant ? 3 : 2;
-    if (p->kind != TH_HUM_RECEPTIONIST) {
-        if (crackup_tired(s, p))
-            level -= 2;
-        else if (very_tired(s, p))
-            level -= 1;
-    }
-    p->h.speed = (uint8_t)(level >= 3 ? 2 : level <= 1 ? 0 : 1);
-    p->h.slow_animation = level <= 1;
+    update_speed(s, p);
     // Doctor:tick: el médico aprende con el uso (isLearningOnTheJob) mientras
     // usa un objeto en una sala que no sea de formación, de personal ni aseos.
     // Con la habilidad cambian junior y consultor (parseSkillLevel); un junior
@@ -1392,6 +1664,9 @@ static void end_month(th_sim *s)
     }
     s->spawn_rate += s->monthly_spawn_increase;
     update_spawn_dates(s);
+    // makeAvailableStaff(monthOfGame) (world.lua:1127): con su propio
+    // generador, no toca s->rng.
+    th_sim_make_available_staff(s, month);
 }
 
 void th_sim_tick(th_sim *s)
@@ -1719,10 +1994,8 @@ void th_sim_room_mark_built(th_sim *s, int room)
     for (int k = 0; k < s->n_case; k++)
         if (!strcmp(s->casebook[k].id, diag))
             s->casebook[k].discovered = 1;
-    // notifyNewRoom: el personal que esperaba una sala de personal y los
-    // pacientes que no tenían aseos. Quien espera una sala en seek_room
-    // vuelve a buscar al acabar su paseo (CorsixTH lo avisa al momento:
-    // diferencia apuntada en docs/06_juego_base.md).
+    // notifyNewRoom (world.lua:641-648, por world.entities): el personal que
+    // esperaba una sala de personal y los pacientes que no tenían aseos.
     const int staff_room = !strcmp(id, "staff_room"), toilets = !strcmp(id, "toilets");
     for (int k = 0; k < s->n_order; k++) {
         th_person *p = &s->hum[s->order[k]];
@@ -1734,6 +2007,8 @@ void th_sim_room_mark_built(th_sim *s, int room)
         } else if (staff_room)
             p->u.s.waiting_for_staffroom = 0;
     }
+    // Y el build_callback de quien espera sala en SeekRoom (seek_room.lua:269-310).
+    th_sim_notify_new_room(s, room);
 }
 
 // Room:calculateHappinessFactor: ventanas y espacio de más (round(log n) / 1000).
@@ -2053,6 +2328,7 @@ int th_sim_init(th_sim *s, th_map *m, th_pathfinder *pf, const th_anims *anims, 
     s->answer = TH_ANSWER_GUESS_THEN_SEND_HOME;
     s->door_closed = 22;
     th_rng_seed(&s->rng, seed);
+    s->seed = seed;
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
         s->temp[i].t[0] = s->temp[i].t[1] = 8192;
     int e = load_definitions(s);
@@ -2062,6 +2338,26 @@ int th_sim_init(th_sim *s, th_map *m, th_pathfinder *pf, const th_anims *anims, 
         e = load_scenario(s);
     if (e)
         return e;
+    // World:new (world.lua:134, 151-157): el mercado del mes que acaba de
+    // empezar (makeAvailableStaff(0) en una partida nueva: CorsixTH lo
+    // regenera con el monthOfGame del mes que termina) y, si el escenario no
+    // trae las llegadas del mes (una partida nueva; los exportados de CorsixTH
+    // siempre traen alguna, por force_arrival), spawn_rate = popn[0].Change y
+    // updateSpawnDates, que gasta s->rng como math.random en CorsixTH.
+    th_sim_make_available_staff(s, th_date_month_of_game(s->date) - 1);
+    {
+        const th_rules *r = s->scen;
+        const th_rnode mundo = get(r, r->root, "mundo");
+        if (th_rules_len(r, get(r, mundo, "spawn_dates")) == 0) {
+            if (!get(r, mundo, "spawn_rate")) {
+                const th_rnode p0 = th_rules_geti(r, get(r, mundo, "popn"), 0);
+                s->spawn_rate = th_rules_micro(r, get(r, p0, "Change"), 0);
+                s->monthly_spawn_increase = s->spawn_rate;
+            }
+            memset(s->spawn_hours, 0, sizeof s->spawn_hours);
+            update_spawn_dates(s);
+        }
+    }
     th_sim_temperature_prepare(s);
     // La recepcionista va al mostrador más cercano (Receptionist:onPlaceInCorridor);
     // el resto del personal deambula hasta que una sala lo llama (en la partida

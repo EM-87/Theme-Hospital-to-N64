@@ -1767,6 +1767,78 @@ static int order_recoger_obra(th_sim *s, const th_order *o)
     return TH_REASON_OK;
 }
 
+// ---------------------------------------------------------------------------
+// Contratar (dialogs/hire_staff.lua y dialogs/place_staff.lua)
+
+int th_build_staff_placement(th_sim *s, int kind, int x, int y)
+{
+    // place_staff.lua:95-125. La casilla, del hospital del jugador.
+    if (x < 0 || y < 0 || x >= TH_MAP_WIDTH || y >= TH_MAP_HEIGHT)
+        return TH_REASON_NO_SE_PUEDE;
+    const th_tile *t = th_map_tile_c(s->w.map, x, y);
+    if (!(t->flags & TH_TILE_HOSPITAL) || th_map_parcel_owner(s->w.map, t->parcel) != 1)
+        return TH_REASON_NO_SE_PUEDE;
+    // Transitable y, en una sala, con puerta a la que se llegue andando
+    // (pathfinder:findDistance hasta la casilla de la puerta). room.crashed
+    // no existe en el núcleo (sin máquinas que exploten).
+    int walkable = (t->flags & TH_TILE_PASSABLE) != 0;
+    const th_room *room = th_sim_room_at(s, x, y);
+    if (room) {
+        if (room->door == TH_NONE)
+            walkable = 0;
+        else if (walkable)
+            walkable = th_path_find(s->w.pf, s->w.map, x, y, s->obj[room->door].x, s->obj[room->door].y) >= 0;
+    }
+    // allow_in_rooms: todos menos la recepcionista (place_staff.lua:34-35);
+    // si no, roomId == 0.
+    const int staffable = kind != TH_HUM_RECEPTIONIST || t->room == 0;
+    if (walkable && staffable)
+        return TH_REASON_OK;
+    // O una recepcionista sobre un mostrador sin recepcionista: getObject(x, y,
+    // "reception_desk", true), o findObjectNear a distancia 0, que solo mira
+    // la propia casilla. Solo cuenta receptionist (no reserved_for), como CorsixTH.
+    if (kind == TH_HUM_RECEPTIONIST) {
+        const int desk = th_sim_object_at(s, x, y, TH_OBJ_RECEPTION_DESK);
+        if (desk != TH_NONE && !(s->obj[desk].oflags & TH_OBJF_PICKED_UP) && s->obj[desk].receptionist == TH_NONE)
+            return TH_REASON_OK;
+    }
+    return TH_REASON_NO_SE_PUEDE;
+}
+
+// UIHireStaff:hire (hire_staff.lua:126-147) y UIPlaceStaff:onMouseUp con el
+// botón izquierdo (place_staff.lua:144-176), de una vez.
+static int order_contratar(th_sim *s, const th_order *o)
+{
+    const th_staff_profile *list;
+    const int n = th_sim_candidates(s, o->dir, &list);
+    // def lleva el resumen del perfil (decisión 5 de docs/06_plan.md): si el
+    // mercado se regeneró (end_month) o la semilla no es la misma, ese índice
+    // es otra persona y la orden no vale.
+    if (o->qty >= n || o->def != th_staff_profile_digest(&list[o->qty]))
+        return TH_REASON_SIN_CANDIDATO;
+    const th_staff_profile pf = list[o->qty];
+    if (s->hosp.balance < pf.wage) // hire: «if self.ui.hospital.balance < profile.wage»
+        return TH_REASON_SIN_DINERO;
+    const int reason = th_build_staff_placement(s, pf.kind, o->x, o->y);
+    if (reason != TH_REASON_OK)
+        return reason;
+    // El tope del motor (CorsixTH no lo tiene): un hueco en hum.
+    int free_slot = 0;
+    for (int i = 0; i < TH_SIM_HUMANOIDS && !free_slot; i++)
+        free_slot = !s->hum[i].alive;
+    if (!free_slot)
+        return TH_REASON_LLENO;
+    // Contrata (pf es una copia) y luego table.remove(available_staff[category],
+    // current_index); si th_sim_hire no pudiera, el mercado se queda igual.
+    if (th_sim_hire(s, &pf, o->x, o->y) == TH_NONE)
+        return TH_REASON_LLENO;
+    uint8_t *cnt = &s->n_available[o->dir - TH_HUM_DOCTOR];
+    th_staff_profile *arr = s->available[o->dir - TH_HUM_DOCTOR];
+    memmove(&arr[o->qty], &arr[o->qty + 1], (size_t)(*cnt - 1 - o->qty) * sizeof arr[0]);
+    (*cnt)--;
+    return TH_REASON_OK;
+}
+
 int th_build_apply(th_sim *s, const th_order *o, th_order_result *r)
 {
     th_order_result tmp;
@@ -1822,6 +1894,7 @@ int th_build_apply(th_sim *s, const th_order *o, th_order_result *r)
     case TH_ORD_FIN_VENTANAS: reason = order_fin_ventanas(s); break;
     case TH_ORD_COMPRAR_SALA: reason = order_comprar_sala(s, o); break;
     case TH_ORD_FIN_SALA: reason = order_fin_sala(s); break;
+    case TH_ORD_CONTRATAR: reason = order_contratar(s, o); break;
     case TH_ORD_ATRAS:
         if (!obra) {
             reason = TH_REASON_SIN_VENTANA;
