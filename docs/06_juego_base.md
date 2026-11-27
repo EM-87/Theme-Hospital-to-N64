@@ -1046,7 +1046,48 @@ CorsixTH tarda 11,8 s de media por partida de 9.050 horas (80 corridas) y el mot
 ### Pendiente
 
 - **Los diagnosticados** (t = +2,83): hecho; es el azar (arriba) y las huellas no cambian.
+- La hora de más entre la recepción y la consulta que da CorsixTH y el motor no (lo dejó la revisión de los diagnosticados): hecho; era el tick que se salta al salir alguien de `world.entities` ([abajo](#la-demo-jugable-tanda-c-cierre--el-tick-que-se-salta)), y cambian las huellas del hito 5 y de la partida de `demo.tsv` a 9.050 horas.
 - El corte del final (los tardíos que llegan a la consulta, 69 % frente a 53 %) y la dispersión de las llegadas de marzo y abril (CorsixTH casi siempre exactamente una, 79 de 80; el motor, 0 en 16 y 2 en 71 de 800) no están explicados; caben en el azar.
 - Un `contratar` en el mes 1 o después (`crear_demo.lua` carga el mercado de ese mes) no está ejercitado; `demo.tsv` solo contrata en el mes 0.
 - La comparación estadística del mercado con el de CorsixTH (títulos, sueldos medios): el JSON cuadra con `parseSkillLevel` (enfermeras junior o consultoras según la habilidad), pero `StaffProfile:randomise` no está comparado.
 - La revisión adversaria de la demo entera (tanda B3), antes de las cifras finales.
+
+## La demo jugable, tanda C (cierre) — el tick que se salta
+
+Lo dejó la revisión adversaria de los diagnosticados (2026-11-27): en CorsixTH, la espera de la recepción a la consulta (`entra_gp − recepcion`) es a veces una hora más larga que lo normal (186, 194 o 198 horas en vez de 185, 193 o 197; 23 de 450 pacientes en `campana_demo_40`) y en el motor nunca (0 de 4.396). No tenía que ver con los diagnosticados ni con el arnés: **al núcleo le faltaba un efecto de cómo CorsixTH recorre la lista de entidades**, y ya lo tiene.
+
+### La causa
+
+Siguiendo al paciente 3 de la semilla 1 hora a hora (`crear_demo.lua --th64-seguir=3`), el paseo del mostrador a la puerta de la consulta dura 184 horas, 23 casillas de 8, pero en la casilla (59,56) su temporizador se queda a 1 dos horas seguidas, la 5.013 y la 5.014: esa hora no tuvo tick. `World:onTick` hace tick de cada entidad con `ipairs(self.entities)` (`world.lua:923-928`) y `World:destroyEntity` la quita con `table.remove` (`world.lua:1792-1800`). El paciente 2 desaparece por el borde del mapa en su propio tick (`action_spawn_despawn`, `spawn.lua:67-72`), todo lo que va detrás se corre una casilla y `ipairs` se salta la entidad que iba justo detrás de él: el paciente 3. Detrás puede ir también una basura (`Litter` es un objeto de la lista) o un objeto (detrás del paciente 1 va la puerta de la consulta, que se construye después de que llegue), y entonces nadie lo nota. En las 80 semillas, con `saltos.tsv` (`bench/lib/seguir.lua`, que envuelve `World.destroyEntity` y solo lee): los 23 pacientes con la hora de más tienen exactamente un salto en su camino a la consulta y los 413 sin ella, ninguno; las 80 partidas dan el mismo `pacientes.tsv` que sin la sonda.
+
+### El arreglo
+
+`th_sim_tick` (`sim.c:1875-1900`) recorre las personas y los mostradores en el orden de `world.entities` (`entity_seq`) y ahora apunta qué hace tick (`th_sim.tick_seq`). `th_sim_entity_removed` (`sim.c:377`), llamado desde `th_sim_destroy`, `th_sim_remove_litter_at` y `th_sim_destroy_object`, cuenta lo que sale de la lista en la casilla de lo que hace tick o antes, y `after_entity_tick` (`sim.c:1834`) salta, por cada salida, la entidad siguiente por `entity_seq` entre las personas, los objetos y la basura que siguen en el mundo (`next_entity`, `sim.c:1815`). Para eso la basura lleva ahora su `entity_seq` (`th_litter`, `objects.h:73`). Para observarlo, el gancho `th_sim_events.skipped` (`sim.h:376`) y `TH64_SEGUIR=i,j,...` en `th64sim partida` (`seguir.tsv` y `saltos.tsv`, como `--th64-seguir`). La prueba `test_salto_tick` (`test_build.c:2678`) pone tres pacientes en fila y hace desaparecer al primero: sin nada entre los dos primeros, el segundo se queda una hora detrás del tercero; con una basura entre ellos, se salta la basura. Con el salto quitado (una copia mutada del núcleo), falla en `test_build.c:2719` y `:2722`. El relleno de la caché de instrucciones de la ROM de pruebas pasa de 20.608 a 22.816 bytes (`relleno_cache.c`), porque el código creció y `cache_instrucciones.py` daba choques.
+
+### Comprobaciones
+
+| Qué | Resultado |
+|---|---|
+| El motor con el arreglo (`TH64_SEGUIR=0`, 80 × 10) | la hora de más en 110 de 4.395 pacientes (2,50 %), los 110 con un salto en su camino y los 4.121 normales con ninguno, como CorsixTH; con la sonda, los mismos `pacientes.tsv` que sin ella |
+| Lo que falta hasta el 5,11 % de CorsixTH | no es el salto, es cuándo coincide: el paciente i desaparece mientras el i + 1 va a la consulta en el 13,1 % de los pares de CorsixTH (33 de 252, i ≥ 2) y el 8,5 % del motor (205 de 2.418), y las llegadas de CorsixTH son más regulares (marzo: exactamente una en el 99 % de las partidas frente al 89 %; abril, 99 % frente a 93 %); con la coincidencia, el salto cae en el i + 1 en una proporción parecida (sin el paciente 1, 23 de 34 frente a 118 de 213, z +1,4) |
+| La campaña de la demo (80 × 10, `diag/arreglo/campana`) | sin fallos, las 80 aceptan las mismas órdenes y cobran lo mismo al contratar; CorsixTH da los mismos 80 `pacientes.tsv` que `campana_demo_40`; 8 de 25 cifras con \|t\| ≥ 2, todas entre 2,00 y 2,77: diagnosticados +2,77 (antes +2,83), t_espera_gp +2,01 (+1,65), a_casa y kicked −2,02 (−2,08), reputación +2,02 (+2,08), cobros y dinero de la consulta −2,04 (−2,12), consulta −2,00 (−1,99); t_tras_gp baja a +1,81 (+2,02) |
+| t_espera_gp | 196,9 ± 11,4 frente a 195,7 ± 4,2: la desviación del motor es su cola larga (10 esperas de 400 a 1.146 horas en 4.395; CorsixTH, ninguna por encima de 329 en 450, con 1,0 esperada); sin las esperas de más de 198 horas, 194,24 ± 1,33 frente a 194,25 ± 1,06 (antes del arreglo, 194,20) |
+| Las campañas del hito 4 (40 × 10) y del hito 5 (10 × 10), el motor otra vez contra las corridas de CorsixTH que ya estaban | 17 de 17 y 17 de 17 |
+| `construir.sh`, las cinco listas | 175, 32, 322, 265 y 127 órdenes iguales que en CorsixTH, 0 casillas distintas; huellas 78fc2652, d3e56866, 8e19cfd3, e1a33cf3 y a9164a19, las de siempre |
+| Pruebas | 212.614 comprobaciones, 0 fallos, en el PC, con ASan y UBSan y en la ROM de pruebas en ares (que da además 0 píxeles distintos en todas sus comparaciones y la huella del hito 4 a800c6f0, como el PC; la partida de `demo.tsv` a 3.000 horas, acd9c19a y 36.826, y desde las ventanas cc315406 y 36.826, iguales que el PC, y `repetir.sh` sobre su registro: «bien»); `golden_sim` d38fbaef y `golden_sim_float` def515c7; las cuatro ROM sin choques en la caché de instrucciones; `ninja` desde cero sin avisos con `-Werror` |
+
+### Huellas nuevas
+
+| Partida | Antes | Ahora |
+|---|---|---|
+| Hito 4, semilla 1, 3.000 h | a800c6f0 | a800c6f0 (sin cambios) |
+| Hito 5, semilla 1, 9.000 h | 8f00cfc9 | **de91244b** |
+| Vistas, semilla 1, 2.000 h | 5f170e3d | 5f170e3d (sin cambios) |
+| `partida` con `demo.tsv`, 9.050 h | f1860651, saldo 36.223 | **618581d6**, saldo 36.238 (8 pacientes) |
+| `partida` con `demo.tsv`, 3.000 h (la de la ROM) | acd9c19a, 36.826 | acd9c19a, 36.826 (sin cambios: el primer paciente sale del mapa en la hora 2.485 y detrás de él va la puerta) |
+
+La ROM comprueba la partida de 3.000 horas (`main.c`), que no cambia. Las secciones de arriba citan las huellas de antes donde describen su paso.
+
+### Pendiente
+
+- Las llegadas de CorsixTH son más regulares que las del motor en marzo, abril y mayo (exactamente una en el 99 %, 99 % y 90 % de las partidas, frente al 89 %, 93 % y 82 %): era el pendiente de las llegadas de marzo y abril, que ahora no cabe en el azar (79 de 80 en marzo, con 71 esperadas) y que mueve también cuántas veces coincide el salto de tick con el paseo a la consulta. `update_spawn_dates` (`sim.c`) y `p_random` siguen a `updateSpawnDates` (`world.lua:1140-1172`) y `math.p_random` (`app.lua:251-275`) a la vista; falta medir la entrada, `spawn_rate × population`, mes a mes en los dos lados.

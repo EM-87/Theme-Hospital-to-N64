@@ -2657,6 +2657,76 @@ static void test_fax_arriesgar(void)
     sim.w.anims = NULL;
 }
 
+// El salto de World:onTick (th_sim.tick_seq): quien desaparece por el borde
+// del mapa sale de world.entities en su propio tick (spawn.lua:67-72,
+// world.lua:1792-1800) y la entidad que va detrás en la lista se queda sin
+// tick esa hora (el ipairs de world.lua:923-928). Tres pacientes en fila, A,
+// B y C; A se va. Sin nada entre A y B, B se queda una hora detrás de C; con
+// una basura entre los dos (Litter también está en world.entities), se la
+// salta a ella y B y C siguen igual.
+static uint32_t saltada;
+static int n_saltadas;
+
+static void al_saltar_prueba(void *ctx, const th_sim *s, uint32_t entity_seq)
+{
+    (void)ctx;
+    (void)s;
+    saltada = entity_seq;
+    n_saltadas++;
+}
+
+static void test_salto_tick(void)
+{
+    for (int caso = 0; caso < 2; caso++) {
+        preparar_personal();
+        sim.date = (th_date){1, 1, 1, 0};
+        sim.hours_per_tick = 1;
+        sim.n_spawn = 1;
+        sim.spawn[0].x = 45;
+        sim.spawn[0].y = 45;
+        sim.spawn[0].dir = TH_DIR_SOUTH;
+        sim.ev.skipped = al_saltar_prueba;
+        saltada = 0;
+        n_saltadas = 0;
+        int quien[3];
+        uint32_t basura = 0;
+        for (int k = 0; k < 3; k++) {
+            quien[k] = paciente_buscando(45, 45 + k, 0, 0);
+            th_humanoid *h = &sim.hum[quien[k]].h;
+            h->queue_len = 0;
+            if (k == 0) {
+                th_action a = th_action_new(TH_ACTION_SPAWN);
+                a.dir = 1; // despawn, hacia el punto de aparición 0
+                a.aux = 0;
+                a.flags |= TH_AF_MUST_HAPPEN;
+                th_humanoid_set_next_action(&sim.w, h, a);
+                if (caso == 1) {
+                    th_sim_add_litter(&sim, 47, 45, TH_LITTER_PAPER, 0);
+                    basura = sim.litter[sim.n_litter - 1].entity_seq;
+                }
+            } else {
+                th_action idle = th_action_idle();
+                idle.count = 1000;
+                th_humanoid_set_next_action(&sim.w, h, idle);
+            }
+        }
+        TH_CHECK_EQ(sim.hum[quien[1]].h.timer, sim.hum[quien[2]].h.timer);
+        for (int i = 0; i < 200 && sim.hum[quien[0]].alive; i++)
+            th_sim_tick(&sim);
+        TH_CHECK_EQ(sim.hum[quien[0]].alive, 0);
+        TH_CHECK_EQ(n_saltadas, 1);
+        TH_CHECK_EQ(saltada, caso ? basura : sim.hum[quien[1]].entity_seq);
+        TH_CHECK_EQ(sim.hum[quien[1]].h.timer, sim.hum[quien[2]].h.timer + (caso ? 0 : 1));
+        // La hora siguiente B vuelve a tener tick: la diferencia no crece.
+        th_sim_tick(&sim);
+        TH_CHECK_EQ(sim.hum[quien[1]].h.timer, sim.hum[quien[2]].h.timer + (caso ? 0 : 1));
+        TH_CHECK_EQ(sim.tick_seq, 0);
+        sim.ev.skipped = NULL;
+        sim.n_litter = 0;
+    }
+    sim.w.anims = NULL;
+}
+
 // Las definiciones con las tablas de caminar y de puertas de humanoid.c, que
 // th_sim_init comprueba (load_definitions), y un TRG para ellas.
 static uint8_t trg_defs_init[32768], trg_escena[2048];
@@ -3086,6 +3156,7 @@ void th_test_build(void)
     test_aviso_personal();
     test_descubrir();
     test_fax_arriesgar();
+    test_salto_tick();
     test_partida_nueva();
     test_ordenes_pausadas();
     free(E);

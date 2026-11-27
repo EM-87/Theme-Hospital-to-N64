@@ -44,6 +44,11 @@ static FILE *f_medico, *f_visitas;
 // TH64_SONDA_DIAG=<dir>: lo mismo que --th64-sonda de bench/scenarios/crear_demo.lua
 // (bench/lib/sonda_diag.lua): diagnostico.tsv, faxes.tsv, descubre.tsv y medico_hora.tsv.
 static FILE *f_diag, *f_faxes, *f_descubre, *f_medico_hora;
+// TH64_SEGUIR=i,j,...: lo mismo que --th64-seguir de bench/scenarios/crear_demo.lua
+// (bench/lib/seguir.lua): seguir.tsv (esos pacientes hora a hora; 0 = ninguno) y
+// saltos.tsv (las entidades que se quedan sin tick, th_sim.tick_seq).
+static FILE *f_seguir, *f_saltos;
+static uint8_t seguido[MAX_PACIENTES + 1];
 static uint8_t descubierta[TH_SIM_CASEBOOK];
 
 enum { F_LLEGANDO, F_COLA, F_TRAS_RECEPCION, F_CONSULTA, F_DIAGNOSTICADO, F_A_CASA, N_FASES };
@@ -229,6 +234,69 @@ static void sondear_gp(const th_sim *s)
                 fprintf(f_visitas, "%u\tsienta\n", (unsigned)s->hours);
             sentado[who] = (uint8_t)en_silla;
         }
+    }
+}
+
+// Cómo se llama en saltos.tsv la entidad de world.entities con ese
+// entity_seq (como nombre() de bench/lib/seguir.lua). Una persona que acaba de
+// salir del mundo conserva sus datos (th_sim_destroy solo baja alive).
+static void nombre_entidad(const th_sim *s, uint32_t seq, char *out, size_t n)
+{
+    static const char *const objetos[] = {"other", "door", "bench", "reception_desk", "desk", "cabinet", "chair",
+                                          "radiator"};
+    static const char *const clases[] = {"Patient", "Doctor", "Nurse", "Handyman", "Receptionist"};
+    snprintf(out, n, "-");
+    for (int i = 0; i < TH_SIM_HUMANOIDS; i++)
+        if (s->hum[i].entity_seq == seq && (s->hum[i].alive || seq == s->tick_seq)) {
+            if (s->hum[i].kind == TH_HUM_PATIENT)
+                snprintf(out, n, "paciente %d", s->hum[i].u.p.id);
+            else
+                snprintf(out, n, "personal %s", clases[s->hum[i].kind]);
+            return;
+        }
+    for (int i = 0; i < s->n_obj; i++)
+        if (s->obj[i].def && s->obj[i].entity_seq == seq) {
+            snprintf(out, n, "objeto %s%s", objetos[s->obj[i].type],
+                     s->obj[i].type == TH_OBJ_RECEPTION_DESK ? " (tick)" : "");
+            return;
+        }
+    for (int i = 0; i < s->n_litter; i++)
+        if (s->litter[i].entity_seq == seq) {
+            snprintf(out, n, "basura");
+            return;
+        }
+}
+
+// Una entidad sin tick (th_sim_events.skipped): una línea de saltos.tsv. La
+// que salió es la del tick (al desaparecer por el borde del mapa, ella misma).
+static void al_saltar(void *ctx, const th_sim *s, uint32_t seq)
+{
+    (void)ctx;
+    char quitada[48], saltada[48];
+    nombre_entidad(s, s->tick_seq, quitada, sizeof quitada);
+    nombre_entidad(s, seq, saltada, sizeof saltada);
+    fprintf(f_saltos, "%u\t%s\t%s\n", (unsigned)s->hours, quitada, saltada);
+}
+
+// Al acabar la hora: una línea de seguir.tsv por paciente seguido en el mapa,
+// como bench/lib/seguir.lua (la cola de acciones, sin sus argumentos).
+static void sondear_seguidos(th_sim *s)
+{
+    for (int k = 0; k < s->n_order; k++) {
+        const int who = s->order[k];
+        const th_person *p = &s->hum[who];
+        if (p->kind != TH_HUM_PATIENT || p->u.p.id <= 0 || p->u.p.id > MAX_PACIENTES || !seguido[p->u.p.id])
+            continue;
+        th_room *room = p->h.in_room ? th_sim_room(s, p->h.in_room)
+                                     : (p->h.tile_x >= 0 ? th_sim_room_at(s, p->h.tile_x, p->h.tile_y) : NULL);
+        fprintf(f_seguir, "%u\t%d\t%d\t%d\t%s\t%d\t%u\t", (unsigned)s->hours, p->u.p.id, p->h.tile_x, p->h.tile_y,
+                room ? s->room_types[room->type] : "-", p->u.p.has_passed_reception ? 1 : 0, (unsigned)p->h.timer);
+        for (int i = 0; i < p->h.queue_len; i++) {
+            const th_action *a = &p->h.queue[i];
+            fprintf(f_seguir, "%s%s%s%s", i ? " " : "", acciones[a->kind], (a->flags & TH_AF_MUST_HAPPEN) ? "!" : "",
+                    (a->flags & TH_AF_TODO_INTERRUPT) ? "*" : "");
+        }
+        fputc('\n', f_seguir);
     }
 }
 
@@ -438,6 +506,26 @@ static int traza_empezar(th_sim *s, const char *dir)
         s->ev.diagnosis = al_diagnosticar;
         sondear_descubiertas(s, -1);
     }
+    if (getenv("TH64_SEGUIR")) {
+        for (const char *c = getenv("TH64_SEGUIR"); *c;) {
+            char *fin;
+            const long id = strtol(c, &fin, 10);
+            if (fin == c) {
+                c++;
+                continue;
+            }
+            if (id > 0 && id <= MAX_PACIENTES)
+                seguido[id] = 1;
+            c = fin;
+        }
+        f_seguir = abrir(dir, "seguir.tsv");
+        f_saltos = abrir(dir, "saltos.tsv");
+        if (!f_seguir || !f_saltos)
+            return 1;
+        fputs("hora\tpaciente\tx\ty\tsala\trecepcion\ttimer\tacciones\n", f_seguir);
+        fputs("hora\tquitada\tsaltada\n", f_saltos);
+        s->ev.skipped = al_saltar;
+    }
     saldo0 = s->hosp.balance;
     volcar_dia(f_dias, s);
     return 0;
@@ -453,6 +541,8 @@ static void traza_hora(th_sim *s, int h)
         sondear_descubiertas(s, (int)s->hours);
         sondear_medico(s);
     }
+    if (f_seguir)
+        sondear_seguidos(s);
     if ((h + 1) % 50 == 0)
         volcar_dia(f_dias, s);
 }
@@ -471,6 +561,10 @@ static int traza_terminar(th_sim *s, const char *dir, int horas, const char *nom
         fclose(f_faxes);
         fclose(f_descubre);
         fclose(f_medico_hora);
+    }
+    if (f_seguir) {
+        fclose(f_seguir);
+        fclose(f_saltos);
     }
     FILE *f = abrir(dir, "pacientes.tsv");
     if (!f)

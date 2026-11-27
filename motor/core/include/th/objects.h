@@ -70,6 +70,7 @@ typedef struct th_litter {
     uint8_t x, y, type, mirror;
     uint32_t attach_seq; // cuándo se puso en la casilla (el orden de dibujo)
     uint32_t seq;        // su sitio en world.objects de la casilla, como th_object.seq
+    uint32_t entity_seq; // orden de alta en world.entities (th_sim.entity_seq), como th_object.entity_seq
 } th_litter;
 
 // Las casillas de la huella de una orientación (self.footprint), con sus

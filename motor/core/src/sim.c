@@ -371,10 +371,20 @@ void th_sim_send_fax(th_sim *s, int who, int kind)
     }
 }
 
+// Una entidad sale de world.entities (World:destroyEntity): si es durante el
+// recorrido de th_sim_tick y está en la casilla de la que hace tick o antes,
+// la siguiente se quedará sin tick (th_sim.tick_seq).
+void th_sim_entity_removed(th_sim *s, uint32_t entity_seq)
+{
+    if (s->tick_seq && entity_seq <= s->tick_seq)
+        s->removed_behind++;
+}
+
 // Quita a alguien del mundo (World:destroyEntity) y borra lo que lo nombra.
 void th_sim_destroy(th_sim *s, int who)
 {
     th_person *p = &s->hum[who];
+    th_sim_entity_removed(s, p->entity_seq);
     if (p->kind == TH_HUM_PATIENT)
         event_patient(s, who, TH_EV_DESPAWN, 0);
     drop_faxes(s, who);
@@ -1290,8 +1300,14 @@ void th_sim_add_litter(th_sim *s, int x, int y, int type, int mirror)
     }
     // World:addObjectToTile: al final de las dos listas de la casilla.
     th_map_add_thob(s->w.map, x, y, TH_LITTER_THOB);
-    s->litter[s->n_litter++] =
-        (th_litter){(uint8_t)x, (uint8_t)y, (uint8_t)type, (uint8_t)mirror, ++s->w.attach_seq, ++s->obj_seq};
+    // Litter es también un objeto de world.entities: lleva su entity_seq.
+    s->litter[s->n_litter++] = (th_litter){.x = (uint8_t)x,
+                                           .y = (uint8_t)y,
+                                           .type = (uint8_t)type,
+                                           .mirror = (uint8_t)mirror,
+                                           .attach_seq = ++s->w.attach_seq,
+                                           .seq = ++s->obj_seq,
+                                           .entity_seq = ++s->entity_seq};
 }
 
 int th_sim_remove_litter_at(th_sim *s, int x, int y)
@@ -1301,6 +1317,7 @@ int th_sim_remove_litter_at(th_sim *s, int x, int y)
     int n = 0, k = 0;
     for (int i = 0; i < s->n_litter; i++) {
         if (s->litter[i].x == x && s->litter[i].y == y) {
+            th_sim_entity_removed(s, s->litter[i].entity_seq);
             th_map_remove_thob(s->w.map, x, y, TH_LITTER_THOB);
             n++;
             continue;
@@ -1792,6 +1809,41 @@ static void end_month(th_sim *s)
     th_sim_make_available_staff(s, month);
 }
 
+// La entidad de world.entities que va detrás de entity_seq (la de menor
+// entity_seq mayor que él entre las personas, los objetos y la basura que
+// siguen en el mundo); entity_seq si no hay ninguna.
+static uint32_t next_entity(const th_sim *s, uint32_t entity_seq)
+{
+    uint32_t best = UINT32_MAX;
+    for (int i = 0; i < TH_SIM_HUMANOIDS; i++)
+        if (s->hum[i].alive && s->hum[i].entity_seq > entity_seq && s->hum[i].entity_seq < best)
+            best = s->hum[i].entity_seq;
+    for (int i = 0; i < s->n_obj; i++)
+        if (s->obj[i].def && s->obj[i].entity_seq > entity_seq && s->obj[i].entity_seq < best)
+            best = s->obj[i].entity_seq;
+    for (int i = 0; i < s->n_litter; i++)
+        if (s->litter[i].entity_seq > entity_seq && s->litter[i].entity_seq < best)
+            best = s->litter[i].entity_seq;
+    return best == UINT32_MAX ? entity_seq : best;
+}
+
+// Tras el tick de la entidad tick_seq: por cada una que salió de
+// world.entities en su casilla o antes, ipairs se salta la que va detrás
+// (th_sim.tick_seq). Salta la entidad aunque no haga tick (una puerta, la
+// basura): entonces nadie lo nota.
+static void after_entity_tick(th_sim *s)
+{
+    uint32_t c = s->tick_seq;
+    for (; s->removed_behind; s->removed_behind--) {
+        const uint32_t next = next_entity(s, c);
+        if (next != c && s->ev.skipped)
+            s->ev.skipped(s->ev.ctx, s, next);
+        c = next;
+    }
+    if (c > s->skip_through)
+        s->skip_through = c;
+}
+
 void th_sim_tick(th_sim *s)
 {
     // La pasada de temperatura de la hora anterior, si quedó a medias.
@@ -1820,23 +1872,32 @@ void th_sim_tick(th_sim *s)
     const int n = s->n_order, nd = s->n_desks;
     memcpy(order, s->order, (unsigned)n);
     memcpy(desks, s->desks, (unsigned)nd);
+    // Lo que se queda sin tick porque alguien de delante salió de la lista
+    // (th_sim.tick_seq) se salta aquí: el entity_seq hasta skip_through.
     int d = 0;
-    for (int k = 0; k < n; k++) {
-        const int who = order[k];
-        th_person *p = &s->hum[who];
-        for (; d < nd && s->obj[desks[d]].entity_seq < p->entity_seq; d++)
-            if (s->obj[desks[d]].type == TH_OBJ_RECEPTION_DESK)
-                th_sim_desk_tick(s, desks[d]);
-        if (!p->alive)
+    s->skip_through = 0;
+    s->removed_behind = 0;
+    for (int k = 0; k <= n; k++) {
+        const int who = k < n ? order[k] : TH_NONE;
+        th_person *p = k < n ? &s->hum[who] : NULL;
+        for (; d < nd && (!p || s->obj[desks[d]].entity_seq < p->entity_seq); d++) {
+            const th_object *o = &s->obj[desks[d]];
+            if (o->type != TH_OBJ_RECEPTION_DESK || o->entity_seq <= s->skip_through)
+                continue;
+            s->tick_seq = o->entity_seq;
+            th_sim_desk_tick(s, desks[d]);
+            after_entity_tick(s);
+        }
+        if (!p || !p->alive || p->entity_seq <= s->skip_through)
             continue;
+        s->tick_seq = p->entity_seq;
         th_humanoid_tick(&s->w, &p->h);
         if (p->alive && p->kind != TH_HUM_PATIENT)
             staff_tick(s, who);
+        after_entity_tick(s);
         th_pausar();
     }
-    for (; d < nd; d++)
-        if (s->obj[desks[d]].type == TH_OBJ_RECEPTION_DESK)
-            th_sim_desk_tick(s, desks[d]);
+    s->tick_seq = 0;
     th_sim_temperature_begin(s, outside[s->date.month - 1], (uint16_t)(400000ll * 65535 / TH_MICRO));
     if (!s->temp_defer)
         th_sim_temperature_step(s, TH_SIM_TEMP_WORDS);
@@ -2029,6 +2090,7 @@ int th_sim_new_object(th_sim *s, th_rnode def, int x, int y, int dir)
 void th_sim_destroy_object(th_sim *s, int i)
 {
     th_object *o = &s->obj[i];
+    th_sim_entity_removed(s, o->entity_seq);
     // Object:onDestroy: resetUsageAndReservaton (TODO: Humanoid:handleRemovedObject
     // con gente usándolo; la batería del paso 2 no tiene humanoides),
     // Entity.onDestroy (setTile(nil)) y rebuildPassableCellFlags.

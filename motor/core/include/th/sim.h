@@ -371,6 +371,9 @@ typedef struct th_sim_events {
     void (*order)(void *ctx, const struct th_sim *s, const th_order *o, const th_order_result *r);
     // Cada paso de diagnóstico de un paciente (solo para observar).
     void (*diagnosis)(void *ctx, const struct th_sim *s, int who, const th_diag_step *d);
+    // Una entidad de world.entities que se queda sin tick esta hora porque
+    // otra de delante salió de la lista (th_sim.tick_seq; solo para observar).
+    void (*skipped)(void *ctx, const struct th_sim *s, uint32_t entity_seq);
 } th_sim_events;
 
 // Preferencias del jugador para los faxes (lo que hace el arnés de CorsixTH:
@@ -424,7 +427,18 @@ typedef struct th_sim {
     // El orden de alta en world.entities, común a objetos y personas
     // (th_object.entity_seq y th_person.entity_seq): el último creado tiene el
     // mayor. Los huecos de obj se reutilizan, así que el índice no lo da.
+    // La basura también está en world.entities (Litter es un Object).
     uint32_t entity_seq;
+    // El recorrido de world.entities en th_sim_tick. World:onTick lo hace con
+    // ipairs (world.lua:923-928) y World:destroyEntity quita con table.remove
+    // (world.lua:1792-1800): si sale una entidad que está en la casilla de la
+    // que hace tick o antes (casi siempre ella misma, al desaparecer por el
+    // borde del mapa, spawn.lua:67-72), todo se corre una casilla y la
+    // siguiente se queda sin tick esa hora. tick_seq es el entity_seq de lo
+    // que hace tick (0 fuera del recorrido), removed_behind cuántas salieron
+    // así en su tick y skip_through hasta qué entity_seq se salta.
+    uint32_t tick_seq, skip_through;
+    uint8_t removed_behind;
     int16_t radiator_thob; // -1 si no hay radiadores
     // Temperatura de cada casilla, con dos memorias que se alternan (las de
     // level_map), y lo que hace falta para recalcular solo lo que puede
@@ -688,6 +702,8 @@ void th_sim_notify_staff_change(th_sim *s, int staff);
 // Pacientes.
 void th_sim_go_home(th_sim *s, int who, int reason);
 void th_sim_destroy(th_sim *s, int who);
+// Una entidad sale de world.entities (para el recorrido de th_sim_tick: th_sim.tick_seq).
+void th_sim_entity_removed(th_sim *s, uint32_t entity_seq);
 void th_sim_set_diagnosed(th_sim *s, int who);
 int th_sim_agrees_to_pay(th_sim *s, int who, const char *disease_id);
 void th_sim_send_fax(th_sim *s, int who, int kind);
