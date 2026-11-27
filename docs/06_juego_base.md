@@ -719,7 +719,7 @@ Una segunda revisión, solo sobre el diff de los arreglos y desde tres ángulos 
 - **Las rarezas que se copian**: una silla al sur puede dejar su uso compartible sobre la casilla de paso de la puerta; el archivador sobre el escritorio da `casillas:2`; una máquina de bebidas delante de la puerta la invalida (uso exclusivo) y un banco no (uso compartible).
 - **Lo que no se copia:**
   - **el orden de las dos hojas de la puerta doble en `world.entities`**: en `finishRoom` las crea `pairs(blueprint_wall_anims)`, el orden de iteración de una tabla de Lua con claves enteras, que depende de las coordenadas (la clave módulo el tamaño de la tabla: en la enfermería de la batería, la esclava va antes en la puerta norte y la maestra en las otras tres). El núcleo crea siempre la esclava antes, y `th64sim construir` compara la pareja sin orden;
-  - **el aviso a los pacientes que buscan sala** (`seek_room`): en la batería no hay gente; queda para el paso 7;
+  - **el aviso a los pacientes que buscan sala** (`seek_room`): en la batería no hay gente, así que no lo ejercita; el núcleo lo hace desde la tanda A de la demo (`th_sim_notify_new_room` y `th_sim_notify_staff_change`, con `removeMessage`);
   - **despejar con gente**: CorsixTH deja la obra en `clear_area` hasta que nadie pise el rectángulo ampliado; el núcleo lo mira en cada tick y termina la sala cuando queda libre, sin mandar a nadie fuera;
   - **el doble reembolso** de CorsixTH al bajar la cantidad de un objeto ya pagado en la tienda de la obra (`purchaseItem(i, -1)`, decisión pendiente de Eduardo): las bajadas quedan fuera del vocabulario (`comprar_sala` solo sube).
 

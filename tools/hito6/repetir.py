@@ -44,7 +44,11 @@ def argumentos(orden, x, y, d, qty, w, h, def_id):
     if orden in ("puerta", "ventana", "quitar_ventana"):
         return [x, y, DIRS[int(d) & 3]]
     if orden == "contratar":
-        return [CLASES.get(int(d), str(d)), qty, x, y]
+        # El resumen del perfil (th_order.def, en hexadecimal) va también a la
+        # lista, para que el PC contrate a la misma persona o rechace la orden
+        # como la ROM (sin_candidato) si el mercado era otro.
+        resumen = f"{int(def_id, 16):08x}" if re.fullmatch(r"[0-9a-fA-F]{1,8}", def_id) else "-"
+        return [CLASES.get(int(d), str(d)), qty, x, y, resumen]
     return []
 
 
@@ -66,7 +70,10 @@ def canonica(orden, x, y, d, qty, w, h, def_id):
     elif orden in ("puerta", "ventana", "quitar_ventana"):
         c = (x, y, d & 3, 0, 0, 0, "-")
     elif orden == "contratar" and d in CLASES:
-        c = (x, y, d, qty, 0, 0, "-")
+        # def_id es el resumen del perfil (th_staff_profile_digest), 8 cifras
+        # hexadecimales; si no lo trae, el PC lo toma del mercado («-»).
+        resumen = def_id.lower() if re.fullmatch(r"[0-9a-fA-F]{1,8}", def_id) else "-"
+        c = (x, y, d, qty, 0, 0, resumen if resumen == "-" else f"{int(resumen, 16):08x}")
     elif orden == "contratar":
         # Una clase que th64sim_leer_orden no conoce: la orden queda en
         # TH_ORD_NONE («?»), con qty, x e y leídos.

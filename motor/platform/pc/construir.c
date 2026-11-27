@@ -245,6 +245,12 @@ static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reas
     // el valueChange de spendMoney o receiveMoney): money() ya lo aplicó.
     m->valor = s->hosp.value - valor_visto;
     valor_visto = s->hosp.value;
+    // Con hire_staff (Hospital:addStaff), who es la persona contratada, no un
+    // th_rnode (th/sim.h, TH_MONEY_HIRE_STAFF): el motivo lleva su clase.
+    if (reason == TH_MONEY_HIRE_STAFF) {
+        snprintf(m->motivo, sizeof m->motivo, "hire_staff:%s", th64sim_clase_nombre(s, who));
+        return;
+    }
     const char *id = th_rules_str(s->defs, th_rules_get(s->defs, (th_rnode)who, "id"), NULL);
     snprintf(m->motivo, sizeof m->motivo, "%s:%s",
              reason == TH_MONEY_BUY_OBJECT    ? "buy_object"
@@ -463,6 +469,24 @@ static const char *const clase_nombres[] = {[TH_HUM_DOCTOR] = "doctor",
                                             [TH_HUM_HANDYMAN] = "handyman",
                                             [TH_HUM_RECEPTIONIST] = "receptionist"};
 
+const char *th64sim_clase_nombre(const th_sim *s, int who)
+{
+    if (who < 0 || who >= TH_SIM_HUMANOIDS)
+        return "?";
+    const int k = s->hum[who].kind;
+    return k >= TH_HUM_DOCTOR && k <= TH_HUM_RECEPTIONIST && clase_nombres[k] ? clase_nombres[k] : "?";
+}
+
+// El resumen del perfil de una orden de contratar (th_order.def,
+// th_staff_profile_digest), en la columna def_id del registro: 8 cifras
+// hexadecimales. Lo lee th64sim_leer_orden si la lista lo trae.
+const char *th64sim_resumen_de(uint32_t def)
+{
+    static char texto[12];
+    snprintf(texto, sizeof texto, "%08lx", (unsigned long)def);
+    return texto;
+}
+
 const char *th64sim_id_de(const th_sim *s, th_rnode def)
 {
     static const char *const grupos[] = {"objetos", "salas"};
@@ -567,6 +591,18 @@ int th64sim_leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char 
         o->qty = (uint8_t)(q > 255 ? 255 : q < 0 ? 0 : q);
         o->x = (uint8_t)atoi(campos[4]);
         o->y = (uint8_t)atoi(campos[5]);
+        // El resumen del perfil (th_order.def), si la lista lo trae: lo
+        // escribe la ROM (y th64sim partida) en la columna def_id, en
+        // hexadecimal. Sin él, def queda a 0 y th64sim partida lo toma del
+        // candidato de ese índice en el mercado del tick en que se aplica.
+        if (nc >= 7 && strcmp(campos[6], "-") != 0) {
+            char *fin_r;
+            const unsigned long r = strtoul(campos[6], &fin_r, 16);
+            if (fin_r == campos[6] || *fin_r || r > 0xffffffffUL)
+                fprintf(stderr, "resumen del perfil no válido «%s»: se toma del mercado\n", campos[6]);
+            else
+                o->def = (th_rnode)r;
+        }
     } else
         o->kind = TH_ORD_NONE;
     return 1;

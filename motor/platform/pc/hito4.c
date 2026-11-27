@@ -144,6 +144,7 @@ static void dinero(void *ctx, const th_sim *s, int32_t importe, int motivo, int 
                         : motivo == TH_MONEY_BUY_OBJECT  ? "buy_object"
                         : motivo == TH_MONEY_SELL_OBJECT ? "sell_object"
                         : motivo == TH_MONEY_BUILD_ROOM  ? "build_room"
+                        : motivo == TH_MONEY_HIRE_STAFF  ? "hire_staff"
                                                          : "Wages";
     if (motivo == TH_MONEY_INSURANCE_PENDING && r)
         reg[id].pagos++;
@@ -152,6 +153,9 @@ static void dinero(void *ctx, const th_sim *s, int32_t importe, int motivo, int 
     if (de_obra)
         fprintf(f_dinero, "%u\t%ld\t%s:%s\t0\n", (unsigned)s->hours, (long)importe, texto,
                 th64sim_id_de(s, (th_rnode)who));
+    else if (motivo == TH_MONEY_HIRE_STAFF) // who es la persona contratada: su clase, como en la batería
+        fprintf(f_dinero, "%u\t%ld\t%s:%s\t0\n", (unsigned)s->hours, (long)importe, texto,
+                th64sim_clase_nombre(s, who));
     else
         fprintf(f_dinero, "%u\t%ld\t%s\t%d\n", (unsigned)s->hours, (long)importe, texto, id);
 }
@@ -440,13 +444,15 @@ int th64sim_hito4(char **argv)
 // aplican (TSV con cabecera: tick, orden y sus argumentos, con el vocabulario
 // de bench/lib/ordenes.lua más «contratar»; th64sim.h), sobre el escenario y
 // la semilla de la partida. Las órdenes entran en la cola del núcleo
-// (th_sim_push_order) y se aplican al empezar el tick de su hora (th_sim_tick:
-// th_build_tick y th_sim_apply_orders), como en la ROM. La cola tiene
-// TH_SIM_ORDERS huecos, así que se van metiendo a medida que avanza: antes de
-// cada tick, todas las que quepan (las de ticks futuros esperan en la cola).
-// Si un mismo tick tiene más órdenes que huecos, las que no caben se aplican
-// en el tick siguiente y se avisa: la ROM tampoco puede meter más de
-// TH_SIM_ORDERS por tick.
+// (th_sim_push_order) antes del tick de su hora y se aplican al empezarlo
+// (th_sim_tick: th_build_tick y th_sim_apply_orders), como en la ROM, que las
+// empuja cuando el jugador las da. La cola tiene TH_SIM_ORDERS huecos: si un
+// mismo tick tiene más órdenes que huecos, las que no caben se aplican en el
+// tick siguiente y se avisa (la ROM tampoco puede meter más por tick). Una
+// orden de contratar sin resumen del perfil (la lista escrita a mano) lo toma
+// al entrar en la cola del candidato de ese índice en el mercado de ese
+// momento; con él (el registro de la ROM), se repite tal cual y se rechaza
+// igual que allí si el mercado era otro.
 //
 // Escribe la traza de hito4 (dias.tsv, pacientes.tsv, dinero.tsv y
 // acciones.tsv) más:
@@ -488,8 +494,11 @@ static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_o
                 (unsigned)l->o.tick, (unsigned)s->hours);
     fprintf(f_resultado, "%u\t%s\t%s\t%s\n", (unsigned)s->hours, l ? l->texto : th64sim_nombre_orden(o->kind),
             ok ? "aceptada" : "rechazada", ok ? "-" : motivo);
+    // En contratar, def es el resumen del perfil (th_staff_profile_digest), no
+    // un th_rnode: va en hexadecimal, y así lo vuelve a leer th64sim_leer_orden.
     fprintf(f_rom, "TH64 orden\t%u\t%s\t%u\t%u\t%u\t%u\t%u\t%u\t%s\t%s\n", (unsigned)s->hours,
-            th64sim_nombre_orden(o->kind), o->x, o->y, o->dir, o->qty, o->w, o->h, th64sim_id_de(s, o->def),
+            th64sim_nombre_orden(o->kind), o->x, o->y, o->dir, o->qty, o->w, o->h,
+            o->kind == TH_ORD_CONTRATAR ? th64sim_resumen_de(o->def) : th64sim_id_de(s, o->def),
             ok ? "-" : th_build_reason_name(r->reason));
 }
 
@@ -553,8 +562,18 @@ int th64sim_partida(char **argv)
     const int horas = atoi(argv[6]);
     int metidas = 0;
     for (int h = 0; h < horas; h++) {
-        while (metidas < partida_n && th_sim_push_order(s, &partida_ordenes[metidas].o) == 0)
+        while (metidas < partida_n && partida_ordenes[metidas].o.tick <= s->hours) {
+            th_order *o = &partida_ordenes[metidas].o;
+            if (o->kind == TH_ORD_CONTRATAR && !o->def) {
+                const th_staff_profile *lista;
+                const int n = th_sim_candidates(s, o->dir, &lista);
+                if (o->qty < n)
+                    o->def = (th_rnode)th_staff_profile_digest(&lista[o->qty]);
+            }
+            if (th_sim_push_order(s, o) != 0)
+                break;
             metidas++;
+        }
         th_sim_tick(s);
         traza_hora(s, h);
     }

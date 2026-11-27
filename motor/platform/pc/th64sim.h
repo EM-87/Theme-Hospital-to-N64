@@ -24,6 +24,11 @@ int th64sim_leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char 
 
 // construir.c: el id de def dentro de defs.objetos o defs.salas, o «-».
 const char *th64sim_id_de(const th_sim *s, th_rnode def);
+// La clase de la persona who (doctor, nurse, handyman o receptionist), o «?».
+const char *th64sim_clase_nombre(const th_sim *s, int who);
+// El resumen del perfil de una orden de contratar (th_order.def), en 8 cifras
+// hexadecimales: la columna def_id del registro de la ROM.
+const char *th64sim_resumen_de(uint32_t def);
 
 // construir.c: el nombre de la orden en ese vocabulario, o «?».
 const char *th64sim_nombre_orden(int kind);
