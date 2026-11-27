@@ -1050,7 +1050,7 @@ CorsixTH tarda 11,8 s de media por partida de 9.050 horas (80 corridas) y el mot
 - El corte del final (los tardíos que llegan a la consulta, 69 % frente a 53 %) y la dispersión de las llegadas de marzo y abril (CorsixTH casi siempre exactamente una, 79 de 80; el motor, 0 en 16 y 2 en 71 de 800) no están explicados; caben en el azar.
 - Un `contratar` en el mes 1 o después (`crear_demo.lua` carga el mercado de ese mes) no está ejercitado; `demo.tsv` solo contrata en el mes 0.
 - La comparación estadística del mercado con el de CorsixTH (títulos, sueldos medios): el JSON cuadra con `parseSkillLevel` (enfermeras junior o consultoras según la habilidad), pero `StaffProfile:randomise` no está comparado.
-- La revisión adversaria de la demo entera: [la tanda B3](#la-demo-jugable-tanda-b3--la-revisión-adversaria-de-la-demo-las-ventanas) (las ventanas).
+- La revisión adversaria de la demo entera: hecha, [la tanda B3](#la-demo-jugable-tanda-b3--la-revisión-adversaria-de-la-demo-las-ventanas) (las ventanas) y [su otra mitad](#la-demo-jugable-tanda-b3--la-revisión-adversaria-de-la-demo-el-núcleo-y-la-rom) (el núcleo y la ROM).
 
 ## La demo jugable, tanda C (cierre) — el tick que se salta
 
@@ -1130,7 +1130,7 @@ La revisión de la demo entera que pedía la pieza 7 del plan (2026-11-27), sobr
 - **Coger a un empleado** (la decisión 3 dice «B coge un objeto o un empleado»; `Staff:onClick` → `setPickup`, `staff.lua:297-299`, y `UIPlaceStaff` con esa persona, `place_staff.lua:36-39` y `148-149`): falta una orden del núcleo que lo saque de lo que esté haciendo, lo ponga en la casilla con las reglas de `_isValidStaffPlacement` y lo deje paseando (`setNextAction(MeanderAction)` de `UIPlaceStaff:close`), y su caso en la batería de CorsixTH. Es del núcleo y no entra en esta tanda: está en Pendiente. Despedir es de las ventanas de gestión, que el plan deja fuera.
 - **Los textos de la descripción de la obra**: en la fase de objetos la ventana dice `place_objects` mientras queda algo en la lista, `confirm_or_buy_objects` cuando no y `pick_up_object` con coger. CorsixTH pone siempre `confirm_or_buy_objects` (`edit_room.lua:979`) y no usa los otros dos, pero están en los textos del juego original, que es el que manda: se quedan, sin comprobar en DOSBox a 320 × 200.
 - **Los sonidos**: la demo solo carga y toca `wrong2.wav`. CorsixTH toca además `selectx.wav` (botones, pestañas y filas), `HLight5.wav` (la fila bajo el puntero), `AddItemJ.wav` y `DelItemJ.wav` («+» y «−»), `YesX.wav` (contratar y confirmar), `no4.wav` (cancelar), `buildclk.wav` y `de_build.wav` (puerta y ventanas), `place_r.wav` (colocar), `swoosh.wav` (girar), `pickup.wav` (coger) y `plac_st2.wav` (soltar a alguien). Es un recorte de la demo; está en Pendiente.
-- **La pausa de la ROM con Start** (los ticks ya pedidos siguen corriendo): es de la ROM, en la otra sección.
+- **La pausa de la ROM con Start** (los ticks ya pedidos siguen corriendo): es de la ROM, arreglada en [la otra mitad de la tanda](#la-demo-jugable-tanda-b3--la-revisión-adversaria-de-la-demo-el-núcleo-y-la-rom).
 
 ### Topes de la interfaz que CorsixTH no tiene
 
@@ -1148,3 +1148,85 @@ La revisión de la demo entera que pedía la pieza 7 del plan (2026-11-27), sobr
 - Comparar con el juego original a 320 × 200 en DOSBox (decisión 6) los textos de la descripción y cómo enseña una lista de más filas de las que caben (aquí no hay pieza que diga que hay más filas abajo).
 - Con el modo coger apagado con su botón, CorsixTH deja la lista sin fila activa (`pickupItems` pone `active_index = 0`) hasta que se pulsa una; aquí vuelve a la mano la que había.
 - Lo de siempre sin probar a mano: jugar con el mando en ares o en la consola (`run_ares.sh` no inyecta entrada).
+
+## La demo jugable, tanda B3 — la revisión adversaria de la demo (el núcleo y la ROM)
+
+La otra mitad de la tanda B3 (2026-11-27): lo que los cuatro revisores encontraron en el núcleo y en la ROM, arreglado por el arreglador de esa área sobre la fusión de las ramas de los revisores (`d4a2dbe`: la del contrato, `d783f6a`, y la del jugador y la ROM, `1594317`). Los cuatro revisores dieron 35 hallazgos (1 alto, 9 medios y 25 bajos), además de los 9 de la primera vuelta, que el límite de uso cortó y que ya venían arreglados con prueba (`c41c455` y `8c24585`). De los 35 quedan sin arreglar uno medio (coger a un empleado, que pide una orden nueva del núcleo) y cuatro bajos (los sonidos, los textos de la descripción, la pila y el grupo de la caché), todos escritos en Pendiente.
+
+### Qué hay
+
+- **Coger o vender un objeto con gente** (alto; lo encontró el revisor del jugador con dos cazadores en C y UBSan): el `handleRemovedObject` que el paso 2 dejó pendiente «porque ningún camino del juego aplicaba órdenes con gente» ya se alcanzaba con el mando, también en el «Hospital del hito 5» de la ROM. Antes, el paciente que iba a un banco vendido leía `phase_names[105]` (UBSan en `humanoid.c:987`), el que estaba sentado en un banco movido se quedaba sentado en el aire, y la recepcionista se quedaba de pie junto al mostrador movido las 9.050 horas mientras los pacientes se atendían en el nuevo sin nadie detrás. Ahora `th_sim_reset_usage` (`sim_rooms.c`) es `Object:onPickUp` y `Object:onDestroy` → `resetUsageAndReservaton` (`entities/object.lua:858-889`) con el banco (`bench.lua:157-192`) y el mostrador (`reception_desk.lua:216-243`), y `th_sim_handle_removed_object` (`humanoid.c`) es `Humanoid:handleRemovedObject` (`humanoid.lua:872-899`); los llaman `TH_ORD_RECOGER` y `th_sim_destroy_object` (vender, `CERRAR`, `DESHACER` y despejar la obra). `th_sim_destroy_object` vacía además la cola del objeto y `queue_start` acaba la acción si la cola ya no existe; hay una bandera nueva, `TH_OBJF_BEING_DESTROYED` (`objects.h`). Las tres diferencias con CorsixTH, donde él deja acciones apuntando a objetos muertos, están en [el paso 2](#hito-63-paso-2--amueblar-el-pasillo) (Pendiente). Pruebas `test_banco_con_gente` y `test_mostrador` (15 fallos sin el arreglo).
+- **La persona en la mano sobrevive al cambio de mes** (medio): `order_contratar` exigía que el resumen siguiera en el mercado de ahora, y `th_sim_make_available_staff` lo rehace cada mes, así que la persona en la mano desaparecía al cambiar el mes (`SIN_CANDIDATO`, con el aviso de casilla mala). El núcleo guarda el mercado anterior (`th_sim.prev_available`, unos 1,5 KiB más en `th_sim`, fuera de la huella) y `CONTRATAR` y `DEVOLVER` buscan ahí el perfil si el índice y el resumen no casan con el de ahora (`held_profile`, `held_to_market` y `prev_remove` en `build.c`; `place_staff.lua:76-77` y `153-160`): un clic que no vale y `DEVOLVER` lo mandan al final de la lista nueva. Contratar con `SIN_CANDIDATO` suena `wrong2` sin texto (`hire_staff.lua:134-137`); `th64sim ventanas` escribe el resumen también en `devolver`, que sin él tomaría otro perfil al repetir. El guion `mano_fin_de_mes` del revisor contrata ahora. Pruebas `test_contratar_resumen` y `test_devolver`. Ninguna lista de la batería cruza un mes: `personal.tsv` sigue igual.
+- **La pausa suelta los ticks ya pedidos** (medio; `b643f5d`, el revisor del contrato): Start solo dejaba de pedir ticks y `simulacion_avanzar` seguía gastando los pedidos, hasta 2 · velocidad + 1; con la pausa puesta corrían horas (a ×8, 16) y se aplicaban órdenes en pausa. `simulacion_soltar` (`simulacion.c`) olvida los que no han empezado y `main.c` la llama al pausar. Reproducido con el `simulacion.c` real en un arnés del PC con una libdragon falsa: 16 horas antes, 0 después.
+- **`th_sim_hash` cuenta `qty`, `w` y `h` de las órdenes en la cola** (bajo; `b643f5d`): dos planos de distinto tamaño en la cola daban la misma huella, y `COMPRAR qty=1 def=1<<24` la de `qty=0 def=0`. Tres comprobaciones nuevas en `test_cola`. Las huellas de referencia no cambian (se toman con la cola vacía).
+- **Sin Expansion Pak** (medio; `1594317`, el revisor de la ROM): la ROM normal se paraba al arrancar en la pantalla del fallo de `asset_load` («Out of memory» en `cargar_nivel`), antes del menú. Ahora enseña «Hace falta el Expansion Pak (8 MiB)» con la RAM que tiene (`sin_expansion`, `main.c`), comprobado con `run_ares.sh --no-expansion`. La demo con 4 MiB sigue siendo el hito 6.10.
+- **El registro cortado** (bajo): la línea final «TH64 partida: <horas> horas, huella …» solo salía al salir con Z, y si el jugador apaga la consola `repetir.sh` no podía comparar la huella. La ROM escribe una línea de control al acabar el primer tick entero de cada mes con la cola del núcleo vacía («TH64 partida: control <h> horas, huella <x>, saldo <s>, <us> us»; `partida_control`, desde la corrutina con `simulacion_al_acabar_tick`; un primer intento desde el bucle principal daba otra huella a medio tick, en la pasada de temperatura), y `repetir.py` usa la última si falta la del final, con solo las órdenes de antes. `th_sim_hash` tarda 20,4 ms en la N64. Las seis líneas de control de la ROM de pruebas (horas 1.550 y 2.950 en sus tres partidas), cortando ahí el registro, dan «repetir: bien». `ventanas_estados.py` y los `sed` de `motor_check` no la cogen (piden un número detrás de «partida: »).
+- **El margen de la caché de instrucciones** (bajo): `cache_instrucciones.py` da el margen en los dos sentidos (cuánto puede crecer o encoger el código que va entre el dibujo y libdragon) y avisa por debajo de 256 B; `motor_check` compila además `HORAS=0 MODO=4` y `MEDIR=1` (unos 2 minutos más) y les pasa el guion. Con las dos áreas de la B3 juntas, el relleno de la ROM de pruebas (22.816 B tras [el tick que se salta](#la-demo-jugable-tanda-c-cierre--el-tick-que-se-salta)) volvía a chocar (`dibujar` y `__rdpq_texture_rectangle_scaled_offline`, 5 líneas); en vez de sumar los 3.136 B que pedía el guion (una ventana de 480 B, margen 448/0), el relleno baja a 19.776 B, el centro de la ventana sin choques más ancha (5.792 B): margen 2.880 B en los dos sentidos. Las otras ROM: normal y `HORAS=0 MODO=4`, 5.184/576; `MEDIR=1`, 512/608.
+- **La pila de la simulación** (bajo): la ROM de pruebas la pinta al entrar en la corrutina y escribe «TH64 pruebas: pila de la simulacion 4592 B de 32768» (el 14 %, interrupciones incluidas); `motor_check` la enseña y avisa si pasa de la mitad.
+
+### Comprobaciones
+
+| Qué | Resultado |
+|---|---|
+| Pruebas | `test_core` 212.667 comprobaciones (212.614 tras el tick que se salta, más 3 de `test_cola` y 50 de `test_banco_con_gente` y `test_mostrador`), `test_ui` 311, `test_ventanas` 470; 0 fallos en el PC y con ASan y UBSan; `ninja` sin avisos con `-Werror` |
+| Huellas | sin cambios: `golden_sim` d38fbaef, `golden_sim_float` def515c7, hito 4 a 3.000 h a800c6f0, hito 5 a 9.000 h de91244b, vistas a 2.000 h 5f170e3d, `demo.tsv` a 9.050 h 618581d6 (36.238) y a 3.000 h acd9c19a (36.826), desde las ventanas cc315406 (36.826); los 15 estados de `ventanas.txt` con las huellas de la sección de las ventanas |
+| Estrés de coger con gente, hospital del hito 5 | 756 objetos cogidos entre las horas 600 y 3.995, 525 con gente, de tres maneras (coger y vender; coger y soltar donde estaba; coger, un tick y vender): 0 errores con ASan y UBSan (sin el arreglo, UBSan en el primero; sin vaciar la cola, `queues[255]`) |
+| Las reproducciones del revisor | `vender_1156` y `banco_ocupado_movido` sobre `hito5.trg`: ASan limpio y el paciente de pie en su cola; `mostrador_movido_4000`: la recepcionista detrás del mostrador nuevo; `caza_mostrador` (el mostrador movido en la hora 150 de `demo.tsv`): la recepcionista en (60,70), huella 99157a9f y saldo 36.423 (no es de referencia); `mano_fin_de_mes`: contrata |
+| `tools/hito6/construir.sh` | las cinco listas iguales a CorsixTH: pasillo 175, revisión 32, salas 322, capacidad 265 y personal 127 órdenes, 0 casillas distintas |
+| `tools/motor_check.sh` sobre la rama del arreglador | «todo correcto» dos veces: la ROM de pruebas en ares con 0 fallos y 0 píxeles distintos, los 15 estados iguales a `th64sim ventanas`, las dos partidas desde las ventanas en cc315406 y `repetir.sh` «bien»; las cuatro ROM sin choques. La pasada sobre el árbol final, con las dos áreas, abajo en [las cifras finales](#la-demo-jugable--las-cifras-finales) |
+| La ROM normal sin Expansion Pak, en ares | el aviso (captura mirada) en vez del fallo |
+
+### Lo que no se arregló
+
+- **Coger a un empleado con B** (medio; la decisión 3): pide una orden nueva del núcleo (sacar a la persona de su acción, ponerla con las reglas de `_isValidStaffPlacement` y dejarla paseando, `UIPlaceStaff:close`) y su caso en la batería de CorsixTH; está en el Pendiente de la sección de las ventanas.
+- **El aviso de un banco nuevo** (`Hospital:objectPlaced`, `hospital.lua:1543`): un banco soltado no llama a quien hace cola de pie. No es parte del fallo de memoria; escrito en el Pendiente del paso 2.
+- **Bajar la pila de la corrutina de 32 a 12 KiB**: 4.592 B usados; queda para la demo de 4 MiB (hito 6.10), con la línea de la ROM de pruebas y el aviso de `motor_check` ya puestos.
+- **Añadir a `GRUPOS` de `cache_instrucciones.py` el camino de la vista previa** (`th_build_check_cell`, `would_break_pathfinding`, `path.c`) frente a libdragon: esas funciones llaman poco a libdragon en su bucle y elegir el grupo pide un perfil, que no se ha hecho.
+
+### Pendiente
+
+- Lo de arriba: coger a un empleado, el aviso del banco nuevo, la pila a 12 KiB y el grupo de la vista previa en la caché.
+- Lo de siempre sin probar a mano: la pausa con `simulacion_soltar`, el cambio de ×1 a ×8 al quitar la pausa y el aviso sin Expansion Pak con el mando en ares o en la consola.
+
+## La demo jugable — las cifras finales
+
+Las siete piezas del plan ([`06_plan.md`](06_plan.md#la-demo-jugable-el-orden-cambia)) están hechas (2026-11-27): la ROM normal juega el nivel 1 en «Partida nueva» con construir, la obra, amueblar, colocar, contratar y colocar personal, la pausa, las cuatro velocidades y el registro de órdenes que `repetir.sh` vuelve a jugar en el PC; la ROM de pruebas repite la partida de `demo.tsv`, los 15 estados de las ventanas y la partida jugada desde las ventanas, con el mando y con la hora troceada. Lo que sigue sin hacer es jugarla con el mando en ares o en la consola. Las cifras, sobre el árbol con las tandas A, B, B2, C y B3 juntas:
+
+### Las pruebas y las huellas
+
+| Qué | Resultado |
+|---|---|
+| `test_core` | 212.667 comprobaciones, 0 fallos, en el PC, con ASan y UBSan y en la ROM de pruebas en ares; `golden_sim` d38fbaef y `golden_sim_float` def515c7 (el núcleo de referencia, `TH_GOLDEN_EXPECTED`, no ha cambiado en toda la demo) |
+| `test_ui`, `test_ventanas` | 311 y 470 comprobaciones, 0 fallos (164 las ventanas al acabar la tanda C; la B3 añade 306) |
+| Huellas sin órdenes | hito 4 a 3.000 h a800c6f0, hito 5 a 9.000 h de91244b, vistas a 2.000 h 5f170e3d; en la ROM, la del hito 4 igual que en el PC |
+| La partida de `demo.tsv` | a 9.050 h, 618581d6 con saldo 36.238 y 8 pacientes; a 3.000 h (la que juega la ROM de pruebas), acd9c19a con 36.826, igual en el PC y en la N64, y `repetir.sh` sobre el registro de la ROM da «bien» |
+| La partida desde las ventanas (`ventanas_partida.txt`) | cc315406 con 36.826, 13 órdenes, igual con el guion y con el mando y la hora troceada; `repetir.sh` «bien» |
+| Los 15 estados de `ventanas.txt` | la misma huella de la lista de dibujo en el PC y en la ROM, y 0 píxeles distintos entre el RDP y el rasterizador de referencia; con la B3 cambian dos (`obra_plano_malo` 8fb37dd6, el confirmar en gris; `obra_objetos` 174eca78, el escritorio en la mano y el confirmar en gris) |
+| La batería de construir (`construir.sh`) | las cinco listas, 921 órdenes (pasillo 175, revisión 32, salas 322, capacidad 265, personal 127) iguales que en CorsixTH, 0 casillas distintas; huellas 78fc2652, d3e56866, 8e19cfd3, e1a33cf3 y a9164a19 |
+
+### CorsixTH contra el motor, con estadística
+
+| Qué | Resultado |
+|---|---|
+| La campaña de la demo (80 semillas × 10 corridas, 9.050 h) | las 80 aceptan las mismas 13 órdenes y cobran lo mismo al contratar; 8 de 25 cifras con \|t\| ≥ 2, todas entre 2,00 y 2,77 (las del corte del final y los diagnosticados); el motor contra sí mismo ya da 4 de 25 |
+| Los diagnosticados (t +2,77) | es el azar: con la sonda del diagnóstico, las entradas de la fórmula son las mismas en los dos lados; con 240 semillas, CorsixTH llega a 1,0 en 106 consultas con 104,7 esperadas y da 0,946 diagnosticados por partida frente a 0,853 (t −1,05) |
+| El tick que se salta | la hora de más entre la recepción y la consulta: CorsixTH 23 de 450 pacientes (5,11 %), el motor 110 de 4.395 (2,50 %; antes 0), los 110 con un salto en su camino; lo que falta es cuándo coincide, que depende de lo regulares que son las llegadas de marzo a mayo (pendiente) |
+| Las campañas del hito 4 (40 × 10) y del hito 5 (10 × 10) | 17 de 17 cifras con \|t\| < 2 cada una, con el núcleo final |
+
+### La ROM, en ares
+
+La pasada de `tools/motor_check.sh` sobre el árbol final está en marcha al escribir esto; sus cifras (heap, estados, partidas, pila y márgenes), en el commit siguiente.
+
+### Lo que cuesta
+
+- **Las comprobaciones:** `tools/motor_check.sh` entero, unos 13 minutos (las cuatro ROM y la de pruebas en ares, con `HORAS=0 MODO=4` y `MEDIR=1` desde la B3); la batería de construir, unos 4 minutos; la campaña de la demo, 9 min 30 s por cada 40 semillas.
+- **La tanda C y la B3 en agentes:** la investigación de los diagnosticados (investigador, revisor adversario y arreglador) gastó 807.698 tokens de agentes en 388 llamadas, 1 h 48 min; la revisión de la demo (cuatro revisores y dos arregladores) 2.347.338 tokens en 1.006 llamadas, 2 h 13 min; más dos intentos cortados por el límite de cinco horas, cuyo trabajo se rescató de sus ramas.
+
+### Lo que queda
+
+- **Jugarla con el mando**, en ares o en la consola: nunca se ha hecho (`run_ares.sh` no inyecta entrada). Todo lo de arriba son guiones y el mando de mentira de la ROM de pruebas. Es lo primero que tiene que hacer Eduardo con la ROM.
+- **Coger a un empleado con B** (la decisión 3) y moverlo: una orden nueva del núcleo y su caso en la batería.
+- **Los sonidos de las ventanas** (los once `.wav` que CorsixTH toca: `selectx`, `HLight5`, `AddItemJ`, `DelItemJ`, `YesX`, `no4`, `buildclk`, `de_build`, `place_r`, `swoosh`, `pickup`, `plac_st2`); la demo solo tiene `wrong2`.
+- **Lo que la tanda B dejó escrito**: vender en la tienda de la sala, comprar varios objetos de pasillo de una vez (van de uno en uno), las vistas previas de construir y amueblar, el retrato de FACE01 (la hoja no está en los assets), mover o redimensionar el plano y las puertas dobles en `screenToWall`.
+- **El núcleo:** las llegadas de marzo a mayo (CorsixTH exactamente una en el 99 %, 99 % y 90 % de las partidas; el motor, 89 %, 93 % y 82 %), el aviso de un banco nuevo a quien hace cola de pie, y la cola larga de `t_espera_gp` (10 esperas de 400 a 1.146 horas en 4.395 pacientes del motor, ninguna por encima de 329 en los 450 de CorsixTH, con 1,0 esperada: cabe en el azar, sin explicar).
+- **La memoria:** la demo con 4 MiB (hito 6.10), con la pila de la corrutina a 12 KiB.
