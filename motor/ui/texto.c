@@ -73,6 +73,56 @@ int th_drawlist_fill(th_drawlist *out, int x, int y, int w, int h, uint16_t colo
     return 0;
 }
 
+enum { TMEM_TEXELES = 2048 }; // como mapa_n64.c: la otra mitad de la TMEM es la paleta
+
+int th_drawlist_loads(const th_drawlist *l, int from, const th_sheet *const sheets[TH_SHEETS])
+{
+    int32_t antes = -1;
+    int n = 0;
+    for (int i = from; i < l->count; i++) {
+        const th_draw *d = &l->items[i];
+        if (d->sheet == TH_SHEET_FILL) {
+            // mapa_n64.c pasa al modo relleno y vuelve con preparar_tiles(),
+            // que olvida el sprite cargado.
+            antes = -1;
+            continue;
+        }
+        int w = 0, h = 0;
+        if (sheets && d->sheet < TH_SHEETS && sheets[d->sheet])
+            th_sheet_size(sheets[d->sheet], d->sprite, &w, &h);
+        const int paso = th_sheet_stride(w);
+        if (w && paso * h > TMEM_TEXELES) {
+            // No cabe: rdpq_tex_blit lo carga en tiras de filas enteras y
+            // después preparar_tiles() olvida el sprite cargado.
+            const int filas = TMEM_TEXELES / paso;
+            n += filas ? (h + filas - 1) / filas : h;
+            antes = -1;
+            continue;
+        }
+        const int32_t clave = (int32_t)d->sheet << 16 | d->sprite;
+        n += clave != antes;
+        antes = clave;
+    }
+    return n;
+}
+
+int th_text_row(const th_font *f, const char *name, int x, const char *value, int vx, int vw, int y,
+                th_drawlist *out)
+{
+    // th_font_draw no avisa si la lista se llena: se mira cuánto cabe antes.
+    const size_t nn = strlen(name), nv = value ? strlen(value) : 0;
+    if ((size_t)(out->capacity - out->count) < nn + nv)
+        return -1;
+    // furnish_corridor.lua:229: font:draw(canvas, name, x, y), sin caja.
+    th_font_draw(f, name, x, y, 0, 0, TH_ALIGN_LEFT, out, NULL, NULL);
+    // furnish_corridor.lua:230: font:draw(canvas, qty, x, y, 19, 0): centrada
+    // en la caja de 19 (la alineación por defecto de l_font_draw es center,
+    // th_lua_gfx.cpp:527-548) y sin centrar en vertical (h = 0).
+    if (value)
+        th_font_draw(f, value, vx, y, vw, 0, TH_ALIGN_CENTER, out, NULL, NULL);
+    return 0;
+}
+
 int th_font_text(const th_font *f, const char *s, size_t n, int x, int y, th_drawlist *out)
 {
     const char *end = s + n;

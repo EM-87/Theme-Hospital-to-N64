@@ -62,6 +62,27 @@ int th_font_tooltip(const th_font *f, const char *s, int x, int y, int w, int sc
 // Rectángulo de color en la lista (TH_SHEET_FILL); color en RGBA5551.
 int th_drawlist_fill(th_drawlist *out, int x, int y, int w, int h, uint16_t color);
 
+// Una fila de una lista con dos columnas, como las de UIFurnishCorridor
+// (furnish_corridor.lua:225-231) o UIBuildRoom (el nombre de la sala, sin
+// value): name desde (x, y), sin caja, y value (si no es NULL) centrado en
+// horizontal en la caja [vx, vx + vw) a la misma y; ninguno se centra en
+// vertical. 0, o −1 si la lista se llena (y entonces no añade nada).
+int th_text_row(const th_font *f, const char *name, int x, const char *value, int vx, int vw, int y,
+                th_drawlist *out);
+
+// Las cargas de textura que hará el RDP para los elementos [from, count) de
+// la lista, contadas como las hace mapa_n64.c: un sprite se carga si no es el
+// mismo (hoja y sprite) que el último cargado; un rectángulo de color
+// (TH_SHEET_FILL) no carga pero hace olvidar el cargado (preparar_tiles); y
+// un sprite que no cabe en la TMEM (paso × alto > 2.048 téxeles) va por
+// rdpq_tex_blit, que lo carga en tiras de filas enteras (aquí, una carga por
+// tira: mapa_n64_stats.cargas cuenta el blit entero como 1) y también hace
+// olvidar el cargado. Para ver los tamaños hacen falta las hojas (sheets[k]
+// la de TH_SHEET_k); con sheets a NULL, o sin la hoja, no se detectan los
+// sprites grandes. Con las letras, una carga por letra salvo las repetidas
+// seguidas («ll»). No está contrastado con la N64.
+int th_drawlist_loads(const th_drawlist *l, int from, const th_sheet *const sheets[TH_SHEETS]);
+
 // Un argumento de th_text_format.
 typedef struct th_text_arg {
     const char *str; // cadena, o NULL si es un número

@@ -15,7 +15,7 @@ Los pasos `graficos`, `animaciones` y `reglas` van siempre juntos: pedir uno eje
 |---|---|
 | `rnc.py` | Descompresor RNC (port del de CorsixTH, MIT). Da lo mismo que `rnc_decode` en los 241 ficheros RNC de los datos (16,3 MB) |
 | `paleta.py` | `MPALETTE.DAT` a RGBA5551, con las paletas fantasma gris y roja de CorsixTH |
-| `hojas.py` | Hojas `.TAB`/`.DAT` al formato TSH1: CI8, filas de 8 B, misma numeración. Usa el decodificador de `tools/datos/graficos.py` |
+| `hojas.py` | Hojas `.TAB`/`.DAT` al formato TSH1: CI8, filas de 8 B, misma numeración. Usa el decodificador de `tools/datos/graficos.py`. De `MUTTON01` (las ventanas de 320) solo quedan las piezas que usa el motor, 1-78; las demás se vacían sin mover los índices (`PIEZAS_USADAS` en `conv.py`): 109.280 B en lugar de 270.840 |
 | `anim.py` | Tablas de animación de `DATAM` (START, FRA, LIST, ELE) al formato TAN1, con la duración de cada animación calculada como en CorsixTH |
 | `niveles.py` | Mapas de los 12 niveles (`LEVELS/LEVEL.Lx`) al formato TMP1: lee como `load_from_th_file` de CorsixTH, con su tabla de bloques |
 | `reglas.lua` | Extrae las reglas del código de CorsixTH con `lua5.4` y stubs: objetos, salas, enfermedades (con el aspecto de los pacientes como distribución exacta), diagnósticos, juegos de paredes (`walls/*.lua`, como «paredes»), marcadores, duraciones fijadas, animaciones de caminar, configuración por defecto, `base_config.lua` y los 36 niveles de la campaña. Escribe el JSON canónico de `json_canonico.lua` |

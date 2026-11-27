@@ -30,6 +30,15 @@ void interfaz_puntero(int *x, int *y);
 typedef struct {
     int vista_dx, vista_dy; // desplazar la vista (borde de la pantalla)
     int boton;              // botón del panel pulsado y soltado (TH_PI_*), o 0
+    // Un botón de otra ventana de la pila pulsado y soltado: la ventana, su id
+    // (id o id_right) y con qué botón del ratón (TH_UI_LEFT o TH_UI_RIGHT). Las
+    // pulsaciones de los botones repetidos se recogen con th_ui_stack_take_click.
+    th_ui_window *ventana; // NULL: ninguno
+    int id, raton;
+    // Lo que ninguna ventana tomó y llega al mundo: bit TH_UI_LEFT o TH_UI_RIGHT
+    // de los botones que bajaron o subieron en este fotograma.
+    int mundo_abajo, mundo_arriba;
+    th_ui_window *sobre; // la ventana de arriba bajo el puntero (NULL: el mundo)
 } interfaz_orden_t;
 
 // Un fotograma de mandos del puerto 1: el stick o el ratón mueven el
@@ -38,15 +47,24 @@ typedef struct {
 // *mando deja la última lectura, para los demás botones.
 interfaz_orden_t interfaz_mandos(joypad_inputs_t *mando);
 
-// La lista de la interfaz (panel, descripción y puntero) para info.
-void interfaz_lista(const th_bottom_info *info, th_drawlist *out);
+// La lista de la interfaz (la pila de ventanas con el panel, la descripción
+// y el puntero) para info. 0, o −1 si algo no cupo en la lista.
+int interfaz_lista(const th_bottom_info *info, th_drawlist *out);
 
 // La dibuja con el RDP encima de lo que haya.
 void interfaz_dibujar(const th_bottom_info *info, const uint16_t *paleta, mapa_n64_stats_t *st);
 
 // Las hojas de la interfaz por índice TH_SHEET_* (las del mapa a NULL), para
-// el rasterizador de referencia de la ROM de pruebas.
+// el rasterizador de referencia de la ROM de pruebas; con TH_SHEET_MUTTON.
 const th_sheet *const *interfaz_hojas(void);
+
+// La pila de ventanas, con el panel inferior abajo del todo: las ventanas de
+// la partida se abren con th_ui_stack_open (las TH_UI_MAIN cierran la
+// anterior) y se dibujan encima del panel con su draw. Las fuentes y los
+// textos, para dibujarlas.
+th_ui_stack *interfaz_pila(void);
+const th_ui_fonts *interfaz_fuentes(void);
+const th_rules *interfaz_textos(void);
 
 // Pone el puntero en (x, y) con los botones como se pidan y la descripción
 // a la vista o no (para las comprobaciones de la ROM de pruebas).

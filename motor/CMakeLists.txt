@@ -43,3 +43,11 @@ target_link_libraries(th64sim th_core_tests th_vista th_ui)
 
 enable_testing()
 add_test(NAME nucleo COMMAND test_core)
+
+# Las pruebas de la interfaz (tests/test_ui.c), aparte del núcleo: enlazan
+# th_ui. Con motor/assets como argumento, además miden una ventana de MUTTON01.
+add_executable(test_ui tests/test_ui.c)
+target_compile_definitions(test_ui PRIVATE TH_TEST_UI_MAIN)
+target_include_directories(test_ui PRIVATE tests)
+target_link_libraries(test_ui th_ui)
+add_test(NAME ui COMMAND test_ui)

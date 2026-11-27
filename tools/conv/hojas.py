@@ -94,6 +94,12 @@ def escribir(sprites):
     return bytes(cab + tabla + b"\0" * (ini_pix - CABECERA - len(tabla)) + pix)
 
 
+def recortar(sprites, usadas):
+    """Vacía (0 × 0, sin píxeles) los sprites que no están en usadas, sin cambiar los índices."""
+    usadas = set(usadas)
+    return [s if i in usadas else (0, 0, b"") for i, s in enumerate(sprites)]
+
+
 def leer_tsh(datos):
     """Lector de TSH1 (para las comprobaciones): lista de (ancho, alto, píxeles)."""
     if datos[:4] != MAGIA:

@@ -88,6 +88,15 @@ def arte_nuevo(d):
         sys.exit(f"ERROR en el arte nuevo: {ex}")
 
 
+# Hojas de las que el motor usa solo unas piezas: las demás se vacían (0 × 0)
+# sin mover los índices. MUTTON01 son las ventanas de 320 × 200 del juego de
+# PC (motor/ui/mutton01.h); la demo usa las de colocar, construir, amueblar y
+# contratar, las piezas 1-78 (docs/06_plan.md, pieza 4: «la hoja recortada
+# cabe en la RAM de la demo»). Entera son 270.840 B; recortada, 109.280. Si
+# otra ventana necesita más piezas, se amplía el rango aquí y en mutton01.h.
+PIEZAS_USADAS = {"MUTTON01": range(1, 79)}
+
+
 def paso_graficos(d, salida, vistas, resumen):
     # Paletas: TPL1 = 'TPL1', u16 número de paletas, u16 0, y 512 B por paleta.
     pals = paleta.variantes(d.leer("DATA", "MPALETTE.DAT"), d.leer("QDATA", "GHOST1.DAT"))
@@ -107,6 +116,8 @@ def paso_graficos(d, salida, vistas, resumen):
         sprites = hojas.leer(tab, dat, hojas.es_compleja(n))
         if n == "MBLK-0":  # más la sombra sobre una pared oeste de las vistas giradas
             sprites = hojas.con_sombra_oeste(sprites, 16)
+        if n in PIEZAS_USADAS:  # solo las piezas que usa el motor, con los mismos índices
+            sprites = hojas.recortar(sprites, PIEZAS_USADAS[n])
         if n == "MSPR-0":  # más los sprites del arte nuevo, si lo hay
             esc, nuevas = arte_nuevo(d)
             if nuevas:
