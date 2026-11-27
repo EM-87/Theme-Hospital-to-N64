@@ -509,7 +509,8 @@ static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_o
     // un th_rnode: va en hexadecimal, y así lo vuelve a leer th64sim_leer_orden.
     fprintf(f_rom, "TH64 orden\t%u\t%s\t%u\t%u\t%u\t%u\t%u\t%u\t%s\t%s\n", (unsigned)s->hours,
             th64sim_nombre_orden(o->kind), o->x, o->y, o->dir, o->qty, o->w, o->h,
-            o->kind == TH_ORD_CONTRATAR ? th64sim_resumen_de(o->def) : th64sim_id_de(s, o->def),
+            o->kind == TH_ORD_CONTRATAR || o->kind == TH_ORD_DEVOLVER ? th64sim_resumen_de(o->def)
+                                                                       : th64sim_id_de(s, o->def),
             ok ? "-" : th_build_reason_name(r->reason));
 }
 

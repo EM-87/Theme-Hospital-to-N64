@@ -589,6 +589,7 @@ static const char *const orden_nombres[] = {
     [TH_ORD_FIN_SALA] = "fin_sala",
     [TH_ORD_ATRAS] = "atras",
     [TH_ORD_CONTRATAR] = "contratar",
+    [TH_ORD_DEVOLVER] = "devolver",
 };
 
 const char *th64sim_nombre_orden(int kind)
@@ -741,6 +742,25 @@ int th64sim_leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char 
         }
         if (nc > 7)
             fprintf(stderr, "contratar con %d campos de más: no se miran\n", nc - 7);
+    } else if (!strcmp(nombre, "devolver") && nc >= 4) {
+        // UIPlaceStaff:close sin colocar tras hire (th/build.h): la clase, el
+        // candidato y, si se quiere, su resumen.
+        o->kind = TH_ORD_NONE;
+        for (int c = TH_HUM_DOCTOR; c <= TH_HUM_RECEPTIONIST; c++)
+            if (!strcmp(campos[2], clase_nombres[c])) {
+                o->kind = TH_ORD_DEVOLVER;
+                o->dir = (uint8_t)c;
+            }
+        const long q = strtol(campos[3], NULL, 10);
+        o->qty = (uint8_t)(q > 255 ? 255 : q < 0 ? 0 : q);
+        if (nc >= 5 && strcmp(campos[4], "-") != 0) {
+            char *fin_r;
+            const unsigned long r = strtoul(campos[4], &fin_r, 16);
+            if (fin_r == campos[4] || *fin_r || r > 0xffffffffUL)
+                fprintf(stderr, "resumen del perfil no válido «%s»: se toma del mercado\n", campos[4]);
+            else
+                o->def = (th_rnode)r;
+        }
     } else
         o->kind = TH_ORD_NONE;
     return 1;
@@ -748,7 +768,7 @@ int th64sim_leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char 
 
 void th64sim_completar_resumen(const th_sim *s, th_order *o)
 {
-    if (o->kind != TH_ORD_CONTRATAR || o->def)
+    if ((o->kind != TH_ORD_CONTRATAR && o->kind != TH_ORD_DEVOLVER) || o->def)
         return;
     const th_staff_profile *lista;
     if (o->qty < th_sim_candidates(s, o->dir, &lista))

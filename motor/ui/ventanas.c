@@ -186,10 +186,9 @@ static void escape(th_game_ui *g)
     case TH_GW_OBRA: gw_colocar_escape(g); break;
     case TH_GW_COLOCAR_PERSONAL:
         // UIPlaceStaff con esc_closes (place_staff.lua:35): close() sin colocar
-        // (place_staff.lua:58-83) devuelve el perfil al mercado y no vuelve a
-        // contratar. Aquí el perfil nunca salió del mercado (la orden es la
-        // que lo saca), así que basta cerrar.
-        gw_cerrar(g);
+        // (place_staff.lua:58-83) devuelve el perfil al final del mercado y no
+        // vuelve a contratar (gw_colocar_personal_cancelar: TH_ORD_DEVOLVER).
+        gw_colocar_personal_cancelar(g);
         break;
     case TH_GW_AMUEBLAR:
         if (g->tienda) { // la tienda de la obra vuelve a la obra
@@ -338,6 +337,8 @@ void th_game_ui_order_result(th_game_ui *g, const th_sim *s, const th_order *o, 
     (void)s;
     if (g->en_vuelo > 0)
         g->en_vuelo--;
+    if (o->kind == TH_ORD_DEVOLVER) // cancelar no avisa de nada
+        return;
     if (r->reason != TH_REASON_OK) {
         gw_aviso(g, aviso_de(o, r->reason));
         // El único rechazo del núcleo que suena en CorsixTH: el plano que deja

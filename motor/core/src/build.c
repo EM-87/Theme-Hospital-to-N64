@@ -1823,10 +1823,37 @@ int th_build_staff_placement(th_sim *s, int kind, int x, int y)
     return TH_REASON_NO_SE_PUEDE;
 }
 
+// UIBottomPanel:dialogHireStaff (bottom_panel.lua:784-787), antes de mirar el
+// candidato: setEditRoom(false) termina o abandona la obra (verifyOrAbortRoom)
+// y UI:addWindow(UIHireStaff), que es «main», cierra la ventana de colocar del
+// pasillo (ui.lua:1048-1054; UIPlaceObjects:close devuelve lo no colocado).
+static void hire_dialog_open(th_sim *s)
+{
+    if (s->obra.phase != TH_OBRA_NONE)
+        obra_verify_or_abort(s);
+    else if (s->place.open)
+        close_window(s, 0);
+}
+
+// UIPlaceStaff:close sin colocar (place_staff.lua:69-71): el candidato, que
+// hire sacó de la lista, vuelve al final de la de su clase.
+static void candidate_to_end(th_sim *s, int kind, int idx)
+{
+    const int k = kind - TH_HUM_DOCTOR;
+    const int cnt = s->n_available[k];
+    th_staff_profile *arr = s->available[k];
+    if (idx < 0 || idx >= cnt - 1)
+        return;
+    const th_staff_profile pf = arr[idx];
+    memmove(&arr[idx], &arr[idx + 1], (size_t)(cnt - 1 - idx) * sizeof arr[0]);
+    arr[cnt - 1] = pf;
+}
+
 // UIHireStaff:hire (hire_staff.lua:126-147) y UIPlaceStaff:onMouseUp con el
 // botón izquierdo (place_staff.lua:144-176), de una vez.
 static int order_contratar(th_sim *s, const th_order *o)
 {
+    hire_dialog_open(s);
     const th_staff_profile *list;
     const int n = th_sim_candidates(s, o->dir, &list);
     // def lleva el resumen del perfil (decisión 5 de docs/06_plan.md): si el
@@ -1838,8 +1865,12 @@ static int order_contratar(th_sim *s, const th_order *o)
     if (s->hosp.balance < pf.wage) // hire: «if self.ui.hospital.balance < profile.wage»
         return TH_REASON_SIN_DINERO;
     const int reason = th_build_staff_placement(s, pf.kind, o->x, o->y);
-    if (reason != TH_REASON_OK)
+    if (reason != TH_REASON_OK) {
+        // El clic que no vale no coloca y la ventana sigue; cancelar
+        // (UIPlaceStaff:close) devuelve el candidato al final de su lista.
+        candidate_to_end(s, o->dir, o->qty);
         return reason;
+    }
     // El tope del motor (CorsixTH no lo tiene): un hueco en hum.
     int free_slot = 0;
     for (int i = 0; i < TH_SIM_HUMANOIDS && !free_slot; i++)
@@ -1854,6 +1885,22 @@ static int order_contratar(th_sim *s, const th_order *o)
     th_staff_profile *arr = s->available[o->dir - TH_HUM_DOCTOR];
     memmove(&arr[o->qty], &arr[o->qty + 1], (size_t)(*cnt - 1 - o->qty) * sizeof arr[0]);
     (*cnt)--;
+    return TH_REASON_OK;
+}
+
+// TH_ORD_DEVOLVER: dialogHireStaff, hire (sin candidato o sin saldo no abre
+// UIPlaceStaff y no mueve nada) y UIPlaceStaff:close sin colocar, con el
+// derecho o Escape (place_staff.lua:35, 55-83, 144-148).
+static int order_devolver(th_sim *s, const th_order *o)
+{
+    hire_dialog_open(s);
+    const th_staff_profile *list;
+    const int n = th_sim_candidates(s, o->dir, &list);
+    if (o->qty >= n || o->def != th_staff_profile_digest(&list[o->qty]))
+        return TH_REASON_SIN_CANDIDATO;
+    if (s->hosp.balance < list[o->qty].wage)
+        return TH_REASON_SIN_DINERO;
+    candidate_to_end(s, o->dir, o->qty);
     return TH_REASON_OK;
 }
 
@@ -1913,6 +1960,7 @@ int th_build_apply(th_sim *s, const th_order *o, th_order_result *r)
     case TH_ORD_COMPRAR_SALA: reason = order_comprar_sala(s, o); break;
     case TH_ORD_FIN_SALA: reason = order_fin_sala(s); break;
     case TH_ORD_CONTRATAR: reason = order_contratar(s, o); break;
+    case TH_ORD_DEVOLVER: reason = order_devolver(s, o); break;
     case TH_ORD_ATRAS:
         if (!obra) {
             reason = TH_REASON_SIN_VENTANA;

@@ -2098,20 +2098,26 @@ static void test_contratar(void)
     sim.hosp.balance = d0.wage - 1;
     TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_SIN_DINERO);
     TH_CHECK_EQ(sim.hosp.balance, d0.wage - 1);
-    sim.hosp.balance = d0.wage;
-    // Fuera del hospital o del mapa, y en una casilla no transitable.
+    // Fuera del hospital o del mapa, y en una casilla no transitable. Cada
+    // no_se_puede manda al candidato 0 al final de su lista (hire más
+    // cancelar); con tres médicos, tres seguidos dejan la lista como estaba.
+    sim.hosp.balance = 100000;
     TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 2, 2), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][0]), th_staff_profile_digest(&d1));
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][2]), th_staff_profile_digest(&d0));
     TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 200, 20), TH_REASON_NO_SE_PUEDE);
     th_map_tile(&mapa, 21, 20)->flags &= ~(uint32_t)TH_TILE_PASSABLE;
     TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 21, 20), TH_REASON_NO_SE_PUEDE);
     th_map_tile(&mapa, 21, 20)->flags |= TH_TILE_PASSABLE;
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][0]), th_staff_profile_digest(&d0));
+    sim.hosp.balance = d0.wage;
     // Sin hueco en hum: el tope del motor.
     for (int i = 0; i < TH_SIM_HUMANOIDS; i++)
         sim.hum[i].alive = 1;
     TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_LLENO);
     for (int i = 0; i < TH_SIM_HUMANOIDS; i++)
         sim.hum[i].alive = 0;
-    // Nada de lo rechazado tocó el mercado ni el dinero.
+    // Nada de lo rechazado tocó el dinero ni sacó a nadie del mercado.
     TH_CHECK_EQ(sim.n_available[0], 3);
     TH_CHECK_EQ(sim.n_order, 0);
     TH_CHECK_EQ(sim.hosp.money_out, 0);
@@ -2207,6 +2213,94 @@ static void test_contratar_resumen(void)
 // La recepcionista: soltada en el pasillo va al mostrador libre más cercano
 // (Receptionist:onPlaceInCorridor) y lo reserva; sobre un mostrador sin
 // recepcionista también vale, sobre uno atendido no, y en una sala tampoco.
+// dialogHireStaff (bottom_panel.lua:784-787): el botón de contratar cierra la
+// ventana de colocar del pasillo, devolviendo lo no colocado, o termina o
+// abandona la obra, antes de mirar el candidato; un clic que no vale (más
+// cancelar) devuelve el candidato al final de su lista; y TH_ORD_DEVOLVER es
+// cancelar sin colocar.
+static void test_contratar_cierra(void)
+{
+    preparar_personal();
+    sim.hosp.balance = 10000;
+    const int32_t saldo0 = sim.hosp.balance;
+    // Un banco comprado sin colocar y un candidato que no existe: la ventana
+    // se cierra y el banco se devuelve, aunque la orden se rechace.
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.place.open, 1);
+    TH_CHECK(sim.hosp.balance < saldo0);
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 9, 20, 20), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(sim.place.open, 0);
+    TH_CHECK_EQ(sim.hosp.balance, saldo0);
+    // Lo mismo con una contratación aceptada.
+    const th_staff_profile d0 = sim.available[0][0];
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_OK);
+    TH_CHECK_EQ(sim.place.open, 0);
+    TH_CHECK_EQ(sim.hosp.balance, saldo0 - d0.wage);
+    // Con una obra abierta (el plano aceptado, en la fase de la puerta), la
+    // abandona: setEditRoom(false) → verifyOrAbortRoom → abortRoom.
+    const int salas0 = sim.n_rooms;
+    gp_hasta(TH_OBRA_DOOR);
+    TH_CHECK_EQ(sim.obra.phase, TH_OBRA_DOOR);
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 9, 20, 20), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(sim.obra.phase, TH_OBRA_NONE);
+    TH_CHECK_EQ(sim.n_rooms, salas0);
+    TH_CHECK_EQ(th_map_tile(&mapa, 11, 11)->room, 0);
+    // Un clic que no vale (en la calle) manda al candidato 0 al final.
+    const int n = sim.n_available[0];
+    const th_staff_profile c0 = sim.available[0][0], c1 = sim.available[0][1];
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 2, 2), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(sim.n_available[0], n);
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][0]), th_staff_profile_digest(&c1));
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][n - 1]), th_staff_profile_digest(&c0));
+    // Los demás rechazos no lo mueven: el saldo.
+    sim.hosp.balance = 0;
+    TH_CHECK_EQ(contratar(TH_HUM_DOCTOR, 0, 20, 20), TH_REASON_SIN_DINERO);
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][0]), th_staff_profile_digest(&c1));
+    sim.hosp.balance = 10000;
+}
+
+static int devolver(int kind, int idx, uint32_t resumen)
+{
+    th_order o = {0, TH_ORD_DEVOLVER, 0, 0, (uint8_t)kind, (uint8_t)idx, 0, 0, resumen};
+    th_order_result r;
+    return th_build_apply(&sim, &o, &r);
+}
+
+static void test_devolver(void)
+{
+    preparar_personal();
+    sim.hosp.balance = 10000;
+    const int n = sim.n_available[0];
+    const th_staff_profile c0 = sim.available[0][0], c1 = sim.available[0][1];
+    // Sin candidato, con otro resumen, con otra clase o sin saldo: nada cambia.
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, n, resumen_de(TH_HUM_DOCTOR, 0)), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, resumen_de(TH_HUM_DOCTOR, 1)), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(devolver(TH_HUM_PATIENT, 0, resumen_de(TH_HUM_DOCTOR, 0)), TH_REASON_SIN_CANDIDATO);
+    sim.hosp.balance = c0.wage - 1;
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, resumen_de(TH_HUM_DOCTOR, 0)), TH_REASON_SIN_DINERO);
+    sim.hosp.balance = 10000;
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][0]), th_staff_profile_digest(&c0));
+    // Devuelto: el 0 pasa al final y el 1 es ahora el 0; la plantilla y el
+    // dinero no cambian.
+    const int32_t saldo = sim.hosp.balance;
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, resumen_de(TH_HUM_DOCTOR, 0)), TH_REASON_OK);
+    TH_CHECK_EQ(sim.n_available[0], n);
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][0]), th_staff_profile_digest(&c1));
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][n - 1]), th_staff_profile_digest(&c0));
+    TH_CHECK_EQ(sim.n_order, 0);
+    TH_CHECK_EQ(sim.hosp.balance, saldo);
+    // El último, devuelto, se queda donde está.
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, n - 1, resumen_de(TH_HUM_DOCTOR, n - 1)), TH_REASON_OK);
+    TH_CHECK_EQ(th_staff_profile_digest(&sim.available[0][n - 1]), th_staff_profile_digest(&c0));
+    // Y pasa antes por dialogHireStaff: cierra la ventana de colocar.
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.place.open, 1);
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, resumen_de(TH_HUM_DOCTOR, 0)), TH_REASON_OK);
+    TH_CHECK_EQ(sim.place.open, 0);
+    TH_CHECK_EQ(sim.hosp.balance, saldo);
+}
+
 static void test_contratar_recepcionista(void)
 {
     preparar_personal();
@@ -2640,6 +2734,8 @@ void th_test_build(void)
     test_mercado();
     test_contratar();
     test_contratar_resumen();
+    test_contratar_cierra();
+    test_devolver();
     test_contratar_recepcionista();
     test_contratar_en_sala();
     test_falta_personal_llamada();

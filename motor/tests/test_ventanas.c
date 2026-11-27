@@ -315,21 +315,45 @@ static void test_contratar(void)
     const uint32_t resumen = th_staff_profile_digest(&lista[0]);
     TH_CHECK_EQ(boton(TH_GWB_CONTRATAR, TH_UI_LEFT, 1), 0);
     TH_CHECK_EQ(th_game_ui_active(g), TH_GW_COLOCAR_PERSONAL);
-    // El derecho cancela y cierra (UIPlaceStaff:close), sin tocar el mercado.
+    // El derecho cancela y cierra (UIPlaceStaff:close): TH_ORD_DEVOLVER manda
+    // el candidato al final de su lista (place_staff.lua:69-71).
     casilla(59, 56, TH_UI_RIGHT, 1);
     TH_CHECK_EQ(th_game_ui_active(g), TH_GW_NONE);
-    TH_CHECK_EQ(n_ordenes, 0);
-    // Escape, igual (esc_closes).
+    TH_CHECK_EQ(n_ordenes, 1);
+    TH_CHECK_EQ(ordenes[0].kind, TH_ORD_DEVOLVER);
+    TH_CHECK_EQ(ordenes[0].dir, TH_HUM_DOCTOR);
+    TH_CHECK_EQ(ordenes[0].qty, 0);
+    TH_CHECK_EQ(ordenes[0].def, resumen);
+    int n = th_sim_candidates(&sim, TH_HUM_DOCTOR, &lista);
+    TH_CHECK(n > 1);
+    TH_CHECK(th_staff_profile_digest(&lista[0]) != resumen);
+    TH_CHECK_EQ(th_staff_profile_digest(&lista[n - 1]), resumen);
+    // Escape, igual (esc_closes), con el candidato 0 de ahora. En pausa no
+    // manda la orden (decisión 4): solo cierra.
+    const uint32_t resumen2 = th_staff_profile_digest(&lista[0]);
+    fotograma(W / 2, H / 2, -1, TH_PI_CONTRATAR, 0, 1);
+    boton(TH_GWB_PESTANA + 0, TH_UI_LEFT, 1);
+    TH_CHECK_EQ(boton(TH_GWB_CONTRATAR, TH_UI_LEFT, 1), 0);
+    TH_CHECK_EQ(th_game_ui_active(g), TH_GW_COLOCAR_PERSONAL);
+    pausa = 1;
+    fotograma(W / 2, H / 2, -1, 0, 1, 1);
+    pausa = 0;
+    TH_CHECK_EQ(th_game_ui_active(g), TH_GW_NONE);
+    TH_CHECK_EQ(n_ordenes, 1);
     fotograma(W / 2, H / 2, -1, TH_PI_CONTRATAR, 0, 1);
     boton(TH_GWB_PESTANA + 0, TH_UI_LEFT, 1);
     TH_CHECK_EQ(boton(TH_GWB_CONTRATAR, TH_UI_LEFT, 1), 0);
     TH_CHECK_EQ(th_game_ui_active(g), TH_GW_COLOCAR_PERSONAL);
     fotograma(W / 2, H / 2, -1, 0, 1, 1);
     TH_CHECK_EQ(th_game_ui_active(g), TH_GW_NONE);
-    TH_CHECK_EQ(n_ordenes, 0);
-    TH_CHECK_EQ(th_sim_candidates(&sim, TH_HUM_DOCTOR, &lista) > 0, 1);
-    TH_CHECK_EQ(th_staff_profile_digest(&lista[0]), resumen);
+    TH_CHECK_EQ(n_ordenes, 2);
+    TH_CHECK_EQ(ordenes[1].kind, TH_ORD_DEVOLVER);
+    TH_CHECK_EQ(ordenes[1].def, resumen2);
+    n = th_sim_candidates(&sim, TH_HUM_DOCTOR, &lista);
+    TH_CHECK_EQ(th_staff_profile_digest(&lista[n - 1]), resumen2);
     // Al abrirla otra vez, sin la categoría de antes.
+    n_ordenes = 0;
+    const uint32_t resumen3 = th_staff_profile_digest(&lista[0]);
     fotograma(W / 2, H / 2, -1, TH_PI_CONTRATAR, 0, 1);
     TH_CHECK_EQ(boton(TH_GWB_CONTRATAR, TH_UI_LEFT, 1), 0);
     TH_CHECK_EQ(th_game_ui_active(g), TH_GW_CONTRATAR);
@@ -352,7 +376,7 @@ static void test_contratar(void)
     TH_CHECK_EQ(ordenes[0].kind, TH_ORD_CONTRATAR);
     TH_CHECK_EQ(ordenes[0].dir, TH_HUM_DOCTOR);
     TH_CHECK_EQ(ordenes[0].qty, 0);
-    TH_CHECK_EQ(ordenes[0].def, resumen);
+    TH_CHECK_EQ(ordenes[0].def, resumen3);
     TH_CHECK_EQ(ordenes[0].x, 59);
     TH_CHECK_EQ(ordenes[0].y, 56);
     // Aceptada: la de colocar personal se cierra.

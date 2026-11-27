@@ -22,7 +22,7 @@ import sys
 # TH_ORD_*, en el orden de motor/core/include/th/build.h; los nombres, los de
 # bench/lib/ordenes.lua (construir.c, th64sim_nombre_orden).
 ORDENES = ["?", "comprar", "colocar", "cerrar", "recoger", "vender", "deshacer", "sala", "puerta", "ventana",
-           "quitar_ventana", "fin_ventanas", "comprar_sala", "fin_sala", "atras", "contratar"]
+           "quitar_ventana", "fin_ventanas", "comprar_sala", "fin_sala", "atras", "contratar", "devolver"]
 DIRS = ["north", "east", "south", "west"]
 # TH_HUM_* (motor/core/include/th/sim.h): la clase de «contratar» va en dir.
 CLASES = {1: "doctor", 2: "nurse", 3: "handyman", 4: "receptionist"}
@@ -49,6 +49,9 @@ def argumentos(orden, x, y, d, qty, w, h, def_id):
         # como la ROM (sin_candidato) si el mercado era otro.
         resumen = f"{int(def_id, 16):08x}" if re.fullmatch(r"[0-9a-fA-F]{1,8}", def_id) else "-"
         return [CLASES.get(int(d), str(d)), qty, x, y, resumen]
+    if orden == "devolver":
+        resumen = f"{int(def_id, 16):08x}" if re.fullmatch(r"[0-9a-fA-F]{1,8}", def_id) else "-"
+        return [CLASES.get(int(d), str(d)), qty, resumen]
     return []
 
 
@@ -78,6 +81,11 @@ def canonica(orden, x, y, d, qty, w, h, def_id):
         # Una clase que th64sim_leer_orden no conoce: la orden queda en
         # TH_ORD_NONE («?»), con qty, x e y leídos.
         orden, c = "?", (x, y, 0, qty, 0, 0, "-")
+    elif orden == "devolver" and d in CLASES:
+        resumen = def_id.lower() if re.fullmatch(r"[0-9a-fA-F]{1,8}", def_id) else "-"
+        c = (0, 0, d, qty, 0, 0, resumen if resumen == "-" else f"{int(resumen, 16):08x}")
+    elif orden == "devolver":
+        orden, c = "?", (0, 0, 0, qty, 0, 0, "-")
     elif orden in ("cerrar", "vender", "deshacer", "fin_ventanas", "fin_sala", "atras"):
         c = (0, 0, 0, 0, 0, 0, "-")
     else:

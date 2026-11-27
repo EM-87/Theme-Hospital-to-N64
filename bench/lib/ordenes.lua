@@ -157,9 +157,10 @@ O.vocabulario = {
   fin_sala = {},
   atras = {},
   contratar = {"clase", "n", "x", "y", "hex"},
+  devolver = {"clase", "n", "hex"},
 }
 -- Los últimos argumentos que se pueden omitir, por orden.
-O.opcionales = {contratar = 1}
+O.opcionales = {contratar = 1, devolver = 1}
 O.clases = {doctor = "Doctor", nurse = "Nurse", handyman = "Handyman", receptionist = "Receptionist"}
 
 local function entero(s)
@@ -699,7 +700,7 @@ function O.nuevo(app)
   -- Los botones de una ventana (window.lua:1724-1736) y las teclas
   -- (UI:onKeyDown, ui.lua:768-779) no lo miran.
   local CON_PAUSA = {comprar = true, colocar = true, recoger = true, sala = true, puerta = true, ventana = true,
-    quitar_ventana = true, contratar = true}
+    quitar_ventana = true, contratar = true, devolver = true}
 
   -- El botón de contratar del panel (UIBottomPanel:dialogHireStaff,
   -- bottom_panel.lua:769-792: exige world.user_actions_allowed, pausa) abre
@@ -779,6 +780,44 @@ function O.nuevo(app)
     local plantilla = hosp.staff
     local nueva = plantilla[#plantilla]
     assert(nueva and nueva.profile == perfil and nueva.th64_alta_x, "la contratada no es la última de hospital.staff")
+    return true
+  end
+
+  -- «devolver <clase> <índice> [<resumen>]»: el botón de contratar del panel
+  -- (dialogHireStaff, que cierra la ventana de colocar o la obra), la pestaña
+  -- y el candidato, hire (sin candidato o sin saldo, como contratar) y el
+  -- botón derecho sobre el mapa sin colocar: UIPlaceStaff:onMouseUp con el
+  -- derecho solo llama a close (place_staff.lua:144-148, 55-83), que devuelve
+  -- el perfil AL FINAL de available_staff de su clase (69-71). Es lo que el
+  -- núcleo hace con TH_ORD_DEVOLVER (th/build.h).
+  function A.devolver(clase, indice, resumen)
+    local categoria = O.clases[clase]
+    assert(not ui:getWindow(UIHireStaff), "la ventana de contratar ya estaba abierta")
+    ui.bottom_panel:dialogHireStaff()
+    local dlg = assert(ui:getWindow(UIHireStaff), "no se abrió la ventana de contratar")
+    assert(not obra(), "el botón de contratar no cerró la obra")
+    local lista = world.available_staff[categoria]
+    local perfil = lista and lista[indice + 1]
+    if perfil and resumen then
+      assert(perfil.th64_resumen, "devolver con resumen sin el mercado del núcleo (--th64-mercado)")
+    end
+    if not perfil or (resumen and perfil.th64_resumen ~= resumen) then
+      dlg:close()
+      return false, "sin_candidato"
+    end
+    dlg.category = categoria
+    dlg.current_index = indice + 1
+    dlg.mouse_up_x, dlg.mouse_up_y = 0, 0
+    dlg:hire()
+    local colocar = ui:getWindow(UIPlaceStaff)
+    if not colocar then
+      assert(ui:getWindow(UIHireStaff) == dlg and lista[indice + 1] == perfil, "hire sin colocar ni quedarse")
+      dlg:close()
+      return false, "sin_dinero"
+    end
+    assert(dlg.closed and colocar.profile == perfil, "UIPlaceStaff no es la del candidato")
+    colocar:onMouseUp("right", 0, 0)
+    assert(colocar.closed and lista[#lista] == perfil, "cancelar no devolvió el perfil al final")
     return true
   end
 

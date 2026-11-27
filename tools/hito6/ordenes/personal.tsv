@@ -189,41 +189,48 @@ vender
 # allow_user_actions_while_paused, como pasillo.tsv) y «lleno» es solo del
 # núcleo (el tope de TH_SIM_HUMANOIDS; CorsixTH no lo tiene: test_build.c).
 #
-# --- Hallazgos: diferencias del núcleo con CorsixTH ------------------------------
-# La batería se para en la primera (con SEGUIR=1 sigue); cada caso deja los
-# dos lados otra vez iguales antes del siguiente.
+# --- Lo que el botón de contratar cierra, y el candidato que vuelve al final ---
+# Tres diferencias que la batería delató (2026-11-27) y que el núcleo ya copia
+# de CorsixTH (order_contratar, build.c: hire_dialog_open y candidate_to_end).
 #
 # 1. Contratar con otra ventana abierta. El botón de contratar pasa por
 # setEditRoom(false) y UI:addWindow (bottom_panel.lua:784-787) ANTES de mirar
 # el candidato, y UIHireStaff y UIPlaceStaff son ventanas «main»
 # (hire_staff.lua:28, place_staff.lua:33; ui.lua:1048-1054). Con la ventana
-# de colocar del pasillo abierta (un banco comprado sin colocar), CorsixTH la
-# cierra y devuelve el banco (+40, sell_object:bench, como comprar con la
-# ventana abierta) y después cerrar ya no tiene ventana (sin_ventana).
-# order_contratar (motor/core/src/build.c) no cierra nada: el banco se queda
-# en la lista y cerrar es aceptada. Contratando (aceptada) y sin contratar
-# (sin_candidato: el índice 9 no existe): lo mismo.
+# de colocar del pasillo abierta (un banco comprado sin colocar), se cierra y
+# devuelve el banco (+40, sell_object:bench, como comprar con la ventana
+# abierta) y después cerrar ya no tiene ventana (sin_ventana). Contratando
+# (aceptada) y sin contratar (sin_candidato: el índice 9 no existe): lo mismo.
 comprar	bench	1
 contratar	doctor	0	59	58
 cerrar
 comprar	bench	1
 contratar	doctor	9	59	58
 cerrar
-# 2. Con una obra abierta (el plano aceptado, en la fase de la puerta),
-# CorsixTH la abandona (setEditRoom(false) → verifyOrAbortRoom → abortRoom):
-# la sala sale de world.rooms y el plano del mapa; después, atras no tiene
-# obra (sin_ventana). El núcleo deja la obra abierta: el primer atras la
-# vuelve a la fase de las paredes y el segundo la abandona (en CorsixTH, los
-# dos sin_ventana).
+# 2. Con una obra abierta (el plano aceptado, en la fase de la puerta), la
+# abandona (setEditRoom(false) → verifyOrAbortRoom → abortRoom): la sala sale
+# de world.rooms y el plano del mapa; después, atras no tiene obra
+# (sin_ventana, dos veces).
 sala	gp	66	50	4	4
 contratar	doctor	0	59	59
 atras
 atras
-# 3. Cancelar una colocación que no vale. CorsixTH devuelve el perfil AL
-# FINAL de available_staff (UIPlaceStaff:close, place_staff.lua:69-71); el
-# núcleo rechaza sin tocar el mercado (no_se_puede atómico). Quedan 3
-# médicos (3a4273a8, e2899f56 y 7b76e3fa): el 0 en la calle (no_se_puede en
-# los dos) y el 0 otra vez con su resumen: en CorsixTH el 0 ya es e2899f56
-# (sin_candidato); en el núcleo sigue siendo 3a4273a8 (aceptada).
+# 3. Cancelar una colocación que no vale devuelve el perfil AL FINAL de
+# available_staff (UIPlaceStaff:close, place_staff.lua:69-71). Quedan 3
+# médicos (3a4273a8, e2899f56 y 7b76e3fa): el 0 en la calle (no_se_puede,
+# y pasa al final) y el 0 otra vez con su resumen: el 0 ya es e2899f56
+# (sin_candidato).
 contratar	doctor	0	40	60	3a4273a8
 contratar	doctor	0	59	60	3a4273a8
+#
+# --- Devolver -----------------------------------------------------------------------
+# «devolver <clase> <índice> [<resumen>]»: contratar y cancelar sin colocar
+# (hire y UIPlaceStaff:close con el derecho): el candidato va al final de su
+# lista. e2899f56 (el 0) pasa al final: quedan 7b76e3fa, 3a4273a8, e2899f56.
+devolver	doctor	0	e2899f56
+# Con un resumen que ya no es el del índice 0: sin_candidato, nada se mueve.
+devolver	doctor	0	e2899f56
+# Un índice que no existe: sin_candidato.
+devolver	doctor	9
+# El 0 es ahora 7b76e3fa: contratado en el pasillo.
+contratar	doctor	0	59	60	7b76e3fa

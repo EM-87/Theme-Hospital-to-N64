@@ -27,6 +27,7 @@ static const char *const orden_nombres[] = {
     [TH_ORD_FIN_SALA] = "fin_sala",
     [TH_ORD_ATRAS] = "atras",
     [TH_ORD_CONTRATAR] = "contratar",
+    [TH_ORD_DEVOLVER] = "devolver",
 };
 
 const char *partida_nombre_orden(int kind)
@@ -67,7 +68,7 @@ static char nombres_ultimo[64];
 // th_sim_apply_orders, al empezar el tick. La línea es la que escribe th64sim
 // partida en ordenes_rom.log (al_aplicar, platform/pc/hito4.c): el tick en
 // que se aplica, los campos de th_order en decimal, el id de la definición
-// o, en contratar, el resumen del perfil (th_order.def,
+// o, en contratar y devolver, el resumen del perfil (th_order.def,
 // th_staff_profile_digest) en 8 cifras hexadecimales, y el motivo.
 static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_order_result *r)
 {
@@ -75,7 +76,7 @@ static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_o
     const int ok = r->reason == TH_REASON_OK;
     char id[12];
     const char *def_id = id;
-    if (o->kind == TH_ORD_CONTRATAR)
+    if (o->kind == TH_ORD_CONTRATAR || o->kind == TH_ORD_DEVOLVER)
         snprintf(id, sizeof id, "%08lx", (unsigned long)o->def);
     else
         def_id = partida_id_de(s, o->def);

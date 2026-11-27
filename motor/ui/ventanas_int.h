@@ -197,5 +197,7 @@ void gw_contratar_abrir(th_game_ui *g);
 void gw_contratar_boton(th_game_ui *g, int id, int mouse);
 void gw_contratar_frame(th_game_ui *g);
 void gw_colocar_personal_frame(th_game_ui *g);
+// Cancelar la colocación (el derecho o Escape): TH_ORD_DEVOLVER y cerrar.
+void gw_colocar_personal_cancelar(th_game_ui *g);
 
 #endif

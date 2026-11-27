@@ -40,10 +40,22 @@ enum {
     // la partida no es la misma), TH_REASON_SIN_DINERO (balance < sueldo,
     // la comparación estricta de hire: con el saldo justo se contrata),
     // TH_REASON_NO_SE_PUEDE (la casilla no vale: th_build_staff_placement) y
-    // TH_REASON_LLENO (no queda hueco en hum: el tope del motor). Rechazada, el
-    // mercado no cambia (en CorsixTH hire saca el perfil al abrir UIPlaceStaff y
-    // cancelar lo devuelve al final de la lista: la batería lo repone en su sitio).
+    // TH_REASON_LLENO (no queda hueco en hum: el tope del motor). Antes de mirar
+    // nada hace lo que el botón de contratar del panel (dialogHireStaff,
+    // bottom_panel.lua:784-787): termina o abandona la obra abierta
+    // (setEditRoom(false), verifyOrAbortRoom) y cierra la ventana de colocar del
+    // pasillo (UI:addWindow con una «main», ui.lua:1048-1054), devolviendo lo no
+    // colocado; también con un rechazo. Con NO_SE_PUEDE el candidato pasa AL
+    // FINAL de su lista: hire lo sacó al abrir UIPlaceStaff y cancelar lo
+    // devuelve al final (UIPlaceStaff:close, place_staff.lua:69-71); los demás
+    // rechazos no tocan el mercado.
     TH_ORD_CONTRATAR,
+    // UIPlaceStaff:close sin colocar (place_staff.lua:55-83), con el botón
+    // derecho o Escape después de hire: el candidato vuelve AL FINAL de la lista
+    // de su clase. dir: clase, qty: índice, def: resumen. Pasa antes por lo
+    // mismo que contratar (dialogHireStaff). Motivos: SIN_CANDIDATO y SIN_DINERO
+    // (sin saldo, hire no abre UIPlaceStaff y el candidato no se mueve).
+    TH_ORD_DEVOLVER,
 };
 
 // Motivos de rechazo, con los nombres de la batería (th_build_reason_name).

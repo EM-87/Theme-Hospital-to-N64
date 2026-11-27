@@ -289,11 +289,27 @@ void gw_contratar_frame(th_game_ui *g)
 // resumen del perfil) y el derecho la cancela: UIPlaceStaff:onMouseUp con el
 // derecho solo llama a close() (place_staff.lua:144-148), que devuelve el
 // perfil al mercado (place_staff.lua:73-79) sin volver a abrir contratar.
+// UIPlaceStaff:onMouseUp con el derecho y Escape (place_staff.lua:35,
+// 144-148): close() sin colocar devuelve el perfil al final de su lista
+// (place_staff.lua:69-71). Aquí el perfil sigue en el mercado (lo saca la
+// orden de contratar), así que se manda TH_ORD_DEVOLVER, que lo mueve al
+// final, y se cierra la ventana; con una contratación en vuelo, o en pausa
+// (decisión 4: ninguna orden), solo se cierra.
+void gw_colocar_personal_cancelar(th_game_ui *g)
+{
+    if (g->clase >= 0 && !g->esperando_contrato && !g->in->paused) {
+        const th_order o = {.kind = TH_ORD_DEVOLVER, .dir = (uint8_t)(TH_HUM_DOCTOR + g->clase),
+                            .qty = (uint8_t)g->idx, .def = g->resumen};
+        gw_mandar(g, &o);
+    }
+    gw_cerrar(g);
+}
+
 void gw_colocar_personal_frame(th_game_ui *g)
 {
     const th_game_ui_input *in = g->in;
     if (in->world_up & (1 << TH_UI_RIGHT)) {
-        gw_cerrar(g);
+        gw_colocar_personal_cancelar(g);
         return;
     }
     if (g->clase < 0)
