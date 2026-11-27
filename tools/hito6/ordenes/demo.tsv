@@ -1,0 +1,33 @@
+# La demo jugable: una partida de prueba sobre motor/assets/escenarios/demo.trg
+# (tools/hito6/demo.sh: el nivel 1 recién cargado, 40.000 $, abierto, sin
+# personal), para th64sim partida y la comparación con la ROM
+# (tools/hito6/repetir.sh). Una orden por línea, con tabuladores: el tick
+# (th_sim.hours en el que se aplica, desde 0; 50 por día) y la orden con el
+# vocabulario de bench/lib/ordenes.lua, más «contratar <clase> <índice> <x> <y>»
+# (clase doctor, nurse, handyman o receptionist; el índice del candidato en la
+# lista de esa clase del núcleo; la casilla donde se suelta). Coordenadas
+# desde 0. Las posiciones son las de las baterías de construir del nivel 1
+# (ordenes/pasillo.tsv y ordenes/salas.tsv), aceptadas allí en CorsixTH.
+# Después de la última orden, la partida corre hasta las horas que se pidan
+# (6 meses: 181 días, 9.050 horas).
+tick	orden	argumentos
+# El mostrador, delante de la entrada (las puertas en (63,79) y (64,79)), como
+# en pasillo.tsv: 150 $. La recepcionista se pone detrás (use_position de un
+# mostrador al norte: (0,−1)).
+0	comprar	reception_desk	1
+0	colocar	reception_desk	62	74	north
+1	contratar	receptionist	0	62	73
+# La consulta de salas.tsv (n 73-110): 4 × 4 en (57,50), la puerta al sur, las
+# ventanas al este, y el escritorio, el archivador y la silla (220 $ al entrar
+# en los objetos y 2.280 al confirmar).
+50	sala	gp	57	50	4	4
+50	puerta	58	53	south
+50	ventana	60	51	east
+50	ventana	60	52	east
+50	fin_ventanas
+51	colocar	chair	58	52	south
+51	colocar	desk	58	51	north
+51	colocar	cabinet	60	50	north
+51	fin_sala
+# El médico, en el pasillo delante de la consulta.
+100	contratar	doctor	0	59	56

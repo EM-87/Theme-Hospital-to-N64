@@ -21,7 +21,11 @@
 //   UIEditRoom:finishRoom (th/build.h), capas incluidas: el oráculo de las
 //   paredes del hito 6.3;
 // - hito4: corre ese escenario con la simulación y escribe la traza de
-//   bench/scenarios/traza_hito4.lua (hito4.c).
+//   bench/scenarios/traza_hito4.lua (hito4.c);
+// - partida: lo mismo, con una lista de órdenes con tick, como las graba la
+//   ROM (hito4.c; tools/hito6/repetir.sh);
+// - aparicion: los puntos de aparición de un nivel recién cargado, como
+//   World:calculateSpawnTiles (tools/hito6/demo.sh).
 // Más adelante cargará un escenario y escribirá el mismo volcado que el
 // oráculo de la simulación (docs/04_construccion.md).
 #include <stdio.h>
@@ -41,6 +45,7 @@
 #include "th/sim.h"
 #include "th/version.h"
 #include "th_test.h"
+#include "th64sim.h"
 #include "objetos.h"
 #include "panel_inferior.h"
 #include "raster.h"
@@ -63,6 +68,8 @@ static int uso(void)
             "     th64sim salas <assets> <vacio.trg> <escenario.trg> <celdas.tsv> [--volcar celdas.tsv]\n"
             "     th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>\n"
             "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
+            "     th64sim partida <assets> <escenario.trg> <ordenes.tsv> <semilla> <horas> <dir_salida>\n"
+            "     th64sim aparicion <nivel.tmp> <número de nivel>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
             "<unidad> <x> <y> <ancho> <alto> <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
             "     th64sim lista <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <unidad> <x> <y> "
@@ -778,6 +785,48 @@ static int orden_mapa(int argc, char **argv)
     return argc > 4 ? comparar(argv[4]) : 0;
 }
 
+// th64sim aparicion <nivel.tmp> <n>: World:calculateSpawnTiles (world.lua:326-357)
+// sobre el nivel recién cargado, con el buscador del núcleo: por cada borde
+// (norte, este, sur y oeste, recorridos desde la esquina de World), las
+// casillas desde las que se llega al hospital (isReachableFromHospital,
+// th_path_reachable_from_hospital) y, de ellas, como mucho 8 repartidas:
+// la de índice floor((i − 0,5) / num × #xs + 1), en enteros. Escribe la
+// lista «puntos_aparicion» del escenario (JSON, casillas desde 0).
+static int orden_aparicion(char **argv)
+{
+    if (cargar_mapa(argv[2], atoi(argv[3])))
+        return 1;
+    const int w = TH_MAP_WIDTH, h = TH_MAP_HEIGHT;
+    static const struct {
+        const char *dir;
+        int ox, oy, dx, dy;
+    } bordes[4] = {{"north", 0, 0, 1, 0},
+                   {"east", w - 1, 0, 0, 1},
+                   {"south", w - 1, h - 1, -1, 0},
+                   {"west", 0, h - 1, 0, -1}};
+    int primero = 1;
+    putchar('[');
+    for (int b = 0; b < 4; b++) {
+        int xs[TH_MAP_WIDTH + TH_MAP_HEIGHT], ys[TH_MAP_WIDTH + TH_MAP_HEIGHT], n = 0;
+        for (int x = bordes[b].ox, y = bordes[b].oy; x >= 0 && x < w && y >= 0 && y < h;
+             x += bordes[b].dx, y += bordes[b].dy)
+            if (th_path_reachable_from_hospital(&buscador, &mapa, x, y)) {
+                xs[n] = x;
+                ys[n] = y;
+                n++;
+            }
+        const int num = n < 8 ? n : 8;
+        for (int i = 1; i <= num; i++) {
+            // floor((i − 0,5) / num × n + 1) − 1 (desde 0) = floor((2i − 1) n / 2num)
+            const int k = (2 * i - 1) * n / (2 * num);
+            printf("%s{\"direccion\":\"%s\",\"x\":%d,\"y\":%d}", primero ? "" : ",", bordes[b].dir, xs[k], ys[k]);
+            primero = 0;
+        }
+    }
+    puts("]");
+    return 0;
+}
+
 // JSON canónico de tools/conv/reglas.lua: claves enteras como "#n", reales
 // con punto o exponente.
 static void json_cadena(const char *s, uint32_t n)
@@ -1017,8 +1066,6 @@ static int orden_banderas(char **argv)
     const int r = comparar_celdas(argv[4]);
     return r || errores;
 }
-
-th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
 
 // --- th64sim salas: el oráculo de las paredes (hito 6.3, paso 3)
 //
@@ -1469,10 +1516,6 @@ static int orden_reglas(int argc, char **argv)
     return 0;
 }
 
-int th64sim_hito4(char **argv); // hito4.c
-int th64sim_carga(char **argv); // hito4.c
-int th64sim_construir(int argc, char **argv); // construir.c
-
 // Dibuja el escenario del hito 4 tras unas horas de simulación: el mapa, los
 // objetos y, si se pide, las personas.
 static int orden_escena4(int argc, char **argv)
@@ -1589,6 +1632,10 @@ int main(int argc, char **argv)
         return th64sim_construir(argc, argv);
     if (argc == 6 && strcmp(argv[1], "carga") == 0)
         return th64sim_carga(argv);
+    if (argc == 8 && strcmp(argv[1], "partida") == 0)
+        return th64sim_partida(argv);
+    if (argc == 4 && strcmp(argv[1], "aparicion") == 0)
+        return orden_aparicion(argv);
     if ((argc == 14 || argc == 15) && strcmp(argv[1], "lista") == 0)
         return orden_lista(argc, argv);
     if (argc >= 16 && argc <= 18 && strcmp(argv[1], "escena4") == 0)

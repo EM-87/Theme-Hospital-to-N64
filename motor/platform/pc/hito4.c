@@ -7,15 +7,19 @@
 //   acciones.tsv   horas-paciente pasadas en cada acción, por fase
 // Las horas, como en la traza de CorsixTH: un suceso dentro de la hora k
 // (desde 0) lleva k; lo que se mira al acabar la hora, k + 1.
+// th64sim partida escribe lo mismo repitiendo una lista de órdenes con tick
+// (abajo).
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#include "th/build.h"
 #include "th/map.h"
 #include "th/rules.h"
 #include "th/scenario.h"
 #include "th/sim.h"
+#include "th64sim.h"
 
 static th_map mapa;
 static th_pathfinder buscador;
@@ -119,7 +123,14 @@ static void suceso(void *ctx, const th_sim *s, int who, int ev, int arg)
 static void dinero(void *ctx, const th_sim *s, int32_t importe, int motivo, int who)
 {
     (void)ctx;
-    const registro *r = who != TH_NONE && who >= 0 && who < TH_SIM_HUMANOIDS && s->hum[who].kind == TH_HUM_PATIENT
+    // Con los movimientos de construir, who es la definición (th_rnode) del
+    // objeto o de la sala, no una persona (build.c: money_build, llamada
+    // desde comprar, vender y levantar la sala).
+    const int de_obra =
+        motivo == TH_MONEY_BUILD_ROOM || motivo == TH_MONEY_BUY_OBJECT || motivo == TH_MONEY_SELL_OBJECT;
+    const int de_persona = !de_obra;
+    const registro *r = de_persona && who != TH_NONE && who >= 0 && who < TH_SIM_HUMANOIDS &&
+                                s->hum[who].kind == TH_HUM_PATIENT
                             ? de(s, who)
                             : NULL;
     const int id = r ? (int)(r - reg) : 0;
@@ -128,10 +139,21 @@ static void dinero(void *ctx, const th_sim *s, int32_t importe, int motivo, int 
     const char *texto = motivo == TH_MONEY_TREATMENT           ? "Treat: General Practice"
                         : motivo == TH_MONEY_INSURANCE_PENDING ? "seguro (pendiente)"
                         : motivo == TH_MONEY_INSURANCE         ? "Insurance"
-                                                               : "Wages";
+                        // Las órdenes de construir (th64sim partida), con los
+                        // nombres del dinero.tsv de la batería de construir.
+                        : motivo == TH_MONEY_BUY_OBJECT  ? "buy_object"
+                        : motivo == TH_MONEY_SELL_OBJECT ? "sell_object"
+                        : motivo == TH_MONEY_BUILD_ROOM  ? "build_room"
+                                                         : "Wages";
     if (motivo == TH_MONEY_INSURANCE_PENDING && r)
         reg[id].pagos++;
-    fprintf(f_dinero, "%u\t%ld\t%s\t%d\n", (unsigned)s->hours, (long)importe, texto, id);
+    // Los de construir, «<motivo>:<id>» como en el dinero.tsv de la batería
+    // (construir.c, al_mover_dinero), y 0 en la columna del paciente.
+    if (de_obra)
+        fprintf(f_dinero, "%u\t%ld\t%s:%s\t0\n", (unsigned)s->hours, (long)importe, texto,
+                th64sim_id_de(s, (th_rnode)who));
+    else
+        fprintf(f_dinero, "%u\t%ld\t%s\t%d\n", (unsigned)s->hours, (long)importe, texto, id);
 }
 
 static int fase(const registro *r)
@@ -305,22 +327,22 @@ th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char
     return &sim;
 }
 
-// th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>
-int th64sim_hito4(char **argv)
+// La traza de hito4 y partida: abre dias.tsv y dinero.tsv y engancha los
+// sucesos de la simulación.
+static FILE *f_dias;
+static int32_t saldo0;
+
+static int traza_empezar(th_sim *s, const char *dir)
 {
-    const char *dir = argv[6];
-    if (!th64sim_cargar_escenario(argv[2], argv[3], NULL, (uint32_t)strtoul(argv[4], NULL, 0)))
-        return 1;
-    sim.ev.patient = suceso;
-    sim.ev.money = dinero;
-    FILE *f_dias = abrir(dir, "dias.tsv");
+    s->ev.patient = suceso;
+    s->ev.money = dinero;
+    f_dias = abrir(dir, "dias.tsv");
     f_dinero = abrir(dir, "dinero.tsv");
     if (!f_dias || !f_dinero)
         return 1;
     fputs("hora\timporte\tmotivo\tpaciente\n", f_dinero);
     fputs("hora\tfecha\tsaldo\tpacientes\tllegando\tcola_recepcion\ttras_recepcion\tconsulta\tdiagnosticado\ta_casa\n",
           f_dias);
-    const int horas = atoi(argv[5]);
     if (getenv("TH64_DEPURAR"))
         depurar = atoi(getenv("TH64_DEPURAR"));
     if (getenv("TH64_SONDA_GP")) {
@@ -331,16 +353,24 @@ int th64sim_hito4(char **argv)
         fputs("hora\taccion\tobjeto\tanimacion\tlento\tcansancio\tsala\n", f_medico);
         fputs("hora\tsuceso\n", f_visitas);
     }
-    const int32_t saldo0 = sim.hosp.balance;
-    volcar_dia(f_dias, &sim);
-    for (int h = 0; h < horas; h++) {
-        th_sim_tick(&sim);
-        muestrear(&sim);
-        if (f_medico)
-            sondear_gp(&sim);
-        if ((h + 1) % 50 == 0)
-            volcar_dia(f_dias, &sim);
-    }
+    saldo0 = s->hosp.balance;
+    volcar_dia(f_dias, s);
+    return 0;
+}
+
+// Lo que se mira al acabar la hora h (desde 0).
+static void traza_hora(th_sim *s, int h)
+{
+    muestrear(s);
+    if (f_medico)
+        sondear_gp(s);
+    if ((h + 1) % 50 == 0)
+        volcar_dia(f_dias, s);
+}
+
+// Cierra la traza: pacientes.tsv, acciones.tsv y la línea del resumen.
+static int traza_terminar(th_sim *s, const char *dir, int horas, const char *nombre)
+{
     fclose(f_dias);
     fclose(f_dinero);
     if (f_medico) {
@@ -353,7 +383,7 @@ int th64sim_hito4(char **argv)
     fputs("id\tenfermedad\tseguro\tllegada\tcola_recepcion\trecepcion\tentra_gp\tsale_gp\tvisitas_gp\tprogreso\t"
           "diagnostico\tpagos\ta_casa\tmotivo\tmuerte\tdesaparece\n",
           f);
-    for (int i = 1; i <= sim.patients_spawned && i <= MAX_PACIENTES; i++) {
+    for (int i = 1; i <= s->patients_spawned && i <= MAX_PACIENTES; i++) {
         const registro *r = &reg[i];
         fprintf(f, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.3f\t%d\t%d\t%d\t%s\t%d\t%d\n", i, r->enfermedad, r->seguro,
                 r->llegada, r->cola_recepcion, r->recepcion, r->entra_gp, r->sale_gp, r->visitas_gp, r->progreso,
@@ -372,18 +402,172 @@ int th64sim_hito4(char **argv)
     // Las casillas con más de una cosa (la basura se amontona) y lo que no cupo.
     int pilas = 0, mayor = 0;
     for (int i = 0; i < TH_MAP_MAX_STACKS; i++) {
-        pilas += sim.w.map->stacks[i].n > 0;
-        if (sim.w.map->stacks[i].n > mayor)
-            mayor = sim.w.map->stacks[i].n;
+        pilas += s->w.map->stacks[i].n > 0;
+        if (s->w.map->stacks[i].n > mayor)
+            mayor = s->w.map->stacks[i].n;
     }
 
-    printf("hito4: %u pacientes en %d horas; saldo %ld (%+ld); reputación %ld; huella %08lx; %lu vómitos, %lu "
+    printf("%s: %u pacientes en %d horas; saldo %ld (%+ld); reputación %ld; huella %08lx; %lu vómitos, %lu "
            "orinadas, %u basuras en el suelo, %u con la salud a 0; %d casillas con varias cosas (hasta %d), %u "
            "sin sitio\n",
-           (unsigned)sim.patients_spawned, horas, (long)sim.hosp.balance, (long)(sim.hosp.balance - saldo0),
-           (long)sim.hosp.reputation, (unsigned long)th_sim_hash(&sim), (unsigned long)sim.n_vomit,
-           (unsigned long)sim.n_pee, (unsigned)sim.n_litter, (unsigned)sim.would_die, pilas, pilas ? mayor + 1 : 1,
-           (unsigned)sim.w.map->thob_lost);
+           nombre, (unsigned)s->patients_spawned, horas, (long)s->hosp.balance, (long)(s->hosp.balance - saldo0),
+           (long)s->hosp.reputation, (unsigned long)th_sim_hash(s), (unsigned long)s->n_vomit,
+           (unsigned long)s->n_pee, (unsigned)s->n_litter, (unsigned)s->would_die, pilas, pilas ? mayor + 1 : 1,
+           (unsigned)s->w.map->thob_lost);
+    return 0;
+}
+
+// th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>
+int th64sim_hito4(char **argv)
+{
+    const char *dir = argv[6];
+    if (!th64sim_cargar_escenario(argv[2], argv[3], NULL, (uint32_t)strtoul(argv[4], NULL, 0)))
+        return 1;
+    if (traza_empezar(&sim, dir))
+        return 1;
+    const int horas = atoi(argv[5]);
+    for (int h = 0; h < horas; h++) {
+        th_sim_tick(&sim);
+        traza_hora(&sim, h);
+    }
+    return traza_terminar(&sim, dir, horas, "hito4");
+}
+
+// ---------------------------------------------------------------------------
+// th64sim partida <assets> <escenario.trg> <ordenes.tsv> <semilla> <horas> <dir_salida>
+//
+// Repite una partida: las órdenes del jugador con el tick en el que se
+// aplican (TSV con cabecera: tick, orden y sus argumentos, con el vocabulario
+// de bench/lib/ordenes.lua más «contratar»; th64sim.h), sobre el escenario y
+// la semilla de la partida. Las órdenes entran en la cola del núcleo
+// (th_sim_push_order) y se aplican al empezar el tick de su hora (th_sim_tick:
+// th_build_tick y th_sim_apply_orders), como en la ROM. La cola tiene
+// TH_SIM_ORDERS huecos, así que se van metiendo a medida que avanza: antes de
+// cada tick, todas las que quepan (las de ticks futuros esperan en la cola).
+// Si un mismo tick tiene más órdenes que huecos, las que no caben se aplican
+// en el tick siguiente y se avisa: la ROM tampoco puede meter más de
+// TH_SIM_ORDERS por tick.
+//
+// Escribe la traza de hito4 (dias.tsv, pacientes.tsv, dinero.tsv y
+// acciones.tsv) más:
+//   ordenes_resultado.tsv  tick, orden, aceptada/rechazada, motivo: del gancho
+//                          th_sim_events.order, con el tick en el que se aplicó
+//   ordenes_rom.log        las mismas órdenes con las líneas que escribe la
+//                          ROM («TH64 orden», tools/hito6/README.md), para
+//                          compararlas con su registro (tools/hito6/repetir.sh)
+// y al final la línea «partida: N órdenes, A aceptadas; H horas; huella …;
+// saldo …; P pacientes», con N las órdenes aplicadas.
+#define PARTIDA_ORDENES 4096
+
+typedef struct {
+    th_order o;
+    char texto[96];
+} orden_leida;
+
+static orden_leida partida_ordenes[PARTIDA_ORDENES];
+static int partida_n, partida_aplicadas, partida_aceptadas;
+static FILE *f_resultado, *f_rom;
+
+// El gancho de la cola. Las órdenes entran con los ticks de menor a mayor y
+// th_sim_apply_orders aplica las de la hora en el orden en que entraron, así
+// que la aplicada es siempre la siguiente de la lista.
+static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_order_result *r)
+{
+    (void)ctx;
+    const orden_leida *l = partida_aplicadas < partida_n ? &partida_ordenes[partida_aplicadas] : NULL;
+    partida_aplicadas++;
+    const int ok = r->reason == TH_REASON_OK;
+    partida_aceptadas += ok;
+    char motivo[48];
+    if (r->reason == TH_REASON_CASILLAS)
+        snprintf(motivo, sizeof motivo, "casillas:%d", r->bad);
+    else
+        snprintf(motivo, sizeof motivo, "%s", th_build_reason_name(r->reason));
+    if (l && s->hours != l->o.tick)
+        fprintf(stderr, "partida: la orden «%s» del tick %u se aplica en el %u (la cola estaba llena)\n", l->texto,
+                (unsigned)l->o.tick, (unsigned)s->hours);
+    fprintf(f_resultado, "%u\t%s\t%s\t%s\n", (unsigned)s->hours, l ? l->texto : th64sim_nombre_orden(o->kind),
+            ok ? "aceptada" : "rechazada", ok ? "-" : motivo);
+    fprintf(f_rom, "TH64 orden\t%u\t%s\t%u\t%u\t%u\t%u\t%u\t%u\t%s\t%s\n", (unsigned)s->hours,
+            th64sim_nombre_orden(o->kind), o->x, o->y, o->dir, o->qty, o->w, o->h, th64sim_id_de(s, o->def),
+            ok ? "-" : th_build_reason_name(r->reason));
+}
+
+int th64sim_partida(char **argv)
+{
+    const char *dir = argv[7];
+    th_sim *s = th64sim_cargar_escenario(argv[2], argv[3], NULL, (uint32_t)strtoul(argv[5], NULL, 0));
+    if (!s)
+        return 1;
+    FILE *f = fopen(argv[4], "r");
+    if (!f) {
+        fprintf(stderr, "no se puede leer %s\n", argv[4]);
+        return 1;
+    }
+    static char linea[4096];
+    int num_linea = 0;
+    partida_n = 0;
+    while (fgets(linea, sizeof linea, f)) {
+        num_linea++;
+        if (!strchr(linea, '\n') && !feof(f)) {
+            fprintf(stderr, "%s:%d: línea de más de %zu B\n", argv[4], num_linea, sizeof linea - 2);
+            fclose(f);
+            return 1;
+        }
+        // Se lee en un hueco aparte: el tope solo cuenta las órdenes, no los
+        // comentarios ni las líneas vacías.
+        long tick;
+        orden_leida leida;
+        if (!th64sim_leer_orden(s, linea, &tick, &leida.o, leida.texto, sizeof leida.texto))
+            continue;
+        if (partida_n >= PARTIDA_ORDENES) {
+            fprintf(stderr, "%s:%d: más de %d órdenes\n", argv[4], num_linea, PARTIDA_ORDENES);
+            fclose(f);
+            return 1;
+        }
+        if (tick < 0 || (unsigned long)tick > UINT32_MAX) {
+            fprintf(stderr, "%s:%d: tick fuera de rango (%ld)\n", argv[4], num_linea, tick);
+            fclose(f);
+            return 1;
+        }
+        orden_leida *l = &partida_ordenes[partida_n];
+        *l = leida;
+        if (partida_n > 0 && (uint32_t)tick < partida_ordenes[partida_n - 1].o.tick) {
+            fprintf(stderr, "%s:%d: los ticks tienen que ir de menor a mayor (%ld)\n", argv[4], num_linea, tick);
+            fclose(f);
+            return 1;
+        }
+        if (l->o.kind == TH_ORD_NONE)
+            fprintf(stderr, "%s:%d: orden desconocida «%s» (el núcleo la rechazará)\n", argv[4], num_linea, l->texto);
+        l->o.tick = (uint32_t)tick;
+        partida_n++;
+    }
+    fclose(f);
+    f_resultado = abrir(dir, "ordenes_resultado.tsv");
+    f_rom = abrir(dir, "ordenes_rom.log");
+    if (!f_resultado || !f_rom || traza_empezar(s, dir))
+        return 1;
+    fputs("tick\torden\tresultado\tmotivo\n", f_resultado);
+    s->ev.order = al_aplicar;
+    partida_aplicadas = partida_aceptadas = 0;
+    const int horas = atoi(argv[6]);
+    int metidas = 0;
+    for (int h = 0; h < horas; h++) {
+        while (metidas < partida_n && th_sim_push_order(s, &partida_ordenes[metidas].o) == 0)
+            metidas++;
+        th_sim_tick(s);
+        traza_hora(s, h);
+    }
+    fclose(f_resultado);
+    fclose(f_rom);
+    if (partida_aplicadas < partida_n)
+        fprintf(stderr, "partida: %d órdenes sin aplicar (su tick no llega en %d horas)\n",
+                partida_n - partida_aplicadas, horas);
+    if (traza_terminar(s, dir, horas, "traza"))
+        return 1;
+    printf("partida: %d órdenes, %d aceptadas; %d horas; huella %08lx; saldo %ld; %u pacientes\n", partida_aplicadas,
+           partida_aceptadas, horas, (unsigned long)th_sim_hash(s), (long)s->hosp.balance,
+           (unsigned)s->patients_spawned);
     return 0;
 }
 

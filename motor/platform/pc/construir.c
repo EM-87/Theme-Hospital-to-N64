@@ -25,8 +25,7 @@
 #include "th/map.h"
 #include "th/objects.h"
 #include "th/sim.h"
-
-th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla);
+#include "th64sim.h"
 
 #define MAX_COLS 40
 #define LINEA 4096
@@ -432,7 +431,62 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
 // ---------------------------------------------------------------------------
 // Las órdenes
 
-static int leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *texto, size_t tam)
+// Los nombres de las órdenes, por TH_ORD_*: los de bench/lib/ordenes.lua.
+static const char *const orden_nombres[] = {
+    [TH_ORD_NONE] = "?",
+    [TH_ORD_COMPRAR] = "comprar",
+    [TH_ORD_COLOCAR] = "colocar",
+    [TH_ORD_CERRAR] = "cerrar",
+    [TH_ORD_RECOGER] = "recoger",
+    [TH_ORD_VENDER] = "vender",
+    [TH_ORD_DESHACER] = "deshacer",
+    [TH_ORD_SALA] = "sala",
+    [TH_ORD_PUERTA] = "puerta",
+    [TH_ORD_VENTANA] = "ventana",
+    [TH_ORD_QUITAR_VENTANA] = "quitar_ventana",
+    [TH_ORD_FIN_VENTANAS] = "fin_ventanas",
+    [TH_ORD_COMPRAR_SALA] = "comprar_sala",
+    [TH_ORD_FIN_SALA] = "fin_sala",
+    [TH_ORD_ATRAS] = "atras",
+    [TH_ORD_CONTRATAR] = "contratar",
+};
+
+const char *th64sim_nombre_orden(int kind)
+{
+    const int n = (int)(sizeof orden_nombres / sizeof orden_nombres[0]);
+    return kind > 0 && kind < n && orden_nombres[kind] ? orden_nombres[kind] : "?";
+}
+
+// Las clases de «contratar», por TH_HUM_* (la clase va en th_order.dir).
+static const char *const clase_nombres[] = {[TH_HUM_DOCTOR] = "doctor",
+                                            [TH_HUM_NURSE] = "nurse",
+                                            [TH_HUM_HANDYMAN] = "handyman",
+                                            [TH_HUM_RECEPTIONIST] = "receptionist"};
+
+const char *th64sim_id_de(const th_sim *s, th_rnode def)
+{
+    static const char *const grupos[] = {"objetos", "salas"};
+    if (!def)
+        return "-";
+    for (int g = 0; g < 2; g++) {
+        const th_rnode m = th_rules_get(s->defs, s->defs->root, grupos[g]);
+        for (uint32_t i = 0; i < th_rules_len(s->defs, m); i++)
+            if (th_rules_entry_value(s->defs, m, i) == def)
+                return th_rules_str(s->defs, th_rules_entry_key(s->defs, m, i), NULL);
+    }
+    return "-";
+}
+
+static uint8_t direccion(const char *v)
+{
+    for (int d = 0; d < 4; d++)
+        if (!strcmp(v, dir_nombres[d]))
+            return (uint8_t)d;
+    fprintf(stderr, "dirección desconocida «%s»: se toma el norte\n", v);
+    return 0;
+}
+
+int th64sim_leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *texto, size_t tam)
 {
     char *campos[8];
     int nc = 0;
@@ -441,9 +495,14 @@ static int leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *
         return 0;
     for (char *p = strtok(linea, "\t"); p && nc < 8; p = strtok(NULL, "\t"))
         campos[nc++] = p;
-    if (nc < 2 || strcmp(campos[0], "n") == 0)
+    // La cabecera («n» en la batería, «tick» en th64sim partida): la primera
+    // columna no es un número.
+    char *fin;
+    if (nc < 2)
         return 0;
-    *n = strtol(campos[0], NULL, 10);
+    *n = strtol(campos[0], &fin, 10);
+    if (fin == campos[0] || *fin)
+        return 0;
     memset(o, 0, sizeof *o);
     texto[0] = 0;
     for (int i = 1; i < nc; i++)
@@ -460,10 +519,7 @@ static int leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *
         o->def = th_rules_get(s->defs, objs, campos[2]);
         o->x = (uint8_t)atoi(campos[3]);
         o->y = (uint8_t)atoi(campos[4]);
-        o->dir = 0;
-        for (int d = 0; d < 4; d++)
-            if (!strcmp(campos[5], dir_nombres[d]))
-                o->dir = (uint8_t)d;
+        o->dir = direccion(campos[5]);
     } else if (!strcmp(nombre, "recoger") && nc >= 4) {
         o->kind = TH_ORD_RECOGER;
         o->x = (uint8_t)atoi(campos[2]);
@@ -485,10 +541,7 @@ static int leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *
         o->kind = nombre[0] == 'p' ? TH_ORD_PUERTA : nombre[0] == 'v' ? TH_ORD_VENTANA : TH_ORD_QUITAR_VENTANA;
         o->x = (uint8_t)atoi(campos[2]);
         o->y = (uint8_t)atoi(campos[3]);
-        o->dir = 0;
-        for (int d = 0; d < 4; d++)
-            if (!strcmp(campos[4], dir_nombres[d]))
-                o->dir = (uint8_t)d;
+        o->dir = direccion(campos[4]);
     } else if (!strcmp(nombre, "fin_ventanas"))
         o->kind = TH_ORD_FIN_VENTANAS;
     else if (!strcmp(nombre, "comprar_sala") && nc >= 4) {
@@ -500,7 +553,21 @@ static int leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char *
         o->kind = TH_ORD_FIN_SALA;
     else if (!strcmp(nombre, "atras"))
         o->kind = TH_ORD_ATRAS;
-    else
+    else if (!strcmp(nombre, "contratar") && nc >= 6) {
+        // UIHireStaff:hire y UIPlaceStaff:onMouseUp (dialogs/hire_staff.lua:126-147,
+        // dialogs/place_staff.lua:144-176): la clase, el candidato de la lista
+        // de esa clase y la casilla donde se suelta (th/build.h).
+        o->kind = TH_ORD_NONE;
+        for (int c = TH_HUM_DOCTOR; c <= TH_HUM_RECEPTIONIST; c++)
+            if (!strcmp(campos[2], clase_nombres[c])) {
+                o->kind = TH_ORD_CONTRATAR;
+                o->dir = (uint8_t)c;
+            }
+        const long q = strtol(campos[3], NULL, 10);
+        o->qty = (uint8_t)(q > 255 ? 255 : q < 0 ? 0 : q);
+        o->x = (uint8_t)atoi(campos[4]);
+        o->y = (uint8_t)atoi(campos[5]);
+    } else
         o->kind = TH_ORD_NONE;
     return 1;
 }
@@ -633,7 +700,7 @@ int th64sim_construir(int argc, char **argv)
         long n;
         th_order o;
         char texto[256];
-        if (!leer_orden(s, linea, &n, &o, texto, sizeof texto))
+        if (!th64sim_leer_orden(s, linea, &n, &o, texto, sizeof texto))
             continue;
         ordenes++;
         n_movs = movs_perdidos = 0;
