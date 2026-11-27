@@ -1215,7 +1215,19 @@ Las siete piezas del plan ([`06_plan.md`](06_plan.md#la-demo-jugable-el-orden-ca
 
 ### La ROM, en ares
 
-La pasada de `tools/motor_check.sh` sobre el árbol final está en marcha al escribir esto; sus cifras (heap, estados, partidas, pila y márgenes), en el commit siguiente.
+`tools/motor_check.sh` sobre el árbol final (`3364f92`): «todo correcto».
+
+| Qué | Resultado |
+|---|---|
+| La ROM de pruebas | «TH64 pruebas: fin, 0 fallos», 212.667 comprobaciones; 0 píxeles distintos en los hitos 1 a 6.2, en los 15 estados y en la partida desde las ventanas; la huella del hito 4 y las de las reglas y los textos iguales que en el PC; la pila de la simulación, 4.592 B de 32.768 |
+| La partida de `demo.tsv` en la ROM | acd9c19a y 36.826 a 3.000 h; las dos líneas de control, en la hora 1.550 (62e92950, 37.034) y la 2.950 (682d3822, 36.826), con `th_sim_hash` en 20,6 y 20,4 ms; `repetir.sh` «bien» |
+| Las partidas desde las ventanas | 13 órdenes aplicadas y aceptadas, cc315406 y 36.826, con el guion (3.033 fotogramas para 3.000 horas) y con el mando y la hora troceada (3.057 fotogramas, 276 a medio tick, 1 orden retenida); `repetir.sh` «bien»; los 15 estados con la misma huella que `th64sim ventanas` |
+| Heap de la ROM de pruebas | `demo.trg` cargado, 3.265 KiB de 3.627 (362 libres); con la interfaz y las ventanas, 3.298 (329 libres); tras los 15 estados, 3.298: sin fugas. La simulación, 239 KiB |
+| Las ventanas por fotograma | en los recorridos de la partida a ×1, ×2, ×4 y ×8, de 0,060 a 0,068 ms de media (0,183 como mucho) con la interfaz en 1,6 ms; antes de la B3, «x1 con colocar» costaba 9,7 ms de media |
+| La ROM normal | arranca al menú con 2.445 KiB de heap usados de 6.548; sin Expansion Pak, el aviso |
+| La caché de instrucciones | sin choques en las cuatro ROM; márgenes (crecer/encoger): pruebas 2.880/2.880 B con el relleno de 19.776, normal y `HORAS=0 MODO=4` 5.184/576, `MEDIR=1` 512/608 |
+
+Las velocidades reales de esa pasada no valen como cifra: la batería de construir corría a la vez en la misma máquina (×8 dio ×2,15 en un recorrido y ×6,73 en el siguiente). Las medidas sin carga son las de la tanda B2 y las del revisor de la ROM en la B3 (amueblar ×7,97, construir ×2,79, contratar ×3,23 y colocar ×3,13 a ×8, antes de arreglar la vista previa).
 
 ### Lo que cuesta
 
