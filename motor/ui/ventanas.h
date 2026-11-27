@@ -62,8 +62,9 @@ typedef struct th_game_ui_input {
     int id, mouse;            // …su id (id o id_right) y con qué botón del ratón (TH_UI_LEFT o TH_UI_RIGHT)
     int panel_button;         // TH_PI_* pulsado en el panel inferior, o 0: TH_PI_SALAS abre construir,
                               // TH_PI_OBJETOS amueblar y TH_PI_CONTRATAR contratar (los demás, nada)
-    int escape;               // 1 si se pulsó Escape (R en el mando): cierra la ventana de arriba, o en la
-                              // obra vuelve una fase atrás o la abandona (GameUI:onKeyDown escape)
+    int escape;               // 1 si se pulsó Escape (R en el mando): cierra la ventana de arriba; en la
+                              // obra la abandona o la termina si ya se puede (TH_ORD_CERRAR, el
+                              // verifyOrAbortRoom de GameUI:setEditRoom(false); GameUI:onKeyDown escape)
     int paused;               // decisión 4 del plan: en pausa no se mandan órdenes (las ventanas se abren,
                               // se cierran y se recorren; colocar, comprar y contratar esperan)
     int sim_idle;             // 1 si la simulación no está a medio tick: entonces, y solo entonces, se
@@ -118,5 +119,55 @@ int th_game_ui_open(th_game_ui *g, int which);
 void th_game_ui_close_all(th_game_ui *g);
 // La ventana abierta (TH_GW_*), o TH_GW_NONE.
 int th_game_ui_active(const th_game_ui *g);
+
+// Añadido por la pieza 5 (no cambia lo de arriba): los ids de los botones de
+// sus ventanas (th_ui_button.id e id_right), los que llegan en
+// th_game_ui_input.id. El anfitrión no los necesita (reenvía win e id tal
+// cual); sirven para las pruebas y th64sim ventanas, que buscan el botón por
+// su id para pulsarlo.
+enum {
+    // construir (UIBuildRoom)
+    TH_GWB_CATEGORIA = 1,  // + 0..3: diagnóstico, tratamiento, clínicas, instalaciones
+    TH_GWB_SALA = 11,      // + 0..9: las filas de la lista
+    TH_GWB_CON_CERRAR = 30,
+    // amueblar (UIFurnishCorridor)
+    TH_GWB_OBJETO = 100,      // + 0..9: la fila (izquierdo +1)
+    TH_GWB_OBJETO_MENOS1 = 120, // + 0..9: la fila con el derecho (−1, on_rightclick)
+    TH_GWB_MENOS = 140,       // + 0..9: «−», repetido
+    TH_GWB_MAS = 160,         // + 0..9: «+», repetido
+    TH_GWB_AMU_CERRAR = 180,
+    TH_GWB_AMU_CONFIRMAR = 181,
+    // colocar y la obra (UIPlaceObjects y UIEditRoom)
+    TH_GWB_COL_CANCELAR = 200,
+    TH_GWB_COL_COMPRAR = 201,
+    TH_GWB_COL_COGER = 202,
+    TH_GWB_COL_CONFIRMAR = 203,
+    TH_GWB_COL_FILA = 210, // + 0..5: la fila de la lista
+    // contratar (UIHireStaff)
+    TH_GWB_PESTANA = 300, // + 0..3: médicos, enfermeras, bedeles, recepcionistas
+    TH_GWB_ANTERIOR = 310,
+    TH_GWB_SIGUIENTE = 311,
+    TH_GWB_CTR_CANCELAR = 312,
+    TH_GWB_CONTRATAR = 313,
+};
+
+// Notas de la pieza 5 sobre lo de arriba: th_game_ui_open da −1 antes del
+// primer th_game_ui_frame (las listas salen de la simulación de un fotograma
+// anterior) y, si hay que cerrar algo en el núcleo para abrir la otra (la obra
+// o la lista de colocar: TH_ORD_CERRAR), en pausa o fuera de un fotograma
+// (entre dos th_game_ui_frame no hay salida para esa orden); dentro del
+// fotograma la abre in->panel_button.
+
+// La ventana de la pila que llevan las ventanas de este módulo (una sola
+// th_ui_window que se rehace al cambiar de ventana), para las pruebas.
+th_ui_window *th_game_ui_window(th_game_ui *g);
+
+// Añadido por la pieza 5: una orden de out->orders que no llegó a la cola
+// (th_sim_push_order dio −1, la cola de 16 llena) y por tanto nunca volverá
+// por th_game_ui_order_result. El anfitrión la llama por cada una, para que la
+// ventana no se quede esperando su respuesta (sin ella, colocar no se abre ni
+// salen las compras pendientes hasta pasados 30 s): se trata como un rechazo
+// (el objeto o la persona siguen en la mano) y la barra lo dice.
+void th_game_ui_order_dropped(th_game_ui *g, const th_order *o);
 
 #endif

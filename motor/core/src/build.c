@@ -1602,6 +1602,24 @@ static int order_sala(th_sim *s, const th_order *o, th_order_result *r)
     return enter_door_phase(s) ? TH_REASON_OK : TH_REASON_ZONAS_INACCESIBLES;
 }
 
+int th_build_room_available(const th_sim *s, int type)
+{
+    return type >= 0 && type < s->n_room_types && room_discovered(s, type);
+}
+
+int th_build_edge_check(th_sim *s, int x, int y, int side, int window)
+{
+    const th_obra *b = &s->obra;
+    if (b->phase != (window ? TH_OBRA_WINDOWS : TH_OBRA_DOOR))
+        return TH_REASON_FASE;
+    const th_edge e = {(uint8_t)x, (uint8_t)y, (uint8_t)(side & 3)};
+    if (!edge_position_ok(b, x, y, e.side, window ? 0 : room_swing_doors(s, b->type)))
+        return TH_REASON_POSICION;
+    if (window)
+        return window_valid(s, b, &e) ? TH_REASON_OK : TH_REASON_VENTANA_INVALIDA;
+    return door_valid(s, b, &e) ? TH_REASON_OK : TH_REASON_PUERTA_INVALIDA;
+}
+
 static int order_puerta(th_sim *s, const th_order *o)
 {
     th_obra *b = &s->obra;

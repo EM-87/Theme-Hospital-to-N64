@@ -25,7 +25,9 @@
 // - partida: lo mismo, con una lista de órdenes con tick, como las graba la
 //   ROM (hito4.c; tools/hito6/repetir.sh);
 // - aparicion: los puntos de aparición de un nivel recién cargado, como
-//   World:calculateSpawnTiles (tools/hito6/demo.sh).
+//   World:calculateSpawnTiles (tools/hito6/demo.sh);
+// - ventanas: las ventanas de la partida (ui/ventanas.h) en una lista de
+//   estados, con el mapa, el panel y los fantasmas (la demo jugable, pieza 5).
 // Más adelante cargará un escenario y escribirá el mismo volcado que el
 // oráculo de la simulación (docs/04_construccion.md).
 #include <stdio.h>
@@ -49,6 +51,7 @@
 #include "objetos.h"
 #include "panel_inferior.h"
 #include "raster.h"
+#include "ventanas.h"
 #include "vista.h"
 
 void (*th_test_log)(const char *fmt, ...) = NULL;
@@ -83,6 +86,7 @@ static int uso(void)
             "<salida.ppm> [mezcla.pgm]\n"
             "     th64sim panel <alta|baja> <nivel.tmp> <número de nivel> <dir_hojas> <textos.trg> <capturas.txt> "
             "<dir_salida>\n"
+            "     th64sim ventanas baja <assets> <escenario.trg> <estados.txt> <dir_salida>\n"
             "     th64sim tabla_giro <salida.tsv>\n"
             "       paleta: .tpl del conversor o MPALETTE.DAT del juego (6 bits por componente)\n"
             "       mezcla.pgm: 255 donde el último sprite pintado era semitransparente (sombras)\n"
@@ -587,6 +591,321 @@ static int orden_panel(char **argv)
         free(datos[i]);
     free(t_datos);
     return n ? 0 : 1;
+}
+
+// La demo jugable, pieza 5: las ventanas de la partida (ui/ventanas.h) en una
+// lista de estados, dibujadas con el rasterizador de referencia como la ROM
+// dibujaría la pantalla entera: el mapa del escenario (con sus objetos y
+// personas), el plano y la huella (superposiciones), las entidades del plano,
+// los fantasmas encima de todo, el panel inferior y la ventana abierta, y el
+// puntero. Para las capturas y para compararlas con el RDP en la ROM de
+// pruebas. Cada línea de estados.txt:
+//   <nombre> <cx> <cy> <giro> <paso>...
+// con la casilla del mundo en el centro de la pantalla, el giro de la cámara
+// (0–3) y los pasos desde el escenario recién cargado (semilla 1), uno por
+// fotograma salvo tick:
+//   panel:salas|objetos|contratar   el botón del panel
+//   boton:<id>, botond:<id>         clic izquierdo (o derecho: id_right) en el
+//                                   botón de la ventana con ese id (TH_GWB_*)
+//   clic:x,y, clicd:x,y             clic izquierdo o derecho en la casilla
+//   baja:x,y, mueve:x,y, sube:x,y   el botón izquierdo baja, el puntero se
+//                                   mueve y el botón sube, en casillas
+//   esc                             Escape
+//   pausa:0|1                       en pausa desde ese paso
+//   tick:n                          n horas de simulación (con un fotograma cada una)
+//   puntero:x,y, px:x,y             el puntero del final (casilla o píxel)
+// Las órdenes de cada fotograma se aplican en el tick siguiente, que corre
+// enseguida (th_sim_push_order y th_sim_tick), y su resultado vuelve a las
+// ventanas (th_game_ui_order_result). Escribe <nombre>.ppm y, por estado, una
+// línea con las cuentas de la lista: elementos y cargas de textura
+// (th_drawlist_loads) de la ventana sola.
+typedef struct {
+    th_bottom_panel bp;
+    const th_ui_fonts *fuentes;
+    th_bottom_info info;
+    const th_rules *textos;
+} vt_panel;
+
+static int vt_dibujar_panel(const th_ui_window *w, th_drawlist *out, void *ctx)
+{
+    (void)w;
+    vt_panel *p = ctx;
+    return th_bottom_panel_draw(&p->bp, p->fuentes, &p->info, p->textos, out);
+}
+
+static void vt_orden(void *ctx, const th_sim *s, const th_order *o, const th_order_result *r)
+{
+    th_game_ui_order_result(ctx, s, o, r);
+    printf("  orden %s (%d,%d) -> %s\n", th64sim_nombre_orden(o->kind), o->x, o->y, th_build_reason_name(r->reason));
+}
+
+// El centro del rombo de la casilla (x, y) del mundo en la pantalla.
+static void vt_pixel(const th_view *v, int rot, int x, int y, int *px, int *py)
+{
+    int vx, vy;
+    th_rot_tile(rot, x, y, &vx, &vy);
+    th_view_tile(v, vx, vy, px, py);
+    *py += v->unit / 2;
+}
+
+static int vt_boton(th_game_ui *g, int id, int derecho, int *px, int *py)
+{
+    const th_ui_window *w = th_game_ui_window(g);
+    for (int i = 0; i < w->n_buttons; i++) {
+        const th_ui_button *b = &w->buttons[i];
+        if ((derecho ? b->id_right : b->id) == id) {
+            *px = w->x + (b->x + b->r) / 2;
+            *py = w->y + (b->y + b->b) / 2;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int orden_ventanas(char **argv)
+{
+    if (strcmp(argv[2], "baja") != 0)
+        return uso();
+    const char *assets = argv[3];
+    static const char *de_baja[TH_SHEETS] = {"datam/mblk-0", "datam/mspr-0", "datam/panel02m", "datam/mpointer",
+                                             "fuentes/font100m", "fuentes/font101m", "fuentes/font132m",
+                                             "fuentes/font131m", "fuentes/font130m", "datam/mutton01"};
+    static th_sheet hojas[TH_SHEETS];
+    const th_sheet *sheets[TH_SHEETS] = {NULL};
+    char ruta[1024];
+    for (int i = 0; i < TH_SHEETS; i++) {
+        uint8_t *d;
+        snprintf(ruta, sizeof ruta, "%s/%s.tsh", assets, de_baja[i]);
+        if (cargar_hoja(ruta, &hojas[i], &d))
+            return 1;
+        sheets[i] = &hojas[i];
+    }
+    static uint8_t pal[3][256][3];
+    size_t len;
+    snprintf(ruta, sizeof ruta, "%s/paleta.tpl", assets);
+    uint8_t *tpl = leer_fichero(ruta, &len);
+    for (int i = 0; i < 3; i++)
+        if (!tpl || th_raster_paleta_tpl(tpl, len, i, pal[i]) != 0) {
+            fprintf(stderr, "no se puede leer la paleta %d de %s\n", i, ruta);
+            return 1;
+        }
+    snprintf(ruta, sizeof ruta, "%s/textos/english.trg", assets);
+    uint8_t *t_datos = leer_fichero(ruta, &len);
+    static th_rules textos;
+    if (!t_datos || th_rules_init(&textos, t_datos, len) != 0) {
+        fprintf(stderr, "no se pueden leer los textos %s\n", ruta);
+        return 1;
+    }
+    static th_ui_fonts fuentes;
+    fuentes = (th_ui_fonts){
+        .money = {sheets[TH_SHEET_FONT_MONEY], TH_SHEET_FONT_MONEY, 0, 0, 0},
+        .date = {sheets[TH_SHEET_FONT_DATE], TH_SHEET_FONT_DATE, 0, 0, 2},
+        .white = {sheets[TH_SHEET_FONT_WHITE], TH_SHEET_FONT_WHITE, 0, -1, 0},
+        .pause = {sheets[TH_SHEET_FONT_PAUSE], TH_SHEET_FONT_PAUSE, 0, 0, 0},
+        .tooltip = {sheets[TH_SHEET_FONT_TOOLTIP], TH_SHEET_FONT_TOOLTIP, 0, 0, 0},
+    };
+    FILE *f = fopen(argv[5], "r");
+    if (!f) {
+        fprintf(stderr, "no se puede abrir %s\n", argv[5]);
+        return 1;
+    }
+    enum { W = 320, H = 240 };
+    static th_draw elementos[8192];
+    static uint8_t rgb[W * H * 3];
+    th_raster r = {.rgb = rgb, .w = W, .h = H, .paleta = (const uint8_t(*)[3])pal[0],
+                   .paleta_gris = (const uint8_t(*)[3])pal[1], .paleta_roja = (const uint8_t(*)[3])pal[2]};
+    static th_view_entity ents[TH_VISTA_SIM_MAX + TH_GAME_UI_ENTITIES];
+    char linea[4096];
+    int n = 0, fallos = 0;
+    while (fgets(linea, sizeof linea, f)) {
+        char nombre[256];
+        int cx, cy, rot, usado;
+        if (linea[0] == '#' || sscanf(linea, "%255s %d %d %d%n", nombre, &cx, &cy, &rot, &usado) != 4)
+            continue;
+        rot &= 3;
+        n++;
+        th_sim *s = th64sim_cargar_escenario(assets, argv[4], NULL, 1);
+        if (!s)
+            return 1;
+        static th_ui_stack pila;
+        static vt_panel panel;
+        th_ui_stack_init(&pila);
+        th_ui_stack_screen(&pila, W, H);
+        th_bottom_panel_init(&panel.bp, 0, W, H);
+        panel.fuentes = &fuentes;
+        panel.textos = &textos;
+        panel.bp.win.draw = vt_dibujar_panel;
+        panel.bp.win.draw_ctx = &panel;
+        th_ui_stack_open(&pila, &panel.bp.win, NULL);
+        th_game_ui *g = th_game_ui_instance();
+        const th_game_ui_env env = {.stack = &pila, .fonts = &fuentes, .texts = &textos, .anims = s->w.anims,
+                                    .walk = NULL, .screen_w = W, .screen_h = H};
+        th_game_ui_init(g, &env);
+        s->ev.ctx = g;
+        s->ev.order = vt_orden;
+        th_view v = {.unit = 16, .w = W, .h = H};
+        int vx, vy, sx, sy;
+        th_rot_tile(rot, cx, cy, &vx, &vy);
+        th_view_tile(&v, vx, vy, &sx, &sy);
+        v.x = sx - W / 2;
+        v.y = sy - H / 2;
+        int px = W / 2, py = H / 2, pausa = 0;
+        th_game_ui_output out;
+        const char *p = linea + usado;
+        char paso[64];
+        int k;
+        printf("%s:\n", nombre);
+        while (1) {
+            if (sscanf(p, "%63s%n", paso, &k) != 1) {
+                strcpy(paso, "fin");
+                k = 0;
+            }
+            p += k;
+            int a = 0, b = 0, raton = TH_UI_LEFT, baja = 0, sube = 0, ticks = 0, esc = 0, boton_panel = 0;
+            if (!strcmp(paso, "fin")) {
+            } else if (sscanf(paso, "boton:%d", &a) == 1 || sscanf(paso, "botond:%d", &a) == 1) {
+                raton = paso[5] == 'd' ? TH_UI_RIGHT : TH_UI_LEFT;
+                if (vt_boton(g, a, raton == TH_UI_RIGHT, &px, &py) < 0) {
+                    fprintf(stderr, "%s: no hay botón %d\n", nombre, a);
+                    fallos++;
+                    break;
+                }
+                baja = sube = 1;
+            } else if (sscanf(paso, "clic:%d,%d", &a, &b) == 2 || sscanf(paso, "clicd:%d,%d", &a, &b) == 2) {
+                raton = paso[4] == 'd' ? TH_UI_RIGHT : TH_UI_LEFT;
+                vt_pixel(&v, rot, a, b, &px, &py);
+                baja = sube = 1;
+            } else if (sscanf(paso, "baja:%d,%d", &a, &b) == 2) {
+                vt_pixel(&v, rot, a, b, &px, &py);
+                baja = 1;
+            } else if (sscanf(paso, "sube:%d,%d", &a, &b) == 2) {
+                vt_pixel(&v, rot, a, b, &px, &py);
+                sube = 1;
+            } else if (sscanf(paso, "mueve:%d,%d", &a, &b) == 2 || sscanf(paso, "puntero:%d,%d", &a, &b) == 2)
+                vt_pixel(&v, rot, a, b, &px, &py);
+            else if (sscanf(paso, "px:%d,%d", &a, &b) == 2) {
+                px = a;
+                py = b;
+            } else if (sscanf(paso, "tick:%d", &a) == 1)
+                ticks = a;
+            else if (sscanf(paso, "pausa:%d", &a) == 1) {
+                pausa = a;
+                continue;
+            } else if (!strcmp(paso, "esc"))
+                esc = 1;
+            else if (!strcmp(paso, "panel:salas"))
+                boton_panel = TH_PI_SALAS;
+            else if (!strcmp(paso, "panel:objetos"))
+                boton_panel = TH_PI_OBJETOS;
+            else if (!strcmp(paso, "panel:contratar"))
+                boton_panel = TH_PI_CONTRATAR;
+            else {
+                fprintf(stderr, "%s: paso desconocido «%s»\n", nombre, paso);
+                fallos++;
+                break;
+            }
+            for (int t = 0; t < (ticks ? ticks : 1); t++) {
+                if (ticks)
+                    th_sim_tick(s);
+                th_game_ui_input in = {.px = px, .py = py, .id = -1, .escape = esc, .paused = pausa, .sim_idle = 1,
+                                       .panel_button = boton_panel};
+                th_bottom_panel_mouse_move(&panel.bp, px, py);
+                th_ui_stack_mouse_move(&pila, px, py);
+                if (baja) {
+                    const th_ui_event e = th_ui_stack_mouse_down(&pila, raton, px, py);
+                    if (!e.win)
+                        in.world_down |= 1 << raton;
+                }
+                if (sube) {
+                    const th_ui_event e = th_ui_stack_mouse_up(&pila, raton, px, py);
+                    if (!e.win)
+                        in.world_up |= 1 << raton;
+                    else if (e.win == &panel.bp.win && e.id >= 0)
+                        in.panel_button = e.id;
+                    else if (e.id >= 0) {
+                        in.win = e.win;
+                        in.id = e.id;
+                        in.mouse = raton;
+                    }
+                }
+                th_ui_stack_update(&pila, 33);
+                th_game_ui_frame(g, &in, s, &v, rot, &out);
+                for (int i = 0; i < out.n_orders; i++) {
+                    th_order o = out.orders[i];
+                    o.tick = s->hours;
+                    if (th_sim_push_order(s, &o) < 0) // la cola llena: no volverá por el gancho
+                        th_game_ui_order_dropped(g, &o);
+                }
+                if (out.n_orders && !ticks) {
+                    // La hora siguiente las aplica, y un fotograma sin clics deja
+                    // las ventanas como las vería el siguiente (los botones que
+                    // la fase habilita, por ejemplo).
+                    th_sim_tick(s);
+                    const th_game_ui_input quieto = {.px = px, .py = py, .id = -1, .paused = pausa, .sim_idle = 1};
+                    th_ui_stack_update(&pila, 33);
+                    th_game_ui_frame(g, &quieto, s, &v, rot, &out);
+                    for (int i = 0; i < out.n_orders; i++) {
+                        th_order o2 = out.orders[i];
+                        o2.tick = s->hours;
+                        if (th_sim_push_order(s, &o2) < 0)
+                            th_game_ui_order_dropped(g, &o2);
+                    }
+                    if (out.n_orders)
+                        th_sim_tick(s);
+                }
+            }
+            if (!strcmp(paso, "fin"))
+                break;
+        }
+        // El dibujo: lo del último fotograma.
+        const int ns = th_vista_sim_rot(s, rot, ents, TH_VISTA_SIM_MAX);
+        for (int i = 0; i < out.n_entities; i++)
+            ents[ns + i] = out.entities[i];
+        static th_rot_map girado;
+        th_scene sc = {.map = s->w.map, .sheets = {sheets[0], sheets[1]}, .anims = s->w.anims, .entities = ents,
+                       .entity_count = ns + out.n_entities, .overlays = out.overlays};
+        if (rot) {
+            th_rot_map_update(&girado, s->w.map, rot);
+            sc.rot = &girado;
+        }
+        th_drawlist l = {.items = elementos, .capacity = 4096};
+        if (th_view_scene(&v, &sc, &l) < 0)
+            return 1;
+        for (int i = 0; i < out.n_on_top; i++)
+            th_view_entity_on_top(&v, &sc, &out.on_top[i], &l);
+        const int mapa_n = l.count;
+        panel.info = (th_bottom_info){.balance = s->hosp.balance, .day = s->date.day, .month = s->date.month,
+                                      .reputation = s->hosp.reputation, .rep_min = 0, .rep_max = 1000,
+                                      .paused = pausa, .message = out.message};
+        // La ventana sola (sin el panel), para su coste.
+        th_drawlist sola = {.items = elementos + 4096, .capacity = 4096};
+        const th_ui_window *w = th_game_ui_window(g);
+        int w_n = 0, w_cargas = 0;
+        const int act = th_game_ui_active(g);
+        if (act != TH_GW_NONE && act != TH_GW_COLOCAR_PERSONAL && w->draw && w->draw(w, &sola, w->draw_ctx) == 0) {
+            w_n = sola.count;
+            w_cargas = th_drawlist_loads(&sola, 0, sheets);
+        }
+        if (th_ui_stack_draw(&pila, &l) < 0)
+            return 1;
+        if (l.count < l.capacity)
+            l.items[l.count++] = (th_draw){.sprite = 1, .sheet = TH_SHEET_POINTER, .x = (int16_t)px, .y = (int16_t)py};
+        th_raster_clear(&r, 0, 0, 0);
+        th_raster_draw(&r, sheets, &l);
+        snprintf(ruta, sizeof ruta, "%s/%s.ppm", argv[6], nombre);
+        FILE *o = fopen(ruta, "wb");
+        if (!o)
+            return 1;
+        fprintf(o, "P6\n%d %d\n255\n", W, H);
+        fwrite(rgb, 3, (size_t)(W * H), o);
+        fclose(o);
+        printf("%s: ventana %d, %d elementos del mapa (%d superposiciones, %d entidades del plano, %d encima), %d de "
+               "interfaz con el puntero; la ventana sola: %d elementos, %d cargas de textura; huella %08lx\n",
+               nombre, act, mapa_n, out.overlays ? out.overlays->count : 0, out.n_entities, out.n_on_top,
+               l.count - mapa_n, w_n, w_cargas, (unsigned long)th_drawlist_hash(&l));
+    }
+    fclose(f);
+    return n && !fallos ? 0 : 1;
 }
 
 static int orden_caminos(char **argv)
@@ -1676,6 +1995,8 @@ int main(int argc, char **argv)
         return orden_vista(argc, argv);
     if (argc == 9 && strcmp(argv[1], "panel") == 0)
         return orden_panel(argv);
+    if (argc == 7 && strcmp(argv[1], "ventanas") == 0)
+        return orden_ventanas(argv);
     if (argc == 3 && strcmp(argv[1], "tabla_giro") == 0)
         return orden_tabla_giro(argv);
     return uso();

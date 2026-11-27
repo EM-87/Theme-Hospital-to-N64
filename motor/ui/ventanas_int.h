@@ -1,0 +1,195 @@
+// Lo que comparten los ficheros de las ventanas de la partida (ventanas.h):
+// ventanas.c (el fotograma, las órdenes, los mensajes y lo común),
+// ventana_construir.c, ventana_amueblar.c, ventana_colocar.c (colocar y la
+// ventana de la obra, que es la misma, como UIEditRoom hereda de
+// UIPlaceObjects), obra.c (el plano, la puerta y las ventanas sobre el mapa)
+// y ventana_contratar.c (contratar y colocar personal).
+//
+// Las disposiciones son de 320 × 240 sobre las piezas de DATAM/MUTTON01
+// (mutton01.h): CorsixTH nunca usó esa hoja, así que no hay referencia
+// (decisión 6 de docs/06_plan.md). Cada medida va en un comentario con la
+// pieza y la fila o columna de donde sale (medidas con un volcado en ASCII de
+// cada pieza: dónde empieza y acaba cada recuadro hundido).
+#ifndef TH_VENTANAS_INT_H
+#define TH_VENTANAS_INT_H
+
+#include "mutton01.h"
+#include "texto.h"
+#include "ventanas.h"
+
+#define GW_FILAS 10     // filas de las listas de construir y amueblar (las 10 de CorsixTH)
+#define GW_COL_FILAS 6  // filas visibles de la lista de colocar (s->place tiene hasta 16)
+#define GW_EN_VUELO_MAX 900 // fotogramas que se espera la respuesta de una orden (30 s) antes de olvidarla
+
+enum { GW_OBRA_LOCAL = 0 }; // la obra antes de que el núcleo la tenga: el plano que se arrastra
+
+typedef struct gw_compra {
+    th_rnode def;
+    uint8_t qty;
+} gw_compra;
+
+struct th_game_ui {
+    th_game_ui_env env;
+    int active; // TH_GW_*
+    th_ui_window w; // la ventana abierta (una sola; se rehace al cambiar de ventana)
+
+    // El fotograma en curso (solo dentro de th_game_ui_frame).
+    const th_game_ui_input *in;
+    th_sim *s;
+    const th_view *v;
+    int rot;
+    th_game_ui_output *out;
+    int tx, ty;      // la casilla del MUNDO bajo el puntero
+    int sobre_mundo; // el puntero no está sobre ninguna ventana de la pila
+    int en_vuelo;    // órdenes mandadas sin respuesta (th_game_ui_order_result)
+    int en_vuelo_fotogramas;
+
+    // Lo que se dibuja sobre el mapa.
+    th_view_overlays ov;
+    th_view_entity ents[TH_GAME_UI_ENTITIES];
+    int n_ents;
+    th_view_entity top[8];
+    int n_top;
+    uint8_t capas[TH_ANIM_LAYERS];
+
+    // El aviso de la barra del panel.
+    char msg[160];
+    int msg_fotogramas;
+
+    // Construir: la categoría (−1: ninguna), las salas de la lista (índices en
+    // room_types) y la fila bajo el puntero (−1).
+    int cat;
+    int n_salas;
+    uint8_t salas[GW_FILAS];
+    int hover;
+    char coste[32];
+
+    // Amueblar: los objetos de la lista con su cantidad, el total y el precio
+    // del objeto bajo el puntero; tienda = 1 dentro de una obra (la tienda de
+    // la sala, TH_ORD_COMPRAR_SALA). Lo comprado que queda por pedir al núcleo
+    // (pend): TH_ORD_COMPRAR lleva un solo objeto y abre la lista de colocar
+    // con él, cerrando la que hubiera, así que el siguiente se pide cuando la
+    // lista se vacía.
+    int tienda;
+    int n_obj;
+    th_rnode obj_def[GW_FILAS];
+    uint8_t obj_qty[GW_FILAS];
+    uint8_t obj_ini[GW_FILAS]; // start_qty: lo que ya había en la lista de la sala al abrir la tienda
+    int32_t total, precio;
+    int n_pend;
+    gw_compra pend[GW_FILAS];
+    char precio_txt[32], total_txt[32];
+
+    // Colocar: la fila elegida, el objeto en la mano y su orientación (la que
+    // va en TH_ORD_COLOCAR: el giro es de la ventana), el modo coger.
+    int fila;
+    th_rnode en_mano;
+    int orient;
+    int coger;
+    int col_n;  // filas que enseña la ventana (la ventana se rehace si cambia)
+    int col_b0; // el botón de la primera fila
+    const char *col_nombre[GW_COL_FILAS];
+    uint8_t col_qty[GW_COL_FILAS];
+    int col_activa;
+    const char *col_titulo, *col_texto;
+    // La vista previa (th_build_check_cell, solo con sim_idle): el último resultado.
+    struct {
+        th_rnode def;
+        int x, y, dir, ok, hay;
+    } previa;
+
+    // La obra: el tipo de sala, el plano que se arrastra (en el mundo), si ya
+    // la tiene el núcleo.
+    int obra_tipo;
+    int arrastre;
+    int ax, ay;         // la casilla donde bajó el botón
+    int px, py, pw, ph; // el plano
+    int obra_iniciada;  // el núcleo pasó de las paredes
+    struct {
+        int x, y, side, ok, hay;
+    } borde; // la última comprobación de puerta o ventana
+
+    // Contratar: la clase (0–3, TH_HUM_DOCTOR + clase; −1, ninguna), el candidato, y el
+    // elegido para colocarlo (su perfil y su resumen).
+    int clase, idx;
+    th_staff_profile perfil;
+    uint32_t resumen;
+    int esperando_contrato;
+    struct {
+        int x, y, ok, hay;
+    } sitio;
+    char nombre[48], sueldo[24], titulos[64], descripcion[200], cuentas[4][4];
+    int n_cand[4];
+    int hay_candidato;
+    int32_t habilidad; // millonésimas
+    uint8_t titulos_bits, es_medico;
+};
+
+// --- ventanas.c: lo común ---------------------------------------------------
+// Manda una orden (a la salida del fotograma). En pausa no manda nada y pone
+// el aviso de la pausa (decisión 4). Devuelve 1 si la mandó.
+int gw_mandar(th_game_ui *g, const th_order *o);
+// Pone un aviso en la barra durante 3 s: el texto de esa ruta de los
+// textos (english.trg).
+void gw_aviso(th_game_ui *g, const char *ruta);
+// Abre la ventana which, ya montada en g->w por quien llama (cierra la
+// anterior en la pila).
+void gw_abrir_ventana(th_game_ui *g, int which);
+// Cierra la ventana (de la pila) y vuelve a TH_GW_NONE.
+void gw_cerrar(th_game_ui *g);
+// El nombre de una definición con «name»: {"$ref": "_S.<ruta>"} en los textos.
+const char *gw_nombre(const th_game_ui *g, const th_rules *defs, th_rnode def);
+// ¿El objeto tiene esa orientación en las reglas?
+int gw_tiene_orientacion(const th_rules *defs, th_rnode def, int dir);
+// Un panel con botón que ocupa la pieza entera o un rectángulo de ella.
+int gw_boton(th_ui_window *w, int sprite, int x, int y, int bx, int by, int bw, int bh, int activo, int id);
+// La casilla del mundo bajo un píxel de la pantalla.
+void gw_casilla(const th_game_ui *g, int sx, int sy, int *x, int *y);
+static inline int gw_en_mapa(int x, int y)
+{
+    return x >= 0 && y >= 0 && x < TH_MAP_WIDTH && y < TH_MAP_HEIGHT;
+}
+
+// --- ventana_construir.c ------------------------------------------------------
+void gw_construir_abrir(th_game_ui *g);
+void gw_construir_boton(th_game_ui *g, int id, int mouse);
+void gw_construir_frame(th_game_ui *g);
+
+// --- ventana_amueblar.c -------------------------------------------------------
+// tienda = 0: los objetos de pasillo (UIFurnishCorridor sin edit_dialog); 1:
+// la tienda de la sala en obra (objects_additional).
+void gw_amueblar_abrir(th_game_ui *g, int tienda);
+void gw_amueblar_boton(th_game_ui *g, int id, int mouse);
+void gw_amueblar_frame(th_game_ui *g);
+// Pide al núcleo lo comprado que queda pendiente, si toca.
+void gw_amueblar_pendientes(th_game_ui *g);
+
+// --- ventana_colocar.c (colocar y la obra) -------------------------------------
+void gw_colocar_abrir(th_game_ui *g, int which); // TH_GW_COLOCAR o TH_GW_OBRA (obra.c pone el tipo antes)
+void gw_colocar_boton(th_game_ui *g, int id, int mouse);
+void gw_colocar_frame(th_game_ui *g);
+void gw_colocar_escape(th_game_ui *g);
+// Las filas, los textos y los botones de la ventana según la lista y la fase
+// (la rehace si cambia el número de filas).
+void gw_colocar_refrescar(th_game_ui *g);
+// Lo que hace el objeto en la mano sobre el mapa (también en la fase de
+// objetos de la obra).
+void gw_colocar_mundo(th_game_ui *g);
+
+// --- obra.c ---------------------------------------------------------------------
+void gw_obra_empezar(th_game_ui *g, int tipo);
+void gw_obra_frame(th_game_ui *g); // el plano, la puerta y las ventanas, según la fase
+// UIEditRoom:screenToWall sobre la vista: el borde del plano bajo el puntero
+// (casilla de dentro y lado, en el mundo). 0 si no hay.
+int gw_obra_borde(const th_game_ui *g, int *x, int *y, int *side);
+// Los botones de la ventana de la obra: cancelar (atrás) y confirmar.
+void gw_obra_cancelar(th_game_ui *g);
+void gw_obra_confirmar(th_game_ui *g);
+
+// --- ventana_contratar.c --------------------------------------------------------
+void gw_contratar_abrir(th_game_ui *g);
+void gw_contratar_boton(th_game_ui *g, int id, int mouse);
+void gw_contratar_frame(th_game_ui *g);
+void gw_colocar_personal_frame(th_game_ui *g);
+
+#endif

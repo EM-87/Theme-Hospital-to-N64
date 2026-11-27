@@ -168,8 +168,16 @@ int th_bottom_panel_draw(const th_bottom_panel *p, const th_ui_fonts *f, const t
     const th_text_arg args[2] = {th_text_num(info->day), th_text_num(info->month)};
     th_text_format(fecha, sizeof fecha, th_text(textos, "date_format.daymonth"), args, 2, textos);
     th_font_draw(&f->date, fecha, x + l->fecha_x, y + l->fecha_y, l->fecha_w, 0, TH_ALIGN_CENTER, out, NULL, NULL);
-    // drawDynamicInfo: en pausa, «PAUSA» donde no están los botones de gestión.
-    if (info->paused && !p->win.panels[p->extra[0]].visible) {
+    // drawDynamicInfo (bottom_panel.lua:309-339), donde no están los botones de
+    // gestión: el texto de la información dinámica (aquí, el aviso de la demo)
+    // con la fuente blanca en x + 20 e y + 10 de 640, hasta 240 de ancho (a la
+    // mitad: x + 10, y + 5, 120 de ancho, dos líneas en los 25 del panel), o,
+    // sin él, en pausa, «PAUSA».
+    if (info->message && !p->win.panels[p->extra[0]].visible) {
+        const int k = l == &alta ? 2 : 1;
+        th_font_wrapped(&f->white, info->message, strlen(info->message), x + l->barra_x + 10 * k, y + 5 * k, 120 * k,
+                        2, 0, TH_ALIGN_LEFT, out);
+    } else if (info->paused && !p->win.panels[p->extra[0]].visible) {
         const char *t = th_text(textos, "misc.pause");
         th_font_wrapped(&f->pause, t, strlen(t), x + l->pausa_x, y + l->pausa_y, l->pausa_w, 1 << 30, 0,
                         TH_ALIGN_CENTER, out);

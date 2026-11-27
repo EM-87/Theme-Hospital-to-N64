@@ -108,6 +108,20 @@ int th_build_check_cell(th_sim *s, th_rnode def, int x, int y, int dir, int *bad
 // con s->w.pf: la misma advertencia que th_build_check_cell.
 int th_build_staff_placement(th_sim *s, int kind, int x, int y);
 
+// Consultas de solo lectura para la interfaz (las ventanas de la demo,
+// ui/ventanas.h), que solo enseñan lo que la orden haría:
+// - World:getAvailableRooms (la que mira TH_ORD_SALA antes de dar
+//   TH_REASON_NO_DISPONIBLE): 1 si la sala type (índice en room_types) está
+//   descubierta en el nivel;
+int th_build_room_available(const th_sim *s, int type);
+// - la puerta (window = 0) o la ventana (window = 1) en el borde (x, y, side)
+//   de la obra, como la comprueban TH_ORD_PUERTA y TH_ORD_VENTANA
+//   (setDoorBlueprint y setWindowBlueprint): TH_REASON_OK, TH_REASON_FASE
+//   (la obra no está en esa fase), TH_REASON_POSICION, TH_REASON_PUERTA_INVALIDA
+//   o TH_REASON_VENTANA_INVALIDA. Mira los objetos del mapa: solo entre ticks,
+//   como th_build_check_cell.
+int th_build_edge_check(th_sim *s, int x, int y, int side, int window);
+
 // La cola de órdenes: cada una se aplica al empezar el tick de su hora
 // (th_sim_tick), en el orden en que llegó. Devuelve -1 si la cola está llena.
 int th_sim_push_order(th_sim *s, const th_order *o);

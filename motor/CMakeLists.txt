@@ -26,7 +26,8 @@ target_include_directories(th_vista PUBLIC vista)
 target_link_libraries(th_vista PUBLIC th_core)
 
 # La interfaz: ventanas, texto y el panel inferior, también portables.
-add_library(th_ui STATIC ui/ui.c ui/texto.c ui/panel_inferior.c ui/puntero.c ui/ventanas.c)
+add_library(th_ui STATIC ui/ui.c ui/texto.c ui/panel_inferior.c ui/puntero.c ui/ventanas.c ui/ventana_construir.c
+            ui/ventana_amueblar.c ui/ventana_colocar.c ui/obra.c ui/ventana_contratar.c)
 target_include_directories(th_ui PUBLIC ui)
 target_link_libraries(th_ui PUBLIC th_vista m)
 
@@ -51,3 +52,12 @@ target_compile_definitions(test_ui PRIVATE TH_TEST_UI_MAIN)
 target_include_directories(test_ui PRIVATE tests)
 target_link_libraries(test_ui th_ui)
 add_test(NAME ui COMMAND test_ui)
+
+# Las ventanas de la partida (ui/ventanas.h) con los assets y el escenario de
+# la demo: test_ventanas motor/assets. Sin assets (los datos de TH no están en
+# el repositorio) sale con 77 y ctest la da por saltada, no por buena.
+add_executable(test_ventanas tests/test_ventanas.c)
+target_include_directories(test_ventanas PRIVATE tests)
+target_link_libraries(test_ventanas th_ui)
+add_test(NAME ventanas COMMAND test_ventanas ${CMAKE_SOURCE_DIR}/assets)
+set_tests_properties(ventanas PROPERTIES SKIP_RETURN_CODE 77)

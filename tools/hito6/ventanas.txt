@@ -1,0 +1,38 @@
+# Los estados de las ventanas de la demo (pieza 5) para th64sim ventanas baja
+# sobre motor/assets/escenarios/demo.trg (tools/hito6/ventanas.sh). Una línea
+# por estado: el nombre, la casilla en el centro de la pantalla, el giro de la
+# cámara y los pasos (th64sim.c, orden_ventanas). Los ids de los botones son
+# los TH_GWB_* de motor/ui/ventanas.h: 1–4 las categorías de construir, 11–20
+# sus filas, 100–109 las filas de amueblar, 160–169 sus «+», 181 su confirmar,
+# 203 el confirmar de colocar y de la obra, 300–303 las pestañas de contratar
+# y 313 contratar. Las casillas son las de tools/hito6/ordenes/demo.tsv: el
+# mostrador en (62,74), la consulta de 4 × 4 en (57,50) y el médico en (59,56).
+# Construir abierta, con la categoría de diagnóstico y el puntero en la primera sala.
+construir 60 62 0 panel:salas boton:1 px:191,57
+# La obra: el plano de 4 × 4 arrastrado desde (57,50) hasta (60,53), con el botón aún abajo.
+obra_plano 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 puntero:60,53
+# Un plano de 4 × 4 que se sale por la fachada de la entrada (las casillas de fuera, en rojo).
+obra_plano_malo 62 76 0 panel:salas boton:1 boton:11 baja:61,77 mueve:64,80 puntero:64,80
+# La fase de la puerta: el plano confirmado (TH_ORD_SALA) y la puerta fantasma en el borde sur.
+obra_puerta 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 puntero:58,54
+# La fase de las ventanas: la puerta puesta (58,53 al sur), una ventana al este (61,51) y la
+# fantasma bajo el puntero.
+obra_ventanas 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 puntero:61,52
+# La fase de los objetos: las ventanas confirmadas (TH_ORD_FIN_VENTANAS), la sala levantada y la
+# lista de la consulta (archivador, silla y escritorio) con el archivador en la mano.
+obra_objetos 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 boton:203 tick:2 puntero:58,51
+# Amueblar con la lista entera, dos mostradores y el puntero en la fila de los bancos.
+amueblar 60 66 0 panel:objetos boton:160 boton:160 px:180,74
+# Colocar con el mostrador en la mano, donde vale (62,74) y donde no (la entrada).
+colocar_valido 62 72 0 panel:objetos boton:160 boton:181 puntero:62,74
+colocar_invalido 62 72 0 panel:objetos boton:160 boton:181 puntero:63,79
+# Colocar girado (clic derecho) en la vista girada una vez.
+colocar_girado 62 72 1 panel:objetos boton:160 boton:181 clicd:62,74 puntero:62,74
+# Contratar recién abierta (sin categoría: el cuerpo tapado), con la pestaña de los médicos, y
+# colocar personal con la persona fantasma (donde vale y en la calle).
+contratar_sin 60 66 0 panel:contratar px:100,60
+contratar 60 66 0 panel:contratar boton:300 px:100,60
+colocar_personal 60 58 0 panel:contratar boton:300 boton:313 puntero:59,56
+colocar_personal_mal 62 76 0 panel:contratar boton:300 boton:313 px:60,150
+# En pausa: confirmar en amueblar no manda nada y la barra lo dice.
+pausa_aviso 60 66 0 pausa:1 panel:objetos boton:160 boton:181 px:140,190
