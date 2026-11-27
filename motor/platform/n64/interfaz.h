@@ -70,4 +70,22 @@ const th_rules *interfaz_textos(void);
 // a la vista o no (para las comprobaciones de la ROM de pruebas).
 void interfaz_estado(int x, int y, bool pulsado, bool descripcion);
 
+// La ROM de pruebas con las ventanas (comprobar_ventanas, el guion de
+// ui/guion.h): el panel inferior de la pila (su hover y sus botones, para
+// th_guion_init); el puntero en (x, y) sin tocar los botones ni la pila, y sin
+// descripción (la cuenta de quieto a cero, como en th64sim ventanas, que no las
+// dibuja); y una lista de la interfaz (interfaz_lista) dibujada con el RDP como
+// interfaz_dibujar, para medir aparte la lista y el envío.
+th_bottom_panel *interfaz_panel(void);
+// La pila y el panel como recién cargados (cada estado del guion empieza así,
+// como en th64sim ventanas): sin ventanas encima, sin botones abajo ni hover.
+void interfaz_reiniciar(void);
+void interfaz_poner_puntero(int x, int y);
+// La ROM de pruebas (el guion con mando, comprobar_ventanas_partida): el
+// botón A (TH_UI_LEFT) o B (TH_UI_RIGHT) del mando abajo o arriba, como si lo
+// hubiese leído el gancho de cada barrido; interfaz_mandos lo verá en la
+// llamada siguiente. Solo antes de interfaz_mandos_iniciar (que lo pisaría).
+void interfaz_inyectar_boton(int boton, bool abajo);
+void interfaz_dibujar_lista(const th_drawlist *l, const uint16_t *paleta, mapa_n64_stats_t *st);
+
 #endif

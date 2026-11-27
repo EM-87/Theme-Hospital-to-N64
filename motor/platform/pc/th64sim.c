@@ -51,6 +51,7 @@
 #include "objetos.h"
 #include "panel_inferior.h"
 #include "raster.h"
+#include "guion.h"
 #include "ventanas.h"
 #include "vista.h"
 
@@ -600,26 +601,17 @@ static int orden_panel(char **argv)
 // personas), el plano y la huella (superposiciones), las entidades del plano,
 // los fantasmas encima de todo, el panel inferior y la ventana abierta, y el
 // puntero. Para las capturas y para compararlas con el RDP en la ROM de
-// pruebas. Cada línea de estados.txt:
-//   <nombre> <cx> <cy> <giro> <paso>...
-// con la casilla del mundo en el centro de la pantalla, el giro de la cámara
-// (0–3) y los pasos desde el escenario recién cargado (semilla 1), uno por
-// fotograma salvo tick:
-//   panel:salas|objetos|contratar   el botón del panel
-//   boton:<id>, botond:<id>         clic izquierdo (o derecho: id_right) en el
-//                                   botón de la ventana con ese id (TH_GWB_*)
-//   clic:x,y, clicd:x,y             clic izquierdo o derecho en la casilla
-//   baja:x,y, mueve:x,y, sube:x,y   el botón izquierdo baja, el puntero se
-//                                   mueve y el botón sube, en casillas
-//   esc                             Escape
-//   pausa:0|1                       en pausa desde ese paso
-//   tick:n                          n horas de simulación (con un fotograma cada una)
-//   puntero:x,y, px:x,y             el puntero del final (casilla o píxel)
-// Las órdenes de cada fotograma se aplican en el tick siguiente, que corre
-// enseguida (th_sim_push_order y th_sim_tick), y su resultado vuelve a las
-// ventanas (th_game_ui_order_result). Escribe <nombre>.ppm y, por estado, una
-// línea con las cuentas de la lista: elementos y cargas de textura
-// (th_drawlist_loads) de la ventana sola.
+// pruebas (comprobar_ventanas, platform/n64/main.c). Cada línea de
+// estados.txt es un estado del guion (ui/guion.h: el nombre, la casilla del
+// centro, el giro y los pasos; el intérprete es el mismo en la ROM), desde el
+// escenario recién cargado con la semilla 1. Las órdenes de cada fotograma se
+// aplican en el tick siguiente, que corre enseguida (th_sim_push_order y
+// th_sim_tick), y su resultado vuelve a las ventanas
+// (th_game_ui_order_result). Escribe <nombre>.ppm, el registro de su partida
+// en <nombre>.log (las tres líneas del contrato de tools/hito6/README.md, para
+// tools/hito6/repetir.sh) y, por estado, una línea con las cuentas de la
+// lista (elementos y cargas de textura, th_drawlist_loads, de la ventana sola)
+// y otra con las órdenes, las horas, la huella y el saldo.
 typedef struct {
     th_bottom_panel bp;
     const th_ui_fonts *fuentes;
@@ -634,33 +626,50 @@ static int vt_dibujar_panel(const th_ui_window *w, th_drawlist *out, void *ctx)
     return th_bottom_panel_draw(&p->bp, p->fuentes, &p->info, p->textos, out);
 }
 
+// El registro de la partida de cada estado (<nombre>.log): las tres líneas
+// del contrato de tools/hito6/README.md («La partida grabada en la ROM»), como
+// las escribe la ROM por debugf y th64sim partida en ordenes_rom.log, para
+// pasarlo por tools/hito6/repetir.sh.
+static FILE *vt_log;
+static int vt_aplicadas, vt_aceptadas;
+
 static void vt_orden(void *ctx, const th_sim *s, const th_order *o, const th_order_result *r)
 {
     th_game_ui_order_result(ctx, s, o, r);
     printf("  orden %s (%d,%d) -> %s\n", th64sim_nombre_orden(o->kind), o->x, o->y, th_build_reason_name(r->reason));
+    const int ok = r->reason == TH_REASON_OK;
+    vt_aplicadas++;
+    vt_aceptadas += ok;
+    if (vt_log)
+        fprintf(vt_log, "TH64 orden\t%u\t%s\t%u\t%u\t%u\t%u\t%u\t%u\t%s\t%s\n", (unsigned)s->hours,
+                th64sim_nombre_orden(o->kind), o->x, o->y, o->dir, o->qty, o->w, o->h,
+                o->kind == TH_ORD_CONTRATAR ? th64sim_resumen_de(o->def) : th64sim_id_de(s, o->def),
+                ok ? "-" : th_build_reason_name(r->reason));
 }
 
-// El centro del rombo de la casilla (x, y) del mundo en la pantalla.
-static void vt_pixel(const th_view *v, int rot, int x, int y, int *px, int *py)
-{
-    int vx, vy;
-    th_rot_tile(rot, x, y, &vx, &vy);
-    th_view_tile(v, vx, vy, px, py);
-    *py += v->unit / 2;
-}
+// El anfitrión del guion (ui/guion.h): el fotograma de las ventanas con las
+// órdenes a la cola, y la hora de simulación entera.
+typedef struct {
+    th_sim *s;
+    th_game_ui *g;
+} vt_anfitrion;
 
-static int vt_boton(th_game_ui *g, int id, int derecho, int *px, int *py)
+static int vt_frame(void *ctx, const th_game_ui_input *in, const th_view *v, int rot, th_game_ui_output *out)
 {
-    const th_ui_window *w = th_game_ui_window(g);
-    for (int i = 0; i < w->n_buttons; i++) {
-        const th_ui_button *b = &w->buttons[i];
-        if ((derecho ? b->id_right : b->id) == id) {
-            *px = w->x + (b->x + b->r) / 2;
-            *py = w->y + (b->y + b->b) / 2;
-            return 0;
-        }
+    vt_anfitrion *a = ctx;
+    th_game_ui_frame(a->g, in, a->s, v, rot, out);
+    for (int i = 0; i < out->n_orders; i++) {
+        th_order o = out->orders[i];
+        o.tick = a->s->hours;
+        if (th_sim_push_order(a->s, &o) < 0) // la cola llena: no volverá por el gancho
+            th_game_ui_order_dropped(a->g, &o);
     }
-    return -1;
+    return out->n_orders;
+}
+
+static void vt_tick(void *ctx)
+{
+    th_sim_tick(((vt_anfitrion *)ctx)->s);
 }
 
 static int orden_ventanas(char **argv)
@@ -716,20 +725,27 @@ static int orden_ventanas(char **argv)
     th_raster r = {.rgb = rgb, .w = W, .h = H, .paleta = (const uint8_t(*)[3])pal[0],
                    .paleta_gris = (const uint8_t(*)[3])pal[1], .paleta_roja = (const uint8_t(*)[3])pal[2]};
     static th_view_entity ents[TH_VISTA_SIM_MAX + TH_GAME_UI_ENTITIES];
+    // El nombre del escenario (el de la línea «TH64 partida nueva»): el del
+    // fichero sin el directorio ni «.trg».
+    char escenario[256];
+    const char *barra = strrchr(argv[4], '/');
+    snprintf(escenario, sizeof escenario, "%s", barra ? barra + 1 : argv[4]);
+    if (strlen(escenario) > 4 && !strcmp(escenario + strlen(escenario) - 4, ".trg"))
+        escenario[strlen(escenario) - 4] = 0;
+    static th_ui_stack pila;
+    static vt_panel panel;
+    static th_guion gs;
+    th_guion_init(&gs, &pila, &panel.bp, th_game_ui_instance(), W, H);
     char linea[4096];
     int n = 0, fallos = 0;
     while (fgets(linea, sizeof linea, f)) {
-        char nombre[256];
-        int cx, cy, rot, usado;
-        if (linea[0] == '#' || sscanf(linea, "%255s %d %d %d%n", nombre, &cx, &cy, &rot, &usado) != 4)
+        if (th_guion_linea(&gs, linea))
             continue;
-        rot &= 3;
+        const char *nombre = gs.nombre;
         n++;
         th_sim *s = th64sim_cargar_escenario(assets, argv[4], NULL, 1);
         if (!s)
             return 1;
-        static th_ui_stack pila;
-        static vt_panel panel;
         th_ui_stack_init(&pila);
         th_ui_stack_screen(&pila, W, H);
         th_bottom_panel_init(&panel.bp, 0, W, H);
@@ -744,120 +760,24 @@ static int orden_ventanas(char **argv)
         th_game_ui_init(g, &env);
         s->ev.ctx = g;
         s->ev.order = vt_orden;
-        th_view v = {.unit = 16, .w = W, .h = H};
-        int vx, vy, sx, sy;
-        th_rot_tile(rot, cx, cy, &vx, &vy);
-        th_view_tile(&v, vx, vy, &sx, &sy);
-        v.x = sx - W / 2;
-        v.y = sy - H / 2;
-        int px = W / 2, py = H / 2, pausa = 0;
+        snprintf(ruta, sizeof ruta, "%s/%s.log", argv[6], nombre);
+        if (!(vt_log = fopen(ruta, "w")))
+            return 1;
+        fprintf(vt_log, "TH64 partida nueva: escenario %s, semilla %d\n", escenario, 1);
+        vt_aplicadas = vt_aceptadas = 0;
+        vt_anfitrion anf = {.s = s, .g = g};
+        const th_guion_host host = {.ctx = &anf, .frame = vt_frame, .tick = vt_tick};
         th_game_ui_output out;
-        const char *p = linea + usado;
-        char paso[64];
-        int k;
         printf("%s:\n", nombre);
-        while (1) {
-            if (sscanf(p, "%63s%n", paso, &k) != 1) {
-                strcpy(paso, "fin");
-                k = 0;
-            }
-            p += k;
-            int a = 0, b = 0, raton = TH_UI_LEFT, baja = 0, sube = 0, ticks = 0, esc = 0, boton_panel = 0;
-            if (!strcmp(paso, "fin")) {
-            } else if (sscanf(paso, "boton:%d", &a) == 1 || sscanf(paso, "botond:%d", &a) == 1) {
-                raton = paso[5] == 'd' ? TH_UI_RIGHT : TH_UI_LEFT;
-                if (vt_boton(g, a, raton == TH_UI_RIGHT, &px, &py) < 0) {
-                    fprintf(stderr, "%s: no hay botón %d\n", nombre, a);
-                    fallos++;
-                    break;
-                }
-                baja = sube = 1;
-            } else if (sscanf(paso, "clic:%d,%d", &a, &b) == 2 || sscanf(paso, "clicd:%d,%d", &a, &b) == 2) {
-                raton = paso[4] == 'd' ? TH_UI_RIGHT : TH_UI_LEFT;
-                vt_pixel(&v, rot, a, b, &px, &py);
-                baja = sube = 1;
-            } else if (sscanf(paso, "baja:%d,%d", &a, &b) == 2) {
-                vt_pixel(&v, rot, a, b, &px, &py);
-                baja = 1;
-            } else if (sscanf(paso, "sube:%d,%d", &a, &b) == 2) {
-                vt_pixel(&v, rot, a, b, &px, &py);
-                sube = 1;
-            } else if (sscanf(paso, "mueve:%d,%d", &a, &b) == 2 || sscanf(paso, "puntero:%d,%d", &a, &b) == 2)
-                vt_pixel(&v, rot, a, b, &px, &py);
-            else if (sscanf(paso, "px:%d,%d", &a, &b) == 2) {
-                px = a;
-                py = b;
-            } else if (sscanf(paso, "tick:%d", &a) == 1)
-                ticks = a;
-            else if (sscanf(paso, "pausa:%d", &a) == 1) {
-                pausa = a;
-                continue;
-            } else if (!strcmp(paso, "esc"))
-                esc = 1;
-            else if (!strcmp(paso, "panel:salas"))
-                boton_panel = TH_PI_SALAS;
-            else if (!strcmp(paso, "panel:objetos"))
-                boton_panel = TH_PI_OBJETOS;
-            else if (!strcmp(paso, "panel:contratar"))
-                boton_panel = TH_PI_CONTRATAR;
-            else {
-                fprintf(stderr, "%s: paso desconocido «%s»\n", nombre, paso);
-                fallos++;
-                break;
-            }
-            for (int t = 0; t < (ticks ? ticks : 1); t++) {
-                if (ticks)
-                    th_sim_tick(s);
-                th_game_ui_input in = {.px = px, .py = py, .id = -1, .escape = esc, .paused = pausa, .sim_idle = 1,
-                                       .panel_button = boton_panel};
-                th_bottom_panel_mouse_move(&panel.bp, px, py);
-                th_ui_stack_mouse_move(&pila, px, py);
-                if (baja) {
-                    const th_ui_event e = th_ui_stack_mouse_down(&pila, raton, px, py);
-                    if (!e.win)
-                        in.world_down |= 1 << raton;
-                }
-                if (sube) {
-                    const th_ui_event e = th_ui_stack_mouse_up(&pila, raton, px, py);
-                    if (!e.win)
-                        in.world_up |= 1 << raton;
-                    else if (e.win == &panel.bp.win && e.id >= 0)
-                        in.panel_button = e.id;
-                    else if (e.id >= 0) {
-                        in.win = e.win;
-                        in.id = e.id;
-                        in.mouse = raton;
-                    }
-                }
-                th_ui_stack_update(&pila, 33);
-                th_game_ui_frame(g, &in, s, &v, rot, &out);
-                for (int i = 0; i < out.n_orders; i++) {
-                    th_order o = out.orders[i];
-                    o.tick = s->hours;
-                    if (th_sim_push_order(s, &o) < 0) // la cola llena: no volverá por el gancho
-                        th_game_ui_order_dropped(g, &o);
-                }
-                if (out.n_orders && !ticks) {
-                    // La hora siguiente las aplica, y un fotograma sin clics deja
-                    // las ventanas como las vería el siguiente (los botones que
-                    // la fase habilita, por ejemplo).
-                    th_sim_tick(s);
-                    const th_game_ui_input quieto = {.px = px, .py = py, .id = -1, .paused = pausa, .sim_idle = 1};
-                    th_ui_stack_update(&pila, 33);
-                    th_game_ui_frame(g, &quieto, s, &v, rot, &out);
-                    for (int i = 0; i < out.n_orders; i++) {
-                        th_order o2 = out.orders[i];
-                        o2.tick = s->hours;
-                        if (th_sim_push_order(s, &o2) < 0)
-                            th_game_ui_order_dropped(g, &o2);
-                    }
-                    if (out.n_orders)
-                        th_sim_tick(s);
-                }
-            }
-            if (!strcmp(paso, "fin"))
-                break;
+        int paso;
+        while ((paso = th_guion_paso(&gs, &host, &out)) > 0)
+            ;
+        if (paso < 0) {
+            fprintf(stderr, "%s: %s\n", nombre, gs.error);
+            fallos++;
         }
+        const int rot = gs.rot, px = gs.px, py = gs.py, pausa = gs.pausa;
+        const th_view v = gs.v;
         // El dibujo: lo del último fotograma.
         const int ns = th_vista_sim_rot(s, rot, ents, TH_VISTA_SIM_MAX);
         for (int i = 0; i < out.n_entities; i++)
@@ -904,6 +824,20 @@ static int orden_ventanas(char **argv)
                "interfaz con el puntero; la ventana sola: %d elementos, %d cargas de textura; huella %08lx\n",
                nombre, act, mapa_n, out.overlays ? out.overlays->count : 0, out.n_entities, out.n_on_top,
                l.count - mapa_n, w_n, w_cargas, (unsigned long)th_drawlist_hash(&l));
+        // La línea final del registro, como partida_terminar en la ROM: con la
+        // cola vacía (th_sim_hash cuenta las órdenes que esperan, y el PC solo
+        // repite las aplicadas), descartando las que queden.
+        if (s->n_orders)
+            fprintf(stderr, "%s: %d órdenes sin aplicar al acabar: se descartan\n", nombre, s->n_orders);
+        s->n_orders = 0;
+        s->ev.order = NULL;
+        fprintf(vt_log, "TH64 partida: %lu horas, huella %08lx, saldo %ld\n", (unsigned long)s->hours,
+                (unsigned long)th_sim_hash(s), (long)s->hosp.balance);
+        fclose(vt_log);
+        vt_log = NULL;
+        printf("%s: registro %s.log: %d órdenes, %d aceptadas; %lu horas en %d fotogramas; huella %08lx; saldo %ld\n",
+               nombre, nombre, vt_aplicadas, vt_aceptadas, (unsigned long)s->hours, gs.fotogramas,
+               (unsigned long)th_sim_hash(s), (long)s->hosp.balance);
     }
     fclose(f);
     return n && !fallos ? 0 : 1;

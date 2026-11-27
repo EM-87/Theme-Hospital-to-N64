@@ -94,10 +94,14 @@ struct th_game_ui {
     uint8_t col_qty[GW_COL_FILAS];
     int col_activa;
     const char *col_titulo, *col_texto;
-    // La vista previa (th_build_check_cell, solo con sim_idle): el último resultado.
+    // La vista previa (th_build_check_cell, solo con sim_idle): el último
+    // resultado, y la simulación y la hora en que se calculó (previa, en
+    // ventana_colocar.c, no lo repite mientras no acabe un tick).
     struct {
         th_rnode def;
         int x, y, dir, ok, hay;
+        const th_sim *s;
+        uint32_t horas;
     } previa;
 
     // La obra: el tipo de sala, el plano que se arrastra (en el mundo), si ya

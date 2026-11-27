@@ -27,7 +27,7 @@ target_link_libraries(th_vista PUBLIC th_core)
 
 # La interfaz: ventanas, texto y el panel inferior, también portables.
 add_library(th_ui STATIC ui/ui.c ui/texto.c ui/panel_inferior.c ui/puntero.c ui/ventanas.c ui/ventana_construir.c
-            ui/ventana_amueblar.c ui/ventana_colocar.c ui/obra.c ui/ventana_contratar.c)
+            ui/ventana_amueblar.c ui/ventana_colocar.c ui/obra.c ui/ventana_contratar.c ui/guion.c)
 target_include_directories(th_ui PUBLIC ui)
 target_link_libraries(th_ui PUBLIC th_vista m)
 

@@ -77,12 +77,22 @@ static void cargar_textos(const char *ruta)
         memset(&textos, 0, sizeof textos);
 }
 
+static bool instalado; // el gancho de cada barrido (interfaz_mandos_iniciar)
+
 void interfaz_mandos_iniciar(void)
 {
-    static bool instalado;
     if (!instalado)
         vi_install_vblank_handler(en_cada_barrido, NULL);
     instalado = true;
+}
+
+void interfaz_inyectar_boton(int boton, bool abajo)
+{
+    assertf(!instalado, "interfaz_inyectar_boton con los mandos leyéndose en cada barrido");
+    if (boton == TH_UI_RIGHT)
+        ultimo.btn.b = abajo;
+    else
+        ultimo.btn.a = abajo;
 }
 
 void interfaz_leer(joypad_inputs_t *mando)
@@ -288,4 +298,34 @@ void interfaz_dibujar(const th_bottom_info *info, const uint16_t *paleta, mapa_n
     lista.count = lista.floor_count = lista.redraws = 0;
     interfaz_lista(info, &lista);
     mapa_n64_dibujar(&lista, hojas_rdp, paleta, ancho_pantalla, alto_pantalla, st);
+}
+
+th_bottom_panel *interfaz_panel(void)
+{
+    return &panel;
+}
+
+void interfaz_poner_puntero(int x, int y)
+{
+    puntero.x = (int32_t)x << 4;
+    puntero.y = (int32_t)y << 4;
+    quieto = 0;
+    forzar_descripcion = false;
+}
+
+void interfaz_dibujar_lista(const th_drawlist *l, const uint16_t *paleta, mapa_n64_stats_t *st)
+{
+    mapa_n64_dibujar(l, hojas_rdp, paleta, ancho_pantalla, alto_pantalla, st);
+}
+
+void interfaz_reiniciar(void)
+{
+    th_bottom_panel_init(&panel, 0, ancho_pantalla, alto_pantalla);
+    panel.win.draw = dibujar_panel;
+    th_ui_stack_init(&pila);
+    th_ui_stack_screen(&pila, ancho_pantalla, alto_pantalla);
+    th_ui_stack_open(&pila, &panel.win, NULL);
+    izquierdo = derecho = false;
+    quieto = 0;
+    forzar_descripcion = false;
 }

@@ -1,0 +1,32 @@
+# La partida de la demo jugada desde las ventanas (la demo jugable, pieza 6b):
+# lo mismo que tools/hito6/ordenes/demo.tsv, pero con el puntero, los botones y
+# los clics del guion (ui/guion.h; th64sim ventanas baja en el PC y
+# comprobar_ventanas_partida en la ROM de pruebas), sobre
+# motor/assets/escenarios/demo.trg con la semilla 1, y después corre hasta las
+# 3.000 horas. Una sola línea (un estado). Los pasos, por partes:
+#   - amueblar: «+» del mostrador (160) y confirmar (181): TH_ORD_COMPRAR en la
+#     hora 0; colocar se abre al volver el resultado y el clic en (62,74) lo
+#     coloca al norte (hora 1);
+#   - contratar: la pestaña de las recepcionistas (303), contratar (313) y el
+#     clic en (62,73) la suelta (hora 2; el candidato 0, 577e31bf, como en
+#     demo.tsv);
+#   - tick:47 hasta la hora 50 y la cámara sobre la consulta (camara:, sin
+#     fotograma: la ventana de colocar, arriba a la derecha, no la tapa);
+#   - construir: diagnóstico (1), la consulta (11), el plano de 4 × 4 de
+#     (57,50) a (60,53) y su ✓ (203): sala en la hora 50; la puerta al sur con
+#     el clic en (58,54) (51); las dos ventanas al este con los clics en (61,51)
+#     y (61,52) (52 y 53) y su ✓ (54); una hora de despeje;
+#   - los objetos de la sala, en el orden de la lista: el archivador en (60,50)
+#     al norte (56), la silla girada dos veces con el derecho (norte → este →
+#     sur) en (58,52) (57), el escritorio girado otras dos (sur → oeste →
+#     norte) en (58,51) (58) y el ✓ de la sala (59);
+#   - tick:40 hasta la hora 100 y el médico: la pestaña de los médicos (300),
+#     contratar y el clic en (59,56) (hora 100; el candidato 0, cf501390);
+#   - tick:2899 hasta las 3.000 horas.
+# Las órdenes no caen en los ticks de demo.tsv (0, 0, 1, 50 ×5, 51 ×4 y 100):
+# cada orden de la ventana espera el resultado de la anterior, que vuelve en la
+# hora en que se aplica, así que van de una en una (0, 1, 2, 50–54, 56–59 y
+# 100). La huella y el saldo a 3.000 horas son otros que los de demo.tsv: los
+# que da th64sim ventanas en el PC y tiene que dar la ROM (tools/motor_check.sh,
+# paso 3b, con tools/hito6/repetir.sh).
+partida 62 72 0 panel:objetos boton:160 boton:181 clic:62,74 panel:contratar boton:303 boton:313 clic:62,73 tick:47 camara:62,52 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 clic:61,52 boton:203 tick:1 clic:60,50 clicd:58,52 clicd:58,52 clic:58,52 clicd:58,51 clicd:58,51 clic:58,51 boton:203 tick:40 camara:60,60 panel:contratar boton:300 boton:313 clic:59,56 tick:2899 puntero:59,56

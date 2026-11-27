@@ -63,6 +63,7 @@ static int aplicadas, aceptadas, rechazo, motivo_rechazo;
 static uint32_t hora_ultimo;
 static int en_ultimo;
 static char nombres_ultimo[64];
+static char mensaje[64]; // el texto de la barra (partida_texto)
 
 // El gancho th_sim_events.order: corre dentro de la corrutina, en
 // th_sim_apply_orders, al empezar el tick. La línea es la que escribe th64sim
@@ -111,6 +112,7 @@ void partida_empezar(th_sim *s, th_game_ui *g, const char *escenario, uint32_t s
     ventanas = g;
     n_esperan = aplicadas = aceptadas = rechazo = en_ultimo = 0;
     nombres_ultimo[0] = 0;
+    mensaje[0] = 0; // sin el texto de la partida anterior (partida_texto)
     s->ev.order = al_aplicar;
     s->ev.ctx = NULL;
     if (escenario)
@@ -185,7 +187,6 @@ const char *partida_ultimo_tick(uint32_t *hora, int *cuantas)
 
 // El aviso en la barra: unos 3 s.
 #define MS_AVISO 3000
-static char mensaje[64];
 static uint32_t mensaje_hasta;
 
 static wav64_t *efecto;

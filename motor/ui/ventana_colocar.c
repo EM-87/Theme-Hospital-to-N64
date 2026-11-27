@@ -207,10 +207,24 @@ static void girar(th_game_ui *g)
 
 // La vista previa: th_build_check_cell solo entre ticks; a medio tick, el
 // último resultado (para esa casilla y orientación, o el último que hubo).
+// CorsixTH la recalcula en cada fotograma (UIPlaceObjects:setBlueprintCell,
+// place_objects.lua:768-850), pero el resultado solo depende de la casilla,
+// la orientación, el objeto y el mundo, y el mundo solo cambia dentro de un
+// tick (las órdenes se aplican al empezarlo y la gente anda en él), que al
+// acabar suma s->hours (sim.c, th_sim_tick). Con lo mismo y en la misma hora
+// se repite el último resultado: th_build_check_cell cuesta unos 15 ms en la
+// N64 con el bloqueo de zonas (build.c, would_break_pathfinding), y se pagaba
+// en cada fotograma con un objeto en la mano.
 static int previa(th_game_ui *g, th_rnode def, int x, int y, int dir)
 {
+    const th_sim *s = g->s;
+    if (g->previa.hay && g->previa.def == def && g->previa.x == x && g->previa.y == y && g->previa.dir == dir &&
+        g->previa.s == s && g->previa.horas == s->hours)
+        return g->previa.ok;
     if (g->in->sim_idle) {
         int bad;
+        g->previa.s = s;
+        g->previa.horas = s->hours;
         g->previa.ok = th_build_check_cell(g->s, def, x, y, dir, &bad);
         g->previa.def = def;
         g->previa.x = x;

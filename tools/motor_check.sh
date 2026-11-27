@@ -21,7 +21,12 @@
 #      pruebas: demo.trg, semilla 1, las 13 órdenes de ordenes/demo.tsv y
 #      3.000 horas): tools/hito6/repetir.sh la repite en el PC con las órdenes
 #      que grabó la ROM y tiene que dar «repetir: bien» (las mismas órdenes con
-#      el mismo resultado, la misma huella y el mismo saldo);
+#      el mismo resultado, la misma huella y el mismo saldo); y las ventanas
+#      de la partida en la ROM (comprobar_ventanas: los 15 estados de
+#      tools/hito6/ventanas.txt dibujados por el RDP a 0 píxeles de la
+#      referencia; comprobar_ventanas_partida: tools/hito6/ventanas_partida.txt,
+#      la misma partida jugada con el puntero hasta las 3.000 horas, que
+#      repetir.sh repite y que da el mismo registro que th64sim ventanas);
 #   4. ROM normal: compila y arranca en el menú.
 # En las dos ROM comprueba también que el bucle del dibujo no choca con las
 # funciones de rdpq que llama en la caché de instrucciones
@@ -127,14 +132,79 @@ fi
 
 paso "3b. La partida de prueba de la demo, repetida en el PC"
 if grep -q "TH64 partida nueva: escenario demo" "$log"; then
-  grep "TH64 partida" "$log" | sed 's/^/   /'
-  "$REPO_DIR/tools/hito6/repetir.sh" "$log" "" "$OUT/repetir" > "$OUT/repetir.txt" 2>&1 || true
+  # La partida de demo.tsv (comprobar_partida) es la primera del registro: todo
+  # lo de antes de las ventanas (TH64 demo5), porque repetir.sh toma la última.
+  sed '/TH64 demo5:/,$d' "$log" > "$OUT/partida_demo.log"
+  grep "TH64 partida" "$OUT/partida_demo.log" | sed 's/^/   /'
+  "$REPO_DIR/tools/hito6/repetir.sh" "$OUT/partida_demo.log" "" "$OUT/repetir" > "$OUT/repetir.txt" 2>&1 || true
   sed 's/^/   /' "$OUT/repetir.txt"
   grep -q "^repetir: bien" "$OUT/repetir.txt" || { echo "   FALLO: la partida de la ROM no se repite igual en el PC"; exit 1; }
 elif [ -f "$M/assets/escenarios/demo.trg" ]; then
   echo "   FALLO: la ROM de pruebas no jugó la partida de prueba (TH64 partida nueva)"; exit 1
 else
   echo "   (sin motor/assets/escenarios/demo.trg: no se prueba; tools/hito6/demo.sh)"
+fi
+if [ -f "$M/assets/escenarios/demo.trg" ]; then
+  # Las ventanas en la ROM (comprobar_ventanas y comprobar_ventanas_partida):
+  # las tablas de main.c copian tools/hito6/ventanas.txt y ventanas_partida.txt;
+  # los 15 estados y la pantalla del final de la partida, a 0 píxeles distintos
+  # de la referencia; la partida jugada desde las ventanas (la última del
+  # registro) se repite en el PC con repetir.sh, y sus líneas del registro son
+  # las mismas que escribe th64sim ventanas con el mismo guion.
+  python3 -I - "$M/platform/n64/main.c" "$REPO_DIR/tools/hito6/ventanas.txt" "$REPO_DIR/tools/hito6/ventanas_partida.txt" <<'PY' \
+    || { echo "   FALLO: las tablas de las ventanas de main.c no copian los guiones"; exit 1; }
+import re, sys
+c = open(sys.argv[1]).read()
+for tabla, ruta in (("estados_ventanas", sys.argv[2]), ("partida_ventanas", sys.argv[3])):
+    m = re.search(r"static const char \*const " + tabla + r"\[\] = \{(.*?)\n\};", c, re.S)
+    rom = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)) if m else []
+    txt = [l.rstrip("\n") for l in open(ruta) if l.strip() and not l.startswith("#")]
+    if rom != txt:
+        sys.exit(f"{tabla} no es {ruta}")
+print(f"   tablas de main.c iguales a los guiones")
+PY
+  grep "TH64 demo5" "$log" | grep -v ": empieza" | sed 's/^/   /'
+  # Los 15 estados en el PC: la huella de la lista entera y el registro de la
+  # partida de cada uno, iguales en la ROM (tools/hito6/ventanas_estados.py).
+  mkdir -p "$OUT/ventanas_estados"
+  "$M/build/pc/th64sim" ventanas baja "$M/assets" "$M/assets/escenarios/demo.trg" \
+    "$REPO_DIR/tools/hito6/ventanas.txt" "$OUT/ventanas_estados" > "$OUT/ventanas_estados/salida.txt" \
+    || { echo "   FALLO: th64sim ventanas baja sobre ventanas.txt"; exit 1; }
+  python3 -I "$REPO_DIR/tools/hito6/ventanas_estados.py" "$log" "$OUT/ventanas_estados" \
+    "$REPO_DIR/tools/hito6/ventanas.txt" \
+    || { echo "   FALLO: los estados de las ventanas de la ROM no son los de th64sim ventanas"; exit 1; }
+  grep -q "TH64 demo5: comparacion de las ventanas con la referencia: 0 pixeles distintos en total" "$log" \
+    || { echo "   FALLO: las ventanas no se dibujan como la referencia en la ROM"; exit 1; }
+  grep -q "TH64 demo5: la partida desde las ventanas contra la referencia: 0 pixeles distintos" "$log" \
+    || { echo "   FALLO: la partida desde las ventanas no se dibuja como la referencia"; exit 1; }
+  sed -n '/TH64 demo5: comparacion de las ventanas/,$p' "$log" | grep -q "TH64 partida nueva: escenario demo" \
+    || { echo "   FALLO: la ROM de pruebas no jugó la partida desde las ventanas"; exit 1; }
+  "$REPO_DIR/tools/hito6/repetir.sh" "$log" "" "$OUT/repetir_ventanas" > "$OUT/repetir_ventanas.txt" 2>&1 || true
+  sed 's/^/   /' "$OUT/repetir_ventanas.txt"
+  grep -q "^repetir: bien" "$OUT/repetir_ventanas.txt" \
+    || { echo "   FALLO: la partida desde las ventanas de la ROM no se repite igual en el PC"; exit 1; }
+  mkdir -p "$OUT/ventanas_partida"
+  "$M/build/pc/th64sim" ventanas baja "$M/assets" "$M/assets/escenarios/demo.trg" \
+    "$REPO_DIR/tools/hito6/ventanas_partida.txt" "$OUT/ventanas_partida" > "$OUT/ventanas_partida/salida.txt"
+  sed -n '/TH64 demo5: comparacion de las ventanas/,$p' "$log" | tr -d '\r' \
+    | sed -n 's/^.*\(TH64 partida nueva: \)/\1/p; s/^.*\(TH64 orden\t\)/\1/p; s/^.*\(TH64 partida: [0-9]* horas, huella\)/\1/p' \
+    | sed -n '/TH64 partida nueva/,/TH64 partida: [0-9]* horas/p' > "$OUT/ventanas_partida/rom_las_dos.log"
+  # Dos partidas desde las ventanas (comprobar_ventanas_partida): la del guion
+  # y la de los clics por el mando con la hora troceada (fotogramas a medio
+  # tick y órdenes retenidas); las dos con el registro de th64sim ventanas.
+  n=$(grep -c "TH64 partida nueva" "$OUT/ventanas_partida/rom_las_dos.log")
+  [ "$n" = 2 ] || { echo "   FALLO: $n partidas desde las ventanas en el registro de la ROM, en vez de 2"; exit 1; }
+  for k in 1 2; do
+    awk -v k="$k" '/TH64 partida nueva/{p++} p==k' "$OUT/ventanas_partida/rom_las_dos.log" \
+      > "$OUT/ventanas_partida/rom$k.log"
+    cmp -s "$OUT/ventanas_partida/rom$k.log" "$OUT/ventanas_partida/partida.log" \
+      || { echo "   FALLO: el registro de la partida $k desde las ventanas no es el de th64sim ventanas"; \
+           diff "$OUT/ventanas_partida/rom$k.log" "$OUT/ventanas_partida/partida.log" | head; exit 1; }
+  done
+  grep -q "TH64 demo5: la partida desde las ventanas con mando y la hora troceada: .*: iguales" "$log" \
+    || { echo "   FALLO: la partida desde las ventanas con mando y la hora troceada no da lo mismo"; exit 1; }
+  echo "   registro de las dos partidas desde las ventanas (el guion; el mando con la hora troceada) igual en la"
+  echo "   ROM y en th64sim ventanas: $(tail -1 "$OUT/ventanas_partida/partida.log")"
 fi
 
 paso "4. ROM normal"

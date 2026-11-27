@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "graficos.h"
+#include "guion.h"
 #include "interfaz.h"
 #include "mapa_n64.h"
 #include "partida.h"
@@ -559,8 +560,13 @@ static diferencias_t comparar_con_referencia(const char *hito, surface_t *pantal
         pal8[i][1] = (uint8_t)(g << 3 | g >> 2);
         pal8[i][2] = (uint8_t)(b << 3 | b >> 2);
     }
-    th_raster r = {.rgb = malloc(ANCHO * ALTO * 3), .mezcla = malloc(ANCHO * ALTO), .hoja = malloc(ANCHO * ALTO),
-                   .w = ANCHO, .h = ALTO, .paleta = (const uint8_t(*)[3])pal8};
+    // Por franjas de FRANJA filas: con las ventanas (comprobar_ventanas) no
+    // quedan en el heap los 375 KiB de la pantalla entera a 24 bits más la
+    // mezcla y la hoja. Cada elemento se pinta desplazado (y, y las filas del
+    // recorte) en la franja; el orden y los píxeles son los mismos.
+    enum { FRANJA = 48 };
+    th_raster r = {.rgb = malloc(ANCHO * FRANJA * 3), .mezcla = malloc(ANCHO * FRANJA), .hoja = malloc(ANCHO * FRANJA),
+                   .w = ANCHO, .h = FRANJA, .paleta = (const uint8_t(*)[3])pal8};
     // Las paletas fantasma gris y roja (pieza 3 de la demo), si las hay: con
     // ellas pinta la referencia los elementos con TH_DRAW_PAL_GREY o _RED.
     static uint8_t pal_fantasma[2][256][3];
@@ -580,32 +586,44 @@ static diferencias_t comparar_con_referencia(const char *hito, surface_t *pantal
             r.paleta_roja = (const uint8_t(*)[3])pal_fantasma[1];
     }
     assertf(r.rgb && r.mezcla && r.hoja, "sin memoria para la referencia");
-    th_raster_clear(&r, 0, 0, 0);
-    th_raster_draw(&r, sheets, l);
 
     const uint16_t *fb = pantalla->buffer;
     int distintos = 0, mezcla_1 = 0, mezclas = 0, de_entidades = 0;
-    for (int y = 0; y < ALTO; y++) {
-        for (int x = 0; x < ANCHO; x++) {
-            int i = y * ANCHO + x;
-            uint16_t c = fb[y * (pantalla->stride / 2) + x];
-            int d = 0;
-            for (int k = 0; k < 3; k++) {
-                int real = c >> (11 - 5 * k) & 31, esperado = r.rgb[3 * i + k] >> 3;
-                int dk = real > esperado ? real - esperado : esperado - real;
-                if (dk > d)
-                    d = dk;
+    for (int y0 = 0; y0 < ALTO; y0 += FRANJA) {
+        th_raster_clear(&r, 0, 0, 0);
+        for (int e = 0; e < l->count; e++) {
+            th_draw d = l->items[e];
+            d.y = (int16_t)(d.y - y0);
+            if (d.sheet != TH_SHEET_FILL && (d.flags & TH_DRAW_CLIP)) {
+                d.clip_y0 = (int16_t)(d.clip_y0 - y0);
+                d.clip_y1 = (int16_t)(d.clip_y1 - y0);
             }
-            mezclas += r.mezcla[i];
-            de_entidades += r.hoja[i] == 1 + TH_SHEET_SPRITES;
-            if (d == 0)
-                continue;
-            if (d == 1 && r.mezcla[i]) {
-                mezcla_1++;
-            } else {
-                if (distintos++ < 4)
-                    debugf("TH64 %s:   (%d,%d): RDP %04x, referencia %02x%02x%02x%s\n", hito, x, y, c, r.rgb[3 * i],
-                           r.rgb[3 * i + 1], r.rgb[3 * i + 2], r.mezcla[i] ? " (mezcla)" : "");
+            const th_drawlist uno = {.items = &d, .count = 1, .capacity = 1};
+            th_raster_draw(&r, sheets, &uno);
+        }
+        for (int fy = 0; fy < FRANJA && y0 + fy < ALTO; fy++) {
+            const int y = y0 + fy;
+            for (int x = 0; x < ANCHO; x++) {
+                int i = fy * ANCHO + x;
+                uint16_t c = fb[y * (pantalla->stride / 2) + x];
+                int d = 0;
+                for (int k = 0; k < 3; k++) {
+                    int real = c >> (11 - 5 * k) & 31, esperado = r.rgb[3 * i + k] >> 3;
+                    int dk = real > esperado ? real - esperado : esperado - real;
+                    if (dk > d)
+                        d = dk;
+                }
+                mezclas += r.mezcla[i];
+                de_entidades += r.hoja[i] == 1 + TH_SHEET_SPRITES;
+                if (d == 0)
+                    continue;
+                if (d == 1 && r.mezcla[i]) {
+                    mezcla_1++;
+                } else {
+                    if (distintos++ < 4)
+                        debugf("TH64 %s:   (%d,%d): RDP %04x, referencia %02x%02x%02x%s\n", hito, x, y, c,
+                               r.rgb[3 * i], r.rgb[3 * i + 1], r.rgb[3 * i + 2], r.mezcla[i] ? " (mezcla)" : "");
+                }
             }
         }
     }
@@ -1939,9 +1957,9 @@ static th_rnode definicion(const char *ruta)
 // ninguna abierta: el esqueleto de ventanas.c no abre ninguna), se dibujan el
 // hospital con las tres paletas y la interfaz, y la simulación sigue con lo
 // que sobra hasta 28 ms. Mide la CPU del fotograma entero (con los ticks).
-static void recorrido_partida(th_game_ui *ui, const char *nombre, int velocidad, int fotogramas)
+static void recorrido_partida(th_game_ui *ui, const char *nombre, int velocidad, int fotogramas, const th_view *vista)
 {
-    th_view v = vista_hospital();
+    th_view v = vista ? *vista : vista_hospital();
     cuentas_t c = {0};
     uint32_t reloj = get_ticks(), acumulado = 0, cpu_ui = 0, cpu_interfaz = 0, max_ui = 0;
     const uint32_t por_tick = TICKS_PER_SECOND / 1000 * MS_POR_TICK, ticks0 = simulacion_stats()->ticks;
@@ -2083,11 +2101,11 @@ static int comprobar_partida(void)
     // (th_sim_temperature_step, que se para cuando nada cambia), así que x8 se
     // mide dos veces, justo después de x1 (como en la versión anterior) y al
     // final.
-    recorrido_partida(ui, "x1", 1, 300);
-    recorrido_partida(ui, "x8", 8, 150);
-    recorrido_partida(ui, "x2", 2, 150);
-    recorrido_partida(ui, "x4", 4, 150);
-    recorrido_partida(ui, "x8 otra vez", 8, 150);
+    recorrido_partida(ui, "x1", 1, 300, NULL);
+    recorrido_partida(ui, "x8", 8, 150, NULL);
+    recorrido_partida(ui, "x2", 2, 150, NULL);
+    recorrido_partida(ui, "x4", 4, 150, NULL);
+    recorrido_partida(ui, "x8 otra vez", 8, 150, NULL);
     th_game_ui_close_all(ui);
     repartida = false;
     // Además de las 13 aplicadas, las 13 aceptadas (si el núcleo las rechazase
@@ -2095,6 +2113,354 @@ static int comprobar_partida(void)
     // compara motor_check con la partida repetida en el PC (paso 3b,
     // tools/hito6/repetir.sh), y aquí con los de th64sim partida a 3.000 h.
     return aplicadas != n || aceptadas != n || final_horas != horas || !huella_ok;
+}
+
+// La demo jugable, las ventanas en la ROM (docs/06_plan.md): los estados de
+// las ventanas por el camino de la partida real, en la pantalla entera,
+// dibujados por el RDP y por el rasterizador de referencia, y una partida
+// jugada desde las ventanas. El guion (los pasos, sus fotogramas y su orden)
+// es el de ui/guion.h, el mismo que ejecuta th64sim ventanas baja en el PC.
+//
+// estados_ventanas copia las líneas de los estados de tools/hito6/ventanas.txt
+// (sin los comentarios), y partida_ventanas la de
+// tools/hito6/ventanas_partida.txt: si los ficheros cambian, hay que cambiar
+// las tablas a mano (tools/motor_check.sh, paso 3b, lo comprueba).
+static const char *const estados_ventanas[] = {
+    "construir 60 62 0 panel:salas boton:1 px:191,57",
+    "obra_plano 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 puntero:60,53",
+    "obra_plano_malo 62 76 0 panel:salas boton:1 boton:11 baja:61,77 mueve:64,80 puntero:64,80",
+    "obra_puerta 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 puntero:58,54",
+    "obra_ventanas 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 puntero:61,52",
+    "obra_objetos 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 boton:203 tick:2 puntero:58,51",
+    "amueblar 60 66 0 panel:objetos boton:160 boton:160 px:180,74",
+    "colocar_valido 62 72 0 panel:objetos boton:160 boton:181 puntero:62,74",
+    "colocar_invalido 62 72 0 panel:objetos boton:160 boton:181 puntero:63,79",
+    "colocar_girado 62 72 1 panel:objetos boton:160 boton:181 clicd:62,74 puntero:62,74",
+    "contratar_sin 60 66 0 panel:contratar px:100,60",
+    "contratar 60 66 0 panel:contratar boton:300 px:100,60",
+    "colocar_personal 60 58 0 panel:contratar boton:300 boton:313 puntero:59,56",
+    "colocar_personal_mal 62 76 0 panel:contratar boton:300 boton:313 px:60,150",
+    "pausa_aviso 60 66 0 pausa:1 panel:objetos boton:160 boton:181 px:140,190",
+};
+static const char *const partida_ventanas[] = {
+    "partida 62 72 0 panel:objetos boton:160 boton:181 clic:62,74 panel:contratar boton:303 boton:313 clic:62,73 tick:47 camara:62,52 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 clic:61,52 boton:203 tick:1 clic:60,50 clicd:58,52 clicd:58,52 clic:58,52 clicd:58,51 clicd:58,51 clic:58,51 boton:203 tick:40 camara:60,60 panel:contratar boton:300 boton:313 clic:59,56 tick:2899 puntero:59,56",
+};
+
+// La colocación del recorrido «x1 con colocar» (comprobar_ventanas_partida),
+// sobre la partida a las 3.000 horas: otro mostrador (el botón 181 de
+// amueblar) en la mano y el puntero en una casilla libre del pasillo, abajo a
+// la derecha de la recepción, donde cabe (el fantasma sale azul; en th64sim
+// ventanas, la línea de ventanas_partida.txt seguida de «camara:62,72» y
+// estos pasos).
+static const char colocar_x1[] = "colocar_x1 62 72 0 panel:objetos boton:160 boton:181 puntero:65,76";
+
+// El anfitrión del guion en la ROM: cada fotograma pasa por ventanas_fotograma
+// (th_game_ui_frame con el puntero puesto donde dice el guion, las órdenes a
+// partida_mandar_orden, el texto a la barra y lo que hay que dibujar a la
+// escena), y cada hora es un tick de la simulación repartida (simulacion.h)
+// acabado: el resultado de las órdenes vuelve a las ventanas desde el gancho
+// (partida.c, al_aplicar → th_game_ui_order_result), dentro de la corrutina.
+//
+// Con mando, los clics no los lleva el guion: bajan y suben en el mando
+// (interfaz_inyectar_boton, en fotogramas distintos) y pasan por la pila en
+// interfaz_mandos, como los de un jugador. Con trocear, la hora no se acaba
+// entera: se empieza y se avanza un poco (simulacion_avanzar), así que el
+// fotograma siguiente puede caer a medio tick (sim_idle = 0, la instantánea y
+// las órdenes retenidas por partida_vaciar); la acaba la hora siguiente, y
+// entera si hay órdenes que aplicar (el guion espera su resultado antes del
+// paso siguiente, como esperaría un jugador).
+typedef struct {
+    th_game_ui *ui;
+    uint32_t ultimo_ui, max_ui; // CPU de ventanas_fotograma: el último fotograma y el más caro
+    bool mando, trocear;
+    int a_medias, retenidas; // fotogramas a medio tick y órdenes mandadas en ellos
+} guion_rom_t;
+
+static int guion_fotograma(void *ctx, const th_game_ui_input *in, const th_view *v, int rot, th_game_ui_output *out)
+{
+    guion_rom_t *a = ctx;
+    assertf(rot == giro, "el guion gira %d y la camara %d", rot, giro);
+    interfaz_poner_puntero(in->px, in->py);
+    interfaz_orden_t orden = {.boton = in->panel_button, .ventana = in->win, .id = in->id,
+                              .raton = in->mouse, .mundo_abajo = in->world_down,
+                              .mundo_arriba = in->world_up};
+    if (a->mando) { // los clics, de la pila por interfaz_mandos; el panel del paso, tal cual
+        joypad_inputs_t j;
+        orden = interfaz_mandos(&j);
+        if (in->panel_button)
+            orden.boton = in->panel_button;
+    }
+    const bool a_medias = simulacion_en_tick();
+    int cx, cy;
+    const uint32_t t0 = get_ticks();
+    ventanas_fotograma(a->ui, &orden, in->escape, in->paused, false, v, out, &cx, &cy);
+    a->a_medias += a_medias;
+    if (a_medias)
+        a->retenidas += out->n_orders;
+    a->ultimo_ui = get_ticks() - t0;
+    if (a->ultimo_ui > a->max_ui)
+        a->max_ui = a->ultimo_ui;
+    return out->n_orders;
+}
+
+static void guion_hora(void *ctx)
+{
+    const guion_rom_t *a = ctx;
+    simulacion_terminar(); // la hora anterior, si quedó a medias
+    simulacion_pedir(1);
+    if (!a->trocear) {
+        simulacion_terminar();
+        return;
+    }
+    partida_vaciar(&sim); // las retenidas a medio tick, con la cola del núcleo libre
+    if (partida_pendientes(&sim))
+        simulacion_terminar();
+    else
+        simulacion_avanzar(get_ticks() + TICKS_FROM_US(300));
+}
+
+static void guion_mando(void *ctx, int raton, int abajo)
+{
+    (void)ctx;
+    interfaz_inyectar_boton(raton, abajo != 0);
+}
+
+// Un estado del guion desde demo.trg recién cargado (hora 0, semilla 1, como la
+// partida nueva y th64sim ventanas): la pila y las ventanas como nuevas, la
+// cámara girada como dice la línea, la partida grabando (partida_empezar; con
+// nueva, con la línea «TH64 partida nueva») y los pasos hasta el fotograma del
+// final. Deja en out lo de ese fotograma (lo que se dibuja). false si la línea
+// no se pudo recorrer.
+static bool guion_estado(th_guion *gs, guion_rom_t *a, const char *linea, bool nueva, th_game_ui_output *out)
+{
+    if (th_guion_linea(gs, linea))
+        return false;
+    // La marca del principio: motor_check (paso 3b) toma de aquí hasta la
+    // línea del estado las del registro de su partida.
+    debugf("TH64 demo5: estado %s: empieza%s%s\n", gs->nombre, a->mando ? ", con mando" : "",
+           a->trocear ? ", con la hora troceada" : "");
+    if (!cargar_hospital_de("demo", 1))
+        return false;
+    simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
+    repartida = true;
+    th_view g = gs->v;
+    if (!girar_camara(&g, gs->rot))
+        return false;
+    simulacion_girar(gs->rot);
+    if (a->ui)
+        th_game_ui_close_all(a->ui);
+    interfaz_reiniciar();
+    a->ui = ventanas_iniciar();
+    gs->g = a->ui;
+    a->max_ui = a->ultimo_ui = 0;
+    a->a_medias = a->retenidas = 0;
+    partida_empezar(&sim, a->ui, nueva ? "demo" : NULL, 1);
+    const th_guion_host host = {.ctx = a, .frame = guion_fotograma, .tick = guion_hora,
+                                .mando = a->mando ? guion_mando : NULL};
+    int r;
+    while ((r = th_guion_paso(gs, &host, out)) > 0)
+        ;
+    if (r < 0)
+        debugf("TH64 demo5: estado %s: %s\n", gs->nombre, gs->error);
+    return r == 0;
+}
+
+// La pantalla entera del último fotograma del estado: el mapa con sus
+// superposiciones y entidades y los fantasmas encima (dibujar_escena, con lo que
+// dejó ventanas_fotograma en extra_*, y las tres paletas), la pila con el panel y
+// la ventana y el puntero (interfaz_lista), por el RDP y por la referencia con
+// las hojas del mapa y de la interfaz. El texto de la barra es el del último
+// fotograma (out->message), como en th64sim ventanas: no el de
+// partida_mensaje, que partida_terminar ya borró y que en la partida dura 3 s
+// de reloj. Escribe la línea del estado con la huella de la lista entera
+// (th_drawlist_hash; motor_check la compara con la de th64sim ventanas) y
+// devuelve los píxeles distintos.
+static int guion_comparar(const th_guion *gs, const guion_rom_t *a, const th_game_ui_output *out)
+{
+    static th_draw elementos_ui[1024], todos[4096 + 1024];
+    surface_t *pantalla = display_get();
+    rdpq_attach(pantalla, NULL);
+    rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+    rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+    medida_t m = {0};
+    dibujar_escena(&gs->v, &m);
+    const th_bottom_info info = {.balance = sim.hosp.balance, .day = sim.date.day, .month = sim.date.month,
+                                 .reputation = sim.hosp.reputation, .rep_min = 0, .rep_max = 1000,
+                                 .paused = gs->pausa, .message = out->message};
+    th_drawlist lu = {.items = elementos_ui, .capacity = (int)(sizeof elementos_ui / sizeof elementos_ui[0])};
+    const uint32_t t0 = get_ticks();
+    const int lista_ui = interfaz_lista(&info, &lu);
+    const uint32_t t1 = get_ticks();
+    mapa_n64_stats_t st_ui = {0};
+    interfaz_dibujar_lista(&lu, paletas.colores[PALETA_NORMAL], &st_ui);
+    const uint32_t t2 = get_ticks();
+    // La referencia: las dos listas seguidas, como la de th64sim ventanas.
+    th_drawlist l = {.items = todos, .capacity = (int)(sizeof todos / sizeof todos[0])};
+    memcpy(todos, lista.items, (size_t)lista.count * sizeof todos[0]);
+    memcpy(todos + lista.count, lu.items, (size_t)lu.count * sizeof todos[0]);
+    l.count = lista.count + lu.count;
+    l.floor_count = lista.floor_count; // los suelos son los del mapa (th_drawlist_hash los cuenta)
+    l.redraws = lista.redraws;
+    const th_sheet *sheets[TH_SHEETS];
+    const th_sheet *const *de_ui = interfaz_hojas();
+    for (int k = 0; k < TH_SHEETS; k++)
+        sheets[k] = de_ui[k];
+    sheets[TH_SHEET_BLOCKS] = &sh_bloques;
+    sheets[TH_SHEET_SPRITES] = &sh_sprites;
+    const diferencias_t d = comparar_con_referencia("demo5", pantalla, &l, sheets);
+    display_show(pantalla);
+    const float ms = 1000.0f / TICKS_PER_SECOND;
+    debugf("TH64 demo5: estado %s: %d elementos, lista %08lx, %d pixeles distintos, %d cargas, %d TLUT; CPU: ventanas %.3f ms, "
+           "lista %.3f ms, RDP %.3f ms (ventana %d; %d del mapa y %d de interfaz; %d de %d mezclados a 1/31; "
+           "ventanas %.3f ms el fotograma mas caro; %d fotogramas, %lu horas)\n",
+           gs->nombre, l.count, (unsigned long)th_drawlist_hash(&l), d.distintos, m.st.cargas + st_ui.cargas, m.st.tluts + st_ui.tluts,
+           a->ultimo_ui * ms, (m.lista + (t1 - t0)) * ms, (m.rdp + (t2 - t1)) * ms, th_game_ui_active(a->ui),
+           lista.count, lu.count, d.mezcla_1, d.mezclas, a->max_ui * ms, gs->fotogramas, (unsigned long)gs->horas);
+    return d.distintos + (lista_ui < 0); // la lista de la interfaz, entera
+}
+
+// Los 15 estados de tools/hito6/ventanas.txt contra la referencia. Devuelve los
+// píxeles distintos (y los estados que no se pudieron recorrer).
+static int comprobar_ventanas(th_game_ui **ui)
+{
+    static th_guion gs;
+    guion_rom_t a = {.ui = *ui};
+    th_guion_init(&gs, interfaz_pila(), interfaz_panel(), NULL, ANCHO, ALTO);
+    int distintos = 0;
+    const int n = (int)(sizeof estados_ventanas / sizeof estados_ventanas[0]);
+    for (int i = 0; i < n; i++) {
+        th_game_ui_output out;
+        if (!guion_estado(&gs, &a, estados_ventanas[i], false, &out)) {
+            distintos++;
+            continue;
+        }
+        if (i == 0) {
+            heap_stats_t hs;
+            sys_get_heap_stats(&hs);
+            debugf("TH64 demo5: demo.trg cargado con la interfaz y las ventanas: heap usado %d KiB de %d KiB "
+                   "(libres %d KiB); simulacion %u KiB\n",
+                   hs.used / 1024, hs.total / 1024, (hs.total - hs.used) / 1024, (unsigned)(sizeof sim / 1024));
+        }
+        simulacion_terminar();
+        partida_terminar(&sim);
+        distintos += guion_comparar(&gs, &a, &out);
+        sin_extras();
+    }
+    *ui = a.ui;
+    debugf("TH64 demo5: comparacion de las ventanas con la referencia: %d pixeles distintos en total\n", distintos);
+    th_view v = vista_hospital();
+    girar_camara(&v, 0);
+    simulacion_girar(0);
+    return distintos;
+}
+
+// La partida de tools/hito6/ventanas_partida.txt: lo de demo.tsv jugado con el
+// puntero y los clics del guion, por el mismo camino que la partida real, y
+// hasta las 3.000 horas. Escribe las tres líneas del contrato del registro
+// (tools/motor_check.sh, paso 3b, las pasa por tools/hito6/repetir.sh) y la
+// pantalla del final contra la referencia. Después, con la partida a las 3.000
+// horas, mide el fotograma entero a x1 con las ventanas más caras abiertas.
+// Devuelve los fallos.
+static int comprobar_ventanas_partida(th_game_ui **ui)
+{
+    static th_guion gs;
+    guion_rom_t a = {.ui = *ui};
+    th_guion_init(&gs, interfaz_pila(), interfaz_panel(), NULL, ANCHO, ALTO);
+    th_game_ui_output out;
+    const uint32_t t0 = get_ticks();
+    const bool ok = guion_estado(&gs, &a, partida_ventanas[0], true, &out);
+    const uint32_t t1 = get_ticks();
+    *ui = a.ui;
+    if (!ok)
+        return 1;
+    simulacion_terminar();
+    int aceptadas;
+    const int aplicadas = partida_aplicadas(&aceptadas);
+    const uint32_t huella = th_sim_hash(&sim);
+    // La misma partida en el PC: th64sim ventanas baja motor/assets
+    // motor/assets/escenarios/demo.trg tools/hito6/ventanas_partida.txt <dir>
+    // da «13 órdenes, 13 aceptadas; 3000 horas; huella cc315406; saldo 36826».
+    // Si cambian demo.trg, el guion, las ventanas o la simulación, se
+    // recalculan con esa orden.
+    const bool iguales = huella == 0xcc315406u && sim.hosp.balance == 36826 && sim.hours == 3000;
+    debugf("TH64 demo5: la partida desde las ventanas: %d ordenes aplicadas, %d aceptadas; %d fotogramas, %lu horas "
+           "en %.0f ms; huella %08lx, saldo %ld: %s (PC: cc315406, 36826)\n",
+           aplicadas, aceptadas, gs.fotogramas, (unsigned long)sim.hours, (t1 - t0) * 1000.0f / TICKS_PER_SECOND,
+           (unsigned long)huella, (long)sim.hosp.balance, iguales ? "iguales" : "DISTINTOS");
+    partida_terminar(&sim);
+    const int distintos = guion_comparar(&gs, &a, &out);
+    sin_extras();
+    debugf("TH64 demo5: la partida desde las ventanas contra la referencia: %d pixeles distintos\n", distintos);
+    // Otra vez, con los clics por el mando (A o B abajo en un fotograma y
+    // arriba en el siguiente, por interfaz_mandos) y la hora troceada (los
+    // fotogramas a medio tick y las órdenes que partida_vaciar retiene): el
+    // camino de un jugador, que tiene que dar las mismas órdenes en las
+    // mismas horas (motor_check compara su registro con el de th64sim
+    // ventanas, como el de la primera).
+    a.mando = a.trocear = true;
+    const uint32_t t2 = get_ticks();
+    const bool ok_mando = guion_estado(&gs, &a, partida_ventanas[0], true, &out);
+    simulacion_terminar();
+    const uint32_t t3 = get_ticks();
+    a.mando = a.trocear = false;
+    *ui = a.ui;
+    int aceptadas_mando;
+    const int aplicadas_mando = partida_aplicadas(&aceptadas_mando);
+    const uint32_t huella_mando = th_sim_hash(&sim);
+    const bool iguales_mando = ok_mando && huella_mando == huella && sim.hosp.balance == 36826 && sim.hours == 3000;
+    debugf("TH64 demo5: la partida desde las ventanas con mando y la hora troceada: %d ordenes aplicadas, %d "
+           "aceptadas; %d fotogramas (%d a medio tick, con %d ordenes retenidas), %lu horas en %.0f ms; huella "
+           "%08lx, saldo %ld: %s\n",
+           aplicadas_mando, aceptadas_mando, gs.fotogramas, a.a_medias, a.retenidas, (unsigned long)sim.hours,
+           (t3 - t2) * 1000.0f / TICKS_PER_SECOND, (unsigned long)huella_mando, (long)sim.hosp.balance,
+           iguales_mando ? "iguales" : "DISTINTOS");
+    partida_terminar(&sim);
+    sin_extras();
+    girar_camara(&gs.v, 0);
+    simulacion_girar(0);
+    // El fotograma entero a x1 con la partida en marcha (3 pacientes, la
+    // plantilla y la consulta) y cada ventana abierta como la abriría su
+    // botón del panel (th_game_ui_open, entre fotogramas: no hay obra ni lista).
+    static const struct {
+        int cual;
+        const char *nombre;
+    } abiertas[] = {{TH_GW_AMUEBLAR, "x1 con amueblar"},
+                    {TH_GW_CONSTRUIR, "x1 con construir"},
+                    {TH_GW_CONTRATAR, "x1 con contratar"}};
+    for (unsigned i = 0; i < sizeof abiertas / sizeof abiertas[0]; i++) {
+        simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
+        if (th_game_ui_open(a.ui, abiertas[i].cual) != 0) {
+            debugf("TH64 demo5: %s: no se abre\n", abiertas[i].nombre);
+            continue;
+        }
+        recorrido_partida(a.ui, abiertas[i].nombre, 1, 300, NULL);
+        th_game_ui_close_all(a.ui);
+    }
+    // Y con colocar y un objeto en la mano (la vista previa,
+    // th_build_check_cell, la más cara): el mostrador comprado por el guion
+    // (colocar_x1), con la cámara del guion y el puntero en el pasillo; la
+    // partida graba otra vez para que la compra vuelva
+    // a la ventana (partida_empezar sin la línea de partida nueva).
+    simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
+    partida_empezar(&sim, a.ui, NULL, 1);
+    const th_guion_host host = {.ctx = &a, .frame = guion_fotograma, .tick = guion_hora};
+    int r = th_guion_linea(&gs, colocar_x1);
+    if (r == 0) {
+        th_game_ui_close_all(a.ui);
+        while ((r = th_guion_paso(&gs, &host, &out)) > 0)
+            ;
+    }
+    simulacion_terminar();
+    if (r == 0 && th_game_ui_active(a.ui) == TH_GW_COLOCAR)
+        recorrido_partida(a.ui, "x1 con colocar", 1, 300, &gs.v);
+    else
+        debugf("TH64 demo5: x1 con colocar: no se abre (%s, ventana %d)\n", gs.error, th_game_ui_active(a.ui));
+    th_game_ui_close_all(a.ui);
+    partida_terminar(&sim);
+    sin_extras();
+    repartida = false;
+    return aplicadas != 13 || aceptadas != 13 || !iguales || distintos != 0 || aplicadas_mando != 13 ||
+           aceptadas_mando != 13 || !iguales_mando;
 }
 #endif
 
@@ -2304,6 +2670,18 @@ int main(void)
         fallos++;
     if (assets && comprobar_partida())
         fallos++;
+    // Las ventanas de la partida en la ROM: los 15 estados contra la referencia
+    // y la partida jugada desde ellas (repetida en el PC por motor_check).
+    if (assets && existe("rom:/escenarios/demo.trg") && interfaz_cargar(ANCHO, ALTO, false)) {
+        th_game_ui *ui = NULL;
+        if (comprobar_ventanas(&ui))
+            fallos++;
+        if (comprobar_ventanas_partida(&ui))
+            fallos++;
+        if (ui)
+            th_game_ui_close_all(ui);
+        interfaz_reiniciar();
+    }
     debugf("TH64 pruebas: fin, %d fallos\n", fallos);
     if (emux_detect(0))
         emux_ioctl_exit();
