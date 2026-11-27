@@ -46,3 +46,6 @@ bench/saves/Autosaves/
 
 # Python
 __pycache__/
+
+# Worktrees de los agentes de Claude Code (ramas de trabajo paralelas, fuera del repositorio)
+.claude/worktrees/
