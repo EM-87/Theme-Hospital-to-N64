@@ -934,10 +934,55 @@ Es decir: ×2 se cumple siempre, ×4 casi siempre, y ×8 va de ×2,2 a ×6,7 seg
 
 ### Pendiente
 
-- Las ventanas de verdad en la ROM (panel → `th_game_ui` → `partida` → núcleo → RDP) contra la referencia, su coste en ms y una partida jugada desde las ventanas repetida en el PC: la tanda B2.
+- Las ventanas de verdad en la ROM contra la referencia, su coste en ms y una partida jugada desde las ventanas repetida en el PC: hechas en [la tanda B2](#la-demo-jugable-tanda-b2--las-ventanas-probadas-en-la-rom-y-los-ticks-con-orden-repartidos).
 - Vender en la tienda de la sala (bajar de lo que ya hay) necesita una orden del núcleo que no existe; comprar varios objetos de pasillo de una vez se hace de uno en uno (`TH_ORD_COMPRAR` lleva un objeto y abre la lista con él), cuando CorsixTH los mete todos en una lista.
 - Las vistas previas de la sala y del objeto en la rejilla de construir y amueblar, el retrato de FACE01 (la hoja no está en los assets), mover o redimensionar un plano ya dibujado, y las puertas dobles en `screenToWall` (el nivel 1 no tiene).
 - Jugar con el mando en ares o en la consola: `run_ares.sh` no inyecta entrada; la salida con Z mantenido, la velocidad real en la barra y el aviso con sonido están sin ver a mano.
+
+## La demo jugable, tanda B2 — las ventanas probadas en la ROM y los ticks con orden repartidos
+
+Las dos piezas pendientes de la tanda B (2026-11-27), cada una en su worktree con revisor adversario y arreglos, integradas una tras otra (145f260 y la siguiente).
+
+### Qué hay
+
+- **Las ventanas en la ROM** (`ui/guion.c`, `guion.h`; `platform/n64/main.c`, `interfaz.c`, `partida.c`; `tools/hito6/ventanas_partida.txt`, `ventanas_estados.py`; `tools/motor_check.sh`): el intérprete de los pasos de `ventanas.txt` es ahora C portable, sin libdragon ni `malloc`, con un anfitrión de dos funciones (el fotograma y la hora), y lo usan `th64sim ventanas` y la ROM de pruebas. `comprobar_ventanas` recorre los 15 estados por el camino real de la partida (`ventanas_fotograma`, `partida_mandar_orden`, la simulación repartida, el resultado de cada orden desde el gancho), dibuja la pantalla entera con el RDP y con la referencia y escribe la huella de la lista entera y el registro de cada estado; `ventanas_estados.py` los compara en `motor_check` con los del PC (la referencia pintada en la propia ROM no prueba por sí sola que la ROM llegue al estado del PC: fue el hallazgo medio de la revisión, y al comprobarlo salió un fallo real, la cabecera de la lista con `floor_count` a 0). La referencia se pinta por franjas de 48 filas, porque con `demo.trg` y las ventanas quedaban 395 KiB libres y fragmentados. `comprobar_ventanas_partida` juega `ventanas_partida.txt`, la partida de `demo.tsv` desde las ventanas (las órdenes caen de una en una, porque cada una espera el resultado de la anterior: ticks 0, 1, 2, 50–54, 56–59 y 100, y por eso su huella es cc315406 y no acd9c19a, con el mismo saldo 36.826), y otra vez con los clics por el mando (`interfaz_inyectar_boton` → `interfaz_mandos` → la pila, como un jugador) y la hora troceada (cada hora se empieza y se avanza 0,3 ms, así que el fotograma siguiente cae a medio tick con `sim_idle = 0` y `partida_vaciar` retiene las órdenes): el mismo registro línea a línea que el PC. La vista previa de colocar (`previa` en `ventana_colocar.c`) repite el último resultado mientras no cambien el objeto, la casilla, la orientación ni la hora.
+- **Los ticks con orden repartidos** (`core/src/sim.c`, `build.c`, `map.c`; `th/pausa.h`, `map.h`, `sim.h`; `th64sim tramos`; `tests/test_build.c`, `test_map.c`): el riesgo 1 del plan, medido con callgrind en el PC y con la ROM de pruebas en ares. Lo caro era `th_sim_temperature_prepare` (36,4 ms en la N64, el 65 % de las instrucciones de cada orden que cambia el mapa; 5 veces en la demo), las sombras (17,0 ms) y el paso (17,1 ms), y `finish_room` hacía las tres pasadas más una segunda de sombras al poner la puerta: 90 ms seguidos sin pausa. Ahora `th_sim_map_changed` solo apunta el cambio y `th_sim_temperature_flush` lee el mapa en `temp_key` (16 KiB nuevos en `th_sim`, una pausa cada 16 filas) al acabar la orden, cuando `s->place` y `s->obra` ya están al día (el hallazgo bajo del revisor, arreglado en el código); los pesos se calculan en la pasada siguiente, por partes, con una tabla de 16 entradas (27 ms en vez de 36); las pasadas de paso y sombras solo escriben lo que cambia y `mark_room` las hace en una; `finish_room` espera las sombras hasta el final (`th_map_hold_shadows`); una pausa entre orden y orden y otra tras la obra que se termina sola. Todo exacto: nada más lee los pesos ni `temp_key`.
+
+### Comprobaciones
+
+| Qué | Resultado |
+|---|---|
+| `test_core`, `test_ui`, `test_ventanas` (PC y ASan/UBSan) | 212.578 (+61 de las pausas y las pasadas), 311 y 164 comprobaciones, 0 fallos; d38fbaef |
+| `test_ordenes_pausadas` | por `th_sim_tick` con `temp_defer` como la ROM: 276 pausas (96, 32, 72 y 76 en los cuatro ticks, con la obra que se termina sola) y en todas las sombras cuadran con las paredes y ninguna casilla deja pasar a través de una pared; las mutaciones que caza: una pausa dentro de `room_walls` con las sombras en espera (3 pausas mal), quitar la pausa de `th_build_tick`, la pasada fusionada sin sombras (148 mal) |
+| `th64sim tramos` con `demo.tsv` | los mismos TSV y la misma huella que `partida` (acd9c19a a 3.000 h); 91, 38, 87, 111 y 39 pausas en los cinco ticks con órdenes |
+| Huellas y partidas | a800c6f0, 8f00cfc9, 5f170e3d, f1860651 (36.223), acd9c19a (36.826), cc315406 (36.826) sin cambios; la batería de construir, las cinco listas iguales con las huellas de siempre |
+| Los 15 estados en la ROM (ares) | 0 píxeles distintos en los 15 y en la partida desde las ventanas; 15 de 15 con la huella de la lista y el registro iguales a `th64sim ventanas baja`; las dos partidas desde las ventanas (con el guion y con el mando y la hora troceada: 3.057 fotogramas, 278 a medio tick, 2 órdenes retenidas) con el registro del PC y `repetir.sh` «bien» |
+| `tools/motor_check.sh` sobre el árbol integrado | Con las dos piezas juntas, el dibujo de la ROM de pruebas volvía a chocar con rdpq en la caché de instrucciones (9 líneas): el relleno pasa de 17.600 a 20.608 B (`relleno_cache.c`); las cuatro ROM (normal, pruebas, `HORAS=0 MODO=4` y `MEDIR=1`) sin choques. La pasada entera, abajo en las cifras finales |
+
+### Coste
+
+En ares, ROM de pruebas, la partida de `demo.tsv` a 3.000 horas, antes → después:
+
+| Tick | Órdenes | CPU del tick | Su pasada de temperatura | Tramo sin pausa más largo |
+|---|---|---|---|---|
+| 0 | comprar y colocar el mostrador | 51,4 → 27,1 ms | 15,7 → 31,6 ms | 38,2 → 2,1 ms |
+| 1 y 100 | contratar | 1,9 → 1,9 ms | 15,8 → 15,8 ms | 0,7 → 0,7 ms |
+| 50 | sala, puerta, dos ventanas, `fin_ventanas` | 92,4 → 33,7 ms | 15,7 → 31,7 ms | 90,3 → 19,1 ms |
+| 51 | tres `colocar` y `fin_sala` | 121,2 → 47,1 ms | 15,7 → 31,7 ms | 38,2 → 1,7 ms |
+
+La pasada de temperatura de un tick con cambio del mapa sube de 15,7 a 31,6 ms porque ahora lleva dentro los 27 ms de pesos que antes iban en el tick, pero va en trozos de 0,8 ms. El tramo de 19 ms que queda es `room_walls` más `mark_room` (las paredes y la pasada fusionada de paso y sombras), que no se puede partir sin dejar las sombras a medias para el dibujo. La partida jugada fotograma a fotograma con las 13 órdenes pasa de 3 saltos a 0 a ×1 (intervalo peor 98,6 → 29,3 ms) y a ×8 (101,0 → 43,6 ms). Las pasadas enteras en la N64: `prepare` 36,4 → 27,2 ms, sombras 17,0 → 14,5, paso 17,1 → 11,3.
+
+Las ventanas en la ROM a ×1 (media / máximo de `th_game_ui_frame`): amueblar 0,21 / 0,22 ms, construir 0,17 / 0,21, contratar 0,13 / 0,17, colocar con un mostrador en la mano 9,5 / 15,4 (antes de la caché de la vista previa, 15,5 en cada fotograma; lo caro es `th_build_check_cell` con el bloqueo de zonas, unos 15 ms, que se sigue pagando en el fotograma en que acaba un tick: el 60 % a ×1). El fotograma entero con colocar, 20,4 ms de media y 27,8 como mucho, a velocidad real ×1,00 y sin saltos. El heap de la ROM de pruebas con `demo.trg` y las ventanas: 3.298 de 3.683 KiB; la ROM de pruebas gasta 16 KiB más de bss por `temp_key`.
+
+### Las revisiones
+
+Dos revisores adversarios, 11 hallazgos (3 medios, 8 bajos), todos resueltos o documentados. Las ventanas: la comprobación de la ROM no probaba que llegara al estado del PC (ahora las huellas de la lista y el registro por estado, y el fallo real de `floor_count` que salió al comprobarlo); el guion no pasaba por el mando ni por los ticks a medias (ahora la segunda partida); la vista previa de colocar se recalculaba en cada fotograma. Los ticks: `test_ordenes_pausadas` miraba solo 48 pausas y no pasaba por `th_sim_tick` ni por la obra que se termina sola (ahora las 276, con el paso además de las sombras); las pausas de la lectura del mapa caían a media orden (ahora al acabarla); las sombras en espera durante las puertas de `room_walls` (aceptado y documentado: 0 pausas mal en la demo y en la batería) y las 26 pausas de «atrás» con 2 casillas de sombra desfasadas, que ya estaban antes (la demo no deshace obras; documentado en `th/pausa.h` como riesgo de dibujo).
+
+### Pendiente
+
+- `th_build_check_cell` con el bloqueo de zonas (unos 15 ms en la N64) en el fotograma en que acaba un tick con un objeto en la mano: cabe a ×1, pero es lo que manda en el máximo del fotograma.
+- Las sombras en espera durante las puertas de `room_walls` y las de «atrás»: un fotograma con 2 casillas de sombra desfasadas si la ROM se suspende ahí; medido, no pasa en la demo ni en la batería.
+- Los 15 estados se recorren con el guion sin mando (son los mismos fotogramas que las capturas del PC); el paso del panel entra como botón, no como clic sobre el panel. Jugar con el mando de verdad en ares o en la consola sigue sin probarse (`run_ares.sh` no inyecta entrada).
 
 ## La demo jugable, tanda C — la batería con `contratar` y la campaña de la demo en CorsixTH
 
@@ -1004,4 +1049,4 @@ CorsixTH tarda 11,8 s de media por partida de 9.050 horas (80 corridas) y el mot
 - El corte del final (los tardíos que llegan a la consulta, 69 % frente a 53 %) y la dispersión de las llegadas de marzo y abril (CorsixTH casi siempre exactamente una, 79 de 80; el motor, 0 en 16 y 2 en 71 de 800) no están explicados; caben en el azar.
 - Un `contratar` en el mes 1 o después (`crear_demo.lua` carga el mercado de ese mes) no está ejercitado; `demo.tsv` solo contrata en el mes 0.
 - La comparación estadística del mercado con el de CorsixTH (títulos, sueldos medios): el JSON cuadra con `parseSkillLevel` (enfermeras junior o consultoras según la habilidad), pero `StaffProfile:randomise` no está comparado.
-- La tanda B2 (las ventanas probadas en la ROM, los ticks con orden repartidos) y la revisión adversaria de la demo entera (tanda B3), antes de las cifras finales.
+- La revisión adversaria de la demo entera (tanda B3), antes de las cifras finales.
