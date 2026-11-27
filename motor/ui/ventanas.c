@@ -59,6 +59,12 @@ void gw_aviso(th_game_ui *g, const char *ruta)
     g->msg_fotogramas = 90; // 3 s a 30 fotogramas por segundo
 }
 
+void gw_aviso_sonido(th_game_ui *g, const char *ruta)
+{
+    gw_aviso(g, ruta);
+    g->sonar = 1;
+}
+
 void gw_abrir_ventana(th_game_ui *g, int which)
 {
     th_ui_window *cerrada = NULL;
@@ -300,6 +306,8 @@ void th_game_ui_frame(th_game_ui *g, const th_game_ui_input *in, th_sim *s, cons
     out->n_entities = g->n_ents;
     out->on_top = g->n_top ? g->top : NULL;
     out->n_on_top = g->n_top;
+    out->reject_sound = g->sonar; // el sonido va con el aviso del fotograma en que se rechazó
+    g->sonar = 0;
     g->in = NULL;
     g->out = NULL;
 }
@@ -332,6 +340,10 @@ void th_game_ui_order_result(th_game_ui *g, const th_sim *s, const th_order *o, 
         g->en_vuelo--;
     if (r->reason != TH_REASON_OK) {
         gw_aviso(g, aviso_de(o, r->reason));
+        // El único rechazo del núcleo que suena en CorsixTH: el plano que deja
+        // zonas sin unir, al confirmar (edit_room.lua:933-937, wrong2.wav).
+        if (r->reason == TH_REASON_ZONAS_INACCESIBLES)
+            g->sonar = 1;
         if (o->kind == TH_ORD_COMPRAR)
             g->n_pend = 0; // no se compró: lo demás tampoco
         if (o->kind == TH_ORD_CONTRATAR)

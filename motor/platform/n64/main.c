@@ -1492,7 +1492,8 @@ static void ventanas_fotograma(th_game_ui *ui, const interfaz_orden_t *orden, bo
     assertf(!out->on_top || (out->n_on_top >= 0 && out->n_on_top <= TH_GAME_UI_ENTITIES), "ventanas: %d encima",
             out->n_on_top);
     for (int i = 0; i < out->n_orders; i++)
-        partida_mandar_orden(&sim, &out->orders[i]);
+        if (partida_mandar_orden(&sim, &out->orders[i]) != 0)
+            th_game_ui_order_dropped(ui, &out->orders[i]); // la ventana no se queda esperando su respuesta
     if (out->reject_sound)
         partida_aviso(out->message);
     else if (out->message)

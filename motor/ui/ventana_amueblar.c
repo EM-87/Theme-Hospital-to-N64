@@ -179,7 +179,7 @@ static void comprar(th_game_ui *g, int i, int qty)
         if (g->obj_qty[i] >= 99)
             return;
         if (g->s->hosp.balance < g->total + precio) {
-            gw_aviso(g, "adviser.warnings.cannot_afford_2");
+            gw_aviso_sonido(g, "adviser.warnings.cannot_afford_2"); // furnish_corridor.lua:106
             return;
         }
         g->obj_qty[i]++;

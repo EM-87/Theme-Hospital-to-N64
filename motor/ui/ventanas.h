@@ -49,7 +49,8 @@ typedef struct th_game_ui_env {
     const th_ui_fonts *fonts;  // las fuentes de la interfaz (interfaz_fuentes)
     const th_rules *texts;     // los textos (english.trg; interfaz_textos): nombres de salas, objetos y personal
     const th_anims *anims;     // las animaciones, para los fantasmas y el plano (th_view_blueprint)
-    const th_walk_anims *walk; // las de las personas (th_vista_persona_fantasma)
+    const th_walk_anims *walk; // el PRINCIPIO de la tabla de las personas (th_walk_anims_at(0)); la de cada
+                               // clase se busca con th_walk_anims_find ("Doctor"…). Las ventanas no lo usan hoy.
     int screen_w, screen_h;    // 320 × 240
 } th_game_ui_env;
 

@@ -233,8 +233,10 @@ void gw_contratar_boton(th_game_ui *g, int id, int mouse)
         // una clase sin candidatos no se elige (wrong2.wav) y pulsar la elegida
         // la suelta (setCategory(nil)).
         const int k = id - TH_GWB_PESTANA;
-        if (g->n_cand[k] == 0)
+        if (g->n_cand[k] == 0) {
+            g->sonar = 1; // hire_staff.lua:47-48: wrong2.wav, sin texto
             return;
+        }
         g->clase = k == g->clase ? -1 : k;
         g->idx = 0; // setCategory: current_index = 1
         montar(g);
@@ -258,7 +260,7 @@ void gw_contratar_boton(th_game_ui *g, int id, int mouse)
         if (!g->hay_candidato)
             return;
         if (g->s->hosp.balance < g->perfil.wage) {
-            gw_aviso(g, "adviser.warnings.cannot_afford");
+            gw_aviso_sonido(g, "adviser.warnings.cannot_afford"); // hire_staff.lua:134-135
             return;
         }
         g->resumen = th_staff_profile_digest(&g->perfil);

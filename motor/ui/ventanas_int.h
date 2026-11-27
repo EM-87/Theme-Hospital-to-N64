@@ -52,9 +52,11 @@ struct th_game_ui {
     int n_top;
     uint8_t capas[TH_ANIM_LAYERS];
 
-    // El aviso de la barra del panel.
+    // El aviso de la barra del panel, y si suena (out->reject_sound: solo
+    // cuando la propia ventana rechaza, como wrong2 en CorsixTH).
     char msg[160];
     int msg_fotogramas;
+    uint8_t sonar;
 
     // Construir: la categoría (−1: ninguna), las salas de la lista (índices en
     // room_types) y la fila bajo el puntero (−1).
@@ -132,6 +134,10 @@ int gw_mandar(th_game_ui *g, const th_order *o);
 // Pone un aviso en la barra durante 3 s: el texto de esa ruta de los
 // textos (english.trg).
 void gw_aviso(th_game_ui *g, const char *ruta);
+// El mismo aviso con el sonido de rechazo (wrong2.wav en CorsixTH): solo donde
+// la ventana rechaza por sí misma, hire_staff.lua:135 y 140, furnish_corridor.
+// lua:106 y edit_room.lua:935; un rechazo del núcleo no suena.
+void gw_aviso_sonido(th_game_ui *g, const char *ruta);
 // Abre la ventana which, ya montada en g->w por quien llama (cierra la
 // anterior en la pila).
 void gw_abrir_ventana(th_game_ui *g, int which);

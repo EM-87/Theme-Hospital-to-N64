@@ -137,7 +137,7 @@ static void elegir(th_game_ui *g, int i)
     if (!s || i >= g->n_salas)
         return;
     if (s->hosp.balance < th_build_room_cost(s, g->salas[i])) {
-        gw_aviso(g, "adviser.warnings.money_very_low_take_loan");
+        gw_aviso_sonido(g, "adviser.warnings.money_very_low_take_loan"); // build_room.lua, como hire_staff.lua:135
         return;
     }
     gw_obra_empezar(g, g->salas[i]);
