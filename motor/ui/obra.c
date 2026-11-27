@@ -9,7 +9,7 @@
 
 #include "ventanas_int.h"
 
-#define PLANO_MAX 12 // un plano de 12 × 12 da 47 paredes: caben en TH_GAME_UI_ENTITIES
+#define PLANO_MAX 12 // un plano de 12 × 12 da 47 paredes: con la puerta y las ventanas, caben en TH_GAME_UI_ENTITIES
 
 static th_rnode sala_def(const th_game_ui *g)
 {
@@ -23,6 +23,7 @@ void gw_obra_empezar(th_game_ui *g, int tipo)
     g->arrastre = 0;
     g->pw = g->ph = 0;
     g->obra_iniciada = 0;
+    g->plano_ok = 0;
     g->borde.hay = 0;
     g->fila = 0;
     g->en_mano = 0;
@@ -82,6 +83,12 @@ static void plano(th_game_ui *g, int x, int y, int w, int h, int validar)
                 malas[j * w + i] = (uint8_t)casilla_mala(g->s, x + i, y + j);
         const int min = th_rules_int(g->s->defs, th_rules_get(g->s->defs, sala_def(g), "minimum_size"), 1);
         todo_malo = w < min || h < min; // entire_invalid: demasiado pequeño
+        // El confirmar, solo con el plano bueno: confirm_button:enable(is_valid)
+        // de setBlueprintRect (edit_room.lua:1186-1202, updateRoomBlueprint).
+        int malo = todo_malo;
+        for (int i = 0; i < w * h && !malo; i++)
+            malo = malas[i];
+        g->plano_ok = !malo;
     }
     const int n = th_view_blueprint(g->env.anims, x, y, w, h, g->rot, validar ? malas : NULL, todo_malo, &g->ov,
                                     g->ents + g->n_ents, TH_GAME_UI_ENTITIES - g->n_ents);
@@ -104,12 +111,27 @@ static void paredes(th_game_ui *g)
         g->pw = b->w;
         g->ph = b->h;
     }
-    if ((in->world_down & (1 << TH_UI_LEFT)) && g->sobre_mundo && gw_en_mapa(g->tx, g->ty) && g->en_vuelo == 0) {
+    // En pausa, UIEditRoom:onMouseDown no empieza el arrastre (edit_room.lua:1135)
+    // y onCursorWorldPositionChange no mueve el plano (1502-1510): el que ya
+    // está se queda dibujado.
+    if ((in->world_down & (1 << TH_UI_LEFT)) && g->sobre_mundo && gw_en_mapa(g->tx, g->ty) && g->en_vuelo == 0 &&
+        !in->paused) {
         g->arrastre = 1;
         g->ax = g->tx;
         g->ay = g->ty;
+        // La pila no marca el botón pegado al borde de la pantalla
+        // (th_ui_stack_mouse_down): ese arrastre solo acaba con world_up.
+        g->arrastre_sin_marca = !(g->env.stack->down & (1 << TH_UI_LEFT));
     }
-    if (g->arrastre) {
+    // UIEditRoom:onMouseUp acaba el arrastre suba donde suba el botón
+    // (edit_room.lua:1147-1151): soltado sobre una ventana o el panel, la pila
+    // lo toma y no llega world_up, pero ya no lo marca abajo.
+    if (g->arrastre && !g->arrastre_sin_marca && !(g->env.stack->down & (1 << TH_UI_LEFT)) &&
+        !(in->world_up & (1 << TH_UI_LEFT)))
+        g->arrastre = 0;
+    // El plano sigue a la casilla del mundo bajo el puntero
+    // (onCursorWorldPositionChange): sobre una ventana no cambia.
+    if (g->arrastre && g->sobre_mundo && !in->paused) {
         int bx = g->tx < 0 ? 0 : g->tx >= TH_MAP_WIDTH ? TH_MAP_WIDTH - 1 : g->tx;
         int by = g->ty < 0 ? 0 : g->ty >= TH_MAP_HEIGHT ? TH_MAP_HEIGHT - 1 : g->ty;
         // El tope del dibujo: un plano de PLANO_MAX como mucho por lado.
@@ -235,7 +257,11 @@ static void puerta_o_ventana(th_game_ui *g, int ventana)
     int x, y, side;
     if (!g->sobre_mundo || !gw_obra_borde(g, &x, &y, &side))
         return;
-    const int izq = (g->in->world_up & (1 << TH_UI_LEFT)) != 0, der = (g->in->world_up & (1 << TH_UI_RIGHT)) != 0;
+    // Al bajar el botón: UIEditRoom:onMouseDown → onLeftButtonDown confirma la
+    // puerta o pone la ventana (edit_room.lua:1076-1104, buildclk.wav en la
+    // 1093), y con el derecho tryRemoveWindowFromWall (1137-1141). Con A
+    // mantenido y el stick moviéndose, la puerta va donde se pulsó.
+    const int izq = (g->in->world_down & (1 << TH_UI_LEFT)) != 0, der = (g->in->world_down & (1 << TH_UI_RIGHT)) != 0;
     const int hay = ventana && ventana_en(b, x, y, side);
     const int ok = hay || borde_valido(g, x, y, side, ventana);
     if (!hay)
@@ -243,7 +269,7 @@ static void puerta_o_ventana(th_game_ui *g, int ventana)
     if (g->en_vuelo)
         return;
     th_order o = {.x = (uint8_t)x, .y = (uint8_t)y, .dir = (uint8_t)side};
-    if (izq && !hay) { // onMouseUp izquierdo: confirmar la puerta, o poner la ventana, si vale
+    if (izq && !hay) { // confirmar la puerta, o poner la ventana, si vale
         if (!ok) {
             gw_aviso(g, ventana ? "adviser.placement_info.window_cannot_place"
                                 : "adviser.placement_info.door_cannot_place");
@@ -268,9 +294,13 @@ void gw_obra_frame(th_game_ui *g)
         return;
     }
     gw_colocar_refrescar(g);
+    gw_colocar_hover(g);
     switch (fase) {
     case TH_OBRA_NONE:
-    case TH_OBRA_WALLS: paredes(g); break;
+    case TH_OBRA_WALLS:
+        paredes(g);
+        gw_colocar_refrescar(g); // el confirmar, con el plano de este fotograma (plano_ok)
+        break;
     case TH_OBRA_DOOR:
         plano_nucleo(g);
         puerta_o_ventana(g, 0);
@@ -288,6 +318,11 @@ void gw_obra_frame(th_game_ui *g)
 void gw_obra_cancelar(th_game_ui *g)
 {
     // er:cancel: una fase atrás (TH_ORD_ATRAS); desde las paredes, abandona.
+    // Con una orden sin respuesta, nada: la fase del núcleo aún no es la que
+    // dejará esa orden, y dos «atrás» seguidos retrocederían dos fases (o
+    // cerrarían la ventana con el plano ya en el núcleo).
+    if (g->en_vuelo)
+        return;
     const int fase = g->s->obra.phase;
     if (fase == TH_OBRA_NONE) {
         gw_cerrar(g);
@@ -300,20 +335,26 @@ void gw_obra_cancelar(th_game_ui *g)
 
 void gw_obra_confirmar(th_game_ui *g)
 {
+    // Con una orden sin respuesta, nada (como gw_obra_cancelar): un segundo
+    // confirmar llegaría con la fase ya cambiada y se rechazaría con FASE.
+    if (g->en_vuelo)
+        return;
     const int fase = g->s->obra.phase;
     th_order o = {0};
     if ((fase == TH_OBRA_NONE || fase == TH_OBRA_WALLS) && g->pw > 0) {
+        if (!g->plano_ok)
+            return; // el botón está deshabilitado (gw_colocar_refrescar)
         // confirm en la fase de paredes: el plano (UIBuildRoom:buildRoom y setBlueprintRect).
-        if (g->en_vuelo)
-            return;
         o = (th_order){.kind = TH_ORD_SALA, .x = (uint8_t)g->px, .y = (uint8_t)g->py, .w = (uint8_t)g->pw,
                        .h = (uint8_t)g->ph, .def = sala_def(g)};
         g->arrastre = 0;
     } else if (fase == TH_OBRA_WINDOWS)
         o.kind = TH_ORD_FIN_VENTANAS;
-    else if (fase == TH_OBRA_OBJECTS)
+    else if (fase == TH_OBRA_OBJECTS) {
+        if (!th_build_room_confirmable(g->s))
+            return; // el botón está deshabilitado: faltan obligatorios (checkEnableConfirm)
         o.kind = TH_ORD_FIN_SALA;
-    else
+    } else
         return;
     gw_mandar(g, &o);
 }

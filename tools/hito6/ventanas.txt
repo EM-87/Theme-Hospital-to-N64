@@ -19,7 +19,8 @@ obra_puerta 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,
 # fantasma bajo el puntero.
 obra_ventanas 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 puntero:61,52
 # La fase de los objetos: las ventanas confirmadas (TH_ORD_FIN_VENTANAS), la sala levantada y la
-# lista de la consulta (archivador, silla y escritorio) con el archivador en la mano.
+# lista de la consulta ordenada por la huella como UIPlaceObjects:addObjects (escritorio, archivador
+# y silla) con el escritorio en la mano, y el confirmar en gris (faltan los tres).
 obra_objetos 58 52 0 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 boton:203 tick:2 puntero:58,51
 # Amueblar con la lista entera, dos mostradores y el puntero en la fila de los bancos.
 amueblar 60 66 0 panel:objetos boton:160 boton:160 px:180,74

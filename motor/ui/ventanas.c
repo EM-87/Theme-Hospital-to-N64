@@ -127,23 +127,36 @@ void gw_casilla(const th_game_ui *g, int sx, int sy, int *x, int *y)
 // (th_game_ui_open llamada entre fotogramas: no hay salida para TH_ORD_CERRAR,
 // y abrir la otra dejaría la obra o la lista abiertas en el núcleo sin ventana
 // que las lleve).
+//
+// Con alguien en la mano (colocar personal), UI:addWindow cierra UIPlaceStaff,
+// que también es «main», y su close() devuelve el perfil al final de
+// available_staff (place_staff.lua:69-71): lo mismo que el derecho y Escape
+// (gw_colocar_personal_cancelar: TH_ORD_DEVOLVER). En pausa no: la persona
+// sigue en la mano, como la obra (cerrar sin devolver dejaría al candidato el
+// primero de su lista, y CorsixTH lo pasa al final), salvo con su
+// contratación en vuelo. Fuera de un fotograma no hay salida para esa orden: 0.
 static int dejar_lo_abierto(th_game_ui *g, int which)
 {
     (void)which;
     const th_sim *s = g->s;
     const int obra = s && s->obra.phase != TH_OBRA_NONE;
     const int lista = s && s->place.open;
-    if (obra || lista) {
-        if (!g->out || !g->in)
-            return 0;
+    const int persona = g->active == TH_GW_COLOCAR_PERSONAL;
+    if ((obra || lista || persona) && (!g->out || !g->in))
+        return 0;
+    if (obra || lista || (persona && gw_persona_por_devolver(g))) {
         if (g->in->paused) {
             gw_aviso(g, "misc.pause");
             return 0;
         }
+    }
+    if (obra || lista) {
         const th_order o = {.kind = TH_ORD_CERRAR};
         if (!gw_mandar(g, &o))
             return 0; // sin sitio en la salida del fotograma
     }
+    if (persona)
+        gw_colocar_personal_cancelar(g);
     g->n_pend = 0; // lo comprado sin pedir no se cobró: se olvida
     return 1;
 }
@@ -188,6 +201,13 @@ static void escape(th_game_ui *g)
         // UIPlaceStaff con esc_closes (place_staff.lua:35): close() sin colocar
         // (place_staff.lua:58-83) devuelve el perfil al final del mercado y no
         // vuelve a contratar (gw_colocar_personal_cancelar: TH_ORD_DEVOLVER).
+        // En pausa, como la obra: no hay orden (decisión 4) y cerrar sin ella
+        // dejaría al candidato el primero de su lista; sigue en la mano y la
+        // barra dice «Pausa».
+        if (g->in->paused && gw_persona_por_devolver(g)) {
+            gw_aviso(g, "misc.pause");
+            break;
+        }
         gw_colocar_personal_cancelar(g);
         break;
     case TH_GW_AMUEBLAR:
@@ -212,20 +232,46 @@ static void boton(th_game_ui *g, int id, int mouse)
     }
 }
 
-// Sin ventana abierta, el botón derecho sobre un objeto de pasillo lo coge
-// (Object:onClick, entities/object.lua: TH_ORD_RECOGER); solo si hay uno en
-// la casilla, para no llenar la barra de avisos con cada clic.
-static void recoger_sin_ventana(th_game_ui *g)
+// El botón del panel de una ventana que ya está abierta la cierra, sin abrir
+// otra (bottom_panel.lua:726-731, 750-755 y 774-779: getWindow y w:close());
+// la tienda de la sala es un UIFurnishCorridor, y cerrarla vuelve a la obra
+// (UIFurnishCorridor:close con edit_dialog). Si no, la abre.
+static void boton_panel(th_game_ui *g, int which)
+{
+    if (g->active != which) {
+        th_game_ui_open(g, which);
+        return;
+    }
+    if (which == TH_GW_AMUEBLAR && g->tienda)
+        gw_colocar_abrir(g, TH_GW_OBRA);
+    else
+        gw_cerrar(g);
+}
+
+// El botón derecho sobre un objeto de pasillo lo coge (Object:onClick,
+// object.lua:760-823: TH_ORD_RECOGER); solo si hay uno en la casilla, para no
+// llenar la barra de avisos con cada clic. Sin ventana abierta, o con
+// construir, amueblar (sin la tienda de una obra) o contratar: esas no se
+// quedan con un clic fuera de ellas (Window:onMouseUp, window.lua:1694-1749),
+// el clic llega al objeto (ui.lua:911-917) y la UIPlaceObjects que abre
+// cierra la «main» que hubiera (UI:addWindow, ui.lua:1048-1054); aquí se
+// cierra al mandar la orden. Con colocar personal no: UIPlaceStaff se queda
+// con el clic. Con una orden sin respuesta, nada: el segundo derecho sobre el
+// mismo objeto llegaría con la lista ya abierta (otra_ventana).
+static void recoger_del_pasillo(th_game_ui *g)
 {
     const th_sim *s = g->s;
-    if (!(g->in->world_up & (1 << TH_UI_RIGHT)) || !gw_en_mapa(g->tx, g->ty))
+    if (!(g->in->world_up & (1 << TH_UI_RIGHT)) || !gw_en_mapa(g->tx, g->ty) || g->en_vuelo)
         return;
     for (int i = 0; i < s->n_obj; i++) {
         const th_object *o = &s->obj[i];
         if (o->def && (o->oflags & TH_OBJF_ON_MAP) && o->x == g->tx && o->y == g->ty &&
             th_rules_get(s->defs, o->def, "corridor_object")) {
             const th_order ord = {.kind = TH_ORD_RECOGER, .x = (uint8_t)g->tx, .y = (uint8_t)g->ty};
-            gw_mandar(g, &ord);
+            if (gw_mandar(g, &ord) && g->active != TH_GW_NONE) {
+                g->n_pend = 0; // como dejar_lo_abierto: lo comprado sin pedir se olvida
+                gw_cerrar(g);
+            }
             return;
         }
     }
@@ -249,17 +295,19 @@ void th_game_ui_frame(th_game_ui *g, const th_game_ui_input *in, th_sim *s, cons
         if (th_ui_hit(g->env.stack->win[i], in->px, in->py))
             g->sobre_mundo = 0;
     // Una orden sin respuesta se olvida pasado un rato (el anfitrión debería
-    // reenviar todas con th_game_ui_order_result).
-    if (g->en_vuelo > 0 && ++g->en_vuelo_fotogramas > GW_EN_VUELO_MAX)
+    // reenviar todas con th_game_ui_order_result). En pausa no corre el
+    // reloj de la simulación y la orden puede seguir en la cola, sin tick que
+    // la aplique, todo lo que dure la pausa: esos fotogramas no cuentan.
+    if (g->en_vuelo > 0 && !in->paused && ++g->en_vuelo_fotogramas > GW_EN_VUELO_MAX)
         g->en_vuelo = 0;
 
     // Los botones del panel (bottom_panel.lua: dialogBuildRoom, dialogFurnishCorridor, dialogHireStaff).
     if (in->panel_button == TH_PI_SALAS)
-        th_game_ui_open(g, TH_GW_CONSTRUIR);
+        boton_panel(g, TH_GW_CONSTRUIR);
     else if (in->panel_button == TH_PI_OBJETOS)
-        th_game_ui_open(g, TH_GW_AMUEBLAR);
+        boton_panel(g, TH_GW_AMUEBLAR);
     else if (in->panel_button == TH_PI_CONTRATAR)
-        th_game_ui_open(g, TH_GW_CONTRATAR);
+        boton_panel(g, TH_GW_CONTRATAR);
     // Escape (GameUI:onKeyDown, global_cancel: esc_closes de la ventana de arriba).
     if (in->escape)
         escape(g);
@@ -282,11 +330,23 @@ void th_game_ui_frame(th_game_ui *g, const th_game_ui_input *in, th_sim *s, cons
             if (g->n_pend == 0)
                 gw_cerrar(g);
         }
+        // Una obra del núcleo sin su ventana: el TH_ORD_SALA que se aplicó
+        // después de que el jugador abriera otra ventana o cerrara la de la
+        // obra. Sin esto el plano se queda cerrado en el mapa, sin dibujar,
+        // hasta la siguiente ventana; se hace lo que habría hecho abrir la
+        // otra (dejar_lo_abierto: verifyOrAbortRoom). La tienda de la sala es
+        // parte de la obra.
+        if (s->obra.phase != TH_OBRA_NONE && g->active != TH_GW_OBRA &&
+            !(g->active == TH_GW_AMUEBLAR && g->tienda) && !in->paused) {
+            const th_order o = {.kind = TH_ORD_CERRAR};
+            gw_mandar(g, &o);
+        }
         gw_amueblar_pendientes(g);
     }
 
+    const int activa = g->active;
     switch (g->active) {
-    case TH_GW_NONE: recoger_sin_ventana(g); break;
+    case TH_GW_NONE: break;
     case TH_GW_CONSTRUIR: gw_construir_frame(g); break;
     case TH_GW_AMUEBLAR: gw_amueblar_frame(g); break;
     case TH_GW_COLOCAR: gw_colocar_frame(g); break;
@@ -295,6 +355,9 @@ void th_game_ui_frame(th_game_ui *g, const th_game_ui_input *in, th_sim *s, cons
     case TH_GW_COLOCAR_PERSONAL: gw_colocar_personal_frame(g); break;
     default: break;
     }
+    if (g->active == activa && (activa == TH_GW_NONE || activa == TH_GW_CONSTRUIR || activa == TH_GW_CONTRATAR ||
+                                (activa == TH_GW_AMUEBLAR && !g->tienda)))
+        recoger_del_pasillo(g);
 
     if (g->msg_fotogramas > 0) {
         g->msg_fotogramas--;
@@ -311,14 +374,21 @@ void th_game_ui_frame(th_game_ui *g, const th_game_ui_input *in, th_sim *s, cons
     g->out = NULL;
 }
 
-// El aviso de un rechazo, con los textos del consejero de CorsixTH
-// (adviser.placement_info y adviser.warnings, que dice en esos casos).
+// El aviso de un rechazo del núcleo en la barra (la pieza 6 del plan pide
+// los avisos de rechazo con texto, docs/06_plan.md). Los textos son los del
+// consejero (adviser.placement_info y adviser.warnings), pero la demo no tiene
+// consejero y CorsixTH calla en casi todos estos casos: solo dice
+// staff_cannot_place (place_staff.lua:178), el dinero (cannot_afford,
+// hire_staff.lua:148-156 y furnish_corridor.lua:106) y las zonas sin acceso
+// (edit_room.lua:933-937). Con alguien encima del objeto, nada, como CorsixTH
+// (anyHumanoidObscuringArea, place_objects.lua:516-520): NULL.
 static const char *aviso_de(const th_order *o, int reason)
 {
     switch (reason) {
     case TH_REASON_SIN_DINERO:
-        return o->kind == TH_ORD_CONTRATAR ? "adviser.warnings.cannot_afford" : "adviser.warnings.cannot_afford_2";
+        return o->kind == TH_ORD_CONTRATAR ? gw_sin_dinero(o->def) : "adviser.warnings.cannot_afford_2";
     case TH_REASON_ZONAS_INACCESIBLES: return "adviser.room_forbidden_non_reachable_parts";
+    case TH_REASON_PERSONA: return NULL;
     default: break;
     }
     switch (o->kind) {
@@ -334,28 +404,48 @@ static const char *aviso_de(const th_order *o, int reason)
 
 void th_game_ui_order_result(th_game_ui *g, const th_sim *s, const th_order *o, const th_order_result *r)
 {
-    (void)s;
     if (g->en_vuelo > 0)
         g->en_vuelo--;
+    if (s)
+        g->construido++; // la vista previa de colocar se vuelve a calcular (previa, ventana_colocar.c)
     if (o->kind == TH_ORD_DEVOLVER) // cancelar no avisa de nada
         return;
     if (r->reason != TH_REASON_OK) {
-        gw_aviso(g, aviso_de(o, r->reason));
+        const char *aviso = aviso_de(o, r->reason);
+        if (aviso)
+            gw_aviso(g, aviso);
         // El único rechazo del núcleo que suena en CorsixTH: el plano que deja
         // zonas sin unir, al confirmar (edit_room.lua:933-937, wrong2.wav).
         if (r->reason == TH_REASON_ZONAS_INACCESIBLES)
             g->sonar = 1;
         if (o->kind == TH_ORD_COMPRAR)
             g->n_pend = 0; // no se compró: lo demás tampoco
-        if (o->kind == TH_ORD_CONTRATAR)
-            g->esperando_contrato = 0; // la persona sigue en la mano
+        if (o->kind == TH_ORD_CONTRATAR && g->active == TH_GW_COLOCAR_PERSONAL && o->def == g->resumen) {
+            // La persona sigue en la mano. Con NO_SE_PUEDE el núcleo hace hire
+            // más cancelar (decisión 5 de docs/06_plan.md, order_contratar en
+            // build.c) y el candidato pasa al final de su lista: el clic
+            // siguiente busca su índice por el resumen (indice_en_mano en
+            // ventana_contratar.c). Con SIN_CANDIDATO ya no está en el mercado
+            // (se rehízo al acabar el mes): como en UIPlaceStaff sin perfil,
+            // la ventana se cierra. Sin s la orden no llegó al núcleo
+            // (th_game_ui_order_dropped).
+            g->esperando_contrato = 0;
+            if (s && r->reason == TH_REASON_SIN_CANDIDATO)
+                gw_cerrar(g);
+        } else if (o->kind == TH_ORD_CONTRATAR && o->def == g->resumen)
+            g->esperando_contrato = 0;
         return;
     }
     // UIPlaceStaff:onMouseUp (place_staff.lua:144-176): colocada, se cierra.
-    if (o->kind == TH_ORD_CONTRATAR && g->active == TH_GW_COLOCAR_PERSONAL) {
+    // Solo si es la persona en la mano: con la contratación de otra en vuelo
+    // (el clic justo antes de pausar, y en pausa abrir contratar y elegir a
+    // otra), la que se aplica no es la de esta ventana.
+    if (o->kind == TH_ORD_CONTRATAR && g->active == TH_GW_COLOCAR_PERSONAL && o->def == g->resumen) {
         g->esperando_contrato = 0;
         gw_cerrar(g);
     }
+    if (o->kind == TH_ORD_RECOGER && s && s->obra.phase == TH_OBRA_OBJECTS)
+        gw_colocar_recogido(g, s);
 }
 
 void th_game_ui_order_dropped(th_game_ui *g, const th_order *o)

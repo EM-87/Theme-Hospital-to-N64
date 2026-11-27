@@ -243,24 +243,36 @@ void gw_contratar_boton(th_game_ui *g, int id, int mouse)
         return;
     }
     switch (id) {
-    case TH_GWB_ANTERIOR: // moveBy(-1), con el tope en 1
-        if (g->idx > 0)
+    // moveBy (hire_staff.lua:231-247): con el tope en el primero y el último,
+    // y sin categoría, no se mueve y suena wrong2.wav (la 245).
+    case TH_GWB_ANTERIOR:
+        if (g->clase >= 0 && g->idx > 0)
             g->idx--;
+        else
+            g->sonar = 1;
         break;
-    case TH_GWB_SIGUIENTE: // moveBy(1): sin categoría, nada
+    case TH_GWB_SIGUIENTE:
         if (g->clase >= 0 && g->idx + 1 < g->n_cand[g->clase])
             g->idx++;
+        else
+            g->sonar = 1;
         break;
     case TH_GWB_CTR_CANCELAR: gw_cerrar(g); return;
     case TH_GWB_CONTRATAR:
-        // UIHireStaff:hire (hire_staff.lua:126-147): sin perfil, nada; sin
-        // dinero, el aviso; si no, a colocarlo (UIPlaceStaff). La orden sale
-        // al soltarlo.
+        // UIHireStaff:hire (hire_staff.lua:126-147): sin perfil (sin
+        // categoría o la lista vacía), wrong2.wav sin texto
+        // (hire_staff.lua:134-137); sin dinero, el aviso; si no, a colocarlo
+        // (UIPlaceStaff). La orden sale al soltarlo.
         candidato(g);
-        if (!g->hay_candidato)
+        if (!g->hay_candidato) {
+            g->sonar = 1;
             return;
+        }
         if (g->s->hosp.balance < g->perfil.wage) {
-            gw_aviso_sonido(g, "adviser.warnings.cannot_afford"); // hire_staff.lua:134-135
+            // cannotAfford (hire_staff.lua:148-156) elige al azar entre los
+            // dos textos; aquí, sin tocar el azar de la simulación, por el
+            // resumen del perfil (gw_sin_dinero).
+            gw_aviso_sonido(g, gw_sin_dinero(th_staff_profile_digest(&g->perfil)));
             return;
         }
         g->resumen = th_staff_profile_digest(&g->perfil);
@@ -281,6 +293,23 @@ void gw_contratar_frame(th_game_ui *g)
     candidato(g);
 }
 
+// El índice del perfil en la mano en el mercado de ahora, por su resumen. El
+// núcleo lo mueve: un TH_ORD_CONTRATAR rechazado (la casilla no vale al
+// aplicarse, o la vista previa era la de otra casilla porque el clic cayó a
+// medio tick) lo manda al final de su lista (order_contratar,
+// candidate_to_end), y la persona sigue en la mano. Con el índice de cuando se
+// eligió, cada clic siguiente daba sin_candidato. Si ya no está (el mercado se
+// rehízo al cambiar de mes), el de antes: el núcleo dirá sin_candidato.
+static int indice_en_mano(const th_game_ui *g)
+{
+    const th_staff_profile *lista;
+    const int n = th_sim_candidates(g->s, TH_HUM_DOCTOR + g->clase, &lista);
+    for (int i = 0; i < n; i++)
+        if (th_staff_profile_digest(&lista[i]) == g->resumen)
+            return i;
+    return g->idx;
+}
+
 // UIPlaceStaff: la persona en la mano sigue al puntero (ScreenToWorld(x,
 // y + 14): 7 píxeles a la mitad), con idle_east sin espejo y solo la capa 5
 // (place_staff.lua:43-50, 127-140), en gris donde _isValidStaffPlacement no
@@ -298,6 +327,7 @@ void gw_contratar_frame(th_game_ui *g)
 void gw_colocar_personal_cancelar(th_game_ui *g)
 {
     if (g->clase >= 0 && !g->esperando_contrato && !g->in->paused) {
+        g->idx = indice_en_mano(g);
         const th_order o = {.kind = TH_ORD_DEVOLVER, .dir = (uint8_t)(TH_HUM_DOCTOR + g->clase),
                             .qty = (uint8_t)g->idx, .def = g->resumen};
         gw_mandar(g, &o);
@@ -308,7 +338,10 @@ void gw_colocar_personal_cancelar(th_game_ui *g)
 void gw_colocar_personal_frame(th_game_ui *g)
 {
     const th_game_ui_input *in = g->in;
-    if (in->world_up & (1 << TH_UI_RIGHT)) {
+    // En pausa, UIPlaceStaff:onMouseUp no hace nada (place_staff.lua:145):
+    // el derecho no cierra y la persona sigue en la mano (Escape sí cierra:
+    // global_cancel no mira la pausa).
+    if ((in->world_up & (1 << TH_UI_RIGHT)) && !in->paused) {
         gw_colocar_personal_cancelar(g);
         return;
     }
@@ -318,6 +351,13 @@ void gw_colocar_personal_frame(th_game_ui *g)
     gw_casilla(g, in->px, in->py + 7, &x, &y);
     if (!g->sobre_mundo || !gw_en_mapa(x, y))
         return;
+    // En pausa, UIPlaceStaff:draw no pinta la persona (place_staff.lua:127-128)
+    // y onMouseUp no la suelta; el clic izquierdo dice «Pausa» (decisión 4).
+    if (in->paused) {
+        if ((in->world_up & (1 << TH_UI_LEFT)) && !g->esperando_contrato)
+            gw_aviso(g, "misc.pause");
+        return;
+    }
     const int kind = TH_HUM_DOCTOR + g->clase;
     if (in->sim_idle) {
         g->sitio.ok = th_build_staff_placement(g->s, kind, x, y) == TH_REASON_OK;
@@ -334,6 +374,7 @@ void gw_colocar_personal_frame(th_game_ui *g)
             gw_aviso(g, "adviser.placement_info.staff_cannot_place");
             return;
         }
+        g->idx = indice_en_mano(g);
         const th_order o = {.kind = TH_ORD_CONTRATAR, .dir = (uint8_t)kind, .qty = (uint8_t)g->idx, .x = (uint8_t)x,
                             .y = (uint8_t)y, .def = g->resumen};
         if (gw_mandar(g, &o))

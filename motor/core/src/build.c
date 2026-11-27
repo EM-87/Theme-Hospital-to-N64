@@ -1242,6 +1242,11 @@ static int check_enable_confirm(const th_sim *s)
     return 1;
 }
 
+int th_build_room_confirmable(const th_sim *s)
+{
+    return s->obra.phase == TH_OBRA_OBJECTS && check_enable_confirm(s);
+}
+
 static void confirm_room(th_sim *s);
 
 // er:enterObjectsPhase: la lista con los obligatorios (o lo que había al

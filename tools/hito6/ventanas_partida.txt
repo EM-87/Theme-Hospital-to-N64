@@ -16,10 +16,12 @@
 #     (57,50) a (60,53) y su ✓ (203): sala en la hora 50; la puerta al sur con
 #     el clic en (58,54) (51); las dos ventanas al este con los clics en (61,51)
 #     y (61,52) (52 y 53) y su ✓ (54); una hora de despeje;
-#   - los objetos de la sala, en el orden de la lista: el archivador en (60,50)
-#     al norte (56), la silla girada dos veces con el derecho (norte → este →
-#     sur) en (58,52) (57), el escritorio girado otras dos (sur → oeste →
-#     norte) en (58,51) (58) y el ✓ de la sala (59);
+#   - los objetos de la sala: la lista va por la huella (escritorio,
+#     archivador y silla, con el escritorio en la mano); la fila 2 (211) y el
+#     archivador en (60,50) al norte (56); agotado, la lista vuelve al
+#     escritorio, y la fila 2, ahora la silla (211), girada dos veces con el
+#     derecho (norte → este → sur) en (58,52) (57); el escritorio, otra vez en
+#     la mano y al norte, en (58,51) (58), y el ✓ de la sala (59);
 #   - tick:40 hasta la hora 100 y el médico: la pestaña de los médicos (300),
 #     contratar y el clic en (59,56) (hora 100; el candidato 0, cf501390);
 #   - tick:2899 hasta las 3.000 horas.
@@ -29,4 +31,4 @@
 # 100). La huella y el saldo a 3.000 horas son otros que los de demo.tsv: los
 # que da th64sim ventanas en el PC y tiene que dar la ROM (tools/motor_check.sh,
 # paso 3b, con tools/hito6/repetir.sh).
-partida 62 72 0 panel:objetos boton:160 boton:181 clic:62,74 panel:contratar boton:303 boton:313 clic:62,73 tick:47 camara:62,52 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 clic:61,52 boton:203 tick:1 clic:60,50 clicd:58,52 clicd:58,52 clic:58,52 clicd:58,51 clicd:58,51 clic:58,51 boton:203 tick:40 camara:60,60 panel:contratar boton:300 boton:313 clic:59,56 tick:2899 puntero:59,56
+partida 62 72 0 panel:objetos boton:160 boton:181 clic:62,74 panel:contratar boton:303 boton:313 clic:62,73 tick:47 camara:62,52 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 clic:61,52 boton:203 tick:1 boton:211 clic:60,50 boton:211 clicd:58,52 clicd:58,52 clic:58,52 clic:58,51 boton:203 tick:40 camara:60,60 panel:contratar boton:300 boton:313 clic:59,56 tick:2899 puntero:59,56

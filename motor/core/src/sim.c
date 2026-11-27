@@ -2689,7 +2689,10 @@ uint32_t th_sim_hash(const th_sim *s)
         const th_order *o = &s->orders[k];
         h = fnv(h, o->tick);
         h = fnv(h, (uint32_t)o->kind << 24 | (uint32_t)o->x << 16 | (uint32_t)o->y << 8 | o->dir);
-        h = fnv(h, (uint32_t)o->qty << 24 ^ o->def);
+        // Todos los campos: qty, w y h aparte de def (antes qty << 24 ^ def,
+        // sin w ni h: dos planos de distinto tamaño daban la misma huella).
+        h = fnv(h, (uint32_t)o->qty << 16 | (uint32_t)o->w << 8 | o->h);
+        h = fnv(h, o->def);
     }
     uint32_t t = 0;
     for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)

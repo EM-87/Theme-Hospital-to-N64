@@ -63,23 +63,25 @@ all: $(ROMNAME).z64
 
 # Assets: tools/conv los deja sin comprimir en assets/; aquí se comprimen
 # (hojas de sprites, animaciones, niveles, reglas y textos con aPLib, -c 2) o
-# se copian (paletas) a filesystem/.
+# se copian (paletas) a filesystem/. Con -L: en un worktree, assets/ es un
+# enlace al del repositorio principal (sin él, find no entra y la ROM sale
+# sin filesystem/).
 MKASSET := $(N64_INST)/bin/mkasset
-ASSETS := $(shell find assets -type f \( -name '*.tsh' -o -name '*.tpl' -o -name '*.tmp' -o -name '*.tan' \
+ASSETS := $(shell find -L assets -type f \( -name '*.tsh' -o -name '*.tpl' -o -name '*.tmp' -o -name '*.tan' \
   -o -name '*.trg' \) 2>/dev/null)
 FS_ASSETS := $(patsubst assets/%,filesystem/%,$(ASSETS))
 # Fuentes: el conversor deja BMFont (.fnt y su atlas .png) y mkfont las pasa a
 # font64 en CI4 (la de más colores, FONT100M, tiene 15 y el transparente).
 MKFONT := $(N64_INST)/bin/mkfont
-FUENTES := $(shell find assets -type f -name '*.fnt' 2>/dev/null)
+FUENTES := $(shell find -L assets -type f -name '*.fnt' 2>/dev/null)
 FS_ASSETS += $(patsubst assets/%.fnt,filesystem/%.font64,$(FUENTES))
 # Sonido: audioconv64 pasa los WAV a wav64 en VADPCM sin Huffman (la
 # decisión de la fase 4: el Huffman se descomprime en la CPU), los MIDI a
 # mid64 y el SoundFont recortado a sf64.
 AUDIOCONV := $(N64_INST)/bin/audioconv64
-SONIDOS := $(shell find assets -type f -name '*.wav' 2>/dev/null)
-MUSICA := $(shell find assets -type f -name '*.mid' 2>/dev/null)
-BANCOS := $(shell find assets -type f -name '*.sf2' 2>/dev/null)
+SONIDOS := $(shell find -L assets -type f -name '*.wav' 2>/dev/null)
+MUSICA := $(shell find -L assets -type f -name '*.mid' 2>/dev/null)
+BANCOS := $(shell find -L assets -type f -name '*.sf2' 2>/dev/null)
 FS_ASSETS += $(patsubst assets/%.wav,filesystem/%.wav64,$(SONIDOS)) \
   $(patsubst assets/%.mid,filesystem/%.mid64,$(MUSICA)) $(patsubst assets/%.sf2,filesystem/%.sf64,$(BANCOS))
 

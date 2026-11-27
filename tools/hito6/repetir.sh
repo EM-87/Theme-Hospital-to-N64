@@ -15,13 +15,15 @@
 #       <tick>: th_sim.hours al aplicarla (desde 0), en decimal;
 #       <orden>: el nombre de la orden (comprar, colocar, cerrar, recoger,
 #         vender, deshacer, sala, puerta, ventana, quitar_ventana, fin_ventanas,
-#         comprar_sala, fin_sala, atras, contratar; se acepta también el número
-#         TH_ORD_*);
+#         comprar_sala, fin_sala, atras, contratar, devolver; se acepta también
+#         el número TH_ORD_*);
 #       <x> <y> <dir> <qty> <w> <h>: los campos de th_order tal cual, en
-#         decimal (dir: 0 norte, 1 este, 2 sur, 3 oeste; en contratar, la clase
-#         TH_HUM_*: 1 médico, 2 enfermera, 3 bedel, 4 recepcionista; qty, el
-#         índice del candidato);
-#       <def_id>: el id de objetos.<id> o salas.<id> de th_order.def, o «-»;
+#         decimal (dir: 0 norte, 1 este, 2 sur, 3 oeste; en contratar y
+#         devolver, la clase TH_HUM_*: 1 médico, 2 enfermera, 3 bedel, 4
+#         recepcionista; qty, el índice del candidato);
+#       <def_id>: el id de objetos.<id> o salas.<id> de th_order.def; en
+#         contratar y devolver, el resumen del perfil en 8 cifras
+#         hexadecimales; o «-»;
 #       <motivo>: th_build_reason_name(reason), o «-» si se aceptó;
 #       los campos que la orden no usa, a 0 (def_id, «-»); no cuentan:
 #       repetir.py los pone así antes de comparar, como th64sim_leer_orden, y

@@ -62,20 +62,27 @@ typedef struct th_game_ui_input {
     th_ui_window *win;        // un botón de una ventana de la pila pulsado y soltado (NULL: ninguno)…
     int id, mouse;            // …su id (id o id_right) y con qué botón del ratón (TH_UI_LEFT o TH_UI_RIGHT)
     int panel_button;         // TH_PI_* pulsado en el panel inferior, o 0: TH_PI_SALAS abre construir,
-                              // TH_PI_OBJETOS amueblar y TH_PI_CONTRATAR contratar (los demás, nada)
+                              // TH_PI_OBJETOS amueblar y TH_PI_CONTRATAR contratar (los demás, nada);
+                              // con esa ventana ya abierta, la cierra (bottom_panel.lua:722-779)
     int escape;               // 1 si se pulsó Escape (R en el mando): cierra la ventana de arriba; en la
                               // obra la abandona o la termina si ya se puede (TH_ORD_CERRAR, el
                               // verifyOrAbortRoom de GameUI:setEditRoom(false); GameUI:onKeyDown escape)
     int paused;               // decisión 4 del plan: en pausa no se mandan órdenes (las ventanas se abren,
-                              // se cierran y se recorren; colocar, comprar y contratar esperan)
+                              // se cierran y se recorren; colocar, comprar y contratar esperan; lo que
+                              // pide una orden para cerrarse, la obra, la lista de colocar y la persona
+                              // en la mano, sigue abierto; no se pinta lo que va en la mano)
     int sim_idle;             // 1 si la simulación no está a medio tick: entonces, y solo entonces, se
                               // puede llamar a th_build_check_cell y th_build_staff_placement (la vista
                               // previa); si es 0 se repite el último resultado
 } th_game_ui_input;
 
 #define TH_GAME_UI_ORDERS 4   // órdenes en un fotograma (como mucho una por clic; el margen, por si acaso)
-#define TH_GAME_UI_ENTITIES 48 // entidades del plano (2(w+h)−1 paredes de un plano de hasta 12 × 12, la
-                               // puerta y las ventanas) y fantasmas (un objeto de hasta 3 columnas o una persona)
+// Entidades del plano: 2(w+h)−1 paredes de un plano de hasta 12 × 12 (47), la
+// puerta, hasta TH_SIM_WINDOWS ventanas y la puerta o ventana fantasma bajo el
+// puntero; y los fantasmas encima (un objeto de hasta 3 columnas o una persona).
+// Con 48, un plano de 12 × 12 con su puerta las llenaba y no se veía ninguna
+// ventana (ni la fantasma) en la fase de ventanas.
+#define TH_GAME_UI_ENTITIES (47 + 1 + TH_SIM_WINDOWS + 1)
 
 // Lo que el anfitrión tiene que hacer después del fotograma.
 typedef struct th_game_ui_output {
@@ -94,7 +101,8 @@ typedef struct th_game_ui_output {
     // fotograma la ventana rechaza algo y tiene que sonar el aviso (wrong2.wav),
     // como hacen las propias ventanas de CorsixTH: hire_staff.lua:134-140 (sin
     // perfil o sin dinero), edit_room.lua:935 (la obra deja zonas sin salida),
-    // furnish_corridor.lua:106 (sin dinero). El anfitrión NO suena por su cuenta
+    // furnish_corridor.lua:106 (sin dinero), build_room.lua:193-194 (la sala
+    // sin dinero; ventana_construir.c, elegir). El anfitrión NO suena por su cuenta
     // cuando el núcleo rechaza una orden: en CorsixTH un clic con el plano malo
     // o con alguien encima no hace nada ni suena (place_objects.lua:513-522); si
     // la ventana quiere avisar de un rechazo del núcleo, lo pone aquí en el
@@ -166,7 +174,8 @@ enum {
 // Notas de la pieza 5 sobre lo de arriba: th_game_ui_open da −1 antes del
 // primer th_game_ui_frame (las listas salen de la simulación de un fotograma
 // anterior) y, si hay que cerrar algo en el núcleo para abrir la otra (la obra
-// o la lista de colocar: TH_ORD_CERRAR), en pausa o fuera de un fotograma
+// o la lista de colocar: TH_ORD_CERRAR; la persona en la mano:
+// TH_ORD_DEVOLVER), en pausa o fuera de un fotograma
 // (entre dos th_game_ui_frame no hay salida para esa orden); dentro del
 // fotograma la abre in->panel_button.
 

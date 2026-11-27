@@ -176,8 +176,13 @@ static void comprar(th_game_ui *g, int i, int qty)
         return;
     const int32_t precio = th_build_object_cost(g->s, g->obj_def[i]);
     if (qty > 0) {
-        if (g->obj_qty[i] >= 99)
+        if (g->obj_qty[i] >= 99) {
+            // purchaseItem da cannot_buy (furnish_corridor.lua:140-141) y
+            // item_callback lo dice con wrong2.wav (103-106). El %s de
+            // format no está en el texto inglés.
+            gw_aviso_sonido(g, "adviser.warnings.cannot_buy");
             return;
+        }
         if (g->s->hosp.balance < g->total + precio) {
             gw_aviso_sonido(g, "adviser.warnings.cannot_afford_2"); // furnish_corridor.lua:106
             return;
@@ -214,6 +219,7 @@ static void confirmar(th_game_ui *g)
     if (!gw_mandar(g, &o))
         return; // en pausa: la ventana sigue abierta
     g->n_pend = n - 1;
+    g->pend_tienda = g->tienda;
     memcpy(g->pend, compra + 1, (size_t)(n - 1) * sizeof compra[0]);
     if (g->tienda)
         gw_colocar_abrir(g, TH_GW_OBRA);
@@ -226,8 +232,18 @@ void gw_amueblar_pendientes(th_game_ui *g)
     const th_sim *s = g->s;
     while (g->n_pend > 0 && !g->in->paused) {
         // En la obra, cuantas quepan en el fotograma; en el pasillo, una cada
-        // vez que la lista de colocar se vacía.
-        const int obra = s->obra.phase == TH_OBRA_OBJECTS;
+        // vez que la lista de colocar se vacía. Lo de la tienda solo va a la
+        // lista de la sala: si la obra se cerró (Escape, confirmar o atrás
+        // desde las paredes con la primera compra aún en vuelo), no se compra
+        // (en CorsixTH la tienda lo mete todo en la sala de una vez); si ha
+        // vuelto a la puerta o a las ventanas, espera a la fase de objetos.
+        const int obra = g->pend_tienda;
+        if (obra && s->obra.phase == TH_OBRA_NONE) {
+            g->n_pend = 0;
+            return;
+        }
+        if (obra && s->obra.phase != TH_OBRA_OBJECTS)
+            return;
         if (!obra && (s->place.open || g->en_vuelo > 0 || (g->active != TH_GW_NONE && g->active != TH_GW_COLOCAR)))
             return;
         if (g->out->n_orders >= TH_GAME_UI_ORDERS)

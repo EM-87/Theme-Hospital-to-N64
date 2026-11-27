@@ -125,6 +125,11 @@ void simulacion_pedir(int ticks)
     pedidos += ticks;
 }
 
+void simulacion_soltar(void)
+{
+    pedidos = 0;
+}
+
 int simulacion_pendientes(void)
 {
     return pedidos + en_curso;

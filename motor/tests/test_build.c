@@ -662,6 +662,24 @@ static void test_cola(void)
     TH_CHECK_EQ(th_sim_push_order(&sim, &b), -1);
     TH_CHECK_EQ(strcmp(th_build_reason_name(TH_REASON_CASILLAS), "casillas"), 0);
     TH_CHECK_EQ(strcmp(th_build_reason_name(TH_REASON_LLENO), "lleno"), 0);
+    // th_sim_hash cuenta las órdenes de la cola con todos sus campos: dos
+    // planos que solo cambian de ancho o de alto, o dos órdenes cuyo qty y
+    // def se compensan en el mismo xor, no pueden dar la misma huella.
+    sim.n_orders = 0;
+    const th_order sala4 = {9, TH_ORD_SALA, 10, 10, 0, 0, 4, 4, 0}, sala5 = {9, TH_ORD_SALA, 10, 10, 0, 0, 5, 4, 0},
+                   sala45 = {9, TH_ORD_SALA, 10, 10, 0, 0, 4, 5, 0};
+    const th_order q1 = {9, TH_ORD_COMPRAR, 0, 0, 0, 1, 0, 0, 1u << 24}, q0 = {9, TH_ORD_COMPRAR, 0, 0, 0, 0, 0, 0, 0};
+    uint32_t h[5];
+    const th_order *const cual[5] = {&sala4, &sala5, &sala45, &q1, &q0};
+    for (int i = 0; i < 5; i++) {
+        sim.n_orders = 0;
+        th_sim_push_order(&sim, cual[i]);
+        h[i] = th_sim_hash(&sim);
+    }
+    sim.n_orders = 0;
+    TH_CHECK(h[0] != h[1]);
+    TH_CHECK(h[0] != h[2]);
+    TH_CHECK(h[3] != h[4]);
 }
 
 // ---------------------------------------------------------------------------

@@ -133,6 +133,11 @@ int th_build_room_available(const th_sim *s, int type);
 //   o TH_REASON_VENTANA_INVALIDA. Mira los objetos del mapa: solo entre ticks,
 //   como th_build_check_cell.
 int th_build_edge_check(th_sim *s, int x, int y, int side, int window);
+// - UIEditRoom:checkEnableConfirm (edit_room.lua:1605-1632): 1 si cada
+//   objeto obligatorio de la sala en obra (objects_needed) está ya en ella,
+//   lo que habilita el confirmar de la fase de objetos (TH_ORD_FIN_SALA no da
+//   TH_REASON_FALTAN_OBJETOS); 0 sin sala en obra. Solo lee.
+int th_build_room_confirmable(const th_sim *s);
 
 // La cola de órdenes: cada una se aplica al empezar el tick de su hora
 // (th_sim_tick), en el orden en que llegó. Devuelve -1 si la cola está llena.

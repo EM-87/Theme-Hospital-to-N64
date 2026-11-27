@@ -53,6 +53,11 @@ typedef struct {
 void simulacion_iniciar(th_sim *s, th_view_entity *ents, int max_ents);
 void simulacion_pedir(int ticks);
 int simulacion_pendientes(void); // ticks pedidos que aún no se han empezado o acabado
+// Olvida los ticks pedidos que aún no han empezado (el que esté a medias se
+// acaba). Para la pausa: el bucle principal pide hasta 2·velocidad + 1 ticks
+// por delante y, sin soltarlos, seguían corriendo con la pausa puesta (a x8,
+// 16 horas: el saldo, la fecha y las órdenes de la cola, aplicadas en pausa).
+void simulacion_soltar(void);
 // 1 si la corrutina está suspendida dentro de th_sim_tick (a medio tick: en
 // un punto de pausa de un camino o del bucle de las personas, quizá dentro de
 // th_sim_apply_orders). Entonces no se puede usar el buscador de caminos

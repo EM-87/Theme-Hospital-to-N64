@@ -1487,11 +1487,13 @@ static joypad_buttons_t recien_pulsados(joypad_buttons_t ahora)
 // escena (extra_*). Con los datos a la vista y sin superposiciones de las
 // ventanas, la casilla bajo el puntero (*cx, *cy, del mundo) se resalta con el
 // rombo azul de los planos (bloque 24 al 50 %) por las superposiciones, debajo
-// de las paredes y las personas como la capa ui de CorsixTH. El aviso (el
-// sonido wrong2 y el texto) lo decide la ventana (out->reject_sound,
-// ventanas.h), como en CorsixTH: un rechazo del núcleo (plano malo, alguien
-// encima) no suena ni pone texto por sí solo (place_objects.lua:513-522); solo
-// queda en el registro («TH64 orden», con su motivo) y en debugf.
+// de las paredes y las personas como la capa ui de CorsixTH. El aviso lo
+// decide la ventana (ventanas.h): el sonido wrong2 (out->reject_sound) solo
+// donde CorsixTH lo toca, y el texto también con los rechazos del núcleo que
+// vuelven por th_game_ui_order_result (aviso_de en ventanas.c: la pieza 6 del
+// plan), donde CorsixTH casi siempre calla; con alguien encima del objeto,
+// nada (place_objects.lua:516-520). El rechazo queda además en el registro
+// («TH64 orden», con su motivo) y en debugf.
 static void ventanas_fotograma(th_game_ui *ui, const interfaz_orden_t *orden, bool escape, bool pausa, bool datos,
                                const th_view *v, th_game_ui_output *out, int *cx, int *cy)
 {
@@ -1745,8 +1747,13 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         }
         if (interfaz && pulsado.l)
             velocidad = velocidad == 8 ? 1 : velocidad * 2;
-        if (interfaz && pulsado.start)
+        if (interfaz && pulsado.start) {
             pausa = !pausa;
+            // World:setSpeed("Pause") para el reloj al momento: los ticks ya
+            // pedidos y sin empezar no corren en pausa (simulacion_soltar).
+            if (pausa && hospital)
+                simulacion_soltar();
+        }
         if (assets && !hospital && pulsado.z) {
             nivel = nivel % NIVELES + 1;
             if (cargar_nivel(nivel)) {
@@ -2143,7 +2150,7 @@ static const char *const estados_ventanas[] = {
     "pausa_aviso 60 66 0 pausa:1 panel:objetos boton:160 boton:181 px:140,190",
 };
 static const char *const partida_ventanas[] = {
-    "partida 62 72 0 panel:objetos boton:160 boton:181 clic:62,74 panel:contratar boton:303 boton:313 clic:62,73 tick:47 camara:62,52 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 clic:61,52 boton:203 tick:1 clic:60,50 clicd:58,52 clicd:58,52 clic:58,52 clicd:58,51 clicd:58,51 clic:58,51 boton:203 tick:40 camara:60,60 panel:contratar boton:300 boton:313 clic:59,56 tick:2899 puntero:59,56",
+    "partida 62 72 0 panel:objetos boton:160 boton:181 clic:62,74 panel:contratar boton:303 boton:313 clic:62,73 tick:47 camara:62,52 panel:salas boton:1 boton:11 baja:57,50 mueve:60,53 sube:60,53 boton:203 clic:58,54 clic:61,51 clic:61,52 boton:203 tick:1 boton:211 clic:60,50 boton:211 clicd:58,52 clicd:58,52 clic:58,52 clic:58,51 boton:203 tick:40 camara:60,60 panel:contratar boton:300 boton:313 clic:59,56 tick:2899 puntero:59,56",
 };
 
 // La colocación del recorrido «x1 con colocar» (comprobar_ventanas_partida),
@@ -2495,11 +2502,14 @@ int main(void)
     joypad_init();
     asset_init_compression(2);
     const bool dfs_ok = dfs_init(DFS_DEFAULT_LOCATION) == DFS_ESUCCESS;
-    rdpq_text_register_font(FUENTE_DEPURACION, rdpq_font_load_builtin(FONT_BUILTIN_DEBUG_MONO));
-    // El contador de dinero, con FONT100M (o la de depuración si no está).
+    // El contador de dinero, con FONT100M o, si no está, la misma fuente de
+    // depuración (cargarla otra vez aborta: «Trying to load already loaded
+    // font data», rdpq_font.c:170).
+    rdpq_font_t *depuracion = rdpq_font_load_builtin(FONT_BUILTIN_DEBUG_MONO);
+    rdpq_text_register_font(FUENTE_DEPURACION, depuracion);
     rdpq_text_register_font(FUENTE_DINERO, dfs_ok && existe("rom:/fuentes/font100m.font64")
                                                ? rdpq_font_load("rom:/fuentes/font100m.font64")
-                                               : rdpq_font_load_builtin(FONT_BUILTIN_DEBUG_MONO));
+                                               : depuracion);
     th_rng_seed(&azar, 64);
 
     int nivel = 1;

@@ -18,6 +18,11 @@
 //     nombre en el hundido de las columnas 9–71 (filas 5–13) y la cantidad
 //     centrada en la caja de las 76–85; el pie 19 (11) detrás.
 // La ventana, de 96 de ancho y 97 a 92 + 17·n + 11 de alto, en (0.9, 0.1).
+// CorsixTH la hace crecer con la lista (UIPlaceObjects:resize,
+// place_objects.lua:93-140); aquí caben GW_COL_FILAS = 6 filas (205 de alto,
+// encima del panel, que empieza en y = 215) y la lista se desplaza: enseña
+// la activa, y elegir la última o la primera fila a la vista asoma la
+// siguiente o la anterior (la consulta con su tienda llega a 7 clases).
 #include <stdio.h>
 #include <string.h>
 
@@ -26,6 +31,7 @@
 #define BOTONES_Y 59
 #define LISTA_Y 92
 #define FILA_H 17
+#define NOMBRE_W 62 // el hundido del nombre en la fila 17: columnas 9–71, el texto desde la 10
 
 enum { B_CANCELAR, B_COMPRAR, B_COGER, B_CONFIRMAR, B_FILAS }; // índices de botón
 
@@ -40,10 +46,20 @@ static int dibujar(const th_ui_window *w, th_drawlist *out, void *ctx)
         th_font_draw(&f->white, g->col_titulo, x + 10, y + 12, 0, 0, TH_ALIGN_LEFT, out, NULL, NULL);
     if (g->col_texto)
         th_font_wrapped(&f->white, g->col_texto, strlen(g->col_texto), x + 10, y + 30, 74, 2, 0, TH_ALIGN_LEFT, out);
+    // El nombre, recortado al hundido de las columnas 9–71 para no pisar la
+    // caja de la cantidad («Fire extinguisher» no cabe); la fila bajo el
+    // puntero, en azul (active_hover_index y blue_font, place_objects.lua:640-648).
     for (int i = 0; i < g->col_n; i++) {
-        char qty[8];
+        const th_font *fuente = i == g->hover ? &f->pause : &f->white;
+        char qty[8], nombre[48];
         snprintf(qty, sizeof qty, "%d", g->col_qty[i]);
-        if (th_text_row(&f->white, g->col_nombre[i], x + 10, qty, x + 76, 10, y + LISTA_Y + i * FILA_H + 5, out) < 0)
+        size_t n = (size_t)snprintf(nombre, sizeof nombre, "%s", g->col_nombre[i]);
+        if (n >= sizeof nombre)
+            n = sizeof nombre - 1;
+        while (n > 0 && th_font_text(fuente, nombre, n, 0, 0, NULL) > NOMBRE_W)
+            n--;
+        nombre[n] = 0;
+        if (th_text_row(fuente, nombre, x + 10, qty, x + 76, 10, y + LISTA_Y + i * FILA_H + 5, out) < 0)
             return -1;
     }
     return out->count < out->capacity ? 0 : -1;
@@ -58,6 +74,97 @@ static int filas_de(const th_game_ui *g, int which)
     return s->place.n < GW_COL_FILAS ? s->place.n : GW_COL_FILAS;
 }
 
+// UIPlaceObjects:setActiveIndex (place_objects.lua:369-399): object_orientation
+// = "west" y nextOrientation, la primera que tenga el objeto desde el norte.
+static int primera_orientacion(const th_rules *defs, th_rnode def)
+{
+    for (int d = 0; d < 4; d++)
+        if (gw_tiene_orientacion(defs, def, d))
+            return d;
+    return TH_DIR_NORTH;
+}
+
+// UIPlaceObjects:addObjects ordena la lista por las casillas de la huella de
+// la primera orientación, de más a menos (place_objects.lua:229-236), y
+// vuelve a la primera fila. El núcleo guarda el orden de objects_needed (la
+// huella de s->place no cambia): el orden es solo de la ventana, estable
+// entre iguales (table.sort no lo es; con la consulta da escritorio,
+// archivador y silla: el escritorio primero y en la mano, como CorsixTH).
+static void ordenar(th_game_ui *g)
+{
+    const th_place_window *p = &g->s->place;
+    int casillas[TH_SIM_PLACE_ITEMS];
+    th_fp_tile fp[TH_FOOTPRINT_MAX];
+    g->col_total = p->n;
+    for (int k = 0; k < p->n; k++) {
+        const th_rnode def = p->item[k].def;
+        casillas[k] = th_object_footprint(g->s->defs, def, primera_orientacion(g->s->defs, def), fp);
+        int j = k;
+        while (j > 0 && casillas[g->col_orden[j - 1]] < casillas[k]) {
+            g->col_orden[j] = g->col_orden[j - 1];
+            j--;
+        }
+        g->col_orden[j] = (uint8_t)k;
+    }
+}
+
+// El puesto en la lista ordenada de la fila k del núcleo (−1 si no está).
+static int puesto(const th_game_ui *g, int k)
+{
+    for (int i = 0; i < g->col_total; i++)
+        if (g->col_orden[i] == k)
+            return i;
+    return -1;
+}
+
+// Las filas y unidades de la lista, para ver si creció (addObjects: la
+// tienda de la sala o un objeto cogido) y volver a la primera fila.
+static int unidades(const th_place_window *p)
+{
+    int n = p->n << 12;
+    for (int k = 0; k < p->n; k++)
+        n += p->item[k].qty;
+    return n;
+}
+
+// El modo coger se apaga (UIEditRoom:stopPickupItems, edit_room.lua:609-615)
+// al coger un objeto (Object:onClick, object.lua:814) y al pulsar una fila
+// (place_objects.lua:120-123).
+static void soltar_coger(th_game_ui *g)
+{
+    if (g->coger && g->w.n_buttons > B_COGER) {
+        th_ui_toggle(&g->w, B_COGER);
+        g->coger = 0;
+    }
+}
+
+// setActiveIndex con la fila k del núcleo: su objeto en la mano, con la
+// primera orientación.
+static void elegir(th_game_ui *g, int k)
+{
+    g->fila = k;
+    g->en_mano = g->s->place.item[k].def;
+    g->orient = primera_orientacion(g->s->defs, g->en_mano);
+    g->previa.hay = 0;
+}
+
+void gw_colocar_recogido(th_game_ui *g, const th_sim *s)
+{
+    // Object:onClick en la obra (object.lua:810-821): stopPickupItems,
+    // addObjects, selectObjectType y setOrientation(initial_orientation). El
+    // núcleo deja la fila del objeto activa y su orientación
+    // (order_recoger_obra en build.c); la lista creció, pero no se vuelve a la
+    // primera fila.
+    if (g->active != TH_GW_OBRA || !s->place.open || s->place.active >= s->place.n)
+        return;
+    soltar_coger(g);
+    g->fila = s->place.active;
+    g->en_mano = s->place.item[g->fila].def;
+    g->orient = s->place.orient;
+    g->col_unidades = unidades(&s->place);
+    g->previa.hay = 0;
+}
+
 static void montar(th_game_ui *g, int which)
 {
     th_ui_window *w = &g->w;
@@ -69,6 +176,11 @@ static void montar(th_game_ui *g, int which)
     for (int i = 0; i < 6; i++)
         th_ui_add_panel(w, TH_SHEET_MUTTON, TH_MT_COL_TEXTO, 0, 30 + 3 * i);
     th_ui_add_panel(w, TH_SHEET_MUTTON, TH_MT_COL_MEDIO, 0, 48);
+    // La descripción entera en la ayuda del hundido (filas 28–48): en dos
+    // líneas de 74 se corta la parte que dice qué hacer («…, then click
+    // confirm»). La ruta la pone gw_colocar_refrescar con la fase.
+    g->col_region = w->n_regions;
+    th_ui_region_tooltip(w, NULL, 9, 28, 85, 48);
     // place_objects.lua:64-84: cancelar, comprar, coger (de dos estados) y confirmar.
     int b = gw_boton(w, TH_MT_COL_CANCELAR, 0, BOTONES_Y, 4, 0, 22, 22, TH_MT_COL_CANCELAR_P, TH_GWB_COL_CANCELAR);
     th_ui_button_tooltip(w, b, "tooltip.place_objects_window.cancel");
@@ -95,36 +207,76 @@ static void montar(th_game_ui *g, int which)
         th_ui_add_panel(w, TH_SHEET_MUTTON, TH_MT_COL_PIE, 0, 86);
     g->col_n = n;
     g->coger = 0;
+    g->hover = -1;
     if (which == TH_GW_OBRA || which == TH_GW_COLOCAR)
         gw_abrir_ventana(g, which);
 }
 
 void gw_colocar_abrir(th_game_ui *g, int which)
 {
+    const th_sim *s = g->s;
     if (which == TH_GW_COLOCAR) {
-        g->fila = 0;
+        // Una ventana nueva (addObjects y setActiveIndex(1)) con la
+        // orientación del núcleo: la primera del objeto si se compró, la que
+        // tenía si se cogió (window:setOrientation(initial_orientation),
+        // object.lua:819-820; order_recoger en build.c).
+        g->fila = -1;
         g->en_mano = 0;
         g->previa.hay = 0;
+        g->col_primera = 0;
+        if (s && s->place.open && s->place.n) {
+            ordenar(g);
+            g->fila = g->col_orden[0];
+            g->en_mano = s->place.item[g->fila].def;
+            g->orient = s->place.orient;
+            if (!gw_tiene_orientacion(s->defs, g->en_mano, g->orient))
+                g->orient = primera_orientacion(s->defs, g->en_mano);
+        }
+        g->col_unidades = s ? unidades(&s->place) : 0;
     }
     th_ui_stack_close(g->env.stack, &g->w);
     montar(g, which);
     gw_colocar_refrescar(g);
 }
 
-// La fila con objetos que se coloca: la elegida o, si se agotó, la primera
-// que quede (UIPlaceObjects:removeObject pasa a la siguiente).
+// La fila del núcleo con objetos que se coloca: la elegida o, si se agotó, la
+// primera de la lista ordenada que quede (UIPlaceObjects:removeObject quita la
+// fila y hace setActiveIndex(1), place_objects.lua:300-304; el núcleo también
+// la quita, remove_item, y las de detrás cambian de índice: la elegida se
+// reconoce por su objeto); también la primera si la lista creció (addObjects).
 static int fila_activa(th_game_ui *g)
 {
     const th_place_window *p = &g->s->place;
     if (!p->open || p->n == 0)
         return -1;
-    if (g->fila >= p->n || p->item[g->fila].qty == 0) {
+    ordenar(g);
+    const int u = unidades(p);
+    const int crecio = u > g->col_unidades;
+    g->col_unidades = u;
+    if (crecio || g->fila < 0 || g->fila >= p->n || p->item[g->fila].qty == 0 ||
+        (g->en_mano && p->item[g->fila].def != g->en_mano)) {
         g->fila = -1;
-        for (int k = 0; k < p->n && g->fila < 0; k++)
-            if (p->item[k].qty)
-                g->fila = k;
+        for (int i = 0; i < g->col_total && g->fila < 0; i++)
+            if (p->item[g->col_orden[i]].qty)
+                g->fila = g->col_orden[i];
     }
     return g->fila;
+}
+
+// La lista a la vista desde col_primera, con el puesto d dentro.
+static void ver(th_game_ui *g, int d)
+{
+    const int vis = g->col_n;
+    if (d < 0 || vis <= 0)
+        return;
+    if (d < g->col_primera)
+        g->col_primera = d;
+    if (d >= g->col_primera + vis)
+        g->col_primera = d - vis + 1;
+    if (g->col_primera > g->col_total - vis)
+        g->col_primera = g->col_total - vis;
+    if (g->col_primera < 0)
+        g->col_primera = 0;
 }
 
 void gw_colocar_refrescar(th_game_ui *g)
@@ -144,13 +296,16 @@ void gw_colocar_refrescar(th_game_ui *g)
         }
     }
     const int activa = fila_activa(g);
+    if (activa >= 0)
+        ver(g, puesto(g, activa));
     for (int i = 0; i < g->col_n; i++) {
-        g->col_nombre[i] = gw_nombre(g, s->defs, s->place.item[i].def);
-        g->col_qty[i] = s->place.item[i].qty;
+        const int k = g->col_orden[g->col_primera + i];
+        g->col_nombre[i] = gw_nombre(g, s->defs, s->place.item[k].def);
+        g->col_qty[i] = s->place.item[k].qty;
         // La fila activa, con la pieza 18 (CorsixTH pinta un recuadro naranja,
         // place_objects.lua:637-641).
         th_ui_button *b = &g->w.buttons[g->col_b0 + i];
-        b->sprite_normal = i == activa ? TH_MT_COL_FILA_P : TH_MT_COL_FILA;
+        b->sprite_normal = k == activa ? TH_MT_COL_FILA_P : TH_MT_COL_FILA;
         if (g->w.active_button != g->col_b0 + i)
             g->w.panels[b->panel].sprite = b->sprite_normal;
     }
@@ -177,15 +332,21 @@ void gw_colocar_refrescar(th_game_ui *g)
     if (g->coger)
         t = "place_objects_window.pick_up_object";
     g->col_texto = th_text(g->env.texts, t);
+    if (g->col_region < g->w.n_regions)
+        g->w.regions[g->col_region].tooltip = t;
     // Los botones: comprar y coger solo en la fase de objetos de una obra; el
     // confirmar, en la obra salvo en la fase de la puerta (se confirma al
-    // ponerla) y en la de despejar.
+    // ponerla) y en la de despejar, en la de paredes solo con un plano que
+    // valga (edit_room.lua:1202: plano_ok, que gw_obra_frame mira otra vez tras
+    // mover el plano) y en la de objetos solo con los obligatorios en la sala
+    // (checkEnableConfirm, edit_room.lua:1605-1632: al entrar en la fase, al
+    // colocar y al coger; th_build_room_confirmable).
     const int objetos = obra && fase == TH_OBRA_OBJECTS;
     th_ui_enable(&g->w, B_COMPRAR, objetos);
     th_ui_enable(&g->w, B_COGER, objetos);
     th_ui_enable(&g->w, B_CONFIRMAR,
-                 obra && (fase == TH_OBRA_WINDOWS || objetos ||
-                          ((fase == TH_OBRA_NONE || fase == TH_OBRA_WALLS) && g->pw > 0)));
+                 obra && (fase == TH_OBRA_WINDOWS || (objetos && th_build_room_confirmable(s)) ||
+                          ((fase == TH_OBRA_NONE || fase == TH_OBRA_WALLS) && g->pw > 0 && g->plano_ok)));
     if (!objetos && g->coger) {
         th_ui_toggle(&g->w, B_COGER);
         g->coger = 0;
@@ -209,22 +370,26 @@ static void girar(th_game_ui *g)
 // último resultado (para esa casilla y orientación, o el último que hubo).
 // CorsixTH la recalcula en cada fotograma (UIPlaceObjects:setBlueprintCell,
 // place_objects.lua:768-850), pero el resultado solo depende de la casilla,
-// la orientación, el objeto y el mundo, y el mundo solo cambia dentro de un
-// tick (las órdenes se aplican al empezarlo y la gente anda en él), que al
-// acabar suma s->hours (sim.c, th_sim_tick). Con lo mismo y en la misma hora
-// se repite el último resultado: th_build_check_cell cuesta unos 15 ms en la
-// N64 con el bloqueo de zonas (build.c, would_break_pathfinding), y se pagaba
-// en cada fotograma con un objeto en la mano.
+// la orientación, el objeto y lo construido (el mapa, los objetos, las salas
+// y la lista de colocar; no la gente: TH_REASON_PERSONA lo mira la orden), y
+// lo construido solo lo cambian las órdenes, que vuelven todas por
+// th_game_ui_order_result (sube g->construido), y la obra que termina el
+// despeje dentro de un tick (finishRoom: cambia la fase). Con lo mismo se
+// repite el último resultado: th_build_check_cell cuesta unos 15 ms en la
+// N64 con el bloqueo de zonas (build.c, would_break_pathfinding). Con la hora
+// en la clave, como antes, a ×2 o más se pagaba en casi cada fotograma.
 static int previa(th_game_ui *g, th_rnode def, int x, int y, int dir)
 {
     const th_sim *s = g->s;
     if (g->previa.hay && g->previa.def == def && g->previa.x == x && g->previa.y == y && g->previa.dir == dir &&
-        g->previa.s == s && g->previa.horas == s->hours)
+        g->previa.s == s && g->previa.construido == g->construido && g->previa.fase == s->obra.phase)
         return g->previa.ok;
     if (g->in->sim_idle) {
         int bad;
         g->previa.s = s;
-        g->previa.horas = s->hours;
+        g->previa.construido = g->construido;
+        g->previa.fase = s->obra.phase;
+        g->previa.calculos++;
         g->previa.ok = th_build_check_cell(g->s, def, x, y, dir, &bad);
         g->previa.def = def;
         g->previa.x = x;
@@ -251,14 +416,15 @@ void gw_colocar_mundo(th_game_ui *g)
         return;
     }
     const th_rnode def = s->place.item[fila].def;
-    if (def != g->en_mano) { // setActiveIndex: la orientación de la lista o la primera que tenga
-        g->en_mano = def;
-        g->orient = s->place.orient;
-        if (!gw_tiene_orientacion(s->defs, def, g->orient)) {
-            g->orient = 3;
-            girar(g);
-        }
-        g->previa.hay = 0;
+    if (def != g->en_mano) // otra fila (la anterior se agotó o la lista creció): setActiveIndex
+        elegir(g, fila);
+    // En pausa, onMouseUp no hace nada (place_objects.lua:503), draw no pinta
+    // el objeto (600-601) y onCursorWorldPositionChange quita la huella
+    // (1092-1104: clearBlueprint). El clic izquierdo dice «Pausa» (decisión 4).
+    if (g->in->paused) {
+        if (izq && en_mapa && g->en_vuelo == 0)
+            gw_aviso(g, "misc.pause");
+        return;
     }
     if (der) { // onMouseUp derecho: girar (swoosh.wav)
         girar(g);
@@ -292,9 +458,20 @@ void gw_colocar_mundo(th_game_ui *g)
     }
 }
 
+void gw_colocar_hover(th_game_ui *g)
+{
+    // UIPlaceObjects:onMouseMove (place_objects.lua:648-675): la fila bajo el
+    // puntero, en la zona de su botón (sin el hueco entre filas), o −1.
+    const int x = g->in->px - g->w.x, y = g->in->py - g->w.y - LISTA_Y;
+    g->hover = -1;
+    if (x >= 8 && x < 87 && y >= 0 && y < g->col_n * FILA_H && y % FILA_H >= 3 && y % FILA_H < 16)
+        g->hover = y / FILA_H;
+}
+
 void gw_colocar_frame(th_game_ui *g)
 {
     gw_colocar_refrescar(g);
+    gw_colocar_hover(g);
     gw_colocar_mundo(g);
 }
 
@@ -303,7 +480,24 @@ void gw_colocar_boton(th_game_ui *g, int id, int mouse)
     (void)mouse;
     const int obra = g->active == TH_GW_OBRA;
     if (id >= TH_GWB_COL_FILA && id < TH_GWB_COL_FILA + GW_COL_FILAS) {
-        g->fila = id - TH_GWB_COL_FILA; // setActiveIndex
+        // idx(i) de resize (place_objects.lua:112-124): la fila activa gira
+        // el objeto; otra, setActiveIndex y fuera el modo coger. Elegir la
+        // última o la primera a la vista asoma la siguiente o la anterior.
+        const int d = g->col_primera + id - TH_GWB_COL_FILA;
+        if (d >= g->col_total)
+            return;
+        const int k = g->col_orden[d];
+        if (k == g->col_activa && !g->coger && g->en_mano) {
+            girar(g);
+            g->previa.hay = 0;
+            return;
+        }
+        soltar_coger(g);
+        elegir(g, k);
+        if (d == g->col_primera + g->col_n - 1 && d + 1 < g->col_total)
+            g->col_primera++;
+        else if (d == g->col_primera && d > 0)
+            g->col_primera--;
         return;
     }
     switch (id) {
