@@ -2239,11 +2239,18 @@ static bool guion_estado(th_guion *gs, guion_rom_t *a, const char *linea, bool n
     // línea del estado las del registro de su partida.
     debugf("TH64 demo5: estado %s: empieza%s%s\n", gs->nombre, a->mando ? ", con mando" : "",
            a->trocear ? ", con la hora troceada" : "");
+    // El mapa girado del estado anterior (96 KiB) se suelta antes de cargar el
+    // nivel: asset_load pide los 160 KiB del nivel de una vez y, con el giro
+    // de colocar_girado aún vivo y el heap de la ROM de pruebas ya partido, el
+    // estado siguiente se quedaba sin memoria.
+    th_view g = gs->v;
+    if (giro && !girar_camara(&g, 0))
+        return false;
     if (!cargar_hospital_de("demo", 1))
         return false;
     simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
     repartida = true;
-    th_view g = gs->v;
+    g = gs->v;
     if (!girar_camara(&g, gs->rot))
         return false;
     simulacion_girar(gs->rot);
@@ -2348,6 +2355,12 @@ static int comprobar_ventanas(th_game_ui **ui)
     }
     *ui = a.ui;
     debugf("TH64 demo5: comparacion de las ventanas con la referencia: %d pixeles distintos en total\n", distintos);
+    // El heap tras los 15 estados, para ver si algún estado deja memoria sin
+    // soltar (la línea del primero está arriba).
+    heap_stats_t hs;
+    sys_get_heap_stats(&hs);
+    debugf("TH64 demo5: tras los %d estados: heap usado %d KiB de %d KiB (libres %d KiB)\n", n, hs.used / 1024,
+           hs.total / 1024, (hs.total - hs.used) / 1024);
     th_view v = vista_hospital();
     girar_camara(&v, 0);
     simulacion_girar(0);
