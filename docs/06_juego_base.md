@@ -885,3 +885,18 @@ La lista de dibujo con 20 superposiciones y el plano sube en ares de 2,36 a 3,15
 - `staff_change_callback` no tiene efecto con los datos reales mientras las salas de tratamiento no estén modeladas (6.5); quirófano, enfermería e investigación siguen con un solo `staff_member`.
 - Las marcas giradas de las puertas dobles no están comparadas con CorsixTH (el nivel 1 no tiene).
 - El coste de la lista con superposiciones en la consola.
+## La demo jugable, pieza 6: las velocidades de la ROM
+
+L recorre ×1, ×2, ×4 y ×8 (decisión 3 de [`06_plan.md`](06_plan.md#la-demo-jugable-el-orden-cambia)), pero la velocidad pedida no siempre es la real: la simulación repartida (`simulacion.h`) solo usa lo que sobra del fotograma hasta 28 ms y, si va atrasada más de 2·velocidad ticks, no se piden más; el juego va más despacio sin saltar fotogramas. Lo que manda es el coste del tick, sobre todo la pasada de temperatura (`th_sim_temperature_step`, unos 15,7 ms por tick con el hospital de la demo mientras las temperaturas cambian; casi nada cuando se asientan). Por eso la barra de datos (cruceta arriba) enseña, al lado de «x8», la velocidad real medida cada segundo («real x2.1»).
+
+Medido en la ROM de pruebas en ares (`comprobar_partida`, demo.trg con demo.tsv, 4 personas, a partir de la hora 3.000; 18,5 ticks por segundo es ×1):
+
+| Recorrido | Ticks por segundo | Velocidad real |
+|---|---|---|
+| ×1, 300 fotogramas | 18,4 | ×0,99 |
+| ×8 justo después (temperaturas cambiando) | 40,0 | ×2,16 |
+| ×2 | 36,8 | ×1,99 |
+| ×4 | 73,8 | ×3,99 |
+| ×8 otra vez (temperaturas asentadas) | 124,7 | ×6,73 |
+
+Es decir: ×2 se cumple siempre, ×4 casi siempre, y ×8 va de ×2,2 a ×6,7 según lo que cueste la temperatura. Hacer más barata esa pasada (o repartirla entre varios ticks) es lo que falta para que ×8 lo sea de verdad.

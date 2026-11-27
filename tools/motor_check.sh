@@ -17,6 +17,11 @@
 #      la interfaz (hito 6.1) y las tres vistas giradas del hospital (hito
 #      6.2) igual que la referencia, y estas con la misma lista de dibujo que
 #      th64sim lista --giro;
+#   3b. la partida de prueba de la demo jugable (comprobar_partida en la ROM de
+#      pruebas: demo.trg, semilla 1, las 13 órdenes de ordenes/demo.tsv y
+#      3.000 horas): tools/hito6/repetir.sh la repite en el PC con las órdenes
+#      que grabó la ROM y tiene que dar «repetir: bien» (las mismas órdenes con
+#      el mismo resultado, la misma huella y el mismo saldo);
 #   4. ROM normal: compila y arranca en el menú.
 # En las dos ROM comprueba también que el bucle del dibujo no choca con las
 # funciones de rdpq que llama en la caché de instrucciones
@@ -118,6 +123,18 @@ if grep -q "assets ok" "$log"; then
   fi
 else
   echo "   (sin assets: no se comprueba el dibujo; ejecuta tools/conv/conv.py)"
+fi
+
+paso "3b. La partida de prueba de la demo, repetida en el PC"
+if grep -q "TH64 partida nueva: escenario demo" "$log"; then
+  grep "TH64 partida" "$log" | sed 's/^/   /'
+  "$REPO_DIR/tools/hito6/repetir.sh" "$log" "" "$OUT/repetir" > "$OUT/repetir.txt" 2>&1 || true
+  sed 's/^/   /' "$OUT/repetir.txt"
+  grep -q "^repetir: bien" "$OUT/repetir.txt" || { echo "   FALLO: la partida de la ROM no se repite igual en el PC"; exit 1; }
+elif [ -f "$M/assets/escenarios/demo.trg" ]; then
+  echo "   FALLO: la ROM de pruebas no jugó la partida de prueba (TH64 partida nueva)"; exit 1
+else
+  echo "   (sin motor/assets/escenarios/demo.trg: no se prueba; tools/hito6/demo.sh)"
 fi
 
 paso "4. ROM normal"

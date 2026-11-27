@@ -3,8 +3,9 @@
 #   make PRUEBAS=1       ROM que ejecuta las pruebas del núcleo: th64_pruebas.z64
 #   make HORAS=N         ROM normal cuyo hospital empieza N horas adelantado:
 #                        th64_horas.z64 (para capturas); con MODO=m (0 hito 4,
-#                        1 hito 5, 2 vistas, 3 visor) y GIRO=r, abre ese modo
-#                        con la cámara girada sin pasar por el menú
+#                        1 hito 5, 2 vistas, 3 visor, 4 partida nueva, que
+#                        empieza en la hora 0 con cualquier HORAS) y GIRO=r,
+#                        abre ese modo con la cámara girada sin pasar por el menú
 #   make MEDIR=1         ROM de medida del hito 5 (tools/hito5/medir.sh): th64_medir.z64
 #   ESCENARIO=hito5      el escenario de las pruebas (por defecto hito4; conviene
 #                        make clean al cambiarlo). La ROM normal los ofrece todos

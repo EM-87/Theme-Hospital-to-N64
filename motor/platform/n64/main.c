@@ -31,9 +31,11 @@
 #include "graficos.h"
 #include "interfaz.h"
 #include "mapa_n64.h"
+#include "partida.h"
 #include "raster.h"
 #include "simulacion.h"
 #include "th/anim.h"
+#include "th/build.h"
 #include "th/humanoid.h"
 #include "th/map.h"
 #include "th/path.h"
@@ -43,6 +45,7 @@
 #include "th/scenario.h"
 #include "th/sim.h"
 #include "th/version.h"
+#include "ventanas.h"
 #include "vista.h"
 
 #ifdef TH_PRUEBAS
@@ -98,8 +101,18 @@ static th_drawlist lista = {.items = elementos, .capacity = 4096};
 // girado, que solo ocupa memoria (96 KiB) mientras la vista está girada.
 static int giro;
 static th_rot_map *mapa_girado;
-// La casilla de la vista que se resalta bajo el puntero (-1: ninguna).
-static int resaltar_x = -1, resaltar_y;
+// Lo que la partida añade a la escena (las ventanas, ventanas.h; o la casilla
+// bajo el puntero con los datos a la vista): las superposiciones por casilla
+// (th_scene.overlays), las entidades que van con las demás (el plano: paredes,
+// puerta y ventanas, en casillas de la vista) y las que van encima de todo (el
+// objeto o la persona en la mano, th_view_entity_on_top). Solo mientras se
+// juega; las pruebas dibujan sin nada de esto.
+static const th_view_overlays *extra_superposiciones;
+static const th_view_entity *extra_entidades, *extra_encima;
+static int n_extra_entidades, n_extra_encima;
+// La instantánea es de la simulación (const): para añadirle las entidades del
+// plano se copia aquí.
+static th_view_entity con_extra[TH_VISTA_SIM_MAX + TH_GAME_UI_ENTITIES];
 
 static paletas_t paletas;
 static hoja_t bloques, sprites;
@@ -491,20 +504,32 @@ static void dibujar_escena(const th_view *v, medida_t *m)
         th_rot_map_update(mapa_girado, &mapa, giro);
         giradas = mapa_girado;
     }
+    if (n_extra_entidades > 0) {
+        const int cabe = (int)(sizeof con_extra / sizeof con_extra[0]) - n;
+        int k = n_extra_entidades < cabe ? n_extra_entidades : cabe;
+        if (k > TH_GAME_UI_ENTITIES) // el contrato (ventanas.h); ventanas_fotograma ya lo comprueba
+            k = TH_GAME_UI_ENTITIES;
+        memcpy(con_extra, ents, (size_t)n * sizeof *ents);
+        memcpy(con_extra + n, extra_entidades, (size_t)k * sizeof *ents);
+        ents = con_extra;
+        n += k;
+    }
     th_scene sc = {.map = &mapa, .rot = giradas, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims,
-                   .entities = ents, .entity_count = n};
+                   .entities = ents, .entity_count = n, .overlays = extra_superposiciones};
     n = th_view_scene(v, &sc, &lista);
     assertf(n >= 0, "la lista de dibujo no cabe");
-    // La casilla bajo el puntero: el rombo azul de los planos (bloque 24) a medias.
-    if (resaltar_x >= 0 && lista.count < lista.capacity) {
-        int x, y;
-        th_view_tile(v, resaltar_x, resaltar_y, &x, &y);
-        lista.items[lista.count++] =
-            (th_draw){.sprite = 24, .sheet = TH_SHEET_BLOCKS, .flags = TH_DRAW_ALPHA50, .x = (int16_t)(x - UNIDAD),
-                      .y = (int16_t)y};
-    }
+    // Lo que sigue al puntero, encima de todo (UIPlaceObjects:draw y
+    // UIPlaceStaff:draw dibujan fuera del mapa, place_objects.lua:596-612 y
+    // place_staff.lua:127-140).
+    for (int i = 0; i < n_extra_encima && i < TH_GAME_UI_ENTITIES; i++)
+        if (th_view_entity_on_top(v, &sc, &extra_encima[i], &lista) != 0)
+            break;
     uint32_t t1 = get_ticks();
-    mapa_n64_dibujar(&lista, hojas, paletas.colores[PALETA_NORMAL], ANCHO, ALTO, &m->st);
+    // Con las tres paletas: los fantasmas en gris (TH_ANIM_PAL_GREY) y el plano
+    // que no vale en rojo (TH_ANIM_PAL_RED). Sin ellos, igual que con la normal.
+    const uint16_t *const pals[PALETAS_MAX] = {paletas.colores[PALETA_NORMAL], paletas.colores[PALETA_FANTASMA_GRIS],
+                                               paletas.colores[PALETA_FANTASMA_ROJO]};
+    mapa_n64_dibujar_paletas(&lista, hojas, pals, ANCHO, ALTO, &m->st);
     m->lista = t1 - t0;
     m->rdp = get_ticks() - t1;
 }
@@ -1400,16 +1425,22 @@ static int giro_inicial;
 #define TH_GIRO_INICIAL 0
 #endif
 
-// La ROM de prueba (hito 6.2): qué se puede abrir desde el menú.
-enum { MODO_HITO4, MODO_HITO5, MODO_VISTAS, MODO_VISOR, MODOS };
+// La ROM de prueba (hito 6.2): qué se puede abrir desde el menú. La partida
+// nueva (la demo jugable, docs/06_plan.md) va al final para no cambiar los
+// números de make MODO=m, pero el menú empieza en ella.
+enum { MODO_HITO4, MODO_HITO5, MODO_VISTAS, MODO_VISOR, MODO_PARTIDA, MODOS };
 static const struct {
     const char *nombre, *escenario; // escenario: rom:/escenarios/<escenario>.trg, o NULL (el visor)
     uint32_t semilla;
+    bool nueva; // la partida empieza en la hora 0 aunque la ROM adelante el hospital (make HORAS=N)
 } modos[MODOS] = {
-    {"Hospital del hito 4 (recepcion y consulta)", "hito4", 1},
-    {"Hospital del hito 5 (18 llegadas al mes)", "hito5", 5},
-    {"Hospital de las vistas (8 salas)", "vistas", 1},
-    {"Visor de niveles", NULL, 0},
+    {"Hospital del hito 4 (recepcion y consulta)", "hito4", 1, false},
+    {"Hospital del hito 5 (18 llegadas al mes)", "hito5", 5, false},
+    {"Hospital de las vistas (8 salas)", "vistas", 1, false},
+    {"Visor de niveles", NULL, 0, false},
+    // El nivel 1 recién empezado: 40.000 $, abierto y sin personal
+    // (tools/hito6/demo.sh).
+    {"Partida nueva (nivel 1)", "demo", 1, true},
 };
 
 static bool modo_disponible(int m)
@@ -1429,6 +1460,86 @@ static joypad_buttons_t recien_pulsados(joypad_buttons_t ahora)
     joypad_buttons_t p = {.raw = ahora.raw & ~antes.raw};
     antes = ahora;
     return p;
+}
+
+// Las ventanas de la partida (ventanas.h) en un fotograma del hospital: lo que
+// llegó del ratón (interfaz_mandos) va a th_game_ui_frame con la cámara v con
+// la que se va a dibujar, y lo que devuelve se aplica: las órdenes a la cola
+// (partida_mandar_orden), el texto a la barra y lo que hay que dibujar a la
+// escena (extra_*). Con los datos a la vista y sin superposiciones de las
+// ventanas, la casilla bajo el puntero (*cx, *cy, del mundo) se resalta con el
+// rombo azul de los planos (bloque 24 al 50 %) por las superposiciones, debajo
+// de las paredes y las personas como la capa ui de CorsixTH. El aviso (el
+// sonido wrong2 y el texto) lo decide la ventana (out->reject_sound,
+// ventanas.h), como en CorsixTH: un rechazo del núcleo (plano malo, alguien
+// encima) no suena ni pone texto por sí solo (place_objects.lua:513-522); solo
+// queda en el registro («TH64 orden», con su motivo) y en debugf.
+static void ventanas_fotograma(th_game_ui *ui, const interfaz_orden_t *orden, bool escape, bool pausa, bool datos,
+                               const th_view *v, th_game_ui_output *out, int *cx, int *cy)
+{
+    static th_view_overlays resaltado;
+    int px, py;
+    interfaz_puntero(&px, &py);
+    partida_vaciar(&sim);
+    const th_game_ui_input in = {.px = px, .py = py, .world_down = orden->mundo_abajo,
+                                 .world_up = orden->mundo_arriba, .win = orden->ventana, .id = orden->id,
+                                 .mouse = orden->raton, .panel_button = orden->boton, .escape = escape,
+                                 .paused = pausa, .sim_idle = !simulacion_en_tick()};
+    th_game_ui_frame(ui, &in, &sim, v, giro, out);
+    assertf(out->n_orders >= 0 && out->n_orders <= TH_GAME_UI_ORDERS, "ventanas: %d ordenes", out->n_orders);
+    assertf(!out->entities || (out->n_entities >= 0 && out->n_entities <= TH_GAME_UI_ENTITIES),
+            "ventanas: %d entidades", out->n_entities);
+    assertf(!out->on_top || (out->n_on_top >= 0 && out->n_on_top <= TH_GAME_UI_ENTITIES), "ventanas: %d encima",
+            out->n_on_top);
+    for (int i = 0; i < out->n_orders; i++)
+        partida_mandar_orden(&sim, &out->orders[i]);
+    if (out->reject_sound)
+        partida_aviso(out->message);
+    else if (out->message)
+        partida_texto(out->message);
+    int motivo;
+    if (partida_rechazo(&motivo))
+        debugf("TH64 partida: orden rechazada por el nucleo (%s)\n", th_build_reason_name(motivo));
+    *cx = *cy = -1;
+    if (datos) {
+        int vx, vy;
+        th_view_pick(v, px, py, &vx, &vy);
+        if (vx >= 0 && vy >= 0 && vx < TH_MAP_WIDTH && vy < TH_MAP_HEIGHT)
+            th_rot_tile_inv(giro, vx, vy, cx, cy);
+    }
+    extra_superposiciones = out->overlays;
+    if (!out->overlays && *cx >= 0) {
+        th_view_overlays_clear(&resaltado);
+        th_view_overlays_set(&resaltado, *cx, *cy, 24, TH_DRAW_ALPHA50);
+        extra_superposiciones = &resaltado;
+    }
+    extra_entidades = out->entities;
+    n_extra_entidades = out->entities ? out->n_entities : 0;
+    extra_encima = out->on_top;
+    n_extra_encima = out->on_top ? out->n_on_top : 0;
+}
+
+// Lo que añadió ventanas_fotograma, fuera de la escena.
+static void sin_extras(void)
+{
+    extra_superposiciones = NULL;
+    extra_entidades = extra_encima = NULL;
+    n_extra_entidades = n_extra_encima = 0;
+}
+
+// Las ventanas, con lo que les da la ROM: la pila con el panel, las fuentes y
+// los textos de la interfaz, las animaciones y las de caminar. env.walk es el
+// PRINCIPIO de la tabla (th_walk_anims_at(0), la primera clase), no la de una
+// clase concreta: la de cada persona se busca con th_walk_anims_find (el médico,
+// "Doctor"). Lo decide quien integre (ventanas.h no lo aclara).
+static th_game_ui *ventanas_iniciar(void)
+{
+    th_game_ui *ui = th_game_ui_instance();
+    const th_game_ui_env env = {.stack = interfaz_pila(), .fonts = interfaz_fuentes(), .texts = interfaz_textos(),
+                                .anims = &anims, .walk = th_walk_anims_at(0), .screen_w = ANCHO,
+                                .screen_h = ALTO};
+    th_game_ui_init(ui, &env);
+    return ui;
 }
 
 // El menú de la ROM de prueba: la cruceta o el stick eligen y A abre.
@@ -1467,20 +1578,51 @@ static int menu(int actual, bool assets, int ram_kib, bool expansion)
             rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 72 + 16 * m, "%s %s%s", m == actual ? ">" : " ",
                              modos[m].nombre, modo_disponible(m) ? "" : " (no esta)");
         rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 168, "Cruceta: elegir   A: abrir");
-        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 184, "En el hospital: Start pausa;");
-        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 196, "en pausa, Z vuelve aqui.");
+        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 184, "En el hospital: Start pausa, R Escape;");
+        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 196, "en pausa, Z 1 s: menu. Arriba: datos.");
         rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 208, "En el visor: Start vuelve aqui.");
         rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 224, "Cruceta izquierda y derecha: girar");
         rdpq_detach_show();
     }
 }
 
+// Con la interfaz, salir al menú es Z mantenido SALIR_MS en pausa, sin ninguna
+// ventana abierta (th_game_ui_active) y con el stick quieto. Z también acelera
+// el puntero (decisión 3; interfaz_mandos: th_pointer_stick con btn.z), y en
+// pausa se puede mover el puntero y abrir ventanas (decisión 4): con solo
+// «Z en pausa», el gesto de acelerar el puntero abandonaba la partida (y
+// partida_terminar descarta las órdenes que esperan). Mover el stick, soltar Z
+// o abrir una ventana vuelve a empezar la cuenta. El mismo umbral que la zona
+// muerta del puntero (puntero.c, eje: 8).
+#define SALIR_MS 1000
+static bool salir_con_z(const joypad_inputs_t *in, bool pausa, const th_game_ui *ui)
+{
+    static uint32_t desde; // ms en que empezó Z quieto; 0: no está
+    const bool quieto = abs(in->stick_x) <= 8 && abs(in->stick_y) <= 8;
+    if (!pausa || !in->btn.z || !quieto || (ui && th_game_ui_active(ui) != TH_GW_NONE)) {
+        desde = 0;
+        return false;
+    }
+    const uint32_t ahora = get_ticks_ms() | 1;
+    if (!desde)
+        desde = ahora;
+    if (ahora - desde < SALIR_MS)
+        return false;
+    desde = 0;
+    return true;
+}
+
 // Abre lo elegido en el menú y lo juega hasta que se pide volver.
-//   - El hospital (hito 6.1): el stick mueve el puntero; A y B son los
-//     botones del ratón; los botones C y la cruceta arriba y abajo desplazan
-//     la vista; la cruceta izquierda y derecha la giran (hito 6.2); Start
-//     pausa y, en pausa, Z vuelve al menú; L cambia entre x1 y x8; R enseña
-//     los datos y la casilla bajo el puntero.
+//   - El hospital (hito 6.1 y la demo jugable, decisión 3 de docs/06_plan.md):
+//     el stick (o el ratón de N64) mueve el puntero y Z lo acelera; A y B son
+//     los botones izquierdo y derecho del ratón; R es Escape (cierra la
+//     ventana de arriba o vuelve una fase atrás); los botones C y la cruceta
+//     abajo desplazan la vista; la cruceta izquierda y derecha la giran (hito
+//     6.2); la cruceta arriba enseña los datos y la casilla bajo el puntero;
+//     L recorre x1, x2, x4 y x8; Start pausa y, en pausa, Z mantenido 1 s
+//     sin ventana abierta y con el stick quieto vuelve al menú (salir_con_z).
+//     Las órdenes de las ventanas van a la cola del núcleo y se graban por
+//     debugf (partida.h); al volver al menú, la línea final con la huella.
 //   - El visor de niveles (hito 3): el stick y la cruceta arriba y abajo
 //     mueven la cámara; la cruceta izquierda y derecha la giran; A hace que
 //     siga al primer humanoide; B añade 10; Z pasa al nivel siguiente; R
@@ -1495,7 +1637,7 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
     if (modos[modo].escenario) {
         if (!cargar_hospital_de(modos[modo].escenario, modos[modo].semilla))
             return;
-        for (int i = 0; i < TH_HOSPITAL_HORAS; i++)
+        for (int i = 0; !modos[modo].nueva && i < TH_HOSPITAL_HORAS; i++)
             th_sim_tick(&sim);
         // La simulación, repartida entre fotogramas (simulacion.h).
         simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
@@ -1509,7 +1651,7 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         sys_get_heap_stats(&hs);
         debugf("TH64 hito4: hospital del escenario %s cargado: %d objetos, %d salas, %d en plantilla; %d horas "
                "adelantado, %d pacientes en el mapa; heap usado %d KiB; simulacion %u KiB\n",
-               modos[modo].escenario, sim.n_obj, sim.n_rooms, plantilla, TH_HOSPITAL_HORAS,
+               modos[modo].escenario, sim.n_obj, sim.n_rooms, plantilla, modos[modo].nueva ? 0 : TH_HOSPITAL_HORAS,
                sim.n_order - plantilla, hs.used / 1024, (unsigned)(sizeof sim / 1024));
     } else {
         if (!cargar_nivel(nivel))
@@ -1529,7 +1671,26 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
     }
     bool datos = !hospital, medir_rdp = false, seguir = !hospital;
     const bool interfaz = hospital && interfaz_cargar(ANCHO, ALTO, true);
+    // Las ventanas de la partida y la grabación de las órdenes. La partida se
+    // puede repetir en el PC (tools/hito6/repetir.sh) si empieza en la hora 0
+    // del escenario: la partida nueva, o cualquier hospital sin make HORAS=N.
+    th_game_ui *ui = NULL;
+    th_game_ui_output salida = {0};
+    if (hospital) {
+        if (interfaz) {
+            ui = ventanas_iniciar();
+            if (!partida_sonido_iniciar())
+                debugf("TH64 partida: sin el sonido de los rechazos (rom:/sonido/comun/wrong2.wav64)\n");
+        }
+        const bool desde_cero = modos[modo].nueva || TH_HOSPITAL_HORAS == 0;
+        partida_empezar(&sim, ui, desde_cero ? modos[modo].escenario : NULL, modos[modo].semilla);
+    }
     bool pausa = false;
+    // La velocidad de verdad (decimas: ticks por segundo · 54 ms / 100), medida
+    // cada segundo: la simulación no da para x8 (ni casi para x4) y va más
+    // despacio sin saltar fotogramas (docs/06_juego_base.md, «Las velocidades»).
+    uint32_t vel_ms = get_ticks_ms(), vel_ticks = hospital ? simulacion_stats()->ticks : 0;
+    int vel_real = 0;
     float cpu_ms = 0, lista_ms = 0, sim_ms = 0, rdp_buf_ms = 0, rdp_pipe_ms = 0;
     mapa_n64_stats_t st = {0};
     sim_t s = {0};
@@ -1545,9 +1706,10 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         else
             interfaz_leer(&in);
         const joypad_buttons_t pulsado = recien_pulsados(in.btn);
-        if (interfaz ? pausa && pulsado.z : pulsado.start)
+        if (interfaz ? salir_con_z(&in, pausa, ui) : pulsado.start)
             break; // al menú
-        if (pulsado.r)
+        // R es Escape con la interfaz (in->escape); los datos, la cruceta arriba.
+        if (interfaz ? pulsado.d_up : pulsado.r)
             datos = !datos;
         if (pulsado.l && !interfaz)
             medir_rdp = !medir_rdp;
@@ -1563,7 +1725,7 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
             }
         }
         if (interfaz && pulsado.l)
-            velocidad = velocidad == 1 ? 8 : 1;
+            velocidad = velocidad == 8 ? 1 : velocidad * 2;
         if (interfaz && pulsado.start)
             pausa = !pausa;
         if (assets && !hospital && pulsado.z) {
@@ -1584,13 +1746,13 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
             else if (!girar_camara(&v, giro_pedido))
                 giro_pedido = giro;
         }
-        // La vista: en el hospital, los botones C, la cruceta arriba y abajo y
-        // el borde de la pantalla; en el visor, el stick y la cruceta. Mover
-        // la cámara deja de seguir al humanoide.
+        // La vista: en el hospital, los botones C, la cruceta abajo y el borde
+        // de la pantalla; en el visor, el stick y la cruceta. Mover la cámara
+        // deja de seguir al humanoide.
         int sx = 0, sy = 0;
         if (interfaz) {
             sx = orden.vista_dx + (in.btn.c_right ? 8 : in.btn.c_left ? -8 : 0);
-            sy = orden.vista_dy + (in.btn.c_down || in.btn.d_down ? 8 : in.btn.c_up || in.btn.d_up ? -8 : 0);
+            sy = orden.vista_dy + (in.btn.c_down || in.btn.d_down ? 8 : in.btn.c_up ? -8 : 0);
         } else {
             sx = abs(in.stick_x) > 8 ? in.stick_x / 6 : 0;
             sy = abs(in.stick_y) > 8 ? -in.stick_y / 6 : 0;
@@ -1623,6 +1785,15 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         if (acumulado >= por_tick)
             acumulado = 0;
         uint32_t sim_cpu = s.cpu_ticks + s.cpu_caminos - sim0 + t_rep;
+        if (hospital) {
+            const uint32_t ahora = get_ticks_ms();
+            if (pausa || ahora - vel_ms >= 1000) {
+                const uint32_t t = simulacion_stats()->ticks;
+                vel_real = pausa ? 0 : (int)((t - vel_ticks) * MS_POR_TICK * 10 / (ahora - vel_ms));
+                vel_ms = ahora;
+                vel_ticks = t;
+            }
+        }
         // La cámara, con la rotación de las entidades que se van a dibujar.
         if (hospital && simulacion_instantanea()->giro != giro &&
             !girar_camara(&v, simulacion_instantanea()->giro))
@@ -1634,19 +1805,11 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         } else if (assets && seguir && n_humanoides > 0) {
             v = vista_de(&humanoides[0]);
         }
-        // La casilla bajo el puntero (con los datos a la vista).
+        // Las ventanas, con la cámara con la que se va a dibujar, y la casilla
+        // bajo el puntero (con los datos a la vista).
         int casilla_x = -1, casilla_y = -1;
-        resaltar_x = -1;
-        if (interfaz && datos) {
-            int px, py, vx, vy;
-            interfaz_puntero(&px, &py);
-            th_view_pick(&v, px, py, &vx, &vy);
-            if (vx >= 0 && vy >= 0 && vx < TH_MAP_WIDTH && vy < TH_MAP_HEIGHT) {
-                resaltar_x = vx;
-                resaltar_y = vy;
-                th_rot_tile_inv(giro, vx, vy, &casilla_x, &casilla_y);
-            }
-        }
+        if (ui)
+            ventanas_fotograma(ui, &orden, pulsado.r, pausa, datos, &v, &salida, &casilla_x, &casilla_y);
         if (medir_rdp)
             *DP_STATUS = DP_WSTATUS_RESET_CLOCK_COUNTER | DP_WSTATUS_RESET_CMD_COUNTER | DP_WSTATUS_RESET_PIPE_COUNTER |
                          DP_WSTATUS_RESET_TMEM_COUNTER;
@@ -1677,8 +1840,9 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 24, "CPU %.1f ms (mundo %.1f, lista %.1f) %.1f fps",
                                  cpu_ms, sim_ms, lista_ms, display_get_fps());
                 if (hospital)
-                    rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 36, "%d personas  rep %ld  x%d  %d sprites",
-                                     sim.n_order, (long)sim.hosp.reputation, velocidad, st.sprites);
+                    rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 36,
+                                     "%d personas  rep %ld  x%d (real x%d.%d)  %d sprites", sim.n_order, (long)sim.hosp.reputation, velocidad, vel_real / 10, vel_real % 10,
+                                     st.sprites);
                 else
                     rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 36, "%d humanoides  %d sprites  %d cargas",
                                      n_humanoides, st.sprites, st.cargas);
@@ -1690,7 +1854,7 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
             }
             if (hospital) {
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 200,
-                                 pausa ? "Z: menu  Start: seguir  R: datos" : "Start: pausa  L: x1/x8  R: datos");
+                                 pausa ? "Z 1 s: menu  Start: seguir" : "Start: pausa  L: x1/2/4/8  R: Escape");
             } else {
                 rdpq_text_printf(NULL, FUENTE_DEPURACION, 8, 220, "RAM %d KiB  heap %d/%d KiB", ram_kib,
                                  heap->used / 1024, heap->total / 1024);
@@ -1701,24 +1865,237 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
             const instantanea_t *f = simulacion_instantanea();
             const th_bottom_info info = {.balance = f->saldo, .day = f->fecha.day, .month = f->fecha.month,
                                          .reputation = f->reputacion, .rep_min = 0, .rep_max = 1000,
-                                         .paused = pausa};
+                                         .paused = pausa, .message = partida_mensaje()};
             mapa_n64_stats_t st_ui;
             interfaz_dibujar(&info, paletas.colores[PALETA_NORMAL], &st_ui);
         }
         rdpq_detach_show();
+        sin_extras();
+        partida_sonido_fotograma();
         if (hospital) {
             const uint32_t cpu0 = simulacion_stats()->cpu;
             simulacion_avanzar(t0 + TICKS_FROM_MS(28));
             t_rep = simulacion_stats()->cpu - cpu0;
         }
     }
-    // Al menú: la simulación sin un tick a medias y la cámara sin girar.
-    if (hospital)
+    // Al menú: sin órdenes nuevas, la simulación sin un tick a medias, las
+    // órdenes que no llegaron a aplicarse descartadas, la línea final de la
+    // partida (partida_terminar) y la cámara sin girar.
+    if (hospital) {
         simulacion_terminar();
+        partida_terminar(&sim);
+    }
+    if (ui)
+        th_game_ui_close_all(ui);
+    partida_sonido_cerrar();
+    sin_extras();
     girar_camara(&v, 0);
     simulacion_girar(0);
-    resaltar_x = -1;
 }
+
+#ifdef TH_PRUEBAS
+// La partida de prueba de la demo jugable (pieza 6 de docs/06_plan.md): la
+// tabla copia tools/hito6/ordenes/demo.tsv (las 13 órdenes, con los campos de
+// th_order que deja th64sim_leer_orden), y los resúmenes del perfil de las
+// dos contrataciones son los que pone th64sim partida con la semilla 1 en
+// ordenes_rom.log (577e31bf, la recepcionista 0 en el tick 1, y cf501390, el
+// médico 0 en el tick 100). Si demo.tsv cambia, hay que cambiarla a mano.
+static const struct {
+    uint32_t tick;
+    uint8_t kind, x, y, dir, qty, w, h;
+    const char *def;  // «objetos.<id>» o «salas.<id>» de las definiciones, o NULL
+    uint32_t resumen; // contratar: th_staff_profile_digest del candidato
+} ordenes_demo[] = {
+    {0, TH_ORD_COMPRAR, 0, 0, 0, 1, 0, 0, "objetos.reception_desk", 0},
+    {0, TH_ORD_COLOCAR, 62, 74, TH_DIR_NORTH, 0, 0, 0, "objetos.reception_desk", 0},
+    {1, TH_ORD_CONTRATAR, 62, 73, TH_HUM_RECEPTIONIST, 0, 0, 0, NULL, 0x577e31bfu},
+    {50, TH_ORD_SALA, 57, 50, 0, 0, 4, 4, "salas.gp", 0},
+    {50, TH_ORD_PUERTA, 58, 53, TH_DIR_SOUTH, 0, 0, 0, NULL, 0},
+    {50, TH_ORD_VENTANA, 60, 51, TH_DIR_EAST, 0, 0, 0, NULL, 0},
+    {50, TH_ORD_VENTANA, 60, 52, TH_DIR_EAST, 0, 0, 0, NULL, 0},
+    {50, TH_ORD_FIN_VENTANAS, 0, 0, 0, 0, 0, 0, NULL, 0},
+    {51, TH_ORD_COLOCAR, 58, 52, TH_DIR_SOUTH, 0, 0, 0, "objetos.chair", 0},
+    {51, TH_ORD_COLOCAR, 58, 51, TH_DIR_NORTH, 0, 0, 0, "objetos.desk", 0},
+    {51, TH_ORD_COLOCAR, 60, 50, TH_DIR_NORTH, 0, 0, 0, "objetos.cabinet", 0},
+    {51, TH_ORD_FIN_SALA, 0, 0, 0, 0, 0, 0, NULL, 0},
+    {100, TH_ORD_CONTRATAR, 59, 56, TH_HUM_DOCTOR, 0, 0, 0, NULL, 0xcf501390u},
+};
+
+// «grupo.id» en las definiciones de la simulación (0 si no está).
+static th_rnode definicion(const char *ruta)
+{
+    char grupo[16];
+    const char *punto = strchr(ruta, '.');
+    if (!punto || punto - ruta >= (int)sizeof grupo)
+        return 0;
+    memcpy(grupo, ruta, (size_t)(punto - ruta));
+    grupo[punto - ruta] = 0;
+    return th_rules_get(sim.defs, th_rules_get(sim.defs, sim.defs->root, grupo), punto + 1);
+}
+
+// La partida en marcha como en jugar(), sin tocar los mandos: el reloj pide
+// los ticks a la velocidad dada, las ventanas reciben el fotograma (sin
+// ninguna abierta: el esqueleto de ventanas.c no abre ninguna), se dibujan el
+// hospital con las tres paletas y la interfaz, y la simulación sigue con lo
+// que sobra hasta 28 ms. Mide la CPU del fotograma entero (con los ticks).
+static void recorrido_partida(th_game_ui *ui, const char *nombre, int velocidad, int fotogramas)
+{
+    th_view v = vista_hospital();
+    cuentas_t c = {0};
+    uint32_t reloj = get_ticks(), acumulado = 0, cpu_ui = 0, cpu_interfaz = 0, max_ui = 0;
+    const uint32_t por_tick = TICKS_PER_SECOND / 1000 * MS_POR_TICK, ticks0 = simulacion_stats()->ticks;
+    const uint32_t empieza = get_ticks();
+    for (int f = 0; f < fotogramas; f++) {
+        surface_t *pantalla = display_get();
+        const uint32_t t0 = get_ticks();
+        joypad_inputs_t in;
+        const interfaz_orden_t orden = interfaz_mandos(&in);
+        acumulado += t0 - reloj;
+        reloj = t0;
+        for (int k = 0; acumulado * velocidad >= por_tick && k < 4 * velocidad; k++) {
+            acumulado -= por_tick / velocidad;
+            if (simulacion_pendientes() <= 2 * velocidad)
+                simulacion_pedir(1);
+        }
+        if (acumulado >= por_tick)
+            acumulado = 0;
+        th_game_ui_output out;
+        int cx, cy;
+        const uint32_t u0 = get_ticks();
+        ventanas_fotograma(ui, &orden, false, false, false, &v, &out, &cx, &cy);
+        const uint32_t u1 = get_ticks();
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        medida_t m = {0};
+        dibujar_escena(&v, &m);
+        const instantanea_t *fi = simulacion_instantanea();
+        const th_bottom_info info = {.balance = fi->saldo, .day = fi->fecha.day, .month = fi->fecha.month,
+                                     .reputation = fi->reputacion, .rep_min = 0, .rep_max = 1000,
+                                     .message = partida_mensaje()};
+        mapa_n64_stats_t st_ui;
+        const uint32_t i0 = get_ticks();
+        interfaz_dibujar(&info, paletas.colores[PALETA_NORMAL], &st_ui);
+        const uint32_t i1 = get_ticks();
+        rdpq_detach_show();
+        sin_extras();
+        simulacion_avanzar(t0 + TICKS_FROM_MS(28));
+        contar(&c, t0, get_ticks(), &m);
+        cpu_ui += u1 - u0;
+        cpu_interfaz += i1 - i0;
+        if (u1 - u0 > max_ui)
+            max_ui = u1 - u0;
+    }
+    const uint32_t dura = get_ticks() - empieza;
+    simulacion_terminar();
+    informar("partida", nombre, &c);
+    const float ms = 1000.0f / TICKS_PER_SECOND;
+    // La velocidad de verdad: los ticks hechos por los que tocaban a x1 (uno
+    // cada 54 ms del reloj) en lo que duró el recorrido.
+    const uint32_t hechos = simulacion_stats()->ticks - ticks0;
+    debugf("TH64 partida: %s: %lu ticks en %.0f ms (%.1f ticks/s: velocidad real x%.2f); ventanas %.3f ms de media "
+           "(%.3f como mucho); interfaz %.2f ms; %d personas\n",
+           nombre, (unsigned long)hechos, dura * ms, hechos * 1000.0f / (dura * ms),
+           hechos * (float)MS_POR_TICK / (dura * ms), cpu_ui * ms / fotogramas, max_ui * ms,
+           cpu_interfaz * ms / fotogramas, sim.n_order);
+}
+
+// La partida de prueba: demo.trg con la semilla 1 y las órdenes de
+// ordenes_demo por el mismo camino que la partida real (partida_mandar_orden
+// en el fotograma cuyo tick toca y la simulación repartida, simulacion.h,
+// corriendo sin límite de tiempo), durante 3.000 horas. Escribe las líneas del
+// contrato del registro (tools/hito6/README.md; tools/motor_check.sh las pasa
+// por tools/hito6/repetir.sh, que repite la partida en el PC) y la CPU de cada
+// tick que aplica órdenes (el bloqueo de zonas y la temperatura: el riesgo 1
+// de la demo). Después, la CPU del fotograma con la partida en marcha a x1 y a
+// x8. Devuelve los fallos.
+static int comprobar_partida(void)
+{
+    const uint32_t horas = 3000;
+    if (!existe("rom:/escenarios/demo.trg")) {
+        debugf("TH64 partida: no esta rom:/escenarios/demo.trg (tools/hito6/demo.sh): no se prueba\n");
+        return 0;
+    }
+    if (!interfaz_cargar(ANCHO, ALTO, false) || !cargar_hospital_de("demo", 1))
+        return 1;
+    heap_stats_t hs;
+    sys_get_heap_stats(&hs);
+    debugf("TH64 partida: demo.trg cargado: heap usado %d KiB de %d KiB (libres %d KiB); simulacion %u KiB\n",
+           hs.used / 1024, hs.total / 1024, (hs.total - hs.used) / 1024, (unsigned)(sizeof sim / 1024));
+    simulacion_iniciar(&sim, foto, (int)(sizeof foto / sizeof foto[0]));
+    simulacion_girar(0);
+    repartida = true;
+    th_game_ui *ui = ventanas_iniciar();
+    partida_empezar(&sim, ui, "demo", 1);
+    const int n = (int)(sizeof ordenes_demo / sizeof ordenes_demo[0]);
+    const float ms = 1000.0f / TICKS_PER_SECOND;
+    int i = 0;
+    const uint32_t t0 = get_ticks();
+    while (sim.hours < horas) {
+        // Aquí la simulación no tiene nada pedido: sim.hours es la hora del
+        // tick siguiente.
+        int con_orden = 0;
+        for (; i < n && ordenes_demo[i].tick <= sim.hours; i++, con_orden++) {
+            const th_order o = {.kind = ordenes_demo[i].kind, .x = ordenes_demo[i].x, .y = ordenes_demo[i].y,
+                                .dir = ordenes_demo[i].dir, .qty = ordenes_demo[i].qty, .w = ordenes_demo[i].w,
+                                .h = ordenes_demo[i].h,
+                                .def = ordenes_demo[i].def ? definicion(ordenes_demo[i].def)
+                                                           : (th_rnode)ordenes_demo[i].resumen};
+            partida_mandar_orden(&sim, &o);
+        }
+        uint32_t hasta = con_orden ? sim.hours + 1 : i < n ? ordenes_demo[i].tick : horas;
+        if (hasta > horas)
+            hasta = horas;
+        simulacion_pedir((int)(hasta - sim.hours));
+        simulacion_terminar();
+        if (con_orden) {
+            const simulacion_stats_t *st = simulacion_stats();
+            uint32_t hora;
+            int cuantas;
+            const char *nombres = partida_ultimo_tick(&hora, &cuantas);
+            debugf("TH64 partida: orden %s en el tick %lu: %.2f ms de tick (y %.2f ms de su pasada de temperatura; "
+                   "%d ordenes, tick medido %lu)\n",
+                   nombres, (unsigned long)hora, st->ultimo_tick * ms, st->ultima_temperatura * ms, cuantas,
+                   (unsigned long)st->hora_ultimo_tick);
+        }
+    }
+    const uint32_t t1 = get_ticks();
+    int aceptadas;
+    const int aplicadas = partida_aplicadas(&aceptadas);
+    const uint32_t final_horas = sim.hours;
+    debugf("TH64 partida: %d ordenes de %d aplicadas, %d aceptadas; %lu horas en %.0f ms (%.3f ms por tick, %.3f el "
+           "mas largo); %u pacientes\n",
+           aplicadas, n, aceptadas, (unsigned long)sim.hours, (t1 - t0) * ms, (t1 - t0) * ms / horas,
+           simulacion_stats()->tick_mas_largo * ms, (unsigned)sim.patients_spawned);
+    // La partida de referencia del PC a 3.000 horas: th64sim partida motor/assets
+    // motor/assets/escenarios/demo.trg tools/hito6/ordenes/demo.tsv 1 3000 <dir>
+    // da «13 órdenes, 13 aceptadas; huella acd9c19a; saldo 36826». Si cambian
+    // demo.trg, demo.tsv o la simulación, se recalculan con esa orden.
+    const uint32_t huella = th_sim_hash(&sim);
+    const bool huella_ok = huella == 0xacd9c19au && sim.hosp.balance == 36826;
+    debugf("TH64 partida: huella %08lx y saldo %ld a %lu horas: %s (PC: acd9c19a, 36826)\n", (unsigned long)huella,
+           (long)sim.hosp.balance, (unsigned long)sim.hours, huella_ok ? "iguales" : "DISTINTOS");
+    partida_terminar(&sim);
+    // El fotograma con la partida en marcha (sin grabar: la línea final ya está).
+    // Cada velocidad con su velocidad real (ticks hechos frente a los pedidos):
+    // depende de lo que cueste el tick, sobre todo la pasada de temperatura
+    // (th_sim_temperature_step, que se para cuando nada cambia), así que x8 se
+    // mide dos veces, justo después de x1 (como en la versión anterior) y al
+    // final.
+    recorrido_partida(ui, "x1", 1, 300);
+    recorrido_partida(ui, "x8", 8, 150);
+    recorrido_partida(ui, "x2", 2, 150);
+    recorrido_partida(ui, "x4", 4, 150);
+    recorrido_partida(ui, "x8 otra vez", 8, 150);
+    th_game_ui_close_all(ui);
+    repartida = false;
+    // Además de las 13 aplicadas, las 13 aceptadas (si el núcleo las rechazase
+    // todas, la partida seguiría «aplicándolas»). La huella y el saldo los
+    // compara motor_check con la partida repetida en el PC (paso 3b,
+    // tools/hito6/repetir.sh), y aquí con los de th64sim partida a 3.000 h.
+    return aplicadas != n || aceptadas != n || final_horas != horas || !huella_ok;
+}
+#endif
 
 int main(void)
 {
@@ -1924,6 +2301,8 @@ int main(void)
     }
     if (assets && comprobar_interfaz())
         fallos++;
+    if (assets && comprobar_partida())
+        fallos++;
     debugf("TH64 pruebas: fin, %d fallos\n", fallos);
     if (emux_detect(0))
         emux_ioctl_exit();
@@ -1944,7 +2323,10 @@ int main(void)
     // de capturas (make HORAS=N MODO=m GIRO=r) abre directamente el modo m
     // con la cámara girada r veces.
     interfaz_mandos_iniciar();
-    int modo = 0;
+    // La partida nueva, o sin demo.trg en la DFS el primer modo que haya.
+    int modo = MODO_PARTIDA;
+    for (int k = 0; k < MODOS && !modo_disponible(modo); k++)
+        modo = (modo + 1) % MODOS;
 #ifdef TH_MODO_INICIAL
     giro_inicial = TH_GIRO_INICIAL;
     jugar(TH_MODO_INICIAL, assets, ram_kib, &heap);

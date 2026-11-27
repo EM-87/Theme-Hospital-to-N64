@@ -82,10 +82,15 @@ static void bucle(void *arg)
         const uint32_t cpu0 = stats.cpu;
         sim->temp_defer = 1;
         etapa = 1;
+        const uint32_t hora = sim->hours;
         th_sim_tick(sim);
         contar();
         if (stats.cpu - cpu0 > stats.tick_mas_largo)
             stats.tick_mas_largo = stats.cpu - cpu0;
+        const uint32_t temp0 = stats.cpu_temperatura;
+        stats.ultima_temperatura = 0;
+        stats.ultimo_tick = stats.cpu - cpu0;
+        stats.hora_ultimo_tick = hora;
         etapa = 2;
         hacer_instantanea();
         pausa();
@@ -96,6 +101,7 @@ static void bucle(void *arg)
             pausa();
         contar();
         en_temperatura = 0;
+        stats.ultima_temperatura = stats.cpu_temperatura - temp0;
         etapa = 0;
         stats.ticks++;
         en_curso = 0;
@@ -122,6 +128,11 @@ void simulacion_pedir(int ticks)
 int simulacion_pendientes(void)
 {
     return pedidos + en_curso;
+}
+
+int simulacion_en_tick(void)
+{
+    return en_curso && etapa == 1;
 }
 
 void simulacion_avanzar(uint32_t hasta)

@@ -41,12 +41,26 @@ typedef struct {
     uint32_t tramo_mas_largo; // el mayor tiempo entre dos puntos de pausa
     int etapa_tramo;          // dónde acabó: 1 tick, 2 instantánea, 3 temperatura
     uint32_t hora_tramo;
+    // El último tick acabado (la demo jugable: la CPU de los ticks que aplican
+    // órdenes): su hora (th_sim.hours al empezarlo), su CPU sin la pasada de
+    // temperatura (sumando sus trozos) y la de su pasada de temperatura.
+    uint32_t hora_ultimo_tick;
+    uint32_t ultimo_tick;
+    uint32_t ultima_temperatura;
 } simulacion_stats_t;
 
 // ents: sitio para la instantánea (lo que haría falta para th_vista_sim).
 void simulacion_iniciar(th_sim *s, th_view_entity *ents, int max_ents);
 void simulacion_pedir(int ticks);
 int simulacion_pendientes(void); // ticks pedidos que aún no se han empezado o acabado
+// 1 si la corrutina está suspendida dentro de th_sim_tick (a medio tick: en
+// un punto de pausa de un camino o del bucle de las personas, quizá dentro de
+// th_sim_apply_orders). Entonces no se puede usar el buscador de caminos
+// (th_build_check_cell, th_build_staff_placement: th_game_ui_input.sim_idle)
+// ni conviene meter órdenes en la cola (partida_mandar_orden espera). Con el
+// tick acabado y su instantánea o su pasada de temperatura a medias, 0: la
+// temperatura no usa el buscador ni la cola.
+int simulacion_en_tick(void);
 // Sigue simulando hasta el instante limite (get_ticks) o hasta que no quede
 // nada por hacer.
 void simulacion_avanzar(uint32_t limite);

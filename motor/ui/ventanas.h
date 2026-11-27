@@ -89,6 +89,17 @@ typedef struct th_game_ui_output {
     const th_view_entity *on_top;       // las que van encima de todo (el objeto o la persona que sigue al
     int n_on_top;                       // puntero, th_vista_*_fantasma): th_view_entity_on_top, en orden
     const char *message;                // texto breve para la barra del panel (th_bottom_info.message), o NULL
+    // Añadido por la pieza 6 (al final, sin cambiar lo de arriba): 1 si en este
+    // fotograma la ventana rechaza algo y tiene que sonar el aviso (wrong2.wav),
+    // como hacen las propias ventanas de CorsixTH: hire_staff.lua:134-140 (sin
+    // perfil o sin dinero), edit_room.lua:935 (la obra deja zonas sin salida),
+    // furnish_corridor.lua:106 (sin dinero). El anfitrión NO suena por su cuenta
+    // cuando el núcleo rechaza una orden: en CorsixTH un clic con el plano malo
+    // o con alguien encima no hace nada ni suena (place_objects.lua:513-522); si
+    // la ventana quiere avisar de un rechazo del núcleo, lo pone aquí en el
+    // fotograma siguiente a th_game_ui_order_result. Con message a la vez, el
+    // texto sale en la barra con el sonido.
+    int reject_sound;
 } th_game_ui_output;
 
 // El estado de las ventanas. Es opaco y hay una sola instancia, dentro de
