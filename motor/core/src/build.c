@@ -53,7 +53,7 @@ const char *th_build_reason_name(int reason)
                                         "bloqueo",     "persona",          "no_se_puede", "orden",
                                         "otra_ventana", "lleno",           "no_disponible", "pequena",
                                         "zonas_inaccesibles", "fase",      "posicion",    "puerta_invalida",
-                                        "ventana_invalida", "no_es_de_sala", "faltan_objetos"};
+                                        "ventana_invalida", "no_es_de_sala", "faltan_objetos", "sin_candidato"};
     return reason >= 0 && reason < (int)(sizeof names / sizeof names[0]) ? names[reason] : "?";
 }
 

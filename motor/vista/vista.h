@@ -61,7 +61,8 @@ enum {
     TH_SHEET_FONT_WHITE = 6,   // blanca (Font01V / FONT132M)
     TH_SHEET_FONT_PAUSE = 7,   // azul (Font124V / FONT131M)
     TH_SHEET_FONT_TOOLTIP = 8, // las descripciones (Font00V / FONT130M)
-    TH_SHEETS = 9,
+    TH_SHEET_MUTTON = 9,       // las ventanas de 320 × 200 del juego de PC (DATAM/MUTTON01); de alta no hay una sola hoja
+    TH_SHEETS = 10,
     // No es una hoja: un rectángulo de color RGBA5551 (sprite) en (x, y), de
     // clip_x1 × clip_y1 píxeles.
     TH_SHEET_FILL = 255,
@@ -74,6 +75,10 @@ enum {
     TH_DRAW_FLIP_H = 8,  // en espejo
     TH_DRAW_FLIP_V = 16, // cabeza abajo
     TH_DRAW_CROP = 32,   // solo las columnas de pantalla [clip_x0, clip_x1) (thdf_crop)
+    // Paletas fantasma (thdf_alt_palette de CorsixTH): el objeto o la persona que
+    // sigue al puntero, en gris; en rojo, donde no se puede colocar.
+    TH_DRAW_PAL_GREY = 64,
+    TH_DRAW_PAL_RED = 128,
 };
 
 typedef struct th_draw {

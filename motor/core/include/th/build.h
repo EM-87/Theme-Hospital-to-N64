@@ -30,6 +30,9 @@ enum {
     TH_ORD_COMPRAR_SALA,   // def, qty: purchaseItems (la tienda de la sala) y confirm
     TH_ORD_FIN_SALA,       // confirm en la fase de objetos: cobra la sala y la termina
     TH_ORD_ATRAS,          // cancel
+    // Contratar (la demo jugable; hito 6.4): UIHireStaff:hire y UIPlaceStaff:onMouseUp
+    // (dialogs/hire_staff.lua, dialogs/place_staff.lua).
+    TH_ORD_CONTRATAR, // dir: clase (TH_HUM_*), qty: índice del candidato en el mercado del núcleo, x, y: dónde se suelta
 };
 
 // Motivos de rechazo, con los nombres de la batería (th_build_reason_name).
@@ -58,6 +61,7 @@ enum {
     TH_REASON_VENTANA_INVALIDA,
     TH_REASON_NO_ES_DE_SALA, // el objeto no está en la tienda de la sala (objects_additional)
     TH_REASON_FALTAN_OBJETOS, // faltan objetos obligatorios (checkEnableConfirm)
+    TH_REASON_SIN_CANDIDATO,  // contratar: ese candidato no está en el mercado
     // «pausa» (world.user_actions_allowed), que el intérprete de la batería
     // devuelve con el juego en pausa, no es un motivo del núcleo: lo sabe la
     // interfaz de la ROM (paso 7), que no manda órdenes en pausa.

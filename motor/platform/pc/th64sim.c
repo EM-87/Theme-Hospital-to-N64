@@ -468,10 +468,10 @@ static int orden_panel(char **argv)
     if (cargar_mapa(argv[3], atoi(argv[4])))
         return 1;
     static const char *de_alta[TH_SHEETS] = {"vblk-0", NULL, "panel02v", "mpointer", "font05v",
-                                             "font16v", "font01v", "font124v", "font00v"};
+                                             "font16v", "font01v", "font124v", "font00v", NULL};
     static const char *de_baja[TH_SHEETS] = {"datam/mblk-0", NULL, "datam/panel02m", "datam/mpointer",
                                              "fuentes/font100m", "fuentes/font101m", "fuentes/font132m",
-                                             "fuentes/font131m", "fuentes/font130m"};
+                                             "fuentes/font131m", "fuentes/font130m", "datam/mutton01"};
     const char *const *nombres = alta ? de_alta : de_baja;
     th_sheet hojas[TH_SHEETS];
     const th_sheet *sheets[TH_SHEETS] = {NULL};
