@@ -44,6 +44,7 @@ const char *th64sim_nombre_orden(int kind);
 int th64sim_hito4(char **argv);               // hito4.c
 int th64sim_carga(char **argv);               // hito4.c
 int th64sim_partida(char **argv);             // hito4.c
+int th64sim_tramos(char **argv);              // hito4.c
 int th64sim_construir(int argc, char **argv); // construir.c
 
 #endif

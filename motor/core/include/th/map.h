@@ -94,6 +94,8 @@ typedef struct th_map {
     // Cambia cada vez que se recalculan las sombras, que es después de tocar
     // las capas o las banderas: así la vista girada sabe cuándo rehacerse.
     uint32_t version;
+    // Sombras en espera (th_map_hold_shadows).
+    uint8_t shadows_held;
     uint8_t n_map_objects;
     th_map_object map_objects[TH_MAP_MAX_MAP_OBJECTS];
     th_tile_stack stacks[TH_MAP_MAX_STACKS];
@@ -171,6 +173,16 @@ void th_map_entrance_door(th_map *m, int x, int y, int thob, int west, int on);
 int th_map_entrance_door_tiles(int thob, int west, int8_t dx[3], int8_t dy[3]);
 void th_map_update_pathfinding(th_map *m);
 void th_map_update_shadows(th_map *m);
+// Mientras está puesta, th_map_update_shadows no hace nada: para una
+// operación que cambia muchas paredes y objetos altos seguidos y recalcula
+// las sombras al final (finish_room en build.c: la quita antes de
+// th_map_mark_room, que las recalcula). La simulación no lee las sombras:
+// solo las dibuja la vista, y en la N64 puede dibujarlas en una pausa de
+// entre medias (una puerta que busca camino) con las de antes: th/pausa.h.
+static inline void th_map_hold_shadows(th_map *m, int on)
+{
+    m->shadows_held = (uint8_t)(on != 0);
+}
 
 // El plano de una sala en obra (UIEditRoom:enterDoorPhase y setBlueprintRect
 // con updateRoomBlueprint, th_lua_map.cpp): cerrar guarda passable en

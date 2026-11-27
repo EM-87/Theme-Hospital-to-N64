@@ -16,6 +16,7 @@
 
 #include "th/build.h"
 #include "th/map.h"
+#include "th/pausa.h"
 #include "th/rules.h"
 #include "th/scenario.h"
 #include "th/sim.h"
@@ -498,6 +499,36 @@ static orden_leida partida_ordenes[PARTIDA_ORDENES];
 static int partida_n, partida_aplicadas, partida_aceptadas;
 static FILE *f_resultado, *f_rom;
 
+// th64sim tramos: lo mismo que partida, repartido como en la ROM
+// (platform/n64/simulacion.c: temp_defer y la pasada de temperatura de 16 en
+// 16 palabras con un punto de pausa entre trozo y trozo) y con un gancho de
+// pausa (th/pausa.h) que mide en el PC el tiempo entre dos puntos de pausa:
+// lo que en la N64 sería un tramo que no se puede repartir entre fotogramas.
+// Escribe una línea por orden (lo que tarda th_build_apply) y otra por tick
+// con órdenes (lo que tarda, su tramo más largo y sus pausas), y al final el
+// tramo más largo de los ticks sin órdenes. Los TSV salen iguales que con
+// partida: los puntos de pausa no cambian nada.
+static int medir_tramos;
+static long tramo_tick, tramo_sin_ordenes, marca_orden;
+static int pausas_tick;
+static long ultima_pausa;
+
+static long ahora_ns(void)
+{
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec * 1000000000l + t.tv_nsec;
+}
+
+static void pausa_medida(void)
+{
+    const long t = ahora_ns();
+    if (t - ultima_pausa > tramo_tick)
+        tramo_tick = t - ultima_pausa;
+    ultima_pausa = t;
+    pausas_tick++;
+}
+
 // El gancho de la cola. Las órdenes entran con los ticks de menor a mayor y
 // th_sim_apply_orders aplica las de la hora en el orden en que entraron, así
 // que la aplicada es siempre la siguiente de la lista.
@@ -525,6 +556,18 @@ static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_o
             o->kind == TH_ORD_CONTRATAR || o->kind == TH_ORD_DEVOLVER ? th64sim_resumen_de(o->def)
                                                                        : th64sim_id_de(s, o->def),
             ok ? "-" : th_build_reason_name(r->reason));
+    if (medir_tramos) {
+        // Desde el final de la orden anterior (o el principio del tick).
+        printf("tramos: tick %u, orden %s: %.3f ms\n", (unsigned)s->hours, l ? l->texto : th64sim_nombre_orden(o->kind),
+               (ahora_ns() - marca_orden) / 1e6);
+        marca_orden = ahora_ns();
+    }
+}
+
+int th64sim_tramos(char **argv)
+{
+    medir_tramos = 1;
+    return th64sim_partida(argv);
 }
 
 int th64sim_partida(char **argv)
@@ -594,9 +637,34 @@ int th64sim_partida(char **argv)
                 break;
             metidas++;
         }
+        if (!medir_tramos) {
+            th_sim_tick(s);
+            traza_hora(s, h);
+            continue;
+        }
+        const int antes = partida_aplicadas;
+        s->temp_defer = 1;
+        th_pausa = pausa_medida;
+        tramo_tick = pausas_tick = 0;
+        const long t0 = marca_orden = ultima_pausa = ahora_ns();
         th_sim_tick(s);
+        const long t1 = ahora_ns();
+        pausa_medida(); // la instantánea de la ROM
+        while (th_sim_temperature_step(s, 16))
+            th_pausar();
+        pausa_medida();
+        th_pausa = NULL;
+        const long t2 = ahora_ns();
+        if (partida_aplicadas > antes)
+            printf("tramos: tick %d: %d órdenes, %.3f ms de tick y %.3f de temperatura; tramo más largo %.3f ms, "
+                   "%d pausas\n",
+                   h, partida_aplicadas - antes, (t1 - t0) / 1e6, (t2 - t1) / 1e6, tramo_tick / 1e6, pausas_tick);
+        else if (tramo_tick > tramo_sin_ordenes)
+            tramo_sin_ordenes = tramo_tick;
         traza_hora(s, h);
     }
+    if (medir_tramos)
+        printf("tramos: el más largo de los ticks sin órdenes, %.3f ms\n", tramo_sin_ordenes / 1e6);
     fclose(f_resultado);
     fclose(f_rom);
     if (partida_aplicadas < partida_n)

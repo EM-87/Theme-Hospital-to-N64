@@ -2,9 +2,11 @@
 // formato, tránsito, sombras, parcelas con y sin dueño, paredes divisorias y
 // las correcciones de map.lua. La comparación con los niveles reales está en
 // th64sim mapa (contra el volcado del oráculo de CorsixTH).
+#include <stdlib.h>
 #include <string.h>
 
 #include "th/map.h"
+#include "th/rng.h"
 #include "th_test.h"
 
 #define CASILLA 10
@@ -328,6 +330,124 @@ static void test_objetos_del_nivel(void)
     TH_CHECK_EQ(th_map_thob_count(&mapa, 35, 15), 1);
 }
 
+// Las dos pasadas enteras del mapa (th_map_update_pathfinding y
+// th_map_update_shadows) se escribieron de nuevo para que cada casilla se
+// calcule de una vez y no se escriba si no cambia (el riesgo 1 de la demo:
+// en la N64 costaban 17 ms cada una). Aquí, las de antes, tal cual, para
+// comprobar con mapas al azar que dan las mismas banderas.
+static void pathfinding_antes(th_map *m)
+{
+    const uint32_t travel = TH_TILE_TRAVEL_N | TH_TILE_TRAVEL_E | TH_TILE_TRAVEL_S | TH_TILE_TRAVEL_W;
+    th_tile *t = m->tiles;
+    for (int y = 0; y < TH_MAP_HEIGHT; y++) {
+        for (int x = 0; x < TH_MAP_WIDTH; x++, t++) {
+            t->flags |= travel;
+            if (x == 0)
+                t->flags &= ~TH_TILE_TRAVEL_W;
+            else if (x == TH_MAP_WIDTH - 1)
+                t->flags &= ~TH_TILE_TRAVEL_E;
+            if (y == 0)
+                t->flags &= ~TH_TILE_TRAVEL_N;
+            else if (y == TH_MAP_HEIGHT - 1)
+                t->flags &= ~TH_TILE_TRAVEL_S;
+            if (t->wall_n) {
+                t->flags &= ~TH_TILE_TRAVEL_N;
+                if (y != 0)
+                    t[-TH_MAP_WIDTH].flags &= ~TH_TILE_TRAVEL_S;
+            }
+            if (t->wall_w) {
+                t->flags &= ~TH_TILE_TRAVEL_W;
+                if (x != 0)
+                    t[-1].flags &= ~TH_TILE_TRAVEL_E;
+            }
+        }
+    }
+}
+
+static int es_pared(uint8_t block, int tall)
+{
+    return tall || (block >= 82 && block <= 164);
+}
+
+static void sombras_antes(th_map *m)
+{
+    const uint32_t shadows = TH_TILE_SHADOW_HALF | TH_TILE_SHADOW_FULL | TH_TILE_SHADOW_WALL;
+    th_tile *t = m->tiles;
+    for (int y = 0; y < TH_MAP_HEIGHT; y++) {
+        for (int x = 0; x < TH_MAP_WIDTH; x++, t++) {
+            t->flags &= ~shadows;
+            int tall_w = (t->flags & TH_TILE_TALL_W) != 0;
+            if (!es_pared(t->wall_w, tall_w))
+                continue;
+            t->flags |= TH_TILE_SHADOW_HALF;
+            if (es_pared(t->wall_n, (t->flags & TH_TILE_TALL_N) != 0)) {
+                t->flags |= TH_TILE_SHADOW_WALL;
+            } else if (y != 0) {
+                th_tile *n = t - TH_MAP_WIDTH;
+                n->flags |= TH_TILE_SHADOW_FULL;
+                if (x != 0 && !es_pared(n->wall_w, tall_w))
+                    n[-1].flags |= TH_TILE_SHADOW_FULL;
+            }
+        }
+    }
+}
+
+// Un mapa al azar: paredes de todos los rangos (nada, paredes de sombra 82–164
+// y otras), las banderas «alto» y el resto de las banderas al azar.
+static void mapa_al_azar(uint32_t semilla)
+{
+    th_rng r;
+    th_rng_seed(&r, semilla);
+    static const uint8_t bloques[] = {0, 0, 0, 0, 5, 81, 82, 100, 164, 165, 200};
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
+        th_tile *t = &mapa.tiles[i];
+        t->wall_n = bloques[th_rng_range(&r, 0, (int)sizeof bloques - 1)];
+        t->wall_w = bloques[th_rng_range(&r, 0, (int)sizeof bloques - 1)];
+        t->flags = th_rng_u32(&r);
+    }
+}
+
+static void test_pasadas_como_antes(void)
+{
+    // En el montón mientras dura (en la ROM de pruebas, lo que viene detrás
+    // necesita el montón: test_build.c).
+    uint32_t *banderas_antes = malloc(sizeof(uint32_t) * TH_MAP_WIDTH * TH_MAP_HEIGHT);
+    TH_CHECK(banderas_antes != NULL);
+    if (!banderas_antes)
+        return;
+    int distintas_paso = 0, distintas_sombra = 0;
+    for (uint32_t semilla = 1; semilla <= 6; semilla++) {
+        mapa_al_azar(semilla);
+        pathfinding_antes(&mapa);
+        sombras_antes(&mapa);
+        for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
+            banderas_antes[i] = mapa.tiles[i].flags;
+        // Las dos por separado y, de una vez (recalc con el paso y las
+        // sombras), las de th_map_mark_room y th_map_unmark_room, que corren
+        // en finish_room: con un rectángulo vacío no tocan nada más.
+        const uint32_t sombras = TH_TILE_SHADOW_HALF | TH_TILE_SHADOW_FULL | TH_TILE_SHADOW_WALL;
+        for (int camino = 0; camino < 3; camino++) {
+            mapa_al_azar(semilla);
+            if (camino == 0) {
+                th_map_update_pathfinding(&mapa);
+                th_map_update_shadows(&mapa);
+            } else if (camino == 1) {
+                th_map_mark_room(&mapa, 0, 0, 0, 0, 0, 0);
+            } else {
+                th_map_unmark_room(&mapa, 0, 0, 0, 0);
+            }
+            for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
+                const uint32_t d = banderas_antes[i] ^ mapa.tiles[i].flags;
+                distintas_paso += (d & ~sombras) != 0;
+                distintas_sombra += (d & sombras) != 0;
+            }
+        }
+    }
+    TH_CHECK_EQ(distintas_paso, 0);
+    TH_CHECK_EQ(distintas_sombra, 0);
+    free(banderas_antes);
+}
+
 void th_test_map(void)
 {
     test_formato();
@@ -337,4 +457,5 @@ void th_test_map(void)
     test_correcciones();
     test_lista();
     test_objetos_del_nivel();
+    test_pasadas_como_antes();
 }

@@ -6,6 +6,8 @@
 
 #include <string.h>
 
+#include "th/pausa.h"
+
 static const char *const dir_names[4] = {"north", "east", "south", "west"};
 static const int8_t dir_dx[4] = {0, 1, 0, -1}, dir_dy[4] = {-1, 0, 1, 0};
 static const uint32_t buildable_flag[4] = {TH_TILE_BUILDABLE_N, TH_TILE_BUILDABLE_E, TH_TILE_BUILDABLE_S,
@@ -1285,10 +1287,17 @@ static void finish_room(th_sim *s)
 {
     th_obra *b = &s->obra;
     int door, door2;
+    // Las sombras, una vez al final (th_map_mark_room) y no también al poner
+    // cada puerta (Door:setTile): las de en medio no las mira nadie, y
+    // th_map_mark_room las recalcula enteras con las paredes y las puertas ya
+    // puestas. Es lo mismo, con una pasada entera del mapa menos (en la N64,
+    // unos 14 ms: el riesgo 1 de la demo).
+    th_map_hold_shadows(s->w.map, 1);
     room_walls(s, b, &door, &door2);
     const int ri = th_sim_new_room(s, b->type, b->x, b->y, b->w, b->h, door, door2, b->room);
     b->room = (uint8_t)ri;
     const int floor = th_rules_int(s->defs, th_rules_get(s->defs, room_def(s, b->type), "floor_tile"), 0);
+    th_map_hold_shadows(s->w.map, 0);
     th_map_mark_room(s->w.map, b->x, b->y, b->w, b->h, floor, s->rooms[ri].num);
     // Entity:getRoom es la sala de la casilla: los objetos de pasillo que la
     // sala tapa (un radiador en su borde, que el plano admite) pasan a ser de
@@ -1523,8 +1532,11 @@ static int free_object_slots(const th_sim *s)
 
 void th_build_tick(th_sim *s)
 {
-    if (s->obra.phase == TH_OBRA_CLEAR && !area_obscured(s, &s->obra))
+    if (s->obra.phase == TH_OBRA_CLEAR && !area_obscured(s, &s->obra)) {
         finish_room(s);
+        th_sim_temperature_flush(s);
+        th_pausar(); // como entre dos órdenes (th_sim_apply_orders)
+    }
 }
 
 int th_build_rebuild_room(th_sim *s, int type, int x, int y, int w, int h, th_edge door, const th_edge *windows,
@@ -1999,7 +2011,15 @@ void th_sim_apply_orders(th_sim *s)
         s->n_orders--;
         th_order_result r;
         th_build_apply(s, &o, &r);
+        // El mapa para la temperatura, con la orden ya entera (sim.h,
+        // temp_map_dirty).
+        th_sim_temperature_flush(s);
         if (s->ev.order)
             s->ev.order(s->ev.ctx, s, &o, &r);
+        // Un punto de pausa entre orden y orden (th/pausa.h): una orden se
+        // aplica entera, y entre dos el mapa y la obra están como los dejó
+        // la primera, igual que entre humanoide y humanoide del tick. Así un
+        // tick con varias órdenes de construir se reparte entre fotogramas.
+        th_pausar();
     }
 }

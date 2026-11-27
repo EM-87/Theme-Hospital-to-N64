@@ -15,6 +15,7 @@
 #include "th/map.h"
 #include "th/objects.h"
 #include "th/path.h"
+#include "th/pausa.h"
 #include "th/rules.h"
 #include "th/sim.h"
 #include "th_test.h"
@@ -30,6 +31,11 @@ typedef struct estado {
     th_map mapa;
     th_pathfinder buscador;
     th_sim sim;
+    // test_ordenes_pausadas: las sombras y los pesos de referencia.
+    uint32_t sombras_ref[TH_MAP_WIDTH * TH_MAP_HEIGHT];
+    uint16_t celdas_ref[TH_MAP_WIDTH * TH_MAP_HEIGHT], celdas[TH_MAP_WIDTH * TH_MAP_HEIGHT];
+    uint32_t aire_ref[TH_SIM_TEMP_WORDS], radiador_ref[TH_SIM_TEMP_WORDS];
+    uint32_t aire[TH_SIM_TEMP_WORDS], radiador[TH_SIM_TEMP_WORDS];
 } estado;
 static estado *E;
 #define tmp (E->tmp)
@@ -2696,6 +2702,288 @@ static void test_partida_nueva(void)
     }
 }
 
+// --- Las órdenes con puntos de pausa (el riesgo 1 de la demo)
+//
+// En la N64 la simulación se suspende en los puntos de pausa (th/pausa.h) y,
+// mientras, la ROM dibuja el mapa tal como está (las paredes, los suelos y las
+// sombras: th_view_scene lee el mapa, no una instantánea). Las órdenes de
+// construir se paran entre orden y orden, tras la obra que termina sola
+// (th_build_tick) y al leer el mapa para la temperatura al acabar la orden
+// (th_sim_temperature_flush), y la pasada de temperatura sigue por partes.
+// Aquí, por th_sim_tick como la ROM: (1) en todas las pausas, también las de
+// los caminos, las sombras son las de las paredes de ese momento (lo que
+// dibuja la ROM no está a medias) y no se pasa a través de ninguna pared;
+// (2) con pausas y la pasada por partes da lo mismo que sin pausas y la
+// pasada de una vez, también la obra que termina sola; y (3) los pesos de la
+// temperatura que deja th_sim_map_changed para la pasada son los de
+// th_sim_temperature_prepare entera.
+
+static int pausas, pausas_mal, paso_mal, pausas_retenidas, pausas_tick[4];
+static int tick_actual;
+#define sombras_ref (E->sombras_ref)
+
+static int pared_sombra(uint8_t block, int tall)
+{
+    return tall || (block >= 82 && block <= 164);
+}
+
+// Las sombras de las paredes de ahora, con la pasada de siempre (la de
+// tests/test_map.c, sombras_antes) sobre una copia de las banderas: no toca
+// el mapa. Compara las banderas enteras, pero solo rehace las de sombra: las
+// demás son las del mapa por construcción.
+static int sombras_al_dia(void)
+{
+    const uint32_t todas = TH_TILE_SHADOW_HALF | TH_TILE_SHADOW_FULL | TH_TILE_SHADOW_WALL;
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
+        sombras_ref[i] = mapa.tiles[i].flags & ~todas;
+    for (int y = 0; y < TH_MAP_HEIGHT; y++)
+        for (int x = 0; x < TH_MAP_WIDTH; x++) {
+            const int i = y * TH_MAP_WIDTH + x;
+            const th_tile *t = &mapa.tiles[i];
+            const int tall_w = (t->flags & TH_TILE_TALL_W) != 0;
+            if (!pared_sombra(t->wall_w, tall_w))
+                continue;
+            sombras_ref[i] |= TH_TILE_SHADOW_HALF;
+            if (pared_sombra(t->wall_n, (t->flags & TH_TILE_TALL_N) != 0))
+                sombras_ref[i] |= TH_TILE_SHADOW_WALL;
+            else if (y != 0) {
+                sombras_ref[i - TH_MAP_WIDTH] |= TH_TILE_SHADOW_FULL;
+                if (x != 0 && !pared_sombra(mapa.tiles[i - TH_MAP_WIDTH].wall_w, tall_w))
+                    sombras_ref[i - TH_MAP_WIDTH - 1] |= TH_TILE_SHADOW_FULL;
+            }
+        }
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
+        if (sombras_ref[i] != mapa.tiles[i].flags)
+            return 0;
+    return 1;
+}
+
+// El paso, en el sentido que se puede mirar sin rehacer los objetos de lado:
+// ninguna casilla deja pasar a través de una pared (th_map_update_pathfinding
+// corta los dos lados; los objetos de lado, th_objects_reset_side, cortan
+// además otros, así que el paso cortado sin pared no se puede mirar aquí).
+static int paso_al_dia(void)
+{
+    for (int y = 0; y < TH_MAP_HEIGHT; y++)
+        for (int x = 0; x < TH_MAP_WIDTH; x++) {
+            const th_tile *t = &mapa.tiles[y * TH_MAP_WIDTH + x];
+            if (t->wall_n && ((t->flags & TH_TILE_TRAVEL_N) || (y && (t[-TH_MAP_WIDTH].flags & TH_TILE_TRAVEL_S))))
+                return 0;
+            if (t->wall_w && ((t->flags & TH_TILE_TRAVEL_W) || (x && (t[-1].flags & TH_TILE_TRAVEL_E))))
+                return 0;
+        }
+    return 1;
+}
+
+// El gancho: en cada pausa, las sombras y el paso del mapa tal como lo
+// dibujaría la ROM. Cuenta aparte las pausas con las sombras en espera
+// (th_map_hold_shadows, en finish_room): si alguna cae ahí con las sombras
+// desfasadas, sale en pausas_mal.
+static void al_pausar(void)
+{
+    pausas++;
+    pausas_tick[tick_actual]++;
+    pausas_retenidas += mapa.shadows_held != 0;
+    pausas_mal += !sombras_al_dia();
+    paso_mal += !paso_al_dia();
+}
+
+typedef struct {
+    uint32_t huella, huella_mapa;
+    int aceptadas, salas_tras_tick[4];
+    uint8_t fase_tras_tick[4];
+} resultado_pausas;
+
+static void meter(int kind, const char *id, int x, int y, int dir, int qty, int w, int h, th_rnode d)
+{
+    const th_order o = {0, (uint8_t)kind, (uint8_t)x, (uint8_t)y, (uint8_t)dir, (uint8_t)qty, (uint8_t)w, (uint8_t)h,
+                        id ? def(id) : d};
+    TH_CHECK_EQ(th_sim_push_order(&sim, &o), 0);
+}
+
+static int ordenes_aceptadas;
+static void al_aplicar_pausas(void *ctx, const th_sim *s, const th_order *o, const th_order_result *r)
+{
+    (void)ctx;
+    (void)s;
+    (void)o;
+    ordenes_aceptadas += r->reason == TH_REASON_OK;
+}
+
+// Un radiador en el pasillo y la consulta entera, por th_sim_tick como la
+// ROM (platform/n64/simulacion.c, bucle): con el gancho, temp_defer y la
+// pasada de 16 en 16 palabras con una pausa entre trozo y trozo (y otra por
+// la instantánea); sin él, de una vez. Cuatro ticks: (0) el radiador, el
+// plano, la puerta, una ventana y fin de ventanas con alguien dentro del
+// plano: la obra espera a que se despeje (clear_area); (1) sigue dentro; (2)
+// ha salido: th_build_tick termina la obra sola (finish_room y su pausa);
+// (3) la mesa y fin de sala.
+static resultado_pausas ordenes_pausadas(int con_gancho)
+{
+    preparar_salas();
+    sim.date = (th_date){1, 1, 1, 0};
+    sim.hours_per_tick = 1;
+    sim.ev.order = al_aplicar_pausas;
+    ordenes_aceptadas = 0;
+    th_sim_temperature_prepare(&sim);
+    // Alguien quieto dentro del plano (como en test_obra_despejar): vivo pero
+    // fuera de order, así que el tick no lo mueve.
+    th_person *p = &sim.hum[0];
+    p->alive = 1;
+    p->h.tile_x = 12;
+    p->h.tile_y = 12;
+    resultado_pausas res = {0};
+    for (int tick = 0; tick < 4; tick++) {
+        tick_actual = tick;
+        if (tick == 0) {
+            meter(TH_ORD_COMPRAR, "radiator", 0, 0, 0, 1, 0, 0, 0);
+            meter(TH_ORD_COLOCAR, "radiator", 30, 30, TH_DIR_NORTH, 0, 0, 0, 0);
+            meter(TH_ORD_SALA, NULL, 10, 10, 0, 0, 4, 4, def_sala("gp"));
+            meter(TH_ORD_PUERTA, NULL, 11, 13, TH_DIR_SOUTH, 0, 0, 0, 0);
+            meter(TH_ORD_VENTANA, NULL, 12, 10, TH_DIR_NORTH, 0, 0, 0, 0);
+            meter(TH_ORD_FIN_VENTANAS, NULL, 0, 0, 0, 0, 0, 0, 0);
+        } else if (tick == 2) {
+            p->h.tile_x = 20;
+        } else if (tick == 3) {
+            meter(TH_ORD_COLOCAR, "desk", 12, 11, TH_DIR_NORTH, 0, 0, 0, 0);
+            meter(TH_ORD_FIN_SALA, NULL, 0, 0, 0, 0, 0, 0, 0);
+        }
+        th_pausa = con_gancho ? al_pausar : NULL;
+        sim.temp_defer = (uint8_t)con_gancho;
+        th_sim_tick(&sim);
+        if (con_gancho) {
+            th_pausar(); // la instantánea
+            while (th_sim_temperature_step(&sim, 16))
+                th_pausar();
+        }
+        th_pausa = NULL;
+        sim.temp_defer = 0;
+        res.fase_tras_tick[tick] = sim.obra.phase;
+        res.salas_tras_tick[tick] = sim.n_rooms;
+    }
+    res.huella = th_sim_hash(&sim);
+    res.huella_mapa = th_map_hash(&mapa);
+    res.aceptadas = ordenes_aceptadas;
+    return res;
+}
+
+// th_sim_temperature_prepare como era antes de partirla en dos (sim.c): los
+// pesos de cada casilla mirando el mapa directamente.
+#define celdas_ref (E->celdas_ref)
+#define aire_ref (E->aire_ref)
+#define radiador_ref (E->radiador_ref)
+static void pesos_antes(void)
+{
+    const th_tile *tiles = mapa.tiles;
+    static const int rel[4] = {-TH_MAP_WIDTH, TH_MAP_WIDTH, 1, -1};
+    static const uint32_t travel[4] = {TH_TILE_TRAVEL_N, TH_TILE_TRAVEL_S, TH_TILE_TRAVEL_E, TH_TILE_TRAVEL_W};
+    memset(aire_ref, 0, sizeof E->aire);
+    memset(radiador_ref, 0, sizeof E->radiador);
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
+        const uint32_t f = tiles[i].flags;
+        unsigned code = 0, count = 0;
+        for (int k = 0; k < 4; k++) {
+            const int nb = i + rel[k];
+            if (nb < 0 || nb >= TH_MAP_WIDTH * TH_MAP_HEIGHT)
+                continue;
+            const int w = (f & travel[k]) || ((f ^ tiles[nb].flags) & (TH_TILE_HOSPITAL | TH_TILE_ROOM)) == 0 ? 4 : 1;
+            code |= (unsigned)(w == 4 ? 2 : 1) << (2 * k);
+            count += (unsigned)w;
+        }
+        unsigned type = 0;
+        if (f & TH_TILE_HOSPITAL)
+            type = sim.radiator_thob >= 0 &&
+                           th_map_has_thob(&mapa, i % TH_MAP_WIDTH, i / TH_MAP_WIDTH, sim.radiator_thob)
+                       ? 2
+                       : 1;
+        celdas_ref[i] = (uint16_t)(code | type << 8 | count << 10);
+        if (type == 0)
+            aire_ref[i >> 5] |= 1u << (i & 31);
+        if (type == 2)
+            radiador_ref[i >> 5] |= 1u << (i & 31);
+    }
+}
+
+static void test_ordenes_pausadas(void)
+{
+    const resultado_pausas sin = ordenes_pausadas(0);
+    pausas = pausas_mal = paso_mal = pausas_retenidas = 0;
+    memset(pausas_tick, 0, sizeof pausas_tick);
+    const resultado_pausas con = ordenes_pausadas(1);
+    TH_CHECK_EQ(sin.aceptadas, 8);
+    TH_CHECK_EQ(con.aceptadas, 8);
+    TH_CHECK_EQ(con.huella, sin.huella);
+    TH_CHECK_EQ(con.huella_mapa, sin.huella_mapa);
+    // La obra: espera en el tick 0 y el 1, la termina th_build_tick en el 2
+    // y la cierra fin de sala en el 3; igual con pausas que sin ellas.
+    static const uint8_t fases[4] = {TH_OBRA_CLEAR, TH_OBRA_CLEAR, TH_OBRA_OBJECTS, TH_OBRA_NONE};
+    static const int salas[4] = {0, 0, 1, 1};
+    for (int t = 0; t < 4; t++) {
+        TH_CHECK_EQ(con.fase_tras_tick[t], fases[t]);
+        TH_CHECK_EQ(sin.fase_tras_tick[t], fases[t]);
+        TH_CHECK_EQ(con.salas_tras_tick[t], salas[t]);
+        TH_CHECK_EQ(sin.salas_tras_tick[t], salas[t]);
+    }
+    // Las pausas de cada tick: 62 entre los 63 trozos de la pasada (32 de
+    // pesos y 32 de casillas, uno compartido) y la de la instantánea, si el
+    // mapa cambió en el tick (el 0: el radiador; el 2: la obra que termina
+    // sola; el 3: la mesa), y si no, 31 y la instantánea; en el 0 y el 3,
+    // una tras cada orden (6 y 2); 8 franjas de 16 filas al leer el mapa
+    // (una vez por orden que lo cambia: el radiador y la mesa; y la obra
+    // del tick 2); más las de los caminos.
+    TH_CHECK(pausas_tick[0] >= 6 + 8 + 63);
+    TH_CHECK_EQ(pausas_tick[1], 32);
+    TH_CHECK(pausas_tick[2] >= 1 + 8 + 63);
+    TH_CHECK(pausas_tick[3] >= 2 + 8 + 63);
+    TH_CHECK_EQ(pausas, pausas_tick[0] + pausas_tick[1] + pausas_tick[2] + pausas_tick[3]);
+    // Mirado en todas: ninguna con las sombras o el paso a medias.
+    TH_CHECK_EQ(pausas_mal, 0);
+    TH_CHECK_EQ(paso_mal, 0);
+    if (pausas_mal || paso_mal || pausas_retenidas)
+        th_test_log("ordenes_pausadas: %d pausas, %d con las sombras mal, %d con el paso mal, %d con las sombras "
+                    "en espera\n",
+                    pausas, pausas_mal, paso_mal, pausas_retenidas);
+    // (3) Los pesos de la segunda mitad: el mapa ha cambiado (la mesa) y la
+    // pasada los calcula antes de seguir; th_sim_temperature_prepare entera
+    // sobre el mismo mapa da los mismos.
+    uint16_t *celdas = E->celdas;
+    uint32_t *aire = E->aire, *radiador = E->radiador;
+    th_sim_map_changed(&sim);
+    // th_sim_map_changed solo lo apunta; fuera de una orden, lo lee begin.
+    TH_CHECK_EQ(sim.temp_map_dirty, 1);
+    TH_CHECK_EQ(sim.temp_prep_pending, 0);
+    th_sim_temperature_begin(&sim, 20000, 30000);
+    TH_CHECK_EQ(sim.temp_map_dirty, 0);
+    TH_CHECK_EQ(sim.temp_prep_pending, 1);
+    int trozos = 1;
+    while (th_sim_temperature_step(&sim, 16))
+        trozos++;
+    TH_CHECK_EQ(sim.temp_prep_pending, 0);
+    TH_CHECK_EQ(trozos, 63);
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++)
+        celdas[i] = sim.temp[i].cell;
+    memcpy(aire, sim.temp_air_mask, sizeof E->aire);
+    memcpy(radiador, sim.temp_rad_mask, sizeof E->radiador);
+    th_sim_temperature_prepare(&sim);
+    pesos_antes();
+    int distintas = 0, distintas_antes = 0;
+    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
+        distintas += celdas[i] != sim.temp[i].cell;
+        distintas_antes += celdas[i] != celdas_ref[i];
+    }
+    TH_CHECK_EQ(distintas, 0);
+    TH_CHECK_EQ(distintas_antes, 0);
+    TH_CHECK_EQ(memcmp(aire, sim.temp_air_mask, sizeof E->aire), 0);
+    TH_CHECK_EQ(memcmp(radiador, sim.temp_rad_mask, sizeof E->radiador), 0);
+    TH_CHECK_EQ(memcmp(aire, aire_ref, sizeof E->aire), 0);
+    TH_CHECK_EQ(memcmp(radiador, radiador_ref, sizeof E->radiador), 0);
+    // Hay casillas de los tres tipos: el radiador cuenta.
+    int con_radiador = 0;
+    for (int w = 0; w < TH_SIM_TEMP_WORDS; w++)
+        con_radiador += radiador[w] != 0;
+    TH_CHECK(con_radiador > 0);
+}
+
 void th_test_build(void)
 {
     const size_t n = th_test_trg(definiciones, trg_defs, sizeof(trg_defs));
@@ -2744,6 +3032,7 @@ void th_test_build(void)
     test_aviso_personal();
     test_descubrir();
     test_partida_nueva();
+    test_ordenes_pausadas();
     free(E);
     E = NULL;
 }

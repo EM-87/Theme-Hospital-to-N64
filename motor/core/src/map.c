@@ -21,34 +21,15 @@ int th_map_parcel_owner(const th_map *m, int parcel)
     return m->parcel_owner[parcel];
 }
 
+// El paso y las sombras se recalculan con una pasada entera del mapa (abajo,
+// recalc), que en la N64 cuesta sobre todo traer de la RDRAM las 16.384
+// casillas (256 KiB, que no caben en la caché de datos) y devolver las que se
+// escriben.
+static void recalc(th_map *m, int paso, int sombras);
+
 void th_map_update_pathfinding(th_map *m)
 {
-    const uint32_t travel = TH_TILE_TRAVEL_N | TH_TILE_TRAVEL_E | TH_TILE_TRAVEL_S | TH_TILE_TRAVEL_W;
-    th_tile *t = m->tiles;
-    for (int y = 0; y < TH_MAP_HEIGHT; y++) {
-        for (int x = 0; x < TH_MAP_WIDTH; x++, t++) {
-            t->flags |= travel;
-            if (x == 0)
-                t->flags &= ~TH_TILE_TRAVEL_W;
-            else if (x == TH_MAP_WIDTH - 1)
-                t->flags &= ~TH_TILE_TRAVEL_E;
-            if (y == 0)
-                t->flags &= ~TH_TILE_TRAVEL_N;
-            else if (y == TH_MAP_HEIGHT - 1)
-                t->flags &= ~TH_TILE_TRAVEL_S;
-            // Una pared corta el paso por los dos lados.
-            if (t->wall_n) {
-                t->flags &= ~TH_TILE_TRAVEL_N;
-                if (y != 0)
-                    t[-TH_MAP_WIDTH].flags &= ~TH_TILE_TRAVEL_S;
-            }
-            if (t->wall_w) {
-                t->flags &= ~TH_TILE_TRAVEL_W;
-                if (x != 0)
-                    t[-1].flags &= ~TH_TILE_TRAVEL_E;
-            }
-        }
-    }
+    recalc(m, 1, 0);
 }
 
 void th_map_blueprint_close(th_map *m, int x, int y, int w, int h)
@@ -88,8 +69,8 @@ void th_map_mark_room(th_map *m, int x, int y, int w, int h, int floor, int id)
             t->flags &= ~TH_TILE_BLUEPRINT;
             t->room = (uint16_t)id;
         }
-    th_map_update_pathfinding(m);
-    th_map_update_shadows(m);
+    // th_map_update_pathfinding y th_map_update_shadows en una pasada.
+    recalc(m, 1, 1);
 }
 
 void th_map_unmark_room(th_map *m, int x, int y, int w, int h)
@@ -101,8 +82,7 @@ void th_map_unmark_room(th_map *m, int x, int y, int w, int h)
             t->flags &= ~TH_TILE_ROOM;
             t->room = 0;
         }
-    th_map_update_pathfinding(m);
-    th_map_update_shadows(m);
+    recalc(m, 1, 1);
 }
 
 // Para las sombras, una casilla tiene pared si hay un objeto alto (o una
@@ -112,32 +92,100 @@ static int is_wall(uint8_t block, int tall)
     return tall || (block >= 82 && block <= 164);
 }
 
-void th_map_update_shadows(th_map *m)
+// Las banderas de paso de una casilla: abiertas salvo en el borde del mapa y
+// donde corta una pared: la norte y la oeste de la casilla, la norte de la del
+// sur y la oeste de la del este.
+static inline __attribute__((always_inline)) uint32_t travel_of(const th_tile *t, int x, int y)
 {
-    static uint32_t versiones; // distinta en cada llamada, también entre mapas
-    m->version = ++versiones;
+    uint32_t paso = TH_TILE_TRAVEL_N | TH_TILE_TRAVEL_E | TH_TILE_TRAVEL_S | TH_TILE_TRAVEL_W;
+    if (x == 0 || t->wall_w)
+        paso &= ~TH_TILE_TRAVEL_W;
+    if (x == TH_MAP_WIDTH - 1 || t[1].wall_w)
+        paso &= ~TH_TILE_TRAVEL_E;
+    if (y == 0 || t->wall_n)
+        paso &= ~TH_TILE_TRAVEL_N;
+    if (y == TH_MAP_HEIGHT - 1 || t[TH_MAP_WIDTH].wall_n)
+        paso &= ~TH_TILE_TRAVEL_S;
+    return paso;
+}
+
+// Una casilla con pared al oeste (o un objeto alto) echa sombra: la media en
+// ella; la de pared si además la tiene al norte; si no, la entera en la del
+// norte y, si la pared oeste de esa no lo impide (mirada con la bandera
+// «alto» de esta casilla, como CorsixTH), en la del noroeste.
+static inline __attribute__((always_inline)) int casts_full(const th_tile *t)
+{
+    return is_wall(t->wall_w, (t->flags & TH_TILE_TALL_W) != 0) &&
+           !is_wall(t->wall_n, (t->flags & TH_TILE_TALL_N) != 0);
+}
+
+// Las sombras de una casilla: las suyas y la entera que le echan la del sur y
+// la del sureste. Las demás no le echan nada.
+static inline __attribute__((always_inline)) uint32_t shadows_of(const th_tile *t, int x, int y)
+{
+    uint32_t sombra = 0;
+    if (is_wall(t->wall_w, (t->flags & TH_TILE_TALL_W) != 0)) {
+        sombra = TH_TILE_SHADOW_HALF;
+        if (is_wall(t->wall_n, (t->flags & TH_TILE_TALL_N) != 0))
+            sombra |= TH_TILE_SHADOW_WALL;
+    }
+    if (y != TH_MAP_HEIGHT - 1) {
+        const th_tile *sur = t + TH_MAP_WIDTH;
+        if (casts_full(sur) || (x != TH_MAP_WIDTH - 1 && casts_full(sur + 1) &&
+                                !is_wall(t[1].wall_w, (sur[1].flags & TH_TILE_TALL_W) != 0)))
+            sombra |= TH_TILE_SHADOW_FULL;
+    }
+    return sombra;
+}
+
+// Cada casilla calcula de una vez sus banderas de paso, sus sombras o las dos
+// cosas, y solo se escribe si cambian: así no se ensucian las líneas de la
+// caché que no cambian, y con las dos cosas a la vez el mapa se trae una sola
+// vez (th_map_mark_room y th_map_unmark_room). Da lo mismo que las pasadas de
+// antes (las de tests/test_map.c, test_pasadas_como_antes), que recorrían el
+// mapa abriendo el paso de cada casilla y cortándolo con cada pared a los dos
+// lados, y borrando las sombras de cada casilla y echando la entera hacia el
+// norte: la vecina del norte y la del oeste ya se habían recorrido, y la
+// sombra entera solo la echan las casillas de la fila siguiente. El paso y las
+// sombras no se leen entre sí.
+static inline __attribute__((always_inline)) void recalc_tiles(th_map *m, int paso, int sombras)
+{
+    const uint32_t travel = TH_TILE_TRAVEL_N | TH_TILE_TRAVEL_E | TH_TILE_TRAVEL_S | TH_TILE_TRAVEL_W;
     const uint32_t shadows = TH_TILE_SHADOW_HALF | TH_TILE_SHADOW_FULL | TH_TILE_SHADOW_WALL;
+    const uint32_t borra = (paso ? travel : 0) | (sombras ? shadows : 0);
     th_tile *t = m->tiles;
     for (int y = 0; y < TH_MAP_HEIGHT; y++) {
         for (int x = 0; x < TH_MAP_WIDTH; x++, t++) {
-            t->flags &= ~shadows;
-            int tall_w = (t->flags & TH_TILE_TALL_W) != 0;
-            if (!is_wall(t->wall_w, tall_w))
-                continue;
-            t->flags |= TH_TILE_SHADOW_HALF;
-            if (is_wall(t->wall_n, (t->flags & TH_TILE_TALL_N) != 0)) {
-                t->flags |= TH_TILE_SHADOW_WALL;
-            } else if (y != 0) {
-                // La sombra se proyecta sobre la casilla del norte y dobla la
-                // esquina. Como en CorsixTH, la pared oeste del vecino se mira
-                // con la bandera «alto» de esta casilla, no la suya.
-                th_tile *n = t - TH_MAP_WIDTH;
-                n->flags |= TH_TILE_SHADOW_FULL;
-                if (x != 0 && !is_wall(n->wall_w, tall_w))
-                    n[-1].flags |= TH_TILE_SHADOW_FULL;
-            }
+            uint32_t f = t->flags & ~borra;
+            if (paso)
+                f |= travel_of(t, x, y);
+            if (sombras)
+                f |= shadows_of(t, x, y);
+            if (f != t->flags)
+                t->flags = f;
         }
     }
+}
+
+static void recalc(th_map *m, int paso, int sombras)
+{
+    if (sombras) {
+        static uint32_t versiones; // distinta en cada llamada, también entre mapas
+        m->version = ++versiones;
+    }
+    if (paso && sombras)
+        recalc_tiles(m, 1, 1);
+    else if (paso)
+        recalc_tiles(m, 1, 0);
+    else
+        recalc_tiles(m, 0, 1);
+}
+
+void th_map_update_shadows(th_map *m)
+{
+    // En espera (th_map_hold_shadows): quien la puso las recalcula después.
+    if (!m->shadows_held)
+        recalc(m, 0, 1);
 }
 
 // addRemoveDividerWalls de th_map.cpp: entre dos casillas de hospital de

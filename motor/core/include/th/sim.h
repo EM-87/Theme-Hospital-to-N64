@@ -437,6 +437,18 @@ typedef struct th_sim {
     // que recalcular si cambia uno de los dos (th_sim_temperature_prepare).
     uint32_t temp_air_mask[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
     uint32_t temp_rad_mask[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
+    // th_sim_map_changed en tres tiempos (el riesgo 1 de la demo): al
+    // cambiar el mapa solo se apunta que ha cambiado (temp_map_dirty); al
+    // acabar la orden (th_sim_temperature_flush, desde th_sim_apply_orders y
+    // th_build_tick) se lee, casilla a casilla, lo que leen los pesos (el
+    // paso a cada lado, si es del hospital o de una sala y si tiene
+    // radiador: temp_key); los pesos y las máscaras salen de ahí en la pasada
+    // siguiente (th_sim_temperature_step), por partes, antes de recalcular
+    // ninguna casilla. temp_prep_word es la siguiente palabra por hacer.
+    uint8_t temp_key[TH_MAP_WIDTH * TH_MAP_HEIGHT];
+    uint8_t temp_map_dirty;
+    uint8_t temp_prep_pending;
+    uint16_t temp_prep_word;
     // Faxes y subidas de sueldo: los que esperan en la cola del panel inferior
     // y los que ya enseña (message_windows), con la puerta de los mensajes
     // (UIBottomPanel:_messageDoorTick).
@@ -494,10 +506,14 @@ void th_sim_load_count(const th_sim *s, th_sim_load *l);
 // (de 0 a 65.535). Da lo mismo que recorrer el mapa entero, pero solo
 // recalcula las casillas que pueden cambiar. th_sim_temperature_prepare
 // recalcula los pesos de las casillas: hay que llamarla si cambia el mapa.
+// th_sim_map_changed (abajo) hace lo mismo en dos veces: lee el mapa en
+// el momento y deja el resto para el principio de la pasada siguiente.
 void th_sim_temperature_prepare(th_sim *s);
 void th_sim_update_temperatures(th_sim *s, uint16_t air, uint16_t radiator);
 // La misma pasada por partes: begin la prepara y step recalcula como mucho
-// «palabras» × 32 casillas; devuelve 1 si aún queda.
+// «palabras» × 32 casillas; devuelve 1 si aún queda. Si el mapa cambió
+// (th_sim_map_changed), cada step calcula antes los pesos de otras tantas
+// palabras, hasta tenerlos todos, y solo entonces sigue con las casillas.
 #define TH_SIM_TEMP_WORDS (TH_MAP_WIDTH * TH_MAP_HEIGHT / 32)
 void th_sim_temperature_begin(th_sim *s, uint16_t air, uint16_t radiator);
 int th_sim_temperature_step(th_sim *s, int palabras);
@@ -557,8 +573,11 @@ int th_sim_new_room(th_sim *s, int type, int x, int y, int w, int h, int door, i
 // ventanas y espacio), el libro de casos descubre diag_<id> y notifyNewRoom.
 void th_sim_room_mark_built(th_sim *s, int room);
 // Después de cambiar banderas o radiadores: la temperatura vuelve a mirar el
-// mapa entero.
+// mapa entero. Solo lo apunta: el mapa se lee en th_sim_temperature_flush
+// (con puntos de pausa), que llaman th_sim_apply_orders al acabar cada orden
+// y th_build_tick al acabar la obra, y si no, th_sim_temperature_begin.
 void th_sim_map_changed(th_sim *s);
+void th_sim_temperature_flush(th_sim *s);
 int th_sim_use_tile(const th_sim *s, int obj, int secondary, int *x, int *y);
 void th_sim_object_set_user(th_sim *s, int obj, int who);
 void th_sim_object_remove_user(th_sim *s, int obj, int who);

@@ -24,6 +24,9 @@
 //   bench/scenarios/traza_hito4.lua (hito4.c);
 // - partida: lo mismo, con una lista de órdenes con tick, como las graba la
 //   ROM (hito4.c; tools/hito6/repetir.sh);
+// - tramos: la partida repartida como en la ROM, con lo que tarda cada orden
+//   y el tramo más largo entre dos puntos de pausa de cada tick con órdenes
+//   (hito4.c; el riesgo 1 de la demo);
 // - aparicion: los puntos de aparición de un nivel recién cargado, como
 //   World:calculateSpawnTiles (tools/hito6/demo.sh);
 // - ventanas: las ventanas de la partida (ui/ventanas.h) en una lista de
@@ -73,6 +76,7 @@ static int uso(void)
             "     th64sim hito4 <assets> <escenario.trg> <semilla> <horas> <dir_salida>\n"
             "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
             "     th64sim partida <assets> <escenario.trg> <ordenes.tsv> <semilla> <horas> <dir_salida>\n"
+            "     th64sim tramos <assets> <escenario.trg> <ordenes.tsv> <semilla> <horas> <dir_salida>\n"
             "     th64sim aparicion <nivel.tmp> <número de nivel>\n"
             "     th64sim mercado <assets> <nivel: número o escenario.trg> <semilla> <mes>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
@@ -1888,6 +1892,8 @@ int main(int argc, char **argv)
         return th64sim_carga(argv);
     if (argc == 8 && strcmp(argv[1], "partida") == 0)
         return th64sim_partida(argv);
+    if (argc == 8 && strcmp(argv[1], "tramos") == 0)
+        return th64sim_tramos(argv);
     if (argc == 4 && strcmp(argv[1], "aparicion") == 0)
         return orden_aparicion(argv);
     if (argc == 6 && strcmp(argv[1], "mercado") == 0) {

@@ -1413,38 +1413,140 @@ enum { TEMP_AIR = 0, TEMP_HOSPITAL = 1, TEMP_RADIATOR = 2 };
 
 // Pesos en 2 bits (0, 1 o 4) de los vecinos norte, sur, este y oeste, el tipo
 // de mezcla en los bits 8–9 y la suma de los pesos en los bits 10–14.
-void th_sim_temperature_prepare(th_sim *s)
+//
+// En dos mitades (el riesgo 1 de la demo: en la N64 la pasada entera costaba
+// 36 ms, y un tick con órdenes de construir la hacía tras cada cambio del
+// mapa, sin poder pararse a medio camino):
+//   1. temp_read_map: de cada casilla, lo único que leen los pesos: el paso
+//      a cada lado (bits 0–3: norte, este, sur y oeste, como TH_TILE_TRAVEL_*),
+//      si es del hospital (bit 4) o de una sala (bit 5) y si tiene radiador
+//      (bit 6), en temp_key. Es lo que hace th_sim_temperature_flush al
+//      acabar la orden que cambió el mapa (th_sim_map_changed solo lo
+//      apunta): lee el mapa tal como queda. Se para cada 16 filas
+//      (th/pausa.h): la orden ya está entera (paredes, suelos, sombras, la
+//      lista de objetos y la fase de la obra como quedan), y ni la vista ni
+//      nadie lee temp_key.
+//   2. temp_weights: los pesos, el tipo y las máscaras de aire y radiador
+//      desde temp_key, palabra a palabra (32 casillas). Solo los usa la
+//      pasada (temperature_tile y th_sim_temperature_begin), así que
+//      th_sim_temperature_step los hace antes de recalcular ninguna casilla,
+//      por partes. Da lo mismo que hacerlos al cambiar el mapa: nada más lee
+//      temp_key, y cada cambio del mapa la vuelve a leer entera y empieza de
+//      nuevo.
+enum {
+    KEY_HOSPITAL = 0x10,
+    KEY_ROOM = 0x20,
+    KEY_RADIATOR = 0x40,
+};
+_Static_assert(TH_TILE_TRAVEL_N == 1u << 7 && TH_TILE_TRAVEL_E == 1u << 8 && TH_TILE_TRAVEL_S == 1u << 9 &&
+                   TH_TILE_TRAVEL_W == 1u << 10 && TH_TILE_HOSPITAL == KEY_HOSPITAL >> 3 &&
+                   TH_TILE_ROOM == KEY_ROOM << 11,
+               "temp_key copia las banderas con desplazamientos");
+
+static void temp_read_map(th_sim *s)
 {
     const th_tile *tiles = s->w.map->tiles;
-    static const int rel[4] = {-TH_MAP_WIDTH, TH_MAP_WIDTH, 1, -1};
-    static const uint32_t travel[4] = {TH_TILE_TRAVEL_N, TH_TILE_TRAVEL_S, TH_TILE_TRAVEL_E, TH_TILE_TRAVEL_W};
-    for (int i = 0; i < TH_MAP_WIDTH * TH_MAP_HEIGHT; i++) {
-        const uint32_t f = tiles[i].flags;
-        unsigned code = 0, count = 0;
-        for (int k = 0; k < 4; k++) {
-            const int nb = i + rel[k];
-            if (nb < 0 || nb >= TH_MAP_WIDTH * TH_MAP_HEIGHT)
-                continue;
-            const int w = (f & travel[k]) || ((f ^ tiles[nb].flags) & (TH_TILE_HOSPITAL | TH_TILE_ROOM)) == 0 ? 4 : 1;
-            code |= (unsigned)(w == 4 ? 2 : 1) << (2 * k);
-            count += (unsigned)w;
+    const int rad = s->radiator_thob;
+    for (int y = 0; y < TH_MAP_HEIGHT; y++) {
+        if ((y & 15) == 0)
+            th_pausar();
+        for (int x = 0; x < TH_MAP_WIDTH; x++) {
+            const int i = y * TH_MAP_WIDTH + x;
+            const uint32_t f = tiles[i].flags;
+            unsigned k = (f >> 7 & 15) | (f & TH_TILE_HOSPITAL) << 3 | (f & TH_TILE_ROOM) >> 11;
+            // Como antes, el radiador solo cuenta dentro del hospital;
+            // th_map_has_thob mira primero si la casilla tiene algún objeto.
+            if ((f & TH_TILE_HOSPITAL) && rad >= 0 && tiles[i].object && th_map_has_thob(s->w.map, x, y, rad))
+                k |= KEY_RADIATOR;
+            s->temp_key[i] = (uint8_t)k;
         }
-        unsigned type = TEMP_AIR;
-        if (f & TH_TILE_HOSPITAL)
-            type = s->radiator_thob >= 0 && th_map_has_thob(s->w.map, i % TH_MAP_WIDTH, i / TH_MAP_WIDTH, s->radiator_thob)
-                       ? TEMP_RADIATOR
-                       : TEMP_HOSPITAL;
-        s->temp[i].cell = (uint16_t)(code | type << 8 | count << 10);
-        const uint32_t bit = 1u << (i & 31);
-        if (type == TEMP_AIR)
-            s->temp_air_mask[i >> 5] |= bit;
-        else
-            s->temp_air_mask[i >> 5] &= ~bit;
-        if (type == TEMP_RADIATOR)
-            s->temp_rad_mask[i >> 5] |= bit;
-        else
-            s->temp_rad_mask[i >> 5] &= ~bit;
     }
+}
+
+// Una casilla con sus cuatro vecinas, si las tiene todas (no es de la primera
+// ni de la última fila): p son los cuatro pesos (bit d: el vecino d, en el
+// orden norte, sur, este y oeste, pesa 4), con el paso de la casilla
+// (paso4) y si cada vecina está en el mismo sitio. Lo que sale de p, en una
+// tabla.
+#define PASO4(k) (((k) & 1) | ((k) >> 2 & 1) << 1 | ((k) >> 1 & 1) << 2 | ((k) >> 3 & 1) << 3)
+static const uint8_t paso4[16] = {PASO4(0),  PASO4(1),  PASO4(2),  PASO4(3), PASO4(4),  PASO4(5),
+                                  PASO4(6),  PASO4(7),  PASO4(8),  PASO4(9), PASO4(10), PASO4(11),
+                                  PASO4(12), PASO4(13), PASO4(14), PASO4(15)};
+#define PESO(p, d) ((p) >> (d) & 1 ? 2u : 1u)
+#define SUMA(p, d) ((p) >> (d) & 1 ? 4u : 1u)
+#define PESOS(p)                                                                                                   \
+    (uint16_t)(PESO(p, 0) | PESO(p, 1) << 2 | PESO(p, 2) << 4 | PESO(p, 3) << 6 |                                \
+               (SUMA(p, 0) + SUMA(p, 1) + SUMA(p, 2) + SUMA(p, 3)) << 10)
+static const uint16_t pesos[16] = {PESOS(0u),  PESOS(1u),  PESOS(2u),  PESOS(3u), PESOS(4u),  PESOS(5u),
+                                   PESOS(6u),  PESOS(7u),  PESOS(8u),  PESOS(9u), PESOS(10u), PESOS(11u),
+                                   PESOS(12u), PESOS(13u), PESOS(14u), PESOS(15u)};
+#undef PASO4
+#undef PESO
+#undef SUMA
+#undef PESOS
+
+static inline unsigned temp_type(unsigned k)
+{
+    return k & KEY_HOSPITAL ? (k & KEY_RADIATOR ? TEMP_RADIATOR : TEMP_HOSPITAL) : TEMP_AIR;
+}
+
+// Las palabras [w0, w1) de los pesos y las máscaras.
+static void temp_weights(th_sim *s, int w0, int w1)
+{
+    // Norte, sur, este y oeste, como el código de los pesos, y el bit de paso
+    // de cada uno en temp_key.
+    static const int rel[4] = {-TH_MAP_WIDTH, TH_MAP_WIDTH, 1, -1};
+    static const uint8_t bit[4] = {0, 2, 1, 3};
+    const uint8_t *key = s->temp_key;
+    // Las palabras de la primera y la última fila (4 cada una) van por el
+    // camino largo, con las vecinas que no existen fuera.
+    enum { FILA = TH_MAP_WIDTH / 32 };
+    for (int w = w0; w < w1; w++) {
+        uint32_t air = 0, rad = 0;
+        if (w >= FILA && w < TH_SIM_TEMP_WORDS - FILA) {
+            for (int b = 0, i = w * 32; b < 32; b++, i++) {
+                const unsigned k0 = key[i];
+                const unsigned mismo = ((k0 ^ key[i - TH_MAP_WIDTH]) & (KEY_HOSPITAL | KEY_ROOM) ? 0u : 1u) |
+                                       ((k0 ^ key[i + TH_MAP_WIDTH]) & (KEY_HOSPITAL | KEY_ROOM) ? 0u : 2u) |
+                                       ((k0 ^ key[i + 1]) & (KEY_HOSPITAL | KEY_ROOM) ? 0u : 4u) |
+                                       ((k0 ^ key[i - 1]) & (KEY_HOSPITAL | KEY_ROOM) ? 0u : 8u);
+                const unsigned type = temp_type(k0);
+                s->temp[i].cell = (uint16_t)(pesos[paso4[k0 & 15] | mismo] | type << 8);
+                air |= (uint32_t)(type == TEMP_AIR) << b;
+                rad |= (uint32_t)(type == TEMP_RADIATOR) << b;
+            }
+        } else {
+            for (int b = 0; b < 32; b++) {
+                const int i = w * 32 + b;
+                const unsigned k0 = key[i];
+                unsigned code = 0, count = 0;
+                for (int d = 0; d < 4; d++) {
+                    const int nb = i + rel[d];
+                    if (nb < 0 || nb >= TH_MAP_WIDTH * TH_MAP_HEIGHT)
+                        continue;
+                    // Peso 4 si se puede pasar o si están en el mismo sitio
+                    // (dentro o fuera del hospital y de una sala); si no, 1.
+                    const int peso4 = (k0 >> bit[d] & 1) || ((k0 ^ key[nb]) & (KEY_HOSPITAL | KEY_ROOM)) == 0;
+                    code |= (peso4 ? 2u : 1u) << (2 * d);
+                    count += peso4 ? 4u : 1u;
+                }
+                const unsigned type = temp_type(k0);
+                s->temp[i].cell = (uint16_t)(code | type << 8 | count << 10);
+                air |= (uint32_t)(type == TEMP_AIR) << b;
+                rad |= (uint32_t)(type == TEMP_RADIATOR) << b;
+            }
+        }
+        s->temp_air_mask[w] = air;
+        s->temp_rad_mask[w] = rad;
+    }
+}
+
+void th_sim_temperature_prepare(th_sim *s)
+{
+    temp_read_map(s);
+    temp_weights(s, 0, TH_SIM_TEMP_WORDS);
+    s->temp_map_dirty = 0;
+    s->temp_prep_pending = 0;
     s->temp_all = 1;
 }
 
@@ -1497,6 +1599,7 @@ static inline __attribute__((always_inline)) uint32_t temperature_tile(uint8_t *
 void th_sim_temperature_begin(th_sim *s, uint16_t air, uint16_t radiator)
 {
     th_sim_temperature_step(s, TH_SIM_TEMP_WORDS); // por si quedaba otra
+    th_sim_temperature_flush(s); // un cambio del mapa que nadie leyó aún
     if (radiator < air)
         radiator = air;
     s->temp_idx ^= 1;
@@ -1537,6 +1640,15 @@ int th_sim_temperature_step(th_sim *s, int palabras)
                                          31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9};
     if (!s->temp_pending)
         return 0;
+    // Los pesos que dejó por hacer th_sim_map_changed, antes que nada.
+    if (s->temp_prep_pending) {
+        const int w0 = s->temp_prep_word, w1 = w0 + palabras < TH_SIM_TEMP_WORDS ? w0 + palabras : TH_SIM_TEMP_WORDS;
+        temp_weights(s, w0, w1);
+        s->temp_prep_word = (uint16_t)w1;
+        if (w1 < TH_SIM_TEMP_WORDS)
+            return 1;
+        s->temp_prep_pending = 0;
+    }
     const int prev = s->temp_idx ^ 1;
     const uint32_t air = s->temp_air, radiator = s->temp_radiator;
     // t[prev] de la casilla 0, y dónde queda t[cur] respecto a t[prev].
@@ -1931,7 +2043,26 @@ void th_sim_destroy_object(th_sim *s, int i)
 
 void th_sim_map_changed(th_sim *s)
 {
-    th_sim_temperature_prepare(s);
+    // th_sim_temperature_prepare en tres tiempos (sim.h, temp_map_dirty):
+    // aquí, a media orden, solo se apunta; el mapa se lee al acabarla.
+    s->temp_map_dirty = 1;
+    s->temp_all = 1;
+}
+
+void th_sim_temperature_flush(th_sim *s)
+{
+    // Leer el mapa al acabar la orden y no en cada cambio: los puntos de
+    // pausa de temp_read_map caen con la orden entera (la lista de objetos y
+    // la fase de la obra ya al día, que las ventanas leen mientras la
+    // simulación está suspendida), y una orden que cambia el mapa dos veces
+    // lo lee una. Da lo mismo: temp_key solo lo leen los pesos, en la pasada
+    // siguiente, y entre el cambio y el final de la orden nadie la empieza.
+    if (!s->temp_map_dirty)
+        return;
+    s->temp_map_dirty = 0;
+    temp_read_map(s);
+    s->temp_prep_pending = 1;
+    s->temp_prep_word = 0;
 }
 
 static int32_t happiness_factor(const th_sim *s, const th_room *r, int minimum_size);
