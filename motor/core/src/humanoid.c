@@ -1275,6 +1275,16 @@ static void goto_room(th_world *w, th_humanoid *h, th_room *r, int diag_idx)
     th_sim_call_for_staff(s, r); // si la sala no tiene el personal que necesita
 }
 
+// World:findRoomNear para un paciente que busca sala: las salas que el
+// núcleo aún no modela (todas menos la consulta, hasta el hito 6.5) cuentan
+// como no construidas, y el paciente sigue el camino de CorsixTH cuando la
+// sala no existe (fax, espera y a casa). Sin esto entraba en ellas y
+// command_entering_patient le daba a usar una silla que no hay.
+static int find_modeled_room(th_sim *s, int who, int type)
+{
+    return type == th_sim_room_type(s, "gp") ? th_sim_find_room_near(s, who, type) : TH_NONE;
+}
+
 // action_seek_room_find_room
 static th_room *find_room(th_world *w, th_humanoid *h, th_action *a, int *diag_idx)
 {
@@ -1282,7 +1292,7 @@ static th_room *find_room(th_world *w, th_humanoid *h, th_action *a, int *diag_i
     th_person *p = person(w, h);
     *diag_idx = -1;
     if (a->state & TH_AS_DIAG_ROOM) {
-        int r = th_sim_find_room_near(s, who(w, h), a->room_type);
+        int r = find_modeled_room(s, who(w, h), a->room_type);
         if (r != TH_NONE) {
             *diag_idx = a->diag_idx;
             return &s->rooms[r];
@@ -1294,7 +1304,7 @@ static th_room *find_room(th_world *w, th_humanoid *h, th_action *a, int *diag_i
         while (n > 0) {
             const int k = th_rng_range(&s->rng, 0, n - 1);
             const int type = p->u.p.diag[check[k]];
-            r = th_sim_find_room_near(s, who(w, h), type);
+            r = find_modeled_room(s, who(w, h), type);
             if (r != TH_NONE) {
                 a->diag_idx = check[k];
                 a->room_type = (uint8_t)type;
@@ -1309,10 +1319,10 @@ static th_room *find_room(th_world *w, th_humanoid *h, th_action *a, int *diag_i
     if (a->state & TH_AS_TREATMENT) {
         const th_disease *d = &s->dis[p->u.p.disease];
         for (int i = 0; i < d->n_treat; i++)
-            if (th_sim_find_room_near(s, who(w, h), d->treat[i]) == TH_NONE)
+            if (find_modeled_room(s, who(w, h), d->treat[i]) == TH_NONE)
                 return NULL;
     }
-    const int r = th_sim_find_room_near(s, who(w, h), a->room_type);
+    const int r = find_modeled_room(s, who(w, h), a->room_type);
     return r == TH_NONE ? NULL : &s->rooms[r];
 }
 

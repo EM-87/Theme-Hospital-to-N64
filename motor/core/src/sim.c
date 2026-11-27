@@ -1329,7 +1329,14 @@ static void update_spawn_dates(th_sim *s)
 
 static void end_day(th_sim *s)
 {
-    // Hospital:onEndDay no hace nada que pese en el hito 4. World:onEndDay:
+    // PlayerHospital:onEndDay (player_hospital.lua:484-494): si el hospital
+    // puede recibir pacientes (abierto y con mostrador atendido) y aún no ha
+    // venido ninguno, el primero llega ya, al acabar el día, sin esperar a
+    // spawn_dates. Sin esto el motor atendía un 5 % menos de pacientes que
+    // CorsixTH en el hito 4 (todo el déficit, en el primer mes).
+    if (s->hosp.opened && staffed_desk(s) && s->hosp.num_visitors == 0)
+        spawn_patient(s);
+    // World:onEndDay:
     for (int k = 0; k < s->n_order; k++) {
         const int who = s->order[k];
         if (!s->hum[who].alive)

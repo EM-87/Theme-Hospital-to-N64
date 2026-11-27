@@ -1199,7 +1199,7 @@ La basura que tiran es poca, menos de una por corrida: la mayoría de los pacien
 
 | Qué | Contra qué | Resultado |
 |---|---|---|
-| Escenario del hito 4: 40 semillas, 10 corridas del motor por semilla | La campaña de CorsixTH | **17 de 17 cifras con \|t\| < 2** |
+| Escenario del hito 4: 40 semillas, 10 corridas del motor por semilla | La campaña de CorsixTH | **17 de 17 cifras con \|t\| < 2** (una tirada favorable: al motor le faltaba la llegada forzada del primer paciente, un paciente menos al mes 1, que la campaña regenerada en la fase 6 destapó y [se arregló](06_juego_base.md#el-primer-paciente-la-discrepancia-del-hito-4-resuelta)) |
 | Escenario del hito 5: 10 semillas, 10 corridas por semilla | La campaña de CorsixTH | **16 de 17**; las llegadas ya estaban así |
 | 9.000 horas del escenario del hito 5 en la N64, semilla 5 | `th64sim carga` | **La misma huella** (b5d2aeee) |
 | La lista de dibujo de la ROM de medida | `th64sim lista ... 3833 1 5` | **La misma huella** (b86f9f85) |

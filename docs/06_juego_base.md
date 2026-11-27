@@ -732,10 +732,10 @@ Una segunda revisión, solo sobre el diff de los arreglos y desde tres ángulos 
 | La batería misma | Dos ejecuciones de CorsixTH | **Los 10 ficheros iguales byte a byte**, también `salas.tsv` y los 1.969 cambios de casillas |
 | Las paredes y las puertas de los 52 hospitales exportados (40 de la campaña del hito 4, el de su README, 10 de la del hito 5 y el de las vistas) y de los 4 estados finales de la batería de construir, levantadas por el núcleo desde el nivel vacío | Los volcados de CorsixTH, con todas las columnas de `celdas.tsv`, capas incluidas (`banderas.sh`, parte 4) | **56 de 56, 917.504 casillas iguales**: 73 salas levantadas con 75 puertas (la enfermería de las vistas y la de la batería, con su doble) y 11 ventanas, 918 objetos colocados y 8 salas sin puerta (las que deja el constructor del arnés). El estado final de la lista de las salas aporta lo que los hospitales de las campañas no tienen: ventanas, paredes compartidas y la doble por los cuatro lados. La parte 3 también en 56 de 56 (1.105 objetos), y las partes 1 y 2 como antes. Con un nivel sintético de dos parcelas, la parcela comprada se compra al cargar el vacío (0 casillas distintas al inicio). Antes, con datos sintéticos: un hospital de 5 salas (los cinco juegos de paredes, puertas a los cuatro lados y la doble), **563 valores de 187 casillas deducidos a mano de `finishRoom`, 0 distintos**, y 8 ventanas puestas a mano, deducidas las 8 |
 | Pruebas del núcleo | — | **210.631 comprobaciones, 0 fallos**, también con ASan y UBSan (974 nuevas: el plano, la puerta en los 8 bordes, la doble por los cuatro lados, las ventanas, `fin_ventanas` bloque a bloque, la tienda (también con `StartAvail` 0 y con la lista llena) y coger en la obra, confirmar, cerrar y atrás desde cada fase, y el tope de salas). De **6 mutaciones** del núcleo (la esclava con la pieza `nothing`, `markRoom` sin `room`, confirmar sin `checkEnableConfirm`, la doble desde la segunda casilla, la pared del vecino sobrescrita y atrás sin devolver), **las 6 se detectan** |
-| La simulación | El núcleo del paso 2, en los hospitales de los hitos 4 (3.000 horas) y 5 (9.000 horas) y en el de las vistas (2.000 horas) | **Trazas idénticas** (pacientes, dinero, días y acciones). Cambia la huella, que ahora lleva la obra, `door2` y `built` de cada sala: hito 4 dfa30a3b, hito 5 938dde83, vistas 8f7508fc |
+| La simulación | El núcleo del paso 2, en los hospitales de los hitos 4 (3.000 horas) y 5 (9.000 horas) y en el de las vistas (2.000 horas) | **Trazas idénticas** (pacientes, dinero, días y acciones). Cambia la huella, que ahora lleva la obra, `door2` y `built` de cada sala: hito 4 dfa30a3b, hito 5 938dde83, vistas 8f7508fc (las de antes del arreglo del primer paciente, [abajo](#el-primer-paciente-la-discrepancia-del-hito-4-resuelta)) |
 | `tools/motor_check.sh` | Pruebas, huellas y píxeles, en el PC y en la N64 | Todo bien: **210.631 comprobaciones, 0 fallos** también en la N64 y con ASan y UBSan; la huella de referencia (d38fbaef) y la del hito 4 (dfa30a3b), iguales en el PC y en la N64; **0 píxeles distintos** en todas las comparaciones de dibujo, y las listas de las vistas giradas iguales en el PC y en la N64. Sin choques en la caché de instrucciones con el relleno del paso 2 (14.496 B) |
 
-**Los escenarios se han vuelto a generar.** Un reinicio del contenedor a mitad del paso borró todo lo que no estaba en el repositorio (los datos del juego, las herramientas, `motor/assets` y los resultados de las campañas). Las campañas regeneradas son estadísticamente las mismas, pero no byte a byte: el constructor del arnés recorre tablas con `pairs`, y Lua 5.4 siembra el orden en cada ejecución; el núcleo del paso 2 da c58615db en la semilla 1 del hito 4 regenerada, donde antes daba a5fe99fa. Con ellas, la campaña del hito 5 sigue en **17 de 17 cifras con \|t\| < 2**, pero la del hito 4 pasa de 17 de 17 a **10 de 17**: el motor atiende un 5 % menos de pacientes en 9.000 horas (23,3 frente a 24,5 consultas por semilla; t = −2,7), con todo lo que cuelga de eso (diagnosticados, cobros, saldo). Las trazas del núcleo antes y después del paso son idénticas, así que no es de este paso: es una diferencia con CorsixTH que las campañas de antes no enseñaban. Queda apuntada abajo.
+**Los escenarios se han vuelto a generar.** Un reinicio del contenedor a mitad del paso borró todo lo que no estaba en el repositorio (los datos del juego, las herramientas, `motor/assets` y los resultados de las campañas). Las campañas regeneradas son estadísticamente las mismas, pero no byte a byte: el constructor del arnés recorre tablas con `pairs`, y Lua 5.4 siembra el orden en cada ejecución; el núcleo del paso 2 da c58615db en la semilla 1 del hito 4 regenerada, donde antes daba a5fe99fa. Con ellas, la campaña del hito 5 sigue en **17 de 17 cifras con \|t\| < 2**, pero la del hito 4 pasa de 17 de 17 a **10 de 17**: el motor atiende un 5 % menos de pacientes en 9.000 horas (23,3 frente a 24,5 consultas por semilla; t = −2,7), con todo lo que cuelga de eso (diagnosticados, cobros, saldo). Las trazas del núcleo antes y después del paso son idénticas, así que no es de este paso: es una diferencia con CorsixTH que las campañas de antes no enseñaban. La causa se encontró y se arregló al día siguiente: [el primer paciente](#el-primer-paciente-la-discrepancia-del-hito-4-resuelta).
 
 ### La revisión
 
@@ -782,5 +782,65 @@ Los 5 valores que el guion sintético del revisor daba por distintos (una pared 
 - **El doble reembolso de CorsixTH** al bajar cantidades en la tienda de la obra: decisión pendiente de Eduardo (propuesta: no copiarlo).
 - **El número de una sala con huecos** (paso 4): CorsixTH da `#world.rooms + 1`, y con una sala vendida en medio el `#` de Lua es una búsqueda de borde que puede devolver menos que el mayor; el núcleo da el mayor más uno. Decidir entonces si se copia `luaH_getn` o se fija la regla propia.
 - **`pausa`** (`world.user_actions_allowed`), que el intérprete devuelve con el juego en pausa, no es un motivo del núcleo: lo sabrá la interfaz de la ROM (paso 7).
-- **La campaña del hito 4 regenerada da 10 de 17 cifras dentro del azar** donde antes daba 17 de 17: el motor atiende un 5 % menos de pacientes que CorsixTH en 9.000 horas. No es del paso 3 (las trazas son las de antes), y hay que buscar la causa con las campañas nuevas.
+- ~~La campaña del hito 4 regenerada da 10 de 17 cifras dentro del azar~~ **Resuelto el 2026-11-27**: al núcleo le faltaba la llegada forzada del primer paciente ([abajo](#el-primer-paciente-la-discrepancia-del-hito-4-resuelta)); con ella, 17 de 17.
 - **Las campañas no son reproducibles byte a byte** (el `pairs` del constructor del arnés): si hace falta que lo sean, el constructor tendrá que recorrer sus tablas en un orden fijo, como hace ya la batería.
+
+## El primer paciente: la discrepancia del hito 4, resuelta
+
+**Hecho** el 2026-11-27. La campaña del hito 4 regenerada daba **10 de 17 cifras** con \|t\| < 2 (recepción, consulta, diagnosticados, a casa, cobros, dinero de la consulta y saldo, todas con el motor por debajo: un 5 % menos de consultas en 9.000 horas). La causa es una línea de CorsixTH que el núcleo no tenía, y con ella las dos campañas vuelven a **17 de 17**.
+
+### La causa
+
+`PlayerHospital:onEndDay` (`player_hospital.lua:484-494`) hace, al acabar **cada día**: si el hospital puede recibir pacientes (`canAcceptPatients`: abierto y con un mostrador atendido, `hospital.lua:2324`) y aún no ha venido ninguno (`num_visitors == 0`), llama a `spawnPatient` sin esperar a las llegadas programadas (`spawn_dates`). El primer paciente de una partida llega, por tanto, al acabar el día en que el hospital queda abierto con recepcionista. El `end_day` del núcleo empezaba con «Hospital:onEndDay no hace nada que pese en el hito 4» y pasaba al `tickDay` de los humanoides.
+
+Cómo se vio:
+
+| Vista | CorsixTH | Motor (sin el arreglo) |
+|---|---|---|
+| Hora de llegada del paciente 1 (40 semillas / 400 corridas) | 47 en las 40 (el tick que cierra el primer día: la partida empieza a la hora 2) | Ninguna en la 47; la más temprana, la 51 |
+| Llegadas en el mes 1 | 6,22 ± 1,07 | 5,16 ± 1,16 |
+| Llegadas en los meses 2 a 6 | 22,96 | 23,22 |
+| Diferencia por semilla (CorsixTH − media de sus 10 corridas) | — | +0,79 llegadas de media, mediana +1,0; 28 semillas positivas y 12 negativas: un desplazamiento general de un paciente, no unas pocas semillas |
+
+Todo el déficit es el mes 1 y vale un paciente. **La campaña antigua ya lo tenía**: sus cifras (`05_prototipo.md`) eran todas negativas con t entre −0,8 y −1,5; con un déficit real de un paciente la t esperada de la recepción es −2,2 (error típico 0,445), así que su 17 de 17 fue una tirada favorable de 1,1 errores típicos, y la campaña regenerada lo destapó. No cambió nada más: ni el arnés, ni CorsixTH (`0.70.1`, Lua 5.4), ni los hospitales en lo que el motor trata distinto (sin ratoneras ni basura; el mostrador, la puerta y los perfiles cambian, y el motor sigue esos cambios: `t_recepcion` 67,1 frente a 67,4, sueldos 1.181 frente a 1.181).
+
+### El arreglo
+
+Seis líneas al principio de `end_day` (`core/src/sim.c`), en el mismo orden que CorsixTH (`hospital:onEndDay` antes de `World:onEndDay`):
+
+```c
+if (s->hosp.opened && staffed_desk(s) && s->hosp.num_visitors == 0)
+    spawn_patient(s);
+```
+
+`staffed_desk` ya era `hasReceptionDesk(true)` (recepcionista o reservado) y `spawn_patient` lleva sus guardas. El paciente nuevo entra en el bucle de `tickDay` del mismo día, como en CorsixTH (`world.entities` con `entity.ticks`).
+
+| Qué | Antes | Con el arreglo |
+|---|---|---|
+| Campaña del hito 4 (40 semillas × 10 corridas, 9.000 h) | 10 de 17; consulta 24,5 frente a 23,3 (t −2,67), saldo 879 frente a 723 (t −2,84) | **17 de 17**: llegadas 29,2 frente a 29,1 (t −0,06), consulta 24,5 frente a 24,1 (−0,98), saldo 879 frente a 811 (−1,26); la t mayor, 1,54 (`h_vomit`) |
+| Mes 1 del hito 4 | 6,22 frente a 5,16 | 6,22 frente a **6,20** |
+| El paciente 1 del hito 4 | Nunca en la hora 47 | En la 47 en las 400 corridas; **en 35 de 40 semillas coincide hora a hora** con CorsixTH en llegada, cola y recepción (semilla 1: 47, 1019 y 1103). Las 5 que no, difieren en ±27 h, lo que dura un vómito (un suceso al azar que cada generador sortea distinto) |
+| Campaña del hito 5 (10 semillas × 10) | 17 de 17 | **17 de 17** (llegadas 89,3 frente a 87,5, t −0,77; consulta 33,0 frente a 33,5); la hora 47, en 100 de 100 |
+| Pruebas | 210.631 | **210.631, 0 fallos**; la huella de referencia sigue en d38fbaef |
+
+### Un fallo preexistente que el arreglo adelantaba
+
+Al llegar antes el primer paciente, el hospital de las vistas (8 salas, 9 empleados) pisaba antes un fallo que ya estaba: **el núcleo se caía cuando un paciente entraba en una sala que no es la consulta** (`SIGSEGV` en la hora 2.875 con `vistas.trg`; UBSan: `humanoid.c:1135`, índice 255 en `th_object[254]`). `command_entering_patient` buscaba una silla, en una sala de hinchado no hay, y encolaba `use_object` sin objeto. Como las salas de tratamiento y de diagnóstico no se simulan hasta el hito 6.5, para los pacientes que buscan sala **las salas que el núcleo no modela cuentan como no construidas** (`find_modeled_room`, `humanoid.c`): el paciente sigue el camino de CorsixTH cuando la sala no existe (fax de «sin tratamiento», 60 días de espera y a casa). `vistas.trg` aguanta ahora 5.000 horas con 4 pacientes.
+
+### Huellas nuevas
+
+| Hospital | Antes | Ahora |
+|---|---|---|
+| Hito 4, semilla 1, 3.000 h | dfa30a3b (9 pacientes) | **a800c6f0** (12) |
+| Hito 5, semilla 1, 9.000 h | 938dde83 (91) | **8f00cfc9** (89) |
+| Vistas, semilla 1, 2.000 h | 8f7508fc (1) | **5f170e3d** (2) |
+| Referencia (`huella 1 10000`) | d38fbaef | d38fbaef |
+
+`tools/motor_check.sh` no lleva huellas fijas (compara el PC con la N64), así que no cambia, y sigue en verde con el arreglo: 210.631 comprobaciones también en la N64, la huella del hito 4 a800c6f0 igual en el PC y en la N64, 0 píxeles distintos en todas las comparaciones; el hospital del hito 4 tarda ahora 6,19 ms por tick de media en la N64 (49,5 ms el más largo), con 12 pacientes en 3.000 horas donde antes había 9. Los documentos de arriba citan las huellas de antes donde describen el paso 3.
+
+### Qué hay
+
+- `core/src/sim.c`: la llegada forzada en `end_day`. `core/src/humanoid.c`: `find_modeled_room`.
+- [`tools/oraculo_hito4/por_mes.py`](../tools/oraculo_hito4/por_mes.py): las llegadas por mes de juego, CorsixTH frente al motor. Es la vista que delató la causa en un vistazo.
+- Para la demo jugable ([`06_plan.md`](06_plan.md#la-demo-jugable-el-orden-cambia)): es lo que hace que en una partida nueva el primer paciente llegue al acabar el día en que hay mostrador y recepcionista, en vez de esperar hasta un mes a la primera llegada programada.
+
