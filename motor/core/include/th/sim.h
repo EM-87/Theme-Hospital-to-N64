@@ -225,6 +225,8 @@ enum {
     TH_EV_GO_HOME,    // Patient:goHome (arg: TH_HOME_*)
     TH_EV_DESPAWN,    // desaparece por el borde del mapa
     TH_EV_DEALT,      // GPRoom:dealtWithPatient (el médico lo despacha)
+    TH_EV_FAX,        // th_sim_send_fax con un fax del paciente (arg: TH_FAX_*)
+    TH_EV_FAX_ANSWER, // el jugador contesta su fax (arg: 1 arriesga el diagnóstico, 0 lo manda a casa)
 };
 enum { TH_HOME_KICKED = 1, TH_HOME_OVER_PRICED, TH_HOME_CURED };
 // Motivos de los movimientos de dinero. Con BUY_OBJECT y SELL_OBJECT, who es
@@ -349,12 +351,26 @@ typedef struct th_order_result {
 } th_order_result;
 #define TH_SIM_ORDERS 16
 
+// Un paso de diagnóstico (Patient:completeDiagnosticStep), para las sondas:
+// las entradas de la fórmula y el progreso antes y después, en millonésimas.
+// staff es TH_NONE si no había médico en la sala; r5 es el factor 1..5 del
+// consultor (0 si no se sacó) y div, el divisor 1..3 (0 sin médico).
+typedef struct th_diag_step {
+    int staff;
+    int32_t max_diag;
+    int32_t skill, attention, fatigue;
+    int8_t r5, div;
+    int32_t before, after;
+} th_diag_step;
+
 typedef struct th_sim_events {
     void *ctx;
     void (*patient)(void *ctx, const struct th_sim *s, int who, int event, int arg);
     void (*money)(void *ctx, const struct th_sim *s, int32_t amount, int reason, int who);
     // Cada orden de la cola, al aplicarla (para grabarla y repetirla).
     void (*order)(void *ctx, const struct th_sim *s, const th_order *o, const th_order_result *r);
+    // Cada paso de diagnóstico de un paciente (solo para observar).
+    void (*diagnosis)(void *ctx, const struct th_sim *s, int who, const th_diag_step *d);
 } th_sim_events;
 
 // Preferencias del jugador para los faxes (lo que hace el arnés de CorsixTH:
@@ -452,9 +468,12 @@ typedef struct th_sim {
     // Faxes y subidas de sueldo: los que esperan en la cola del panel inferior
     // y los que ya enseña (message_windows), con la puerta de los mensajes
     // (UIBottomPanel:_messageDoorTick).
+    // guess: el fax de sin sala de diagnóstico ofrece arriesgar; se decide al
+    // mandarlo, con la enfermedad descubierta o no en ese momento
+    // (PlayerHospital:makeNoDiagnosisRoomFax, player_hospital.lua:632-650).
     uint8_t n_fax, n_shown;
     struct {
-        uint8_t who, kind;
+        uint8_t who, kind, guess;
     } fax[TH_SIM_FAXES], shown[5];
     uint8_t door_closed, door_delay;
     uint8_t answer; // TH_ANSWER_*

@@ -355,9 +355,20 @@ void th_sim_send_fax(th_sim *s, int who, int kind)
         return;
     s->fax[s->n_fax].who = (uint8_t)who;
     s->fax[s->n_fax].kind = (uint8_t)kind;
+    // makeNoDiagnosisRoomFax (player_hospital.lua:633): la opción de arriesgar
+    // queda habilitada o no al crear el fax (enabled = discovered), y el
+    // jugador del arnés (answer_window, bench/lib/th64.lua) solo la elige si
+    // está habilitada, aunque la enfermedad se descubra mientras el fax espera.
+    s->fax[s->n_fax].guess = 0;
+    if (kind == TH_FAX_NO_DIAGNOSIS) {
+        const th_casebook *cb = th_sim_casebook(s, s->dis[s->hum[who].u.p.disease].id);
+        s->fax[s->n_fax].guess = (uint8_t)(cb && cb->discovered);
+    }
     s->n_fax++;
-    if (kind != TH_FAX_RAISE)
+    if (kind != TH_FAX_RAISE) {
         s->hum[who].u.p.message = (uint8_t)kind;
+        event_patient(s, who, TH_EV_FAX, kind);
+    }
 }
 
 // Quita a alguien del mundo (World:destroyEntity) y borra lo que lo nombra.
@@ -1303,7 +1314,7 @@ int th_sim_remove_litter_at(th_sim *s, int x, int y)
 // ---------------------------------------------------------------------------
 // Faxes: el jugador del arnés de CorsixTH los abre en cuanto llegan
 
-static void answer_fax(th_sim *s, int who, int kind)
+static void answer_fax(th_sim *s, int who, int kind, int guess_enabled)
 {
     th_person *p = &s->hum[who];
     if (!p->alive)
@@ -1317,8 +1328,8 @@ static void answer_fax(th_sim *s, int who, int kind)
         return;
     p->u.p.message = 0;
     const th_disease *d = &s->dis[p->u.p.disease];
-    const th_casebook *cb = th_sim_casebook(s, d->id);
-    const int guess = kind == TH_FAX_NO_DIAGNOSIS && cb && cb->discovered && s->answer == TH_ANSWER_GUESS_THEN_SEND_HOME;
+    const int guess = kind == TH_FAX_NO_DIAGNOSIS && guess_enabled && s->answer == TH_ANSWER_GUESS_THEN_SEND_HOME;
+    event_patient(s, who, TH_EV_FAX_ANSWER, guess);
     if (!guess) {
         th_sim_go_home(s, who, TH_HOME_KICKED);
         return;
@@ -1385,10 +1396,10 @@ static void answer_faxes(th_sim *s)
         const int pause = th_rng_range(&s->rng, 0, 49);
         for (int i = 0; i < pause; i++)
             message_door_tick(s);
-        const int who = s->shown[0].who, kind = s->shown[0].kind;
+        const int who = s->shown[0].who, kind = s->shown[0].kind, guess = s->shown[0].guess;
         memmove(&s->shown[0], &s->shown[1], (unsigned)(s->n_shown - 1) * sizeof s->shown[0]);
         s->n_shown--;
-        answer_fax(s, who, kind);
+        answer_fax(s, who, kind, guess);
     }
     message_door_tick(s);
     message_door_tick(s);

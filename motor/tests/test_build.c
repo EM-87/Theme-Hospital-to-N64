@@ -2603,6 +2603,60 @@ static void test_descubrir(void)
     sim.w.anims = NULL;
 }
 
+// El fax de sin sala de diagnóstico (seek_room.lua:146-182) y su respuesta:
+// la opción de arriesgar se habilita al crear el fax, con la enfermedad
+// descubierta o no en ese momento (PlayerHospital:makeNoDiagnosisRoomFax,
+// player_hospital.lua:633, enabled = discovered), y el jugador del arnés
+// (answer_window, bench/lib/th64.lua) solo la elige si está habilitada. Si la
+// enfermedad se descubre mientras el fax espera, el paciente se va a casa;
+// con ella descubierta al mandarlo, arriesga el diagnóstico. Antes, el núcleo
+// miraba el libro de casos al contestar y arriesgaba en los dos casos.
+static void test_fax_arriesgar(void)
+{
+    for (int caso = 0; caso < 2; caso++) {
+        preparar_personal();
+        sim.date = (th_date){1, 1, 1, 0};
+        sim.hours_per_tick = 1;
+        sim.hosp.send_home = 100000;
+        sim.hosp.guess_cure = 900000;
+        sim.answer = TH_ANSWER_GUESS_THEN_SEND_HOME;
+        sim.n_dis = 1;
+        sim.dis[0].id = "bloaty_head";
+        sim.dis[0].expertise_id = 1;
+        sim.dis[0].n_diag = 1;
+        sim.dis[0].diag[0] = 1; // la enfermería, que no hay
+        sim.dis[0].n_treat = 1;
+        sim.dis[0].treat[0] = 1;
+        sim.n_case = 1;
+        sim.casebook[0].id = "bloaty_head";
+        sim.casebook[0].price = TH_MICRO;
+        sim.casebook[0].reputation = 500;
+        sim.casebook[0].discovered = (uint8_t)caso;
+        // Con medio diagnóstico busca la sala de diagnóstico, que no hay,
+        // como tras la consulta (sendPatientToNextDiagnosisRoom).
+        const int pac = paciente_buscando(45, 45, 0, 0);
+        th_person *p = &sim.hum[pac];
+        p->h.queue_len = 0;
+        p->u.p.diagnosis_progress = 500000;
+        th_action sr = th_action_new(TH_ACTION_SEEK_ROOM);
+        sr.room_type = 1;
+        sr.state |= TH_AS_DIAG_ROOM;
+        th_humanoid_set_next_action(&sim.w, &p->h, sr);
+        TH_CHECK_EQ(sim.n_fax, 1);
+        TH_CHECK_EQ(sim.fax[0].who, pac);
+        TH_CHECK_EQ(sim.fax[0].kind, TH_FAX_NO_DIAGNOSIS);
+        TH_CHECK_EQ(sim.fax[0].guess, caso);
+        // Se descubre mientras espera (gp.lua:150-153, en otra consulta).
+        sim.casebook[0].discovered = 1;
+        for (int i = 0; i < 60 && p->u.p.message; i++)
+            th_sim_tick(&sim);
+        TH_CHECK_EQ(p->u.p.message, 0);
+        TH_CHECK_EQ(p->u.p.diagnosed, caso);
+        TH_CHECK_EQ(p->u.p.going_home, 1 - caso);
+    }
+    sim.w.anims = NULL;
+}
+
 // Las definiciones con las tablas de caminar y de puertas de humanoid.c, que
 // th_sim_init comprueba (load_definitions), y un TRG para ellas.
 static uint8_t trg_defs_init[32768], trg_escena[2048];
@@ -3031,6 +3085,7 @@ void th_test_build(void)
     test_aviso_sala_fax();
     test_aviso_personal();
     test_descubrir();
+    test_fax_arriesgar();
     test_partida_nueva();
     test_ordenes_pausadas();
     free(E);

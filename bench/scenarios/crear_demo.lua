@@ -65,6 +65,9 @@
 --   --th64-mercado=<ruta>       el mercado del núcleo (ruta absoluta; «%d», el mes)
 --   --th64-faxes=a,b,...        preferencias de los faxes (por defecto
 --                               guess_cure,send_home)
+--   --th64-sonda=1              además, la sonda del diagnóstico (bench/lib/sonda_diag.lua:
+--                               diagnostico.tsv, faxes.tsv, descubre.tsv y medico_hora.tsv,
+--                               como TH64_SONDA_DIAG de th64sim partida); no cambia la partida
 -- Escribe la traza (pacientes.tsv, dinero.tsv, dias.tsv, acciones.tsv y
 -- final.tsv, bench/lib/traza.lua) y ordenes_resultado.tsv (tick, orden,
 -- aceptada o rechazada, motivo), como th64sim partida, y acaba con la línea
@@ -174,6 +177,8 @@ local interprete = ordenes.nuevo(TheApp)
 -- La traza y las órdenes ----------------------------------------------------------
 local hora_actual = 0
 local tr = traza.nueva(world, h, function() return hora_actual end, o.faxes)
+local sonda = o.sonda and dofile(th64.bench_dir .. "/lib/sonda_diag.lua").nueva(world, h,
+  function() return hora_actual end, tr.id)
 local f_res = assert(io.open(th64.out("ordenes_resultado.tsv"), "w"))
 f_res:write("tick\torden\tresultado\tmotivo\n")
 local siguiente, aceptadas = 1, 0
@@ -210,6 +215,7 @@ th64.set_sampler(function()
   hora_actual = th64.hours_done() - base
   cerrar_reloj()
   tr.muestra()
+  if sonda then sonda.muestra() end
   if hora_actual % 50 == 0 then tr.volcar_dia() end
   aplicar_ordenes()
 end)
@@ -221,6 +227,7 @@ f_res:close()
 assert(hora_actual == horas, ("la partida corrió %d horas, no %d"):format(hora_actual, horas))
 assert(h.opened, "el hospital no está abierto")
 tr.terminar()
+if sonda then sonda.terminar() end
 if siguiente <= #lista then
   th64.log("%d órdenes sin aplicar: su tick no llega en %d horas", #lista - siguiente + 1, horas)
 end

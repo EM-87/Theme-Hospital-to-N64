@@ -41,6 +41,10 @@ static registro reg[MAX_PACIENTES + 1];
 static FILE *f_dinero;
 // TH64_SONDA_GP=<dir>: lo mismo que bench/scenarios/sonda_gp.lua (medico.tsv y visitas.tsv).
 static FILE *f_medico, *f_visitas;
+// TH64_SONDA_DIAG=<dir>: lo mismo que --th64-sonda de bench/scenarios/crear_demo.lua
+// (bench/lib/sonda_diag.lua): diagnostico.tsv, faxes.tsv, descubre.tsv y medico_hora.tsv.
+static FILE *f_diag, *f_faxes, *f_descubre, *f_medico_hora;
+static uint8_t descubierta[TH_SIM_CASEBOOK];
 
 enum { F_LLEGANDO, F_COLA, F_TRAS_RECEPCION, F_CONSULTA, F_DIAGNOSTICADO, F_A_CASA, N_FASES };
 static const char *const fases[N_FASES] = {"llegando", "cola_recepcion", "tras_recepcion",
@@ -116,6 +120,17 @@ static void suceso(void *ctx, const th_sim *s, int who, int ev, int arg)
     case TH_EV_DEALT:
         if (f_visitas)
             fprintf(f_visitas, "%d\tdespacha\n", hora);
+        break;
+    case TH_EV_FAX:
+    case TH_EV_FAX_ANSWER:
+        if (f_faxes) {
+            const th_person *p = &s->hum[who];
+            const th_casebook *cb = th_sim_casebook(s, s->dis[p->u.p.disease].id);
+            fprintf(f_faxes, "%d\t%d\t%s\t%s\t%.6f\t%d\t%s\n", hora, p->u.p.id, s->dis[p->u.p.disease].id,
+                    ev == TH_EV_FAX ? "fax" : "respuesta", p->u.p.diagnosis_progress / 1e6, cb && cb->discovered,
+                    ev == TH_EV_FAX ? (arg == TH_FAX_NO_DIAGNOSIS ? "sin_diagnostico" : "sin_tratamiento")
+                                    : (arg ? "guess_cure" : "send_home"));
+        }
         break;
     default: break;
     }
@@ -214,6 +229,43 @@ static void sondear_gp(const th_sim *s)
                 fprintf(f_visitas, "%u\tsienta\n", (unsigned)s->hours);
             sentado[who] = (uint8_t)en_silla;
         }
+    }
+}
+
+// Un paso de diagnóstico (th_sim_events.diagnosis): una línea de diagnostico.tsv.
+static void al_diagnosticar(void *ctx, const th_sim *s, int who, const th_diag_step *d)
+{
+    (void)ctx;
+    const th_person *p = &s->hum[who];
+    fprintf(f_diag, "%u\t%d\t%s\t%ld\t%d\t%.6f\t%.6f\t%.6f\t%d\t%d\t%.6f\t%.6f\n", (unsigned)s->hours,
+            p->u.p.id, s->dis[p->u.p.disease].id, (long)d->max_diag, d->staff != TH_NONE, d->skill / 1e6,
+            d->attention / 1e6, d->fatigue / 1e6, d->r5, d->div, d->before / 1e6, d->after / 1e6);
+}
+
+// Las enfermedades que el libro de casos da por descubiertas (al empezar, con
+// hora −1) y las que se descubren después, mirando al acabar cada hora.
+static void sondear_descubiertas(const th_sim *s, int hora)
+{
+    for (int i = 0; i < s->n_case; i++) {
+        const th_casebook *cb = &s->casebook[i];
+        if (!cb->pseudo && cb->discovered && !descubierta[i])
+            fprintf(f_descubre, "%d\t%s\n", hora, cb->id);
+        descubierta[i] = cb->discovered;
+    }
+}
+
+// El médico al acabar cada hora: su perfil, su cansancio y su felicidad.
+static void sondear_medico(const th_sim *s)
+{
+    for (int k = 0; k < s->n_order; k++) {
+        const th_person *p = &s->hum[s->order[k]];
+        if (!p->alive || p->kind != TH_HUM_DOCTOR)
+            continue;
+        const th_action *a = p->h.queue_len ? &p->h.queue[0] : NULL;
+        const th_room *r = p->h.in_room ? th_sim_room((th_sim *)s, p->h.in_room) : NULL;
+        fprintf(f_medico_hora, "%u\t%.6f\t%.6f\t%.6f\t%.6f\t%s\t%s\n", (unsigned)s->hours, p->u.s.skill / 1e6,
+                p->u.s.attention / 1e6, p->u.s.fatigue / 1e6, p->happiness / 1e6, r ? s->room_types[r->type] : "-",
+                a ? acciones[a->kind] : "-");
     }
 }
 
@@ -369,6 +421,23 @@ static int traza_empezar(th_sim *s, const char *dir)
         fputs("hora\taccion\tobjeto\tanimacion\tlento\tcansancio\tsala\n", f_medico);
         fputs("hora\tsuceso\n", f_visitas);
     }
+    if (getenv("TH64_SONDA_DIAG")) {
+        const char *d = getenv("TH64_SONDA_DIAG");
+        f_diag = abrir(d, "diagnostico.tsv");
+        f_faxes = abrir(d, "faxes.tsv");
+        f_descubre = abrir(d, "descubre.tsv");
+        f_medico_hora = abrir(d, "medico_hora.tsv");
+        if (!f_diag || !f_faxes || !f_descubre || !f_medico_hora)
+            return 1;
+        fputs("hora\tpaciente\tenfermedad\tmaxdiag\tmedico\thabilidad\tatencion\tcansancio\tr5\tdiv\tantes\t"
+              "despues\n",
+              f_diag);
+        fputs("hora\tpaciente\tenfermedad\tsuceso\tprogreso\tdescubierta\tdetalle\n", f_faxes);
+        fputs("hora\tenfermedad\n", f_descubre);
+        fputs("hora\thabilidad\tatencion\tcansancio\tfelicidad\tsala\taccion\n", f_medico_hora);
+        s->ev.diagnosis = al_diagnosticar;
+        sondear_descubiertas(s, -1);
+    }
     saldo0 = s->hosp.balance;
     volcar_dia(f_dias, s);
     return 0;
@@ -380,6 +449,10 @@ static void traza_hora(th_sim *s, int h)
     muestrear(s);
     if (f_medico)
         sondear_gp(s);
+    if (f_diag) {
+        sondear_descubiertas(s, (int)s->hours);
+        sondear_medico(s);
+    }
     if ((h + 1) % 50 == 0)
         volcar_dia(f_dias, s);
 }
@@ -392,6 +465,12 @@ static int traza_terminar(th_sim *s, const char *dir, int horas, const char *nom
     if (f_medico) {
         fclose(f_medico);
         fclose(f_visitas);
+    }
+    if (f_diag) {
+        fclose(f_diag);
+        fclose(f_faxes);
+        fclose(f_descubre);
+        fclose(f_medico_hora);
     }
     FILE *f = abrir(dir, "pacientes.tsv");
     if (!f)

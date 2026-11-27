@@ -53,6 +53,8 @@ function T.nueva(world, h, hora, faxes)
     end
     return r
   end
+  --! El id del paciente en pacientes.tsv (para las sondas).
+  function tr.id(p) return nuevo(p).id end
   local function wrap(cls, fname, fn)
     local orig = assert(cls[fname], fname)
     cls[fname] = function(self, ...)

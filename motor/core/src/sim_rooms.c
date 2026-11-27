@@ -700,6 +700,7 @@ static void complete_diagnostic_step(th_sim *s, th_room *r, int patient)
     const th_disease *d = &s->dis[p->u.p.disease];
     th_rnode ex = th_rules_at(s->level, s->expertise, (uint32_t)(d->expertise_id - 1));
     const int32_t max_diag = th_rules_int(s->level, th_rules_get(s->level, ex, "MaxDiagDiff"), 0);
+    th_diag_step st = {r->staff_member, max_diag, 0, 0, 0, 0, 0, p->u.p.diagnosis_progress, 0};
     // base = 0,4 · (1 − MaxDiagDiff / 1000)
     const int64_t base = 400000ll * (1000 - max_diag) / 1000;
     int64_t bonus = 400000, mult = TH_MICRO;
@@ -707,13 +708,19 @@ static void complete_diagnostic_step(th_sim *s, th_room *r, int patient)
         const th_person *doc = &s->hum[r->staff_member];
         const int64_t fatigue = doc->u.s.fatigue < 0 ? 0 : doc->u.s.fatigue;
         const int64_t tired = TH_MICRO - (fatigue - 500000); // 1 − (cansancio − 0,5)
-        if (doc->u.s.skill >= 900000)
-            mult = th_rng_range(&s->rng, 1, 5) * tired;
-        else
+        if (doc->u.s.skill >= 900000) {
+            st.r5 = (int8_t)th_rng_range(&s->rng, 1, 5);
+            mult = st.r5 * tired;
+        } else {
             mult = tired;
+        }
         const int div = th_rng_range(&s->rng, 1, 3);
         // (atención / div + 0,4) · habilidad / div
         bonus = ((int64_t)doc->u.s.attention / div + 400000) * ((int64_t)doc->u.s.skill / div) / TH_MICRO;
+        st.skill = doc->u.s.skill;
+        st.attention = doc->u.s.attention;
+        st.fatigue = doc->u.s.fatigue;
+        st.div = (int8_t)div;
     }
     int64_t prog = p->u.p.diagnosis_progress + base + bonus * mult / TH_MICRO;
     if (prog > s->hosp.stop_procedure)
@@ -721,6 +728,9 @@ static void complete_diagnostic_step(th_sim *s, th_room *r, int patient)
     if (prog < 0)
         prog = 0;
     p->u.p.diagnosis_progress = (int32_t)prog;
+    st.after = p->u.p.diagnosis_progress;
+    if (s->ev.diagnosis)
+        s->ev.diagnosis(s->ev.ctx, s, patient, &st);
 }
 
 // Hospital:receiveMoneyForTreatment
