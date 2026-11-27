@@ -414,6 +414,19 @@ static int traza_terminar(th_sim *s, const char *dir, int horas, const char *nom
             if (horas_accion[i][a])
                 fprintf(f, "%s\t%s\t%ld\n", fases[i], acciones[a], horas_accion[i][a]);
     fclose(f);
+    // final.tsv: las cifras del final de la partida que no salen de los otros
+    // ficheros, con las mismas claves que escribe la campaña de la demo en
+    // CorsixTH (bench/lib/traza.lua): el saldo, el valor del hospital
+    // (Hospital.value), la reputación, los vómitos y las orinadas que
+    // empezaron (Patient:vomit y Patient:pee, patient.lua:447-475, cuando
+    // encolan la acción) y la basura que queda en el suelo.
+    f = abrir(dir, "final.tsv");
+    if (!f)
+        return 1;
+    fprintf(f, "clave\tvalor\nsaldo\t%ld\nvalor\t%ld\nreputacion\t%ld\nvomitos\t%lu\norinadas\t%lu\nbasura\t%u\n",
+            (long)s->hosp.balance, (long)s->hosp.value, (long)s->hosp.reputation, (unsigned long)s->n_vomit,
+            (unsigned long)s->n_pee, (unsigned)s->n_litter);
+    fclose(f);
     // Las casillas con más de una cosa (la basura se amontona) y lo que no cupo.
     int pilas = 0, mayor = 0;
     for (int i = 0; i < TH_MAP_MAX_STACKS; i++) {
