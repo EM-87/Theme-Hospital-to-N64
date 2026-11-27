@@ -57,6 +57,9 @@ typedef struct th_bottom_info {
     int day, month;               // día del mes (1–31) y mes (1–12)
     int reputation, rep_min, rep_max;
     int paused; // en pausa, la barra de información dice «PAUSA»
+    // Un texto breve en la barra de información (el aviso de una orden
+    // rechazada, la demo jugable), o NULL. Mientras no se dibuje, se ignora.
+    const char *message;
 } th_bottom_info;
 
 // UIBottomPanel:draw: los paneles, el dinero, la fecha, la pausa, la puerta
