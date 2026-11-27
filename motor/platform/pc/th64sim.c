@@ -73,6 +73,7 @@ static int uso(void)
             "     th64sim carga <assets> <escenario.trg> <semilla> <horas>\n"
             "     th64sim partida <assets> <escenario.trg> <ordenes.tsv> <semilla> <horas> <dir_salida>\n"
             "     th64sim aparicion <nivel.tmp> <número de nivel>\n"
+            "     th64sim mercado <assets> <nivel: número o escenario.trg> <semilla> <mes>\n"
             "     th64sim escena4 <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <paleta> "
             "<unidad> <x> <y> <ancho> <alto> <horas> <personas 0|1> <salida.ppm> [mezcla.pgm [entidades.pgm]]\n"
             "     th64sim lista <assets> <escenario.trg> <bloques.tsh> <sprites.tsh> <animaciones.tan> <unidad> <x> <y> "
@@ -1955,6 +1956,10 @@ int main(int argc, char **argv)
         return th64sim_partida(argv);
     if (argc == 4 && strcmp(argv[1], "aparicion") == 0)
         return orden_aparicion(argv);
+    if (argc == 6 && strcmp(argv[1], "mercado") == 0) {
+        int th64sim_mercado(char **argv); // hito4.c
+        return th64sim_mercado(argv);
+    }
     if ((argc == 14 || argc == 15) && strcmp(argv[1], "lista") == 0)
         return orden_lista(argc, argv);
     if (argc >= 16 && argc <= 18 && strcmp(argv[1], "escena4") == 0)

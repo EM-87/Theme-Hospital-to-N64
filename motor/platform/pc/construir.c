@@ -232,8 +232,18 @@ static int n_movs, movs_perdidos;
 static const th_sim *sim_actual;
 static int32_t valor_visto; // el valor del hospital tras el último movimiento (o al empezar la orden)
 
+// La casilla de cada persona al darla de alta (personal.tsv, abajo): la
+// apunta al_mover_dinero con hire_staff, que th_sim_hire emite donde
+// Hospital:addStaff (tras th_humanoid_set_tile y antes de la entrada en la
+// sala o del paseo, que ya pueden mover a la persona una casilla).
+static int16_t alta[TH_SIM_HUMANOIDS][2];
+
 static void al_mover_dinero(void *ctx, const th_sim *s, int32_t amount, int reason, int who)
 {
+    if (reason == TH_MONEY_HIRE_STAFF && who >= 0 && who < TH_SIM_HUMANOIDS) {
+        alta[who][0] = s->hum[who].h.tile_x;
+        alta[who][1] = s->hum[who].h.tile_y;
+    }
     (void)ctx;
     if (n_movs >= MOVS_MAX) {
         movs_perdidos++;
@@ -435,6 +445,130 @@ static int comparar_objetos(const th_sim *s, tabla *t, long n, int mostrar)
 }
 
 // ---------------------------------------------------------------------------
+// El personal (personal.tsv: n, id, clase, x, y, sueldo, titulos, sala y
+// ahora_x, ahora_y y accion), en el orden de hospital.staff, el de
+// contratación: en el núcleo, el de entity_seq (World:newEntity, como los
+// objetos). x e y son la casilla de la persona al darla de alta: en
+// CorsixTH, la de la entidad cuando UIPlaceStaff:onMouseUp llama a
+// Hospital:addStaff, tras setTile y antes de onHumanoidEnter u
+// onPlaceInCorridor (place_staff.lua:153-163; bench/lib/ordenes.lua la
+// apunta con un envoltorio de addStaff); en el núcleo, la de s->hum[who].h
+// en el movimiento de dinero hire_staff (alta[], arriba). No es la de la
+// orden: si el alta soltara a la persona en otra casilla, saldría distinta.
+// La casilla de ahora y la acción de arriba de la cola son informativas: se
+// escriben al lado si algo difiere, pero no se comparan (en CorsixTH,
+// setNextAction empieza la acción en el acto y el primer paso al este o al
+// sur de un WalkAction ya cambia la casilla, walk.lua:135-170; el destino de
+// MeanderAction sale de math.random, que no es el azar del núcleo).
+// Cuando la plantilla se queda vacía, construir.lua escribe una fila con id
+// 0 (una foto vacía).
+
+static const char *const accion_nombres[] = {
+    [TH_ACTION_NONE] = "-",          [TH_ACTION_IDLE] = "idle",
+    [TH_ACTION_WALK] = "walk",       [TH_ACTION_SPAWN] = "spawn",
+    [TH_ACTION_SEEK_RECEPTION] = "seek_reception", [TH_ACTION_QUEUE] = "queue",
+    [TH_ACTION_USE_OBJECT] = "use_object", [TH_ACTION_KNOCK_DOOR] = "knock_door",
+    [TH_ACTION_MEANDER] = "meander", [TH_ACTION_SEEK_ROOM] = "seek_room",
+    [TH_ACTION_STAFF_RECEPTION] = "staff_reception", [TH_ACTION_CALL_CHECKPOINT] = "call_checkpoint",
+    [TH_ACTION_ANSWER_CALL] = "answer_call", [TH_ACTION_VOMIT] = "vomit",
+    [TH_ACTION_PEE] = "pee",         [TH_ACTION_YAWN] = "yawn",
+    [TH_ACTION_TAP_FOOT] = "tap_foot", [TH_ACTION_CHECK_WATCH] = "check_watch",
+};
+
+
+static void describir_persona(th_sim *s, int who, int id, char *out, size_t tam, char *accion, size_t tam_accion)
+{
+    th_person *p = &s->hum[who];
+    const th_staff *st = &p->u.s;
+    char t[8] = "";
+    if (st->junior)
+        strcat(t, "j");
+    if (st->consultant)
+        strcat(t, "c");
+    if (st->surgeon)
+        strcat(t, "s");
+    if (st->psychiatrist)
+        strcat(t, "p");
+    if (st->researcher)
+        strcat(t, "r");
+    char sala[8] = "-";
+    for (int i = 0; i < s->n_rooms; i++)
+        if (s->rooms[i].staff_member == who)
+            snprintf(sala, sizeof sala, "%d", s->rooms[i].num);
+    snprintf(out, tam, "%d %s %d,%d sueldo %ld titulos %s sala %s", id, th64sim_clase_nombre(s, who), alta[who][0],
+             alta[who][1], (long)st->wage, *t ? t : "-", sala);
+    const th_action *a = th_humanoid_action(&p->h);
+    const unsigned k = a ? a->kind : TH_ACTION_NONE;
+    snprintf(accion, tam_accion, "ahora %d,%d, %s", p->h.tile_x, p->h.tile_y,
+             k < sizeof accion_nombres / sizeof accion_nombres[0] && accion_nombres[k] ? accion_nombres[k] : "?");
+}
+
+#define FILAS_PERSONAL TH_SIM_HUMANOIDS
+static char foto_personal[FILAS_PERSONAL][160];
+static char foto_acciones[FILAS_PERSONAL][48];
+static int foto_personal_n = -1;
+
+static int comparar_personal(th_sim *s, tabla *t, long n, int mostrar)
+{
+    if (t->f && (t->hay || leer_fila(t))) {
+        while (t->hay && t->n_fila < n)
+            if (!leer_fila(t))
+                break;
+        if (t->hay && t->n_fila == n) {
+            foto_personal_n = 0;
+            while (t->hay && t->n_fila == n) {
+                if (!strcmp(campo(t, "id"), "0")) {
+                    // La plantilla vacía: la fila marcadora, sin persona.
+                } else if (foto_personal_n < FILAS_PERSONAL) {
+                    snprintf(foto_personal[foto_personal_n], sizeof foto_personal[0],
+                             "%s %s %s,%s sueldo %s titulos %s sala %s", campo(t, "id"), campo(t, "clase"),
+                             campo(t, "x"), campo(t, "y"), campo(t, "sueldo"), campo(t, "titulos"), campo(t, "sala"));
+                    snprintf(foto_acciones[foto_personal_n], sizeof foto_acciones[0], "ahora %s,%s, %s",
+                             campo(t, "ahora_x"), campo(t, "ahora_y"), campo(t, "accion"));
+                }
+                foto_personal_n += strcmp(campo(t, "id"), "0") != 0;
+                if (!leer_fila(t))
+                    break;
+            }
+        }
+    }
+    // Sin foto, CorsixTH sigue con la plantilla del principio: vacía.
+    // La plantilla del núcleo por entity_seq.
+    int nuestros[TH_SIM_HUMANOIDS], nn = 0;
+    for (int i = 0; i < TH_SIM_HUMANOIDS; i++) {
+        const th_person *p = &s->hum[i];
+        if (!p->alive || p->kind < TH_HUM_DOCTOR || p->kind > TH_HUM_RECEPTIONIST)
+            continue;
+        int j = nn++;
+        while (j > 0 && s->hum[nuestros[j - 1]].entity_seq > p->entity_seq) {
+            nuestros[j] = nuestros[j - 1];
+            j--;
+        }
+        nuestros[j] = i;
+    }
+    const int ns = foto_personal_n < 0 ? 0 : foto_personal_n;
+    int distintos = 0;
+    for (int k = 0; k < nn || k < ns; k++) {
+        char mio[160] = "(nada)", accion[48] = "-";
+        if (k < nn)
+            describir_persona(s, nuestros[k], k + 1, mio, sizeof mio, accion, sizeof accion);
+        const char *suyo = k < ns && k < FILAS_PERSONAL ? foto_personal[k] : "(nada)";
+        if (strcmp(suyo, mio)) {
+            distintos++;
+            if (mostrar && distintos <= 5)
+                anotar("    persona %d: th64 %s (%s); CorsixTH %s (%s)\n", k + 1, mio, accion, suyo,
+                       k < ns && k < FILAS_PERSONAL ? foto_acciones[k] : "-");
+        }
+    }
+    if (ns != nn) {
+        distintos++;
+        if (mostrar)
+            anotar("    personal: th64 %d, CorsixTH %d\n", nn, ns);
+    }
+    return distintos;
+}
+
+// ---------------------------------------------------------------------------
 // Las órdenes
 
 // Los nombres de las órdenes, por TH_ORD_*: los de bench/lib/ordenes.lua.
@@ -595,17 +729,30 @@ int th64sim_leer_orden(const th_sim *s, char *linea, long *n, th_order *o, char 
         // escribe la ROM (y th64sim partida) en la columna def_id, en
         // hexadecimal. Sin él, def queda a 0 y th64sim partida lo toma del
         // candidato de ese índice en el mercado del tick en que se aplica.
+        // def 0 es la marca de «sin resumen» (th64sim_completar_resumen):
+        // un perfil cuyo resumen fuera 00000000 se trataría como sin él.
         if (nc >= 7 && strcmp(campos[6], "-") != 0) {
             char *fin_r;
             const unsigned long r = strtoul(campos[6], &fin_r, 16);
-            if (fin_r == campos[6] || *fin_r || r > 0xffffffffUL)
+            if (fin_r == campos[6] || *fin_r || r > 0xffffffffUL || r == 0)
                 fprintf(stderr, "resumen del perfil no válido «%s»: se toma del mercado\n", campos[6]);
             else
                 o->def = (th_rnode)r;
         }
+        if (nc > 7)
+            fprintf(stderr, "contratar con %d campos de más: no se miran\n", nc - 7);
     } else
         o->kind = TH_ORD_NONE;
     return 1;
+}
+
+void th64sim_completar_resumen(const th_sim *s, th_order *o)
+{
+    if (o->kind != TH_ORD_CONTRATAR || o->def)
+        return;
+    const th_staff_profile *lista;
+    if (o->qty < th_sim_candidates(s, o->dir, &lista))
+        o->def = (th_rnode)th_staff_profile_digest(&lista[o->qty]);
 }
 
 // ---------------------------------------------------------------------------
@@ -715,7 +862,7 @@ int th64sim_construir(int argc, char **argv)
     printf("inicio: %d casillas distintas\n%s", dif, nota);
     if (dif && !seguir)
         return 1;
-    tabla t_res, t_din, t_cam, t_obj, t_sal;
+    tabla t_res, t_din, t_cam, t_obj, t_sal, t_per;
     if (abrir_tabla(&t_res, dir, "resultados.tsv")) {
         fprintf(stderr, "no se puede leer %s/resultados.tsv\n", dir);
         return 1;
@@ -724,6 +871,7 @@ int th64sim_construir(int argc, char **argv)
     abrir_tabla(&t_cam, dir, "cambios.tsv");
     abrir_tabla(&t_obj, dir, "objetos.tsv");
     abrir_tabla(&t_sal, dir, "salas.tsv");
+    abrir_tabla(&t_per, dir, "personal.tsv");
     snprintf(ruta, sizeof ruta, "%s/ordenes.tsv", dir);
     FILE *f = fopen(ruta, "r");
     if (!f) {
@@ -739,6 +887,9 @@ int th64sim_construir(int argc, char **argv)
         if (!th64sim_leer_orden(s, linea, &n, &o, texto, sizeof texto))
             continue;
         ordenes++;
+        // contratar sin resumen: el del candidato de ese índice en el mercado
+        // de ahora, como th64sim partida (hito4.c).
+        th64sim_completar_resumen(s, &o);
         n_movs = movs_perdidos = 0;
         valor_visto = s->hosp.value;
         th_order_result r;
@@ -790,7 +941,8 @@ int th64sim_construir(int argc, char **argv)
         const int cas = comparar_mapa(s->w.map, mostrar);
         const int obj = comparar_objetos(s, &t_obj, n, mostrar);
         const int sal = comparar_salas(s, &t_sal, n, mostrar);
-        distinto |= din || cas || obj || sal;
+        const int per = comparar_personal(s, &t_per, n, mostrar);
+        distinto |= din || cas || obj || sal || per;
         printf("%3ld %-40s %s%s%s", n, texto, acept ? "aceptada" : "rechazada ", acept ? "" : motivo,
                distinto ? "  DISTINTA" : "");
         if (cas)

@@ -376,11 +376,110 @@ local function take_profile(class_name, want)
   return p
 end
 
+--! Da de alta un perfil en (x, y) (coordenadas de CorsixTH, desde 1): el
+--! cuerpo de UIPlaceStaff:onMouseUp con una casilla válida
+--! (dialogs/place_staff.lua:156-169): newEntity, setProfile, setTile,
+--! Hospital:addStaff (cobra el sueldo, hospital.lua:1400-1406), setHospital y
+--! Room:onHumanoidEnter (room.lua:317-412) o onPlaceInCorridor
+--! (staff.lua:467-478). No valida nada ni cobra aparte.
+function B.place_staff(profile, x, y)
+  local h = hosp()
+  local entity = world():newEntity(profile.humanoid_class, 2, 2)
+  entity:setProfile(profile)
+  entity:setTile(x, y)
+  h:addStaff(entity)
+  entity:setHospital(h)
+  local room = entity:getRoom()
+  if room then room:onHumanoidEnter(entity) else entity:onPlaceInCorridor() end
+  return entity
+end
+
+-- El mercado del núcleo -----------------------------------------------------------
+
+-- Las clases de la batería y del núcleo (th64sim mercado) y las de CorsixTH.
+B.clases = {doctor = "Doctor", nurse = "Nurse", handyman = "Handyman", receptionist = "Receptionist"}
+
+-- La entrada r de una tabla de textos de CorsixTH (strings.lua:138-160: sin
+-- __len, y __index falla con una clave que no está), como valor % tamaño
+-- (th/sim.h, th_staff_profile.name_rnd y desc_rnd). nil si no se puede.
+local function texto_n(t, r)
+  local n = 0
+  while pcall(function() return t[n + 1] end) and t[n + 1] ~= nil do n = n + 1 end
+  if n == 0 then return nil end
+  return t[1 + r % n]
+end
+
+--! Un StaffProfile de CorsixTH con los campos de un perfil del núcleo (una
+--! entrada del JSON de th64sim mercado): StaffProfile(world, clase, texto)
+--! (staff_profile.lua:25-37) y, en vez de randomise (89-152), los valores del
+--! núcleo: skill y attention_to_detail en la escala de CorsixTH (0-1; el
+--! núcleo los lleva en millonésimas), el sueldo, los títulos (is_junior e
+--! is_consultant a 1 o nil como parseSkillLevel, 214-222; is_surgeon,
+--! is_psychiatrist e is_researcher a 1 o 0 como los mods de randomise,
+--! 111-133, solo en los médicos), layer5 e is_black, y el retrato. El nombre
+--! y la descripción se hacen como randomiseOrganical (155-178) con los
+--! índices del núcleo (inicial = initials[name_seed % #initials], las partes
+--! por valor % tamaño); la batería no los compara. th64_resumen es el resumen
+--! del núcleo (th_staff_profile_digest), que «contratar» comprueba.
+function B.perfil_del_nucleo(p)
+  local w = world()
+  local clase = assert(p.clase, "perfil sin clase")
+  local nombres = {Doctor = "doctor", Nurse = "nurse", Handyman = "handyman", Receptionist = "receptionist"}
+  local pf = StaffProfile(w, clase, _S.staff_class[nombres[clase]])
+  pf.skill = p.skill / 1000000
+  pf.attention_to_detail = p.attention / 1000000
+  pf.wage = p.wage
+  pf.is_junior = p.junior == 1 and 1 or nil
+  pf.is_consultant = p.consultant == 1 and 1 or nil
+  if clase == "Doctor" then
+    pf.is_surgeon = p.surgeon == 1 and 1.0 or 0
+    pf.is_psychiatrist = p.psychiatrist == 1 and 1.0 or 0
+    pf.is_researcher = p.researcher == 1 and 1.0 or 0
+    pf.is_black = p.layer5 == 4
+  end
+  pf.layer5 = p.layer5
+  pf.hair_index, pf.face_index, pf.chin_index = p.hair, p.face, p.chin
+  pf.name_seed = p.name_seed
+  local initials = staff_initials_cache.initials
+  pf.initial = initials and initials[p.name_seed % #initials] or "T"
+  local a = texto_n(_S.humanoid_name_starts, p.name_rnd[1])
+  local b = texto_n(_S.humanoid_name_ends, p.name_rnd[2])
+  pf.name = (a and b) and (tostring(a) .. tostring(b)) or ("TH64 " .. p.resumen)
+  local d1 = texto_n(pf.skill < 0.55 and _S.staff_descriptions.bad or _S.staff_descriptions.good, p.desc_rnd[1])
+  local d2 = texto_n(_S.staff_descriptions.misc, p.desc_rnd[2])
+  if d1 and d2 then
+    local descs = {tostring(d1), tostring(d2)}
+    if #(descs[1] .. descs[2]) > 96 then descs[2] = nil end
+    if descs[2] and p.desc_swap == 1 then descs[1], descs[2] = descs[2], descs[1] end
+    pf.desc = table.concat(descs)
+  else
+    pf.desc = ""
+  end
+  pf.th64_resumen = p.resumen
+  return pf
+end
+
+--! Cambia world.available_staff de las cuatro clases por el mercado del núcleo
+--! (el JSON de th64sim mercado, ya leído). Devuelve cuántos hay por clase.
+function B.mercado_del_nucleo(m)
+  local w = world()
+  local cuenta = {}
+  for nuestra, suya in pairs(B.clases) do
+    local lista = {}
+    for i, p in ipairs(assert(m.clases[nuestra], "el mercado no trae " .. nuestra)) do
+      assert(p.indice == i - 1 and p.clase == suya, "mercado desordenado")
+      lista[i] = B.perfil_del_nucleo(p)
+    end
+    w.available_staff[suya] = lista
+    cuenta[nuestra] = #lista
+  end
+  return cuenta
+end
+
 --! Contrata y coloca en el pasillo, como UIPlaceStaff:onMouseUp.
 --! want: nil o "is_surgeon"/"is_psychiatrist"/"is_researcher".
 function B.hire(class_name, n, want)
   local ex, ey = B.entrance()
-  local h = hosp()
   for _ = 1, n do
     local profile = take_profile(class_name, want)
     local x, y = ex, ey + 2
@@ -395,13 +494,7 @@ function B.hire(class_name, n, want)
       if found then break end
     end
     B.ensure_money(50000)
-    local entity = world():newEntity(profile.humanoid_class, 2, 2)
-    entity:setProfile(profile)
-    entity:setTile(x, y)
-    h:addStaff(entity)
-    entity:setHospital(h)
-    local room = entity:getRoom()
-    if room then room:onHumanoidEnter(entity) else entity:onPlaceInCorridor() end
+    B.place_staff(profile, x, y)
   end
 end
 

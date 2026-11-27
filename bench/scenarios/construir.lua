@@ -7,6 +7,12 @@
 -- Opciones:
 --   --th64-ordenes=<lista.tsv>  la lista (ruta absoluta; formato en ordenes.lua)
 --   --th64-nivel=N              el nivel, en dificultad full (por defecto 1)
+--   --th64-mercado=<m.json>     el mercado de candidatos del núcleo (th64sim
+--                               mercado, ruta absoluta): sustituye
+--                               world.available_staff de las cuatro clases
+--                               al empezar, para que «contratar <clase>
+--                               <índice>» sea la misma persona en los dos
+--                               lados (bench/lib/builder.lua)
 --
 -- El nivel se prepara así: sin objetivos, blocking_off_areas = 2 (el bloqueo de
 -- zonas del original, la excepción 5 de docs/04_construccion.md), sin contenido
@@ -25,7 +31,8 @@
 --       objects), o - si no hay obra;
 --   dinero.tsv      un movimiento por fila: n, importe (negativo lo que se paga),
 --       motivo (buy_object:<id>, sell_object:<id>, build_room:<tipo de sala> o
---       sell_room:<tipo>) y valor (su cambio del valor del hospital);
+--       sell_room:<tipo>, y hire_staff:<clase> al contratar) y valor (su
+--       cambio del valor del hospital);
 --   cambios.tsv     tras cada orden, las casillas que cambian, con n delante y las
 --       columnas de celdas.tsv (la capa 4, la de la interfaz, no va);
 --   objetos.tsv     tras cada orden que cambia algo de los objetos, todos los de
@@ -39,10 +46,22 @@
 --       construida (built), activa (is_active) y fase (la de la obra si es la
 --       suya, o -; una sala sin puerta, que la interfaz no deja, se listaría
 --       con - - - y fase -);
+--   personal.tsv    tras cada orden que cambia algo del personal, todo el de
+--       hospital.staff, en el orden de contratación: n, id (desde 1, ese
+--       orden), clase (doctor, nurse, handyman o receptionist), x, y (la
+--       casilla donde se soltó), sueldo, titulos (j junior, c consultor, s
+--       cirujano, p psiquiatra, r investigador, en ese orden, o -), sala (el
+--       id de la sala de la que es staff_member, o -) y, informativas (la
+--       batería no las compara), ahora_x y ahora_y (la casilla de ahora:
+--       el primer paso al este o al sur de un WalkAction ya la cambia,
+--       walk.lua:135-170, y el destino de deambular sale de math.random) y
+--       accion (el nombre de la acción de arriba de su cola);
 --   celdas.tsv, escenario.json  el estado final, como inicio/.
 local th64 = th64
 local escenario = dofile(th64.bench_dir .. "/lib/escenario.lua")
 local ordenes = dofile(th64.bench_dir .. "/lib/ordenes.lua")
+local builder = dofile(th64.bench_dir .. "/lib/builder.lua")
+local json = dofile(th64.bench_dir .. "/lib/json.lua")
 
 local ruta_ordenes = assert(th64.opts.ordenes, "falta --th64-ordenes=<lista.tsv>")
 -- CorsixTH corre desde $CORSIXTH_DIR/CorsixTH (tools/bench_run.sh).
@@ -75,12 +94,28 @@ assert(not world.free_build_mode, "construcción libre")
 assert(not ui.transparent_walls, "paredes transparentes")
 local W, H = th:size()
 
+-- Sin pacientes ni visitas: las únicas personas son las que contrata la
+-- lista (hospital.staff).
 local function sin_gente()
+  local plantilla = {}
+  for _, e in ipairs(h.staff) do plantilla[e] = true end
   for _, e in ipairs(world.entities) do
-    if class.is(e, Humanoid) then error("hay personas en el mapa: la batería es sin gente", 0) end
+    if class.is(e, Humanoid) and not plantilla[e] then
+      error("hay personas en el mapa que no son de la plantilla: la batería es sin gente", 0)
+    end
   end
 end
 sin_gente()
+
+-- El mercado del núcleo en world.available_staff.
+if th64.opts.mercado then
+  assert(th64.opts.mercado:sub(1, 1) == "/", "--th64-mercado tiene que ser una ruta absoluta")
+  local m = json.leer(th64.opts.mercado)
+  assert(m.nivel == nivel, ("el mercado es del nivel %s y la partida del %d"):format(tostring(m.nivel), nivel))
+  local cuenta = builder.mercado_del_nucleo(m)
+  th64.log("mercado del núcleo (semilla %d, mes %d): %d médicos, %d enfermeras, %d bedeles, %d recepcionistas",
+    m.semilla, m.mes, cuenta.doctor, cuenta.nurse, cuenta.handyman, cuenta.receptionist)
+end
 
 -- Los objetos obligatorios de cada sala (room_info.objects_needed) se recorren
 -- con pairs al cobrarlos (UIEditRoom:enterObjectsPhase, edit_room.lua:993-997),
@@ -128,7 +163,7 @@ th64.log("inicio: %s", escenario.exportar(world, th64.out("inicio/celdas.tsv"), 
 -- de sala con ese nombre. Vender una sala pagada (abortRoom, 141-157) apunta
 -- sell_object a secas: la sala es la de la obra que aborta.
 local movimientos = {}
-local ultimo_id, sala_abortada
+local ultimo_id, sala_abortada, contratado
 local function envolver(nombre, fn)
   local orig = assert(Hospital[nombre], nombre)
   Hospital[nombre] = function(self, ...)
@@ -153,8 +188,21 @@ local function sala_con_nombre(prefijo, razon)
   end
   return tipo
 end
+-- Hospital:addStaff (hospital.lua:1400-1406) cobra el sueldo con
+-- «hire_staff: <nombre>»: el motivo lleva la clase de quien entra.
+local addStaff = Hospital.addStaff
+Hospital.addStaff = function(self, staff, ...)
+  contratado = staff
+  local r = table.pack(addStaff(self, staff, ...))
+  contratado = nil
+  return table.unpack(r, 1, r.n)
+end
 local function motivo(tipo, razon)
   razon = tostring(razon)
+  if contratado and tipo == "buy_object" and
+      razon == tostring(_S.transactions.hire_staff .. ": " .. contratado.profile:getFullName()) then
+    return "hire_staff:" .. contratado.humanoid_class:lower()
+  end
   local obj = ultimo_id and TheApp.objects[ultimo_id]
   if obj and tostring(_S.transactions[tipo] .. ": " .. obj.name) == razon then return tipo .. ":" .. ultimo_id end
   if tipo == "buy_object" then
@@ -231,6 +279,30 @@ local function foto_salas()
   return filas, table.concat(filas, "\n")
 end
 
+-- El personal, en el orden de hospital.staff (el de contratación). x e y,
+-- la casilla al darla de alta (th64_alta_x, que apunta A.contratar en
+-- Hospital:addStaff); la de ahora y la acción, informativas. Sin nadie, una
+-- fila marcadora con id 0 (la foto vacía: th64sim construir la lee así).
+local function foto_personal()
+  local de_sala = {}
+  for id, r in pairs(world.rooms) do
+    if r and r.staff_member then de_sala[r.staff_member] = id end
+  end
+  local filas = {}
+  for i, e in ipairs(h.staff) do
+    local pf = e.profile
+    local t = (pf.is_junior == 1 and "j" or "") .. (pf.is_consultant == 1 and "c" or "") ..
+      (pf.is_surgeon == 1 and "s" or "") .. (pf.is_psychiatrist == 1 and "p" or "") ..
+      (pf.is_researcher == 1 and "r" or "")
+    local a = e.action_queue and e.action_queue[1]
+    filas[#filas + 1] = table.concat({i, e.humanoid_class:lower(), assert(e.th64_alta_x, "personal sin alta"),
+      e.th64_alta_y, entero(pf.wage), t ~= "" and t or "-", de_sala[e] or "-",
+      e.tile_x - 1, e.tile_y - 1, a and a.name or "-"}, "\t")
+  end
+  if #filas == 0 then filas[1] = "0\t-\t-\t-\t-\t-\t-\t-\t-\t-" end
+  return filas, table.concat(filas, "\n")
+end
+
 local function abrir(nombre, cabecera)
   local f = assert(io.open(th64.out(nombre), "w"))
   f:write(cabecera, "\n")
@@ -242,12 +314,14 @@ local f_dinero = abrir("dinero.tsv", "n\timporte\tmotivo\tvalor")
 local f_cambios = abrir("cambios.tsv", "n\t" .. escenario.cabecera_celdas)
 local f_objetos = abrir("objetos.tsv", "n\tid\tx\ty\tdireccion\tsala\trecogido\torden")
 local f_salas = abrir("salas.tsv", "n\tid\ttipo\tx\ty\tancho\talto\tpuerta_x\tpuerta_y\tpuerta_lado\tconstruida\tactiva\tfase")
+local f_personal = abrir("personal.tsv", "n\tid\tclase\tx\ty\tsueldo\ttitulos\tsala\tahora_x\tahora_y\taccion")
 
 -- Las órdenes -----------------------------------------------------------------------
 local interprete = ordenes.nuevo(TheApp)
 local celdas = foto_celdas()
 local _, objetos_antes = foto_objetos()
 local _, salas_antes = foto_salas()
+local _, personal_antes = foto_personal()
 local cuenta = {aceptada = 0, rechazada = 0}
 local por_motivo = {}
 for n, orden in ipairs(lista) do
@@ -293,12 +367,19 @@ for n, orden in ipairs(lista) do
     for _, fila in ipairs(filas_salas) do f_salas:write(n, "\t", fila, "\n") end
     salas_antes = salas
   end
+  local filas_personal, personal = foto_personal()
+  local personal_cambia = personal ~= personal_antes
+  if personal_cambia then
+    for _, fila in ipairs(filas_personal) do f_personal:write(n, "\t", fila, "\n") end
+    personal_antes = personal
+  end
 
-  th64.log("%d %s: %s %s; saldo %s (%s%s en %d movimientos); %d casillas%s%s; obra %s", n, ordenes.texto(orden),
+  th64.log("%d %s: %s %s; saldo %s (%s%s en %d movimientos); %d casillas%s%s%s; obra %s", n, ordenes.texto(orden),
     resultado, ok and "" or mot, entero(h.balance), suma >= 0 and "+" or "", entero(suma), #movimientos, cambiadas,
-    objetos_cambian and "; objetos" or "", salas_cambian and "; salas" or "", detalle)
+    objetos_cambian and "; objetos" or "", salas_cambian and "; salas" or "", personal_cambia and "; personal" or "",
+    detalle)
 end
-for _, f in ipairs({f_ordenes, f_resultados, f_dinero, f_cambios, f_objetos, f_salas}) do f:close() end
+for _, f in ipairs({f_ordenes, f_resultados, f_dinero, f_cambios, f_objetos, f_salas, f_personal}) do f:close() end
 
 -- El estado final ------------------------------------------------------------------
 assert(not interprete.obra(), "la lista termina con una obra abierta")

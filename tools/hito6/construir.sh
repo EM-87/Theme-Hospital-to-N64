@@ -4,8 +4,13 @@
 # orden, el resultado, el dinero y las casillas que cambian; después el núcleo
 # repite la misma lista desde el mismo punto de partida (th64sim construir) y
 # la compara orden a orden.
+#   0. el mercado de candidatos del núcleo para el nivel recién cargado
+#      (th64sim mercado, semilla 1 y mes 0), que CorsixTH mete en
+#      world.available_staff (--th64-mercado): «contratar <clase> <índice>»
+#      es la misma persona en los dos lados;
 #   1. CorsixTH: <salida>/<lista>/corsixth (inicio/, ordenes.tsv, resultados.tsv,
-#      dinero.tsv, cambios.tsv, objetos.tsv, salas.tsv y celdas.tsv);
+#      dinero.tsv, cambios.tsv, objetos.tsv, salas.tsv, personal.tsv y
+#      celdas.tsv);
 #   2. el punto de partida, inicio/escenario.json, pasado a TRG1 con
 #      tools/oraculo_hito4/escenario.py;
 #   3. th64sim construir, que para en la primera orden distinta.
@@ -20,7 +25,13 @@ OUT=${SALIDA:-$TH64_WORK/resultados/hito6/construir}
 SIM=$REPO_DIR/motor/build/pc/th64sim
 A=$REPO_DIR/motor/assets
 listas=("$@")
-[ ${#listas[@]} -gt 0 ] || listas=("$REPO_DIR"/tools/hito6/ordenes/*.tsv)
+if [ ${#listas[@]} -eq 0 ]; then
+  # Las de la batería; no las de th64sim partida (demo.tsv), que llevan el
+  # tick en la primera columna (la cabecera «tick»).
+  for l in "$REPO_DIR"/tools/hito6/ordenes/*.tsv; do
+    grep -q $'^tick\t' "$l" || listas+=("$l")
+  done
+fi
 mkdir -p "$OUT"
 fallos=0
 for lista in "${listas[@]}"; do
@@ -29,9 +40,12 @@ for lista in "${listas[@]}"; do
   rm -rf "$D"
   mkdir -p "$D/partidas"
   echo "== $nombre"
+  # El nivel 1 (el de construir.lua por defecto), con la semilla de th64sim
+  # construir (1) y el mes de una partida nueva (0).
+  "$SIM" mercado "$A" 1 1 0 > "$D/mercado.json"
   if ! CORSIXTH_SAVES="$D/partidas" "$REPO_DIR/tools/bench_run.sh" --timeout 600 \
       "$REPO_DIR/bench/scenarios/construir.lua" "$D/corsixth" --th64-ordenes="$(realpath "$lista")" \
-      > "$D/corsixth.log" 2>&1; then
+      --th64-mercado="$(realpath "$D")/mercado.json" > "$D/corsixth.log" 2>&1; then
     echo "   CorsixTH falló ($D/corsixth.log)"
     fallos=$((fallos + 1))
     continue

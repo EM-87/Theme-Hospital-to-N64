@@ -35,6 +35,16 @@
 --   fin_sala                           el botón ✓ en la fase de objetos: se cobra
 --   atras                              el botón ✗ de la obra (UIEditRoom:cancel):
 --                                      un paso atrás; desde el plano, abandonar
+--   contratar <clase> <índice> <x> <y> [<resumen>]
+--                                      el botón de contratar del panel, el
+--                                      candidato <índice> (desde 0) de la
+--                                      lista de la clase (doctor, nurse,
+--                                      handyman o receptionist), «contratar»
+--                                      y soltarlo en (x, y); el resumen es el
+--                                      del perfil del núcleo (8 cifras
+--                                      hexadecimales, th_staff_profile_digest):
+--                                      hace falta el mercado del núcleo
+--                                      (--th64-mercado en construir.lua)
 --
 -- Motivos de rechazo:
 --   pausa             world.user_actions_allowed es falso: comprar, colocar,
@@ -78,6 +88,10 @@
 --   ventana_invalida  la ventana no vale (blueprint_window.valid)
 --   no_es_de_sala     el objeto no está en la ventana de comprar de la obra
 --   faltan_objetos    fin_sala sin todos los objetos obligatorios colocados
+--   sin_candidato     contratar: no hay candidato con ese índice en la lista
+--                     de la clase, o el resumen no es el suyo
+--   (contratar también da sin_dinero, si el saldo es menor que el sueldo, y
+--   no_se_puede, si la casilla no vale para soltarlo: _isValidStaffPlacement)
 --
 -- Las ventanas que cierran a otras. UIFurnishCorridor, UIPlaceObjects,
 -- UIEditRoom (que hereda de UIPlaceObjects) y UIBuildRoom son ventanas «main»,
@@ -142,7 +156,11 @@ O.vocabulario = {
   comprar_sala = {"id", "n1"},
   fin_sala = {},
   atras = {},
+  contratar = {"clase", "n", "x", "y", "hex"},
 }
+-- Los últimos argumentos que se pueden omitir, por orden.
+O.opcionales = {contratar = 1}
+O.clases = {doctor = "Doctor", nurse = "Nurse", handyman = "Handyman", receptionist = "Receptionist"}
 
 local function entero(s)
   return s and s:match("^%-?%d+$") and math.tointeger(tonumber(s)) or nil
@@ -166,11 +184,20 @@ function O.leer(ruta, ancho, alto)
       local tipos = O.vocabulario[nombre]
       local function mal(msg) error(("%s:%d: %s: «%s»"):format(ruta, k, msg, linea), 0) end
       if not tipos then mal("orden desconocida") end
-      if #campos ~= #tipos then mal(("%s lleva %d argumentos"):format(nombre, #tipos)) end
+      local opc = O.opcionales[nombre] or 0
+      if #campos > #tipos or #campos < #tipos - opc then
+        mal(("%s lleva %d argumentos"):format(nombre, #tipos) .. (opc > 0 and (" (%d opcionales)"):format(opc) or ""))
+      end
       local args = {}
-      for i, t in ipairs(tipos) do
-        local c = campos[i]
-        if t == "id" then
+      for i = 1, #campos do
+        local t, c = tipos[i], campos[i]
+        if t == "clase" then
+          if not O.clases[c] then mal("clase: doctor, nurse, handyman o receptionist") end
+          args[i] = c
+        elseif t == "hex" then
+          if not c:match("^%x%x%x%x%x%x%x%x$") then mal("el resumen son 8 cifras hexadecimales") end
+          args[i] = c:lower()
+        elseif t == "id" then
           if not c:match("^[%w_]+$") then mal("objeto o sala mal escrito") end
           args[i] = c
         elseif t == "n" then
@@ -672,7 +699,88 @@ function O.nuevo(app)
   -- Los botones de una ventana (window.lua:1724-1736) y las teclas
   -- (UI:onKeyDown, ui.lua:768-779) no lo miran.
   local CON_PAUSA = {comprar = true, colocar = true, recoger = true, sala = true, puerta = true, ventana = true,
-    quitar_ventana = true}
+    quitar_ventana = true, contratar = true}
+
+  -- El botón de contratar del panel (UIBottomPanel:dialogHireStaff,
+  -- bottom_panel.lua:769-792: exige world.user_actions_allowed, pausa) abre
+  -- UIHireStaff después de setEditRoom(false) (la obra que hubiera se termina
+  -- o se abandona, ver arriba) y con UI:addWindow, que cierra la ventana
+  -- «main» que quede (la de colocar del pasillo, con sus devoluciones). En
+  -- la ventana, la pestaña de la clase y el candidato (category y
+  -- current_index, lo que dejan las pestañas y los botones de anterior y
+  -- siguiente, hire_staff.lua:249-272 y 231-247) y el botón de contratar,
+  -- UIHireStaff:hire (126-147): sin candidato no hace nada (sin_candidato;
+  -- también si el resumen no es el del candidato: el núcleo rechaza igual,
+  -- th/build.h), con el saldo menor que el sueldo tampoco (cannotAfford:
+  -- sin_dinero); si no, table.remove del candidato y abre UIPlaceStaff
+  -- (que cierra UIHireStaff, las dos son «main»). El clic izquierdo en la
+  -- casilla es UIPlaceStaff:onMouseUp (place_staff.lua:144-183) con
+  -- tile_x y tile_y en la casilla (onMouseMove no los toca): si
+  -- _isValidStaffPlacement (95-125) vale, newEntity, setProfile, setTile,
+  -- addStaff, setHospital, onHumanoidEnter u onPlaceInCorridor y close; si
+  -- no, la ventana sigue abierta (el consejero avisa, staff_cannot_place) y
+  -- la orden la cancela con el botón derecho (close, 55-83), que devuelve el
+  -- perfil AL FINAL de available_staff de su clase (place_staff.lua:69-71).
+  -- El núcleo, al rechazar, deja el mercado como estaba (order_contratar,
+  -- build.c: el rechazo es atómico): es una diferencia y la batería NO la
+  -- tapa; la lista ordenes/personal.tsv la enseña en su sección de
+  -- hallazgos (y sus no_se_puede anteriores usan el último candidato, que
+  -- vuelve a su mismo sitio).
+  function A.contratar(clase, indice, x, y, resumen)
+    local categoria = O.clases[clase]
+    assert(not ui:getWindow(UIHireStaff), "la ventana de contratar ya estaba abierta")
+    ui.bottom_panel:dialogHireStaff()
+    local dlg = assert(ui:getWindow(UIHireStaff), "no se abrió la ventana de contratar")
+    assert(not obra(), "el botón de contratar no cerró la obra")
+    local lista = world.available_staff[categoria]
+    local perfil = lista and lista[indice + 1]
+    if perfil and resumen then
+      assert(perfil.th64_resumen, "contratar con resumen sin el mercado del núcleo (--th64-mercado)")
+    end
+    if not perfil or (resumen and perfil.th64_resumen ~= resumen) then
+      dlg:close()
+      return false, "sin_candidato"
+    end
+    dlg.category = categoria
+    dlg.current_index = indice + 1
+    dlg.mouse_up_x, dlg.mouse_up_y = 0, 0
+    dlg:hire()
+    local colocar = ui:getWindow(UIPlaceStaff)
+    if not colocar then
+      assert(ui:getWindow(UIHireStaff) == dlg and lista[indice + 1] == perfil, "hire sin colocar ni quedarse")
+      dlg:close()
+      return false, "sin_dinero"
+    end
+    assert(dlg.closed and colocar.profile == perfil, "UIPlaceStaff no es la del candidato")
+    colocar.tile_x, colocar.tile_y = x + 1, y + 1
+    -- La casilla de la entidad al darla de alta: UIPlaceStaff:onMouseUp
+    -- llama a Hospital:addStaff después de setTile y antes de
+    -- onHumanoidEnter u onPlaceInCorridor (place_staff.lua:153-163). Es la
+    -- que se compara con el núcleo, leída de la entidad y no de la orden. La
+    -- de ahora puede ser otra: setNextAction empieza la acción en el acto, y
+    -- el primer paso de un WalkAction al este o al sur ya pone la casilla de
+    -- destino (walk.lua:135-170); el destino de MeanderAction sale de
+    -- math.random, que no es el azar del núcleo.
+    local hosp = ui.hospital
+    assert(rawget(hosp, "addStaff") == nil, "el hospital ya tenía un addStaff propio")
+    local add_staff = hosp.addStaff -- el de la clase (construir.lua lo envuelve para el dinero)
+    hosp.addStaff = function(self, staff)
+      staff.th64_alta_x, staff.th64_alta_y = staff.tile_x - 1, staff.tile_y - 1
+      return add_staff(self, staff)
+    end
+    local ok, err = pcall(colocar.onMouseUp, colocar, "left", 0, 0)
+    hosp.addStaff = nil -- vuelve al de la clase
+    assert(ok, err)
+    if not colocar.closed then
+      colocar:onMouseUp("right", 0, 0)
+      assert(colocar.closed and lista[#lista] == perfil, "cancelar no devolvió el perfil al final")
+      return false, "no_se_puede"
+    end
+    local plantilla = hosp.staff
+    local nueva = plantilla[#plantilla]
+    assert(nueva and nueva.profile == perfil and nueva.th64_alta_x, "la contratada no es la última de hospital.staff")
+    return true
+  end
 
   --! Aplica la orden. Devuelve aceptada (booleano) y el motivo del rechazo.
   function I.aplicar(orden)

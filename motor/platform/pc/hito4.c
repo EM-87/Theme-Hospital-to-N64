@@ -287,12 +287,13 @@ static FILE *abrir(const char *dir, const char *nombre)
 
 // Carga el nivel del escenario con sus casillas, las reglas y las
 // animaciones (las de assets/datam si tan es NULL) y prepara la simulación.
-th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla)
+// Carga el nivel del escenario esc (ya leído) con sus casillas, las reglas y
+// las animaciones, y prepara la simulación.
+static th_sim *cargar_con(const char *assets, const th_rules *esc_leido, const char *tan_ruta, uint32_t semilla)
 {
     static th_rules defs, nivel, esc;
     char ruta[1024];
-    if (cargar_reglas(trg, &esc))
-        return NULL;
+    esc = *esc_leido;
     const int n = th_rules_int(&esc, th_rules_get(&esc, esc.root, "nivel"), 0);
     const char *dif = th_rules_str(&esc, th_rules_get(&esc, esc.root, "dificultad"), NULL);
     snprintf(ruta, sizeof ruta, "%s/reglas/definiciones.trg", assets);
@@ -310,7 +311,9 @@ th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char
         fprintf(stderr, "no se puede cargar %s\n", ruta);
         return NULL;
     }
-    if (th_scenario_apply_cells(&mapa, &esc, th_rules_get(&esc, esc.root, "celdas")) < 0) {
+    // El escenario vacío de th64sim mercado no trae casillas.
+    const th_rnode celdas = th_rules_get(&esc, esc.root, "celdas");
+    if (celdas && th_scenario_apply_cells(&mapa, &esc, celdas) < 0) {
         fprintf(stderr, "las casillas del escenario no valen\n");
         return NULL;
     }
@@ -329,6 +332,14 @@ th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char
         return NULL;
     }
     return &sim;
+}
+
+th_sim *th64sim_cargar_escenario(const char *assets, const char *trg, const char *tan_ruta, uint32_t semilla)
+{
+    th_rules esc;
+    if (cargar_reglas(trg, &esc))
+        return NULL;
+    return cargar_con(assets, &esc, tan_ruta, semilla);
 }
 
 // La traza de hito4 y partida: abre dias.tsv y dinero.tsv y engancha los
@@ -564,12 +575,7 @@ int th64sim_partida(char **argv)
     for (int h = 0; h < horas; h++) {
         while (metidas < partida_n && partida_ordenes[metidas].o.tick <= s->hours) {
             th_order *o = &partida_ordenes[metidas].o;
-            if (o->kind == TH_ORD_CONTRATAR && !o->def) {
-                const th_staff_profile *lista;
-                const int n = th_sim_candidates(s, o->dir, &lista);
-                if (o->qty < n)
-                    o->def = (th_rnode)th_staff_profile_digest(&lista[o->qty]);
-            }
+            th64sim_completar_resumen(s, o);
             if (th_sim_push_order(s, o) != 0)
                 break;
             metidas++;
@@ -617,5 +623,116 @@ int th64sim_carga(char **argv)
     }
     fprintf(stderr, "carga: %d horas; %u pacientes; huella %08lx\n", horas, (unsigned)s->patients_spawned,
             (unsigned long)th_sim_hash(s));
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// th64sim mercado <assets> <nivel> <semilla> <mes>
+//
+// El mercado de candidatos del núcleo (th_sim.available: World:makeAvailableStaff,
+// world.lua:510-532, y StaffProfile:randomise, staff_profile.lua:89-209) en
+// JSON, para que la batería de construir meta los mismos perfiles en
+// world.available_staff de CorsixTH (bench/scenarios/construir.lua,
+// --th64-mercado) y «contratar <clase> <índice>» sea la misma persona en los
+// dos lados. <nivel> es un escenario TRG1 (inicio.trg de la batería, demo.trg)
+// o el número de un nivel, que se carga recién empezado en dificultad full
+// con un escenario vacío (solo nivel y dificultad: sin parcelas, sin personal
+// y sin salas; el mercado no depende de nada más que del nivel, la semilla y
+// el mes). El mercado se regenera con <mes> (th_sim_make_available_staff: el
+// monthOfGame del mes que acaba, 0 en una partida nueva).
+
+// TRG1 mínimo: {dificultad = "full", nivel = n} (tools/conv/reglas.py, escribir).
+static size_t trg_vacio(uint8_t *d, int n)
+{
+    size_t k = 16;
+    uint32_t pos_cad[3];
+    static const char *const cad[3] = {"dificultad", "full", "nivel"};
+    for (int i = 0; i < 3; i++) {
+        const uint32_t len = (uint32_t)strlen(cad[i]);
+        pos_cad[i] = (uint32_t)k;
+        d[k++] = 0, d[k++] = 0, d[k++] = 0, d[k++] = (uint8_t)len;
+        memcpy(d + k, cad[i], len + 1);
+        k += len + 1;
+        while (k % 4)
+            d[k++] = 0;
+    }
+    const uint32_t pos_mapa = (uint32_t)k;
+#define TRG_U32(v)                                                                                                     \
+    (d[k++] = (uint8_t)((v) >> 24), d[k++] = (uint8_t)((v) >> 16), d[k++] = (uint8_t)((v) >> 8), d[k++] = (uint8_t)(v))
+#define TRG_VAL(t, v) (d[k++] = (t), d[k++] = 0, d[k++] = 0, d[k++] = 0, TRG_U32(v))
+    TRG_U32(2u);
+    TRG_VAL(TH_RULES_STRING, pos_cad[0]);
+    TRG_VAL(TH_RULES_STRING, pos_cad[1]);
+    TRG_VAL(TH_RULES_STRING, pos_cad[2]);
+    TRG_VAL(TH_RULES_INT, (uint32_t)n);
+    const uint32_t pos_raiz = (uint32_t)k;
+    TRG_VAL(TH_RULES_MAP, pos_mapa);
+    const uint32_t tam = (uint32_t)k;
+    k = 0;
+    d[k++] = 'T', d[k++] = 'R', d[k++] = 'G', d[k++] = '1';
+    TRG_U32(tam);
+    TRG_U32(pos_raiz);
+    TRG_U32(0u);
+#undef TRG_VAL
+#undef TRG_U32
+    return tam;
+}
+
+int th64sim_mercado(char **argv)
+{
+    const char *assets = argv[2], *nivel = argv[3];
+    const uint32_t semilla = (uint32_t)strtoul(argv[4], NULL, 0);
+    const int mes = atoi(argv[5]);
+    const size_t ln = strlen(nivel);
+    th_sim *s;
+    if (ln > 4 && !strcmp(nivel + ln - 4, ".trg"))
+        s = th64sim_cargar_escenario(assets, nivel, NULL, semilla);
+    else {
+        char *fin;
+        const long n = strtol(nivel, &fin, 10);
+        if (fin == nivel || *fin || n < 1 || n > 99) {
+            fprintf(stderr, "mercado: «%s» no es un escenario .trg ni un número de nivel\n", nivel);
+            return 1;
+        }
+        static uint8_t datos[128];
+        static th_rules esc;
+        const size_t tam = trg_vacio(datos, (int)n);
+        if (th_rules_init(&esc, datos, tam) != 0) {
+            fprintf(stderr, "mercado: el escenario vacío no vale\n");
+            return 1;
+        }
+        s = cargar_con(assets, &esc, NULL, semilla);
+    }
+    if (!s)
+        return 1;
+    th_sim_make_available_staff(s, mes);
+    static const char *const clases[TH_SIM_STAFF_CLASSES] = {"doctor", "nurse", "handyman", "receptionist"};
+    static const char *const clases_lua[TH_SIM_STAFF_CLASSES] = {"Doctor", "Nurse", "Handyman", "Receptionist"};
+    const th_rules *e = s->scen;
+    const char *dif = th_rules_str(e, th_rules_get(e, e->root, "dificultad"), NULL);
+    printf("{\n  \"nivel\": %ld,\n  \"dificultad\": \"%s\",\n  \"semilla\": %lu,\n  \"mes\": %d,\n  \"clases\": {",
+           (long)th_rules_int(e, th_rules_get(e, e->root, "nivel"), 0), dif ? dif : "full", (unsigned long)semilla,
+           mes);
+    for (int k = 0; k < TH_SIM_STAFF_CLASSES; k++) {
+        const th_staff_profile *l;
+        const int n = th_sim_candidates(s, TH_HUM_DOCTOR + k, &l);
+        printf("%s\n    \"%s\": [", k ? "," : "", clases[k]);
+        for (int i = 0; i < n; i++) {
+            const th_staff_profile *p = &l[i];
+            printf("%s\n      {\"indice\": %d, \"resumen\": \"%08lx\", \"clase\": \"%s\", \"kind\": %u, \"skill\": %ld, "
+                   "\"attention\": %ld, \"wage\": %ld, \"titles\": %u, \"junior\": %d, \"consultant\": %d, "
+                   "\"surgeon\": %d, \"psychiatrist\": %d, \"researcher\": %d, \"layer5\": %u, \"hair\": %u, "
+                   "\"face\": %u, \"chin\": %u, \"desc_swap\": %u, \"name_seed\": %u, \"name_rnd\": [%u, %u], "
+                   "\"desc_rnd\": [%u, %u]}",
+                   i ? "," : "", i, (unsigned long)th_staff_profile_digest(p), clases_lua[k], p->kind, (long)p->skill,
+                   (long)p->attention, (long)p->wage, p->titles, (p->titles & TH_TITLE_JUNIOR) != 0,
+                   (p->titles & TH_TITLE_CONSULTANT) != 0, (p->titles & TH_TITLE_SURGEON) != 0,
+                   (p->titles & TH_TITLE_PSYCHIATRIST) != 0, (p->titles & TH_TITLE_RESEARCHER) != 0, p->layer5,
+                   p->hair, p->face, p->chin, p->desc_swap, p->name_seed, p->name_rnd[0], p->name_rnd[1],
+                   p->desc_rnd[0], p->desc_rnd[1]);
+        }
+        printf("%s]", n ? "\n    " : "");
+    }
+    printf("\n  }\n}\n");
     return 0;
 }

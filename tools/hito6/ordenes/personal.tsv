@@ -1,0 +1,229 @@
+# La batería de construir con contratar (la demo jugable, pieza 7): el nivel 1
+# sin gente, con el mercado de candidatos del núcleo metido en
+# world.available_staff (th64sim mercado con la semilla 1 y el mes 0:
+# 8 médicos, 8 enfermeras, 3 bedeles y 8 recepcionistas; construir.sh lo pasa
+# con --th64-mercado). «contratar <clase> <índice> <x> <y> [<resumen>]»: el
+# índice desde 0 en la lista de la clase tal como está en ese momento (cada
+# contratación saca a su candidato), y el resumen del perfil
+# (th_staff_profile_digest) si se quiere comprobar que es esa persona.
+# Coordenadas desde 0; las de pasillo.tsv y salas.tsv.
+#
+# --- El mostrador y la recepción -------------------------------------------------
+# El mostrador delante de la entrada, como en pasillo.tsv (150 $).
+comprar	reception_desk	1
+colocar	reception_desk	62	74	north
+# La recepcionista 0 (577e31bf, la de ordenes/demo.tsv) en el use_position del
+# mostrador, detrás: aceptada, hire_staff:receptionist; onPlaceInCorridor
+# (receptionist.lua:70-79) busca el mostrador más cercano y lo ocupa.
+contratar	receptionist	0	62	73	577e31bf
+# Otra en el pasillo: aceptada; no queda mostrador libre y deambula.
+contratar	receptionist	0	60	70
+# Una tercera soltada SOBRE el mostrador: la casilla no es transitable, pero
+# vale porque el mostrador aún no tiene receptionist: la primera solo lo
+# tiene reservado (reserved_for, ReceptionDesk:occupy, reception_desk.lua:
+# 251-261) hasta que llega andando a su sitio, y con la partida en pausa no
+# llega (place_staff.lua:117-123 mira desk.receptionist). Aceptada: queda en
+# la casilla del mostrador y deambula.
+contratar	receptionist	0	62	74
+#
+# --- El pasillo --------------------------------------------------------------------
+# El médico 0 (cf501390) en el pasillo delante de la consulta: aceptada.
+contratar	doctor	0	59	56	cf501390
+# Los no_se_puede usan el último candidato de la lista: al cancelar,
+# CorsixTH lo devuelve al final (place_staff.lua:69-71) y el núcleo lo deja
+# donde estaba; con el último, las dos listas siguen iguales. Con otro, es la
+# diferencia de la sección de hallazgos (abajo).
+# Un médico sobre el mostrador: no transitable. no_se_puede (el 6, el último
+# de los 7 que quedan).
+contratar	doctor	6	62	74	7b76e3fa
+# En la calle (fuera del hospital: flags.hospital falso). no_se_puede.
+contratar	doctor	6	40	60	7b76e3fa
+# Quedan 7 médicos (0-6): el 7 no existe. sin_candidato.
+contratar	doctor	7	59	57
+# El 0 con un resumen que no es el suyo: sin_candidato (UIHireStaff no
+# contrata a nadie; el núcleo, por th_order.def).
+contratar	doctor	0	59	57	12345678
+# El resumen del médico 0 que ya se contrató, ahora en el índice 0 hay otro.
+# sin_candidato.
+contratar	doctor	0	59	57	cf501390
+# Un bedel en el pasillo: aceptada.
+contratar	handyman	0	59	57
+# Un objeto sobre la casilla de una persona: el banco donde está el médico.
+# persona (world:anyHumanoidObscuringArea); al lado, aceptada; y cerrar.
+comprar	bench	2
+colocar	bench	59	56	north
+colocar	bench	61	56	north
+cerrar
+#
+# --- La consulta -------------------------------------------------------------------
+# La de salas.tsv: 4 × 4 en (57,50), puerta al sur, dos ventanas al este, el
+# escritorio, el archivador y la silla. Al terminarla, roomFinished llama a
+# un médico (callForStaff, room.lua:738): el del pasillo la atiende
+# (informativo: la acción no se compara).
+sala	gp	57	50	4	4
+puerta	58	53	south
+ventana	60	51	east
+ventana	60	52	east
+fin_ventanas
+colocar	chair	58	52	south
+colocar	desk	58	51	north
+colocar	cabinet	60	50	north
+fin_sala
+# Un médico dentro: cabe (maximum_staff Doctor 1, gp.lua:38-41) y pasa a
+# staff_member de la sala (room.lua:405-408, commandEnteringStaff).
+contratar	doctor	0	57	52
+# Un segundo médico dentro: no cabe, el de dentro deambula y no atiende a
+# nadie, así que lo sustituye: el primero sale y el nuevo es el staff_member
+# (room.lua:370-391).
+contratar	doctor	0	57	51
+# Una enfermera dentro: no sirve en la consulta y sale (room.lua:398-403).
+contratar	nurse	0	57	52
+# Un bedel dentro: los bedeles siempre entran y contestan llamadas
+# (room.lua:338-357).
+contratar	handyman	0	60	53
+# Sobre el escritorio de la consulta: no transitable. no_se_puede (el 4,
+# el último de los 5 médicos que quedan).
+contratar	doctor	4	58	51	7b76e3fa
+# Una recepcionista dentro: allow_in_rooms es falso para ella
+# (place_staff.lua:34-35, 113). no_se_puede (la 4, la última de las 5).
+contratar	receptionist	4	59	52	582c7865
+#
+# --- Vaciar una clase ----------------------------------------------------------------
+# Queda 1 bedel: contratarlo (aceptada) y otro más (sin_candidato).
+contratar	handyman	0	60	57
+contratar	handyman	0	61	57
+# Quedan 7 enfermeras: las 7 en el pasillo y una más, sin_candidato.
+contratar	nurse	0	60	65
+contratar	nurse	0	61	65
+contratar	nurse	0	62	65
+contratar	nurse	0	63	65
+contratar	nurse	0	64	65
+contratar	nurse	0	65	65
+contratar	nurse	0	66	65
+contratar	nurse	0	60	66
+#
+# --- El dinero ------------------------------------------------------------------------
+# Saldo 35.554. Ocho salas de hinchado (4.000 cada una: -1.500 la sala y
+# -2.500 el hinchador; las posiciones y las puertas de salas.tsv) lo dejan en
+# 3.554, y siete máquinas de bebidas (-500) en 54.
+sala	inflation	75	58	4	4
+puerta	76	61	south
+fin_ventanas
+colocar	inflator	76	59	north
+fin_sala
+sala	inflation	49	58	4	4
+puerta	52	59	east
+fin_ventanas
+colocar	inflator	50	59	north
+fin_sala
+sala	inflation	54	58	4	4
+puerta	55	61	south
+fin_ventanas
+colocar	inflator	55	59	north
+fin_sala
+sala	inflation	90	58	4	4
+puerta	90	59	west
+fin_ventanas
+colocar	inflator	92	59	north
+fin_sala
+sala	inflation	83	58	4	4
+puerta	84	61	south
+fin_ventanas
+colocar	inflator	84	59	north
+fin_sala
+sala	inflation	83	64	4	4
+puerta	84	67	south
+fin_ventanas
+colocar	inflator	84	65	north
+fin_sala
+sala	inflation	89	64	4	4
+puerta	90	67	south
+fin_ventanas
+colocar	inflator	90	65	north
+fin_sala
+sala	inflation	72	66	4	4
+puerta	73	69	south
+fin_ventanas
+colocar	inflator	73	67	north
+fin_sala
+comprar	drinks_machine	7
+colocar	drinks_machine	58	63	north
+colocar	drinks_machine	61	63	east
+colocar	drinks_machine	64	63	south
+colocar	drinks_machine	67	63	west
+colocar	drinks_machine	61	60	north
+colocar	drinks_machine	88	62	north
+colocar	drinks_machine	64	60	north
+# Una planta (-5): saldo 49.
+comprar	plant	1
+colocar	plant	66	60	north
+# UIHireStaff:hire mira «balance < wage» (hire_staff.lua:139-143) antes de
+# abrir la ventana de colocar: la recepcionista 1 (543b8280, 54 $) con 49,
+# sin_dinero, y la 0 (655480a2, 82 $) también. El mercado no cambia
+# (table.remove va después).
+contratar	receptionist	1	64	70	543b8280
+contratar	receptionist	0	64	70	655480a2
+# Vender la planta (+5) deja el saldo justo en 54, el sueldo de la 1:
+# aceptada (no es «menor que»), y el saldo queda en 0. Con 0, un médico
+# (5b4c1539, 159 $): sin_dinero.
+recoger	66	60
+vender
+contratar	receptionist	1	64	70	543b8280
+contratar	doctor	0	59	60	5b4c1539
+# Para la sección siguiente: vender las siete máquinas (+3.500).
+recoger	58	63
+vender
+recoger	61	63
+vender
+recoger	64	63
+vender
+recoger	67	63
+vender
+recoger	61	60
+vender
+recoger	88	62
+vender
+recoger	64	60
+vender
+# «pausa» no sale (la batería corre en pausa con
+# allow_user_actions_while_paused, como pasillo.tsv) y «lleno» es solo del
+# núcleo (el tope de TH_SIM_HUMANOIDS; CorsixTH no lo tiene: test_build.c).
+#
+# --- Hallazgos: diferencias del núcleo con CorsixTH ------------------------------
+# La batería se para en la primera (con SEGUIR=1 sigue); cada caso deja los
+# dos lados otra vez iguales antes del siguiente.
+#
+# 1. Contratar con otra ventana abierta. El botón de contratar pasa por
+# setEditRoom(false) y UI:addWindow (bottom_panel.lua:784-787) ANTES de mirar
+# el candidato, y UIHireStaff y UIPlaceStaff son ventanas «main»
+# (hire_staff.lua:28, place_staff.lua:33; ui.lua:1048-1054). Con la ventana
+# de colocar del pasillo abierta (un banco comprado sin colocar), CorsixTH la
+# cierra y devuelve el banco (+40, sell_object:bench, como comprar con la
+# ventana abierta) y después cerrar ya no tiene ventana (sin_ventana).
+# order_contratar (motor/core/src/build.c) no cierra nada: el banco se queda
+# en la lista y cerrar es aceptada. Contratando (aceptada) y sin contratar
+# (sin_candidato: el índice 9 no existe): lo mismo.
+comprar	bench	1
+contratar	doctor	0	59	58
+cerrar
+comprar	bench	1
+contratar	doctor	9	59	58
+cerrar
+# 2. Con una obra abierta (el plano aceptado, en la fase de la puerta),
+# CorsixTH la abandona (setEditRoom(false) → verifyOrAbortRoom → abortRoom):
+# la sala sale de world.rooms y el plano del mapa; después, atras no tiene
+# obra (sin_ventana). El núcleo deja la obra abierta: el primer atras la
+# vuelve a la fase de las paredes y el segundo la abandona (en CorsixTH, los
+# dos sin_ventana).
+sala	gp	66	50	4	4
+contratar	doctor	0	59	59
+atras
+atras
+# 3. Cancelar una colocación que no vale. CorsixTH devuelve el perfil AL
+# FINAL de available_staff (UIPlaceStaff:close, place_staff.lua:69-71); el
+# núcleo rechaza sin tocar el mercado (no_se_puede atómico). Quedan 3
+# médicos (3a4273a8, e2899f56 y 7b76e3fa): el 0 en la calle (no_se_puede en
+# los dos) y el 0 otra vez con su resumen: en CorsixTH el 0 ya es e2899f56
+# (sin_candidato); en el núcleo sigue siendo 3a4273a8 (aceptada).
+contratar	doctor	0	40	60	3a4273a8
+contratar	doctor	0	59	60	3a4273a8
