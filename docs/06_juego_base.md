@@ -844,3 +844,44 @@ Al llegar antes el primer paciente, el hospital de las vistas (8 salas, 9 emplea
 - [`tools/oraculo_hito4/por_mes.py`](../tools/oraculo_hito4/por_mes.py): las llegadas por mes de juego, CorsixTH frente al motor. Es la vista que delató la causa en un vistazo.
 - Para la demo jugable ([`06_plan.md`](06_plan.md#la-demo-jugable-el-orden-cambia)): es lo que hace que en una partida nueva el primer paciente llegue al acabar el día en que hay mostrador y recepcionista, en vez de esperar hasta un mes a la primera llegada programada.
 
+
+## La demo jugable, tanda A — contratar en el núcleo, el escenario, el plano y el framework de ventanas
+
+El plan de la demo ([`06_plan.md`](06_plan.md#la-demo-jugable-el-orden-cambia)) reparte el trabajo en siete piezas; las cuatro primeras no se pisan y se hicieron a la vez (2026-11-27), cada una en su worktree con un implementador, un revisor adversario y un arreglador (12 agentes, 2,6 M de tokens, 92 minutos; por el límite de uso de Fable corrieron en Opus). Se integraron aplastadas en cuatro commits (74e4db8, c432f1e, da4c6f1, 7a30235) más el de la integración (f5b3d66), que resuelve los roces entre piezas. El contrato de la tanda B (las ventanas y la ROM) es `motor/ui/ventanas.h` (5c8ef51).
+
+### Qué hay
+
+- **Pieza 1, el núcleo** (`core/src/sim.c`, `build.c`, `sim_rooms.c`, `humanoid.c`; `tests/test_build.c`): el mercado de candidatos de `World:makeAvailableStaff` y `StaffProfile:randomise` (`th_staff_profile`, `th_sim.available` por clase, `TH_SIM_CANDIDATES` 12: el máximo en los 36 niveles es 9), regenerado en `th_sim_init` y en `end_month` con un generador propio sembrado por la semilla del escenario, la `Seed` de `staff_levels` y el mes, sin tocar `s->rng`. `TH_ORD_CONTRATAR` (`UIHireStaff:hire` y `UIPlaceStaff:onMouseUp` de una vez): `dir` la clase, `qty` el índice del candidato, `def` el **resumen del perfil** (`th_staff_profile_digest`, un hash de todos sus campos), para que la orden contrate a quien vio quien la dio y se rechace (`sin_candidato`) si el mercado cambió de mes o la partida no es la misma. Rechazos, por orden: `sin_candidato`, `sin_dinero` (`balance < sueldo`), `no_se_puede` (`_isValidStaffPlacement`: `th_build_staff_placement`) y `lleno`. Al aceptar: `new_person`, el perfil, `Hospital:addStaff` (el motivo nuevo `TH_MONEY_HIRE_STAFF`, con `who` la persona) y la entrada en la sala o el paseo por el pasillo (la recepcionista busca el mostrador libre más cercano). `Room:onHumanoidEnter` con personal (`room.lua:317-412`); los avisos de `seek_room` (`build_callback`, `staff_change_callback`, con `removeMessage`); las llegadas del primer mes cuando el escenario no trae `spawn_dates`; `discoverDisease` al diagnosticar. De paso, un fallo de `fair_wage`: le faltaban el −30 de junior y el +100 de consultor de `getFairWage` (ningún escenario tenía ninguno: las huellas no cambian).
+- **Pieza 2, las herramientas** (`platform/pc/`, `tools/hito6/`): `demo.sh` genera `motor/assets/escenarios/demo.trg` solo de los datos (5.896 B: el nivel 1 como lo dejan `World:new` y `Hospital:new`, 40.000 $, valor 43.525, reputación 500, abierto, sin personal, sin `spawn_dates`); contra el nivel 1 que exportó CorsixTH, 11 campos distintos, todos esperados; los 32 puntos de aparición, iguales. `th64sim partida` repite una lista de órdenes con tick por la cola del núcleo y escribe las líneas del contrato de la ROM; `repetir.sh` saca de un `isviewer.log` la partida grabada y la repite en el PC. El lector de órdenes de la batería es común (`th64sim_leer_orden`).
+- **Pieza 3, el dibujo** (`vista/`, `platform/n64/mapa_n64.c`): `th_view_overlays`, la capa «ui» de CorsixTH (una marca por casilla del mundo, hasta 256, pintada tras la pared oeste de su casilla y antes de sus entidades, girada con la cámara, puertas dobles incluidas); `th_view_blueprint` (el plano como `updateRoomBlueprint`: 2(w+h)−1 paredes, suelos 24/67 al 50 %, flechas, rojo donde no vale) y `th_view_edge`; las paletas fantasma `TH_ANIM_PAL_GREY` y `TH_ANIM_PAL_RED` por entidad, que `raster.c` y `mapa_n64.c` (`mapa_n64_dibujar_paletas`, que vuelve a subir la TLUT cuando cambia) honran; `th_vista_objeto_fantasma`, `th_vista_persona_fantasma` y `th_view_entity_on_top`.
+- **Pieza 4, el framework** (`ui/`, `platform/n64/interfaz.c`, `tools/conv/`): de `window.lua`, el clic derecho, los botones repetidos (10 y luego 2 ticks de 18 ms), enable/disable, paneles de color, un draw por ventana, 64 paneles y 40 botones; la pila `th_ui_stack` (hasta 4, el reparto de `UI`, la clase `main` exclusiva, `bringToTop`, el margen de 3 px); `th_text_row` y `th_drawlist_loads`; `interfaz.c` carga `DATAM/MUTTON01` como `TH_SHEET_MUTTON` y mete el panel en la pila; `ui/mutton01.h` cataloga 75 piezas de colocar, construir, amueblar y contratar; el conversor recorta la hoja a las piezas 1–78: 109.280 B en vez de 270.840.
+- **La integración**: la orden de contratar lleva el resumen en `def`, así que `th64sim partida` lo escribe en hexadecimal en la columna `def_id`, el lector lo lee si la lista lo trae (`contratar <clase> <índice> <x> <y> [<resumen>]`) y, si no, lo toma del mercado del tick en que la orden entra en la cola, que ahora es el suyo; `repetir.py` lo pasa a la lista del PC; los ganchos de dinero escriben `hire_staff:<clase>`.
+
+### Comprobaciones
+
+| Qué | Resultado |
+|---|---|
+| `test_core` (PC y ASan/UBSan) | 212.470 comprobaciones (antes 210.631: +380 del núcleo, +1.459 del dibujo), 0 fallos; d38fbaef y def515c7 sin cambios |
+| `test_ui motor/assets` (nuevo; PC y ASan/UBSan) | 311 comprobaciones, 0 fallos; una ventana de amueblar de 10 filas: 129 elementos, 122 cargas de textura |
+| Huellas sin órdenes (semilla 1) | hito4 3.000 h a800c6f0, hito5 9.000 h 8f00cfc9, vistas 2.000 h 5f170e3d: sin cambios |
+| Batería de construir, las cuatro listas contra CorsixTH | 175/32/322/265 órdenes iguales, huellas 78fc2652/d3e56866/8e19cfd3/e1a33cf3 |
+| Sin superposiciones ni fantasmas | 658 huellas de lista, 320 listas y 160 PPM/PGM iguales byte a byte |
+| `demo.sh` | 0 casillas cambiadas; 9.000 h sin personal: 0 pacientes, saldo 40.000, huella 05075edc |
+| `th64sim partida` con `ordenes/demo.tsv` (9.050 h) | 13 órdenes, 13 aceptadas; 8 pacientes (5 pasan por la consulta); saldo 36.223; huella f1860651; `repetir.sh` sobre su registro: «bien»; con un resumen cambiado, `sin_candidato` y huella distinta |
+| `motor_check` | todo correcto: la ROM de pruebas en ares con 212.470 comprobaciones y 0 fallos, hitos 2 a 6.2 a 0 píxeles; **demo3** (un plano con una casilla mala, una puerta doble y un médico gris) 0 de 76.800 píxeles distintos en los giros 0 y 1, con 4 y 6 TLUT; el hospital del hito 4 a 6,18 ms por tick |
+| El panel y el hito 6.1 | 0 píxeles distintos en los 5 estados, con la pila y la hoja recortada |
+
+### Las revisiones
+
+Cuatro revisores adversarios: 26 hallazgos (0 altos, 12 medios, 14 bajos), todos arreglados en el worktree o en la integración salvo lo que se apunta en «Pendiente». Los que valía la pena contar: los avisos de `seek_room` no quitaban el fax pendiente (`removeMessage`: `th_sim_remove_message`); la orden de contratar con solo el índice contrataba a otra persona si el mercado cambiaba (de ahí el resumen); `repetir.py` daba fallos falsos con el número de la orden o con campos que la orden no usa (`canonica()`); una superposición fuera del mapa escrita a mano desbordaba `ovl_bits` (UBSan lo vio); el cambio de TLUT de `mapa_n64.c` no se había ejecutado nunca (la prueba demo3 nació de ahí); `th_drawlist_loads` no contaba las tiras de los sprites de más de 2.048 téxeles ni la recarga tras un relleno; `th_text_row` alineaba la cantidad a la derecha cuando CorsixTH la centra en una caja de 19 px; la pila no subía la ventana que recibía el clic (`bringToTop`); la hoja no estaba recortada.
+
+### Coste y memoria
+
+La lista de dibujo con 20 superposiciones y el plano sube en ares de 2,36 a 3,15 ms (+0,79; el arreglador midió +0,46 en su pasada): por encima del medio milisegundo que pedía el plan, pendiente de medir en la consola y, si hace falta, de evitar el `memset` de los bits por fotograma. El RDP tarda 3,1 ms en esa escena. `th_sim` crece unos 1,5 KiB con los perfiles. La ROM normal usa 2.445 KiB de heap de 6.742 al llegar al menú; MUTTON01 ocupa 109 KiB en RAM descomprimida.
+
+### Pendiente
+
+- La comparación estadística del mercado con el de CorsixTH (títulos, sueldos medios), la campaña de la demo en CorsixTH y la batería con `contratar` (tanda C).
+- `staff_change_callback` no tiene efecto con los datos reales mientras las salas de tratamiento no estén modeladas (6.5); quirófano, enfermería e investigación siguen con un solo `staff_member`.
+- Las marcas giradas de las puertas dobles no están comparadas con CorsixTH (el nivel 1 no tiene).
+- El coste de la lista con superposiciones en la consola.
