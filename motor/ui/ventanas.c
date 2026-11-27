@@ -411,9 +411,16 @@ void th_game_ui_order_result(th_game_ui *g, const th_sim *s, const th_order *o, 
     if (o->kind == TH_ORD_DEVOLVER) // cancelar no avisa de nada
         return;
     if (r->reason != TH_REASON_OK) {
-        const char *aviso = aviso_de(o, r->reason);
-        if (aviso)
-            gw_aviso(g, aviso);
+        // Contratar sin perfil (la persona en la mano se perdió: dos meses
+        // en la mano, th/build.h) es hire sin perfil: wrong2.wav sin texto
+        // (hire_staff.lua:134-137), no el aviso de la casilla que no vale.
+        if (o->kind == TH_ORD_CONTRATAR && r->reason == TH_REASON_SIN_CANDIDATO) {
+            g->sonar = 1;
+        } else {
+            const char *aviso = aviso_de(o, r->reason);
+            if (aviso)
+                gw_aviso(g, aviso);
+        }
         // El único rechazo del núcleo que suena en CorsixTH: el plano que deja
         // zonas sin unir, al confirmar (edit_room.lua:933-937, wrong2.wav).
         if (r->reason == TH_REASON_ZONAS_INACCESIBLES)
@@ -425,9 +432,10 @@ void th_game_ui_order_result(th_game_ui *g, const th_sim *s, const th_order *o, 
             // más cancelar (decisión 5 de docs/06_plan.md, order_contratar en
             // build.c) y el candidato pasa al final de su lista: el clic
             // siguiente busca su índice por el resumen (indice_en_mano en
-            // ventana_contratar.c). Con SIN_CANDIDATO ya no está en el mercado
-            // (se rehízo al acabar el mes): como en UIPlaceStaff sin perfil,
-            // la ventana se cierra. Sin s la orden no llegó al núcleo
+            // ventana_contratar.c). Con SIN_CANDIDATO ya no está ni en el
+            // mercado ni en el del mes anterior (el núcleo guarda uno: la
+            // persona en la mano sobrevive a un cambio de mes): como en
+            // UIPlaceStaff sin perfil, la ventana se cierra. Sin s la orden no llegó al núcleo
             // (th_game_ui_order_dropped).
             g->esperando_contrato = 0;
             if (s && r->reason == TH_REASON_SIN_CANDIDATO)

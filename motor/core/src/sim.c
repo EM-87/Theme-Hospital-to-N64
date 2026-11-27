@@ -778,6 +778,10 @@ void th_sim_make_available_staff(th_sim *s, int month)
     th_rng r;
     th_rng_seed(&r, market_seed(s, entry, month));
     s->market_month = (int16_t)month;
+    // El de antes se guarda: UIPlaceStaff tiene el perfil en la mano aunque
+    // available_staff se rehaga (place_staff.lua:153-160, world.lua:1127).
+    memcpy(s->n_prev_available, s->n_available, sizeof s->n_available);
+    memcpy(s->prev_available, s->available, sizeof s->available);
     for (int k = 0; k < TH_SIM_STAFF_CLASSES; k++) {
         int n = staff_level(s, entry, conf[k]);
         if (n < 0)
@@ -2091,9 +2095,11 @@ void th_sim_destroy_object(th_sim *s, int i)
 {
     th_object *o = &s->obj[i];
     th_sim_entity_removed(s, o->entity_seq);
-    // Object:onDestroy: resetUsageAndReservaton (TODO: Humanoid:handleRemovedObject
-    // con gente usándolo; la batería del paso 2 no tiene humanoides),
-    // Entity.onDestroy (setTile(nil)) y rebuildPassableCellFlags.
+    // Object:onDestroy: resetUsageAndReservaton (th_sim_reset_usage; el
+    // segundo que hace Entity.onDestroy con onPickUp ya no encuentra a nadie
+    // y solo repetiría el rerouteAllPatients), Entity.onDestroy (setTile(nil))
+    // y rebuildPassableCellFlags.
+    th_sim_reset_usage(s, i);
     th_objects w = th_sim_objects(s);
     th_object_set_tile(&w, i, -1, -1);
     if (o->oclass == TH_OCLASS_SIDE) {
@@ -2106,8 +2112,21 @@ void th_sim_destroy_object(th_sim *s, int i)
             s->n_desks--;
             break;
         }
-    if (o->queue != TH_NONE)
-        s->queues[o->queue].max_size = 0; // hueco libre
+    if (o->queue != TH_NONE) {
+        // Quien sigue en la cola ya tiene la acción de cola marcada para
+        // interrumpirla (rerouteAllPatients), pero aún no ha salido. En
+        // CorsixTH sale de la cola muerta al interrumpirla; aquí la cola se
+        // vacía ya y la acción deja de estar en ella, para que la
+        // interrupción no busque la cola de un objeto que ya no existe.
+        th_queue *q = &s->queues[o->queue];
+        for (int k = 0; k < q->size; k++) {
+            th_action *qa = th_sim_queue_action_of(s, q->member[k], o->queue);
+            if (qa)
+                qa->state &= (uint16_t)~TH_AS_IN_QUEUE;
+        }
+        q->size = q->reported = 0;
+        q->max_size = 0; // hueco libre
+    }
     memset(o, 0, sizeof *o);
     o->user = o->reserved_for = o->queue = o->receptionist = TH_NONE;
     while (s->n_obj > 0 && !s->obj[s->n_obj - 1].def)

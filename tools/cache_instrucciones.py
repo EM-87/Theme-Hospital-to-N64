@@ -11,13 +11,20 @@ a 5,2 ms por fotograma).
 
 Uso: python3 -I tools/cache_instrucciones.py <nm> <rom.elf> [--relleno]
   <nm>: mips64-elf-nm. Con --relleno, busca además cuántos bytes de relleno
-  entre el motor y libdragon (RELLENO_CACHE en motor/Makefile) quitan los choques.
+  entre el motor y libdragon (RELLENO en motor/platform/n64/relleno_cache.c)
+  quitan los choques.
+Sin choques, dice el margen: cuánto puede crecer o encoger el código que va
+entre el dibujo y libdragon (lo enlazado después de mapa_n64.c: partida.c,
+relleno_cache.c, simulacion.c y, en la ROM de pruebas, tests/*.c) antes del
+primer choque, y avisa si alguno de los dos baja de MARGEN_MINIMO: con 32 B
+menos de código en partida.c, la ROM de pruebas de la tanda B3 ya chocaba.
 Devuelve 1 si hay choques.
 """
 import subprocess
 import sys
 
 CACHE, LINEA = 16384, 32
+MARGEN_MINIMO = 256
 
 # Grupos de funciones que se llaman en cada vuelta de un bucle: del motor y de
 # libdragon. Solo se miran los choques entre unas y otras, que son los que
@@ -60,6 +67,15 @@ def choques(tabla, relleno=0):
     return res
 
 
+def margen(tabla, signo):
+    """Lo más que se puede mover libdragon respecto al dibujo (signo 1: el
+    código de en medio crece; −1: encoge), de 32 en 32 B, sin choques."""
+    for r in range(LINEA, CACHE, LINEA):
+        if choques(tabla, signo * r):
+            return r - LINEA
+    return CACHE
+
+
 def main():
     args = sys.argv[1:]
     buscar = "--relleno" in args
@@ -71,7 +87,12 @@ def main():
     for grupo, a, b, n in c:
         print(f"{grupo}: {a} y {b} comparten {n} líneas de la caché de instrucciones")
     if not c:
-        print("sin choques en la caché de instrucciones")
+        crecer, encoger = margen(tabla, 1), margen(tabla, -1)
+        print(f"sin choques en la caché de instrucciones; margen: el código de entre el dibujo y libdragon puede "
+              f"crecer {crecer} B y encoger {encoger} B")
+        if min(crecer, encoger) < MARGEN_MINIMO:
+            print(f"AVISO: margen de menos de {MARGEN_MINIMO} B: centrarlo con el relleno "
+                  "(motor/platform/n64/relleno_cache.c)")
     if buscar and c:
         for r in range(LINEA, CACHE, LINEA):
             if not choques(tabla, r):

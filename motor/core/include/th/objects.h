@@ -53,6 +53,7 @@ enum {
     TH_OBJF_SIDE_PASSABLE = 2, // set_passable_flags: un objeto de borde que cortó el paso
     TH_OBJF_MASTER = 4,        // is_master: la hoja derecha de las puertas dobles y de la entrada
     TH_OBJF_PICKED_UP = 8,     // picked_up: cogido en el pasillo; sigue en el mapa, invisible
+    TH_OBJF_BEING_DESTROYED = 16, // being_destroyed: mientras th_sim_reset_usage suelta a su gente
 };
 
 // Basura en el suelo (objects/litter.lua): lo que dejan vomitar y orinar y lo

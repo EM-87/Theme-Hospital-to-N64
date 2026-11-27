@@ -511,6 +511,12 @@ typedef struct th_sim {
     int16_t market_month;
     uint8_t n_available[TH_SIM_STAFF_CLASSES];
     th_staff_profile available[TH_SIM_STAFF_CLASSES][TH_SIM_CANDIDATES];
+    // El mercado del mes anterior, tal como estaba al rehacerse: la persona
+    // que el jugador tenía en la mano al cambiar de mes sigue ahí
+    // (TH_ORD_CONTRATAR y TH_ORD_DEVOLVER, build.c: held_profile). Tampoco
+    // entra en la huella.
+    uint8_t n_prev_available[TH_SIM_STAFF_CLASSES];
+    th_staff_profile prev_available[TH_SIM_STAFF_CLASSES][TH_SIM_CANDIDATES];
     th_sim_events ev;
 } th_sim;
 
@@ -616,6 +622,19 @@ void th_sim_object_set_user(th_sim *s, int obj, int who);
 void th_sim_object_remove_user(th_sim *s, int obj, int who);
 int th_sim_desk_usage_score(const th_sim *s, int desk);
 void th_sim_desk_check_for_staff(th_sim *s, int desk);
+// Object:onPickUp y Object:onDestroy: resetUsageAndReservaton
+// (entities/object.lua:858-889), con el del banco (Bench, bench.lua:175-192)
+// y el del mostrador (ReceptionDesk, reception_desk.lua:216-243): quien lo
+// usa o lo tiene reservado lo deja (Humanoid:handleRemovedObject), la
+// recepcionista busca otro mostrador y la cola del mostrador se deshace
+// (Queue:rerouteAllPatients). Lo llaman coger (TH_ORD_RECOGER) y
+// th_sim_destroy_object.
+void th_sim_reset_usage(th_sim *s, int obj);
+// Humanoid:handleRemovedObject (entities/humanoid.lua:872-899), humanoid.c.
+void th_sim_handle_removed_object(th_sim *s, int who, int obj);
+// Patient:notifyNewObject("bench") (patient.lua:1055-1071): si hace cola de
+// pie, vuelve a mirar si hay banco (onChangeQueuePosition).
+void th_sim_notify_new_bench(th_sim *s, int who);
 // Salas.
 int th_sim_room_can_enter(th_sim *s, const th_room *r, int who);
 int th_sim_room_patient_count(const th_sim *s, const th_room *r);

@@ -107,14 +107,19 @@ static void al_aplicar(void *ctx, const th_sim *s, const th_order *o, const th_o
         th_game_ui_order_result(ventanas, s, o, r);
 }
 
+// El mes de la última línea de control (partida_control).
+static int mes_control;
+
 void partida_empezar(th_sim *s, th_game_ui *g, const char *escenario, uint32_t semilla)
 {
     ventanas = g;
+    mes_control = th_date_month_of_game(s->date);
     n_esperan = aplicadas = aceptadas = rechazo = en_ultimo = 0;
     nombres_ultimo[0] = 0;
     mensaje[0] = 0; // sin el texto de la partida anterior (partida_texto)
     s->ev.order = al_aplicar;
     s->ev.ctx = NULL;
+    simulacion_al_acabar_tick(partida_control);
     if (escenario)
         debugf("TH64 partida nueva: escenario %s, semilla %lu\n", escenario, (unsigned long)semilla);
 }
@@ -251,6 +256,21 @@ void partida_sonido_cerrar(void)
     audio = false;
 }
 
+void partida_control(th_sim *s)
+{
+    const int mes = th_date_month_of_game(s->date);
+    if (mes == mes_control || !s->ev.order || simulacion_a_medias() || s->n_orders)
+        return;
+    mes_control = mes;
+    // Lo que tarda th_sim_hash (get_ticks da 64 bits: la resta, en 32).
+    const uint32_t t0 = get_ticks();
+    const uint32_t huella = th_sim_hash(s);
+    const uint32_t dt = get_ticks() - t0;
+    const uint32_t us = TICKS_TO_US(dt);
+    debugf("TH64 partida: control %lu horas, huella %08lx, saldo %ld, %lu us\n", (unsigned long)s->hours,
+           (unsigned long)huella, (long)s->hosp.balance, (unsigned long)us);
+}
+
 void partida_terminar(th_sim *s)
 {
     const int descartadas = n_esperan + s->n_orders;
@@ -261,6 +281,7 @@ void partida_terminar(th_sim *s)
     n_esperan = 0;
     s->n_orders = 0;
     s->ev.order = NULL;
+    simulacion_al_acabar_tick(NULL);
     ventanas = NULL;
     mensaje[0] = 0;
     debugf("TH64 partida: %lu horas, huella %08lx, saldo %ld\n", (unsigned long)s->hours,

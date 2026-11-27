@@ -82,9 +82,14 @@ void th_sim_object_set_user(th_sim *s, int obj, int who)
     s->obj[obj].reserved_for = TH_NONE;
 }
 
+static void bench_remove_user(th_sim *s, int obj, int who);
+
 void th_sim_object_remove_user(th_sim *s, int obj, int who)
 {
-    (void)who;
+    if (s->obj[obj].type == TH_OBJ_BENCH && who != TH_NONE) {
+        bench_remove_user(s, obj, who);
+        return;
+    }
     s->obj[obj].user = TH_NONE;
 }
 
@@ -444,7 +449,11 @@ static int visit(void *ctx, int x, int y, int dir, int dist)
         return 0;
     const th_object *ob = &c->s->obj[o];
     // getFreeBench pide getObject(x, y, "bench", true): un banco cogido no vale.
-    if (c->free_only && (ob->user != TH_NONE || ob->reserved_for != TH_NONE || (ob->oflags & TH_OBJF_PICKED_UP)))
+    // Tampoco el que se está vendiendo: en CorsixTH, Object:onDestroy suelta a
+    // su gente con el banco aún en el mapa y libre, y quien lo deja puede
+    // volver a reservarlo; aquí la reserva apuntaría a un hueco vacío.
+    if (c->free_only && (ob->user != TH_NONE || ob->reserved_for != TH_NONE ||
+                         (ob->oflags & (TH_OBJF_PICKED_UP | TH_OBJF_BEING_DESTROYED))))
         return 0;
     if (!allowed_dir(c->s, ob, dir))
         return 0;
@@ -538,7 +547,8 @@ static int visit_desk(void *ctx, int x, int y, int dir, int dist)
     (void)dir;
     (void)dist;
     const int o = th_sim_object_at(c->s, x, y, TH_OBJ_RECEPTION_DESK);
-    return o != TH_NONE && desk_occupy(c->s, o, c->who);
+    // «Make sure we are not selecting the same desk again» (reception_desk.lua:233).
+    return o != TH_NONE && !(c->s->obj[o].oflags & TH_OBJF_BEING_DESTROYED) && desk_occupy(c->s, o, c->who);
 }
 
 int th_sim_receptionist_find_desk(th_sim *s, int who)
@@ -570,6 +580,94 @@ void th_sim_desk_check_for_staff(th_sim *s, int desk)
     }
     if (best != TH_NONE)
         desk_occupy(s, desk, best);
+}
+
+// Queue:rerouteAllPatients(nil) (queue.lua:353-384) de la cola de un
+// mostrador: un tick quieto y otra vez a buscar recepción (el personal, a
+// deambular). Los mostradores no tienen esperados (expect solo lo usan las
+// puertas, room.lua:140 y 1080). Como ipairs, el tamaño se vuelve a leer en
+// cada vuelta.
+static void reroute_all(th_sim *s, int q)
+{
+    const th_queue *qu = &s->queues[q];
+    for (int i = 0; i < qu->size; i++) {
+        const int who = qu->member[i];
+        th_humanoid *h = &s->hum[who].h;
+        th_action idle = th_action_idle();
+        idle.count = 1;
+        th_humanoid_set_next_action(&s->w, h, idle);
+        th_humanoid_queue_action(h, th_action_new(s->hum[who].kind == TH_HUM_PATIENT ? TH_ACTION_SEEK_RECEPTION
+                                                                                      : TH_ACTION_MEANDER));
+    }
+}
+
+void th_sim_notify_new_bench(th_sim *s, int who)
+{
+    th_humanoid *h = &s->hum[who].h;
+    if (s->hum[who].kind != TH_HUM_PATIENT)
+        return; // Entity:notifyNewObject no hace nada
+    for (int i = 0; i < h->queue_len; i++) {
+        th_action *a = &h->queue[i];
+        if (a->kind == TH_ACTION_QUEUE && (a->state & TH_AS_IN_QUEUE)) {
+            if (a->bench_dist == TH_NONE) // isStanding
+                th_sim_on_change_queue_position(s, who, a);
+            break;
+        }
+    }
+}
+
+// Bench:removeUser (bench.lua:157-173): si quien lo deja tiene una acción
+// de quieto, notifyNewObject("bench").
+static void bench_remove_user(th_sim *s, int obj, int who)
+{
+    const th_humanoid *h = &s->hum[who].h;
+    for (int i = 0; i < h->queue_len; i++)
+        if (h->queue[i].kind == TH_ACTION_IDLE) {
+            th_sim_notify_new_bench(s, who);
+            break;
+        }
+    s->obj[obj].user = TH_NONE;
+}
+
+void th_sim_reset_usage(th_sim *s, int i)
+{
+    th_object *o = &s->obj[i];
+    o->oflags |= TH_OBJF_BEING_DESTROYED;
+    if (o->type == TH_OBJ_RECEPTION_DESK) {
+        // La recepcionista (la que atiende o la que va) lo deja, busca otro
+        // mostrador que no sea este (findObjectNear con occupy) y la cola se deshace.
+        const int r = o->receptionist != TH_NONE ? o->receptionist : o->reserved_for;
+        if (r != TH_NONE) {
+            th_sim_handle_removed_object(s, r, i);
+            o->receptionist = o->reserved_for = TH_NONE;
+            th_sim_receptionist_find_desk(s, r);
+        }
+        if (o->queue != TH_NONE)
+            reroute_all(s, o->queue);
+    } else if (o->type == TH_OBJ_BENCH) {
+        // Quien está sentado se queda de pie en la cola (current_bench_distance
+        // = nil, «issue 404»), y quien va hacia él hace lo mismo que si estuviera sentado.
+        if (o->user != TH_NONE) {
+            th_humanoid *h = &s->hum[o->user].h;
+            for (int k = 0; k < h->queue_len; k++)
+                if (h->queue[k].kind == TH_ACTION_QUEUE)
+                    h->queue[k].bench_dist = TH_NONE;
+        }
+        if (o->reserved_for != TH_NONE) {
+            const int r = o->reserved_for;
+            th_sim_handle_removed_object(s, r, i);
+            bench_remove_user(s, i, r);
+        }
+    }
+    // Object:resetUsageAndReservaton: cancelUsage y denyReservation, cada uno
+    // con handleRemovedObject (objetos de un solo usuario).
+    if (o->user != TH_NONE)
+        th_sim_handle_removed_object(s, o->user, i);
+    o->user = TH_NONE;
+    if (o->reserved_for != TH_NONE)
+        th_sim_handle_removed_object(s, o->reserved_for, i);
+    o->reserved_for = TH_NONE;
+    o->oflags &= (uint8_t)~TH_OBJF_BEING_DESTROYED;
 }
 
 // ReceptionDesk:tick

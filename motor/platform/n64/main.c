@@ -1563,6 +1563,28 @@ static th_game_ui *ventanas_iniciar(void)
     return ui;
 }
 
+// Sin Expansion Pak (4 MiB) la ROM normal no cabe: las hojas y las
+// animaciones dejan unos 250 KiB de heap y asset_load se paraba en el nivel 1
+// con la pantalla del fallo («Out of memory», cargar_nivel). La demo con 4 MiB
+// es el hito 6.10 (docs/06_plan.md); hasta entonces, un aviso. Las ROM de
+// pruebas y de medida siguen adelante: la de medida mide justo eso.
+#if !defined(TH_PRUEBAS) && !defined(TH_MEDIR)
+static void sin_expansion(int ram_kib)
+{
+    debugf("TH64 motor: sin Expansion Pak (%d KiB de RDRAM): no cabe, se para\n", ram_kib);
+    for (;;) {
+        surface_t *pantalla = display_get();
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 40, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 100, "TH64 %s", TH64_VERSION);
+        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 124, "Hace falta el Expansion Pak (8 MiB).");
+        rdpq_text_printf(NULL, FUENTE_DEPURACION, 16, 136, "Esta consola tiene %d KiB de RAM.", ram_kib);
+        rdpq_detach_show();
+    }
+}
+#endif
+
 // El menú de la ROM de prueba: la cruceta o el stick eligen y A abre.
 static int menu(int actual, bool assets, int ram_kib, bool expansion)
 {
@@ -2510,6 +2532,10 @@ int main(void)
     rdpq_text_register_font(FUENTE_DINERO, dfs_ok && existe("rom:/fuentes/font100m.font64")
                                                ? rdpq_font_load("rom:/fuentes/font100m.font64")
                                                : depuracion);
+#if !defined(TH_PRUEBAS) && !defined(TH_MEDIR)
+    if (!expansion)
+        sin_expansion(ram_kib);
+#endif
     th_rng_seed(&azar, 64);
 
     int nivel = 1;
@@ -2705,6 +2731,10 @@ int main(void)
             th_game_ui_close_all(ui);
         interfaz_reiniciar();
     }
+    // La pila de la corrutina de la simulación después de todo lo de arriba
+    // (la partida de prueba, los estados de las ventanas y las dos partidas
+    // desde ellas): motor_check avisa si pasa de la mitad.
+    debugf("TH64 pruebas: pila de la simulacion %d B de %d\n", simulacion_pila_usada(), simulacion_pila());
     debugf("TH64 pruebas: fin, %d fallos\n", fallos);
     if (emux_detect(0))
         emux_ioctl_exit();

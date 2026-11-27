@@ -732,9 +732,11 @@ static int order_recoger(th_sim *s, const th_order *o)
         !th_rules_get(s->defs, ob->def, "corridor_object"))
         return TH_REASON_NO_SE_PUEDE;
     (void)room; // con salas (paso 3): solo los de pasillo, o los de la sala en edición
-    // picked_up, onPickUp (TODO: handleRemovedObject con gente), invisible y
-    // una ventana nueva, que al abrirse cierra la que hubiera.
+    // picked_up, onPickUp (resetUsageAndReservaton: quien lo usa o lo
+    // reserva lo deja), invisible y una ventana nueva, que al abrirse cierra
+    // la que hubiera.
     ob->oflags |= TH_OBJF_PICKED_UP;
+    th_sim_reset_usage(s, obj);
     if (s->place.open)
         close_window(s, 0);
     open_window(s, ob->def, 1, obj);
@@ -1866,26 +1868,72 @@ static void candidate_to_end(th_sim *s, int kind, int idx)
     arr[cnt - 1] = pf;
 }
 
+// El perfil de la orden: el del índice qty con el resumen def en el mercado
+// de ahora (1) o, si no está, en el del mes anterior (2), o ninguno (0). En
+// CorsixTH, hire saca el perfil de available_staff (hire_staff.lua:144) y
+// UIPlaceStaff lo guarda: si el mes acaba con la persona en la mano,
+// makeAvailableStaff (world.lua:1127) rehace la lista sin ella y aun así se
+// coloca (place_staff.lua:153-160). Aquí el perfil sigue en la lista hasta
+// la orden, así que se busca en la lista de antes de rehacerla
+// (prev_available); con dos meses en la mano ya no está.
+static int held_profile(const th_sim *s, const th_order *o, th_staff_profile *pf)
+{
+    const int k = o->dir - TH_HUM_DOCTOR;
+    if (k < 0 || k >= TH_SIM_STAFF_CLASSES)
+        return 0;
+    if (o->qty < s->n_available[k] && o->def == th_staff_profile_digest(&s->available[k][o->qty])) {
+        *pf = s->available[k][o->qty];
+        return 1;
+    }
+    if (o->qty < s->n_prev_available[k] && o->def == th_staff_profile_digest(&s->prev_available[k][o->qty])) {
+        *pf = s->prev_available[k][o->qty];
+        return 2;
+    }
+    return 0;
+}
+
+// Saca de la lista del mes anterior el perfil que se contrata o se devuelve.
+static void prev_remove(th_sim *s, int k, int idx)
+{
+    th_staff_profile *arr = s->prev_available[k];
+    memmove(&arr[idx], &arr[idx + 1], (size_t)(s->n_prev_available[k] - 1 - idx) * sizeof arr[0]);
+    s->n_prev_available[k]--;
+}
+
+// UIPlaceStaff:close sin colocar con un perfil del mes anterior: va al final
+// de la lista de ahora (place_staff.lua:76-77). Con la lista llena (el tope
+// del motor, que CorsixTH no tiene) se queda en la del mes anterior.
+static void held_to_market(th_sim *s, int k, int idx)
+{
+    if (s->n_available[k] >= TH_SIM_CANDIDATES)
+        return;
+    s->available[k][s->n_available[k]++] = s->prev_available[k][idx];
+    prev_remove(s, k, idx);
+}
+
 // UIHireStaff:hire (hire_staff.lua:126-147) y UIPlaceStaff:onMouseUp con el
 // botón izquierdo (place_staff.lua:144-176), de una vez.
 static int order_contratar(th_sim *s, const th_order *o)
 {
     hire_dialog_open(s);
-    const th_staff_profile *list;
-    const int n = th_sim_candidates(s, o->dir, &list);
-    // def lleva el resumen del perfil (decisión 5 de docs/06_plan.md): si el
-    // mercado se regeneró (end_month) o la semilla no es la misma, ese índice
-    // es otra persona y la orden no vale.
-    if (o->qty >= n || o->def != th_staff_profile_digest(&list[o->qty]))
+    // def lleva el resumen del perfil (decisión 5 de docs/06_plan.md): si la
+    // semilla no es la misma, o el mercado se rehízo dos veces, ese índice es
+    // otra persona y la orden no vale.
+    th_staff_profile pf;
+    const int donde = held_profile(s, o, &pf);
+    const int k = o->dir - TH_HUM_DOCTOR;
+    if (!donde)
         return TH_REASON_SIN_CANDIDATO;
-    const th_staff_profile pf = list[o->qty];
     if (s->hosp.balance < pf.wage) // hire: «if self.ui.hospital.balance < profile.wage»
         return TH_REASON_SIN_DINERO;
     const int reason = th_build_staff_placement(s, pf.kind, o->x, o->y);
     if (reason != TH_REASON_OK) {
         // El clic que no vale no coloca y la ventana sigue; cancelar
         // (UIPlaceStaff:close) devuelve el candidato al final de su lista.
-        candidate_to_end(s, o->dir, o->qty);
+        if (donde == 2)
+            held_to_market(s, k, o->qty);
+        else
+            candidate_to_end(s, o->dir, o->qty);
         return reason;
     }
     // El tope del motor (CorsixTH no lo tiene): un hueco en hum.
@@ -1898,6 +1946,10 @@ static int order_contratar(th_sim *s, const th_order *o)
     // current_index); si th_sim_hire no pudiera, el mercado se queda igual.
     if (th_sim_hire(s, &pf, o->x, o->y) == TH_NONE)
         return TH_REASON_LLENO;
+    if (donde == 2) {
+        prev_remove(s, k, o->qty);
+        return TH_REASON_OK;
+    }
     uint8_t *cnt = &s->n_available[o->dir - TH_HUM_DOCTOR];
     th_staff_profile *arr = s->available[o->dir - TH_HUM_DOCTOR];
     memmove(&arr[o->qty], &arr[o->qty + 1], (size_t)(*cnt - 1 - o->qty) * sizeof arr[0]);
@@ -1911,13 +1963,16 @@ static int order_contratar(th_sim *s, const th_order *o)
 static int order_devolver(th_sim *s, const th_order *o)
 {
     hire_dialog_open(s);
-    const th_staff_profile *list;
-    const int n = th_sim_candidates(s, o->dir, &list);
-    if (o->qty >= n || o->def != th_staff_profile_digest(&list[o->qty]))
+    th_staff_profile pf;
+    const int donde = held_profile(s, o, &pf);
+    if (!donde)
         return TH_REASON_SIN_CANDIDATO;
-    if (s->hosp.balance < list[o->qty].wage)
+    if (s->hosp.balance < pf.wage)
         return TH_REASON_SIN_DINERO;
-    candidate_to_end(s, o->dir, o->qty);
+    if (donde == 2)
+        held_to_market(s, o->dir - TH_HUM_DOCTOR, o->qty);
+    else
+        candidate_to_end(s, o->dir, o->qty);
     return TH_REASON_OK;
 }
 

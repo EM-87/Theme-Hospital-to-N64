@@ -21,6 +21,7 @@ static int en_temperatura;
 static uint32_t ultima_pausa; // para el mayor tramo sin pausas
 static int etapa;             // 1 tick, 2 instantánea, 3 temperatura
 static int giro;              // la cámara de las instantáneas
+static void (*al_acabar)(th_sim *); // simulacion_al_acabar_tick
 
 // Suma a la cuenta el tiempo desde la última vez.
 static void contar(void)
@@ -68,9 +69,45 @@ static void hacer_instantanea(void)
     foto.horas = sim->hours;
 }
 
+#ifdef TH_PRUEBAS
+// La pila de la corrutina, pintada al empezar (bucle): lo más bajo que se ha
+// escrito da lo más que se ha usado, interrupciones incluidas (en libdragon
+// van por la pila en curso). Se deja sin pintar el último KiB, el de abajo, y
+// lo que ya usa pintar.
+#define MARCA 0x5A5AA5A5u
+static uint32_t *pila_arriba, *pila_abajo;
+
+static void pintar(void)
+{
+    volatile uint32_t aqui = 0;
+    pila_arriba = (uint32_t *)((uintptr_t)&aqui & ~(uintptr_t)7);
+    pila_abajo = pila_arriba - (PILA - 1024) / 4;
+    for (uint32_t *q = pila_abajo; q < pila_arriba - 64; q++)
+        *q = MARCA;
+}
+
+int simulacion_pila_usada(void)
+{
+    if (!pila_abajo)
+        return -1;
+    const uint32_t *q = pila_abajo;
+    while (q < pila_arriba && *q == MARCA)
+        q++;
+    return (int)((const char *)pila_arriba - (const char *)q);
+}
+
+int simulacion_pila(void)
+{
+    return PILA;
+}
+#endif
+
 static void bucle(void *arg)
 {
     (void)arg;
+#ifdef TH_PRUEBAS
+    pintar();
+#endif
     entrada = ultima_pausa = get_ticks();
     for (;;) {
         while (pedidos == 0)
@@ -105,6 +142,8 @@ static void bucle(void *arg)
         etapa = 0;
         stats.ticks++;
         en_curso = 0;
+        if (al_acabar)
+            al_acabar(sim);
     }
 }
 
@@ -133,6 +172,16 @@ void simulacion_soltar(void)
 int simulacion_pendientes(void)
 {
     return pedidos + en_curso;
+}
+
+int simulacion_a_medias(void)
+{
+    return en_curso;
+}
+
+void simulacion_al_acabar_tick(void (*fn)(th_sim *s))
+{
+    al_acabar = fn;
 }
 
 int simulacion_en_tick(void)

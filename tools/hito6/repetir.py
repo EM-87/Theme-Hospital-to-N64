@@ -11,9 +11,11 @@ Uso: python3 -I tools/hito6/repetir.py <isviewer.log> <dir_salida>
   leer la lista: el nombre de la orden en vez del número TH_ORD_* y a 0, o «-»
   en def_id, los campos de th_order que esa orden no usa; es lo que se compara
   con su ordenes_rom.log), y saca por la salida
-  una línea «<escenario> <semilla> <horas> <huella> <saldo>» (horas, huella y
-  saldo «-» si la ROM no llegó a escribir la línea del final). Si el registro
-  trae varias partidas, vale la última.
+  una línea «<escenario> <semilla> <horas> <huella> <saldo>». Sin la línea del
+  final (la consola se apagó sin salir de la partida), los de la última línea
+  de control («TH64 partida: control …», una al empezar cada mes), y las
+  órdenes solo hasta ella; sin ninguna, horas, huella y saldo «-». Si el
+  registro trae varias partidas, vale la última.
 """
 import os
 import re
@@ -29,6 +31,7 @@ CLASES = {1: "doctor", 2: "nurse", 3: "handyman", 4: "receptionist"}
 
 NUEVA = re.compile(r"TH64 partida nueva: escenario (\S+), semilla (\d+)")
 FIN = re.compile(r"TH64 partida: (\d+) horas, huella ([0-9a-fA-F]+), saldo (-?\d+)")
+CONTROL = re.compile(r"TH64 partida: control (\d+) horas, huella ([0-9a-fA-F]+), saldo (-?\d+)")
 
 
 def argumentos(orden, x, y, d, qty, w, h, def_id):
@@ -106,11 +109,17 @@ def main():
     rom = []
     crudo = []
     distintas = 0
+    control = None  # (horas, huella, saldo) y cuántas órdenes había
     for linea in lineas[inicio + 1:]:
         fin = FIN.search(linea)
         if fin:
             horas, huella, saldo = fin.groups()
+            control = None
             break
+        c = CONTROL.search(linea)
+        if c:
+            control = (c.groups(), len(rom))
+            continue
         p = linea.find("TH64 orden\t")
         if p < 0:
             continue
@@ -128,6 +137,15 @@ def main():
         distintas += canon[3:10] != campos[3:10]
         rom.append(canon)
         tsv.append("\t".join([tick, orden, *argumentos(orden, x, y, d, qty, w, h, def_id)]))
+    else:
+        if control:
+            # Sin la línea del final: hasta la última de control, que se
+            # escribe entre dos ticks y con la cola del núcleo vacía; las
+            # órdenes de después son de horas que no se repiten.
+            (horas, huella, saldo), n = control
+            print(f"repetir: sin la línea final de la partida; se compara con la última de control ({horas} horas, "
+                  f"{len(rom) - n} órdenes después, que no se repiten)", file=sys.stderr)
+            del rom[n:], crudo[n:], tsv[n + 1:]
     os.makedirs(sys.argv[2], exist_ok=True)
     with open(os.path.join(sys.argv[2], "ordenes.tsv"), "w") as f:
         f.write("\n".join(tsv) + "\n")

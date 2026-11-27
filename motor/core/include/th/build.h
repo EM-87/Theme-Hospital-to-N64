@@ -36,8 +36,10 @@ enum {
     // candidato en th_sim.available (th_sim_candidates), def: su resumen
     // (th_staff_profile_digest), x, y: la casilla donde se suelta. Los
     // motivos, por orden: TH_REASON_SIN_CANDIDATO (no hay ese candidato, hire
-    // sin perfil, o en ese índice hay otro perfil: el mercado cambió de mes o
-    // la partida no es la misma), TH_REASON_SIN_DINERO (balance < sueldo,
+    // sin perfil, o en ese índice hay otro perfil: la partida no es la misma o
+    // el mercado se rehízo dos veces; si se rehízo una, con la persona en la
+    // mano, el perfil se busca en th_sim.prev_available, como UIPlaceStaff, que
+    // lo guarda aunque cambie el mes), TH_REASON_SIN_DINERO (balance < sueldo,
     // la comparación estricta de hire: con el saldo justo se contrata),
     // TH_REASON_NO_SE_PUEDE (la casilla no vale: th_build_staff_placement) y
     // TH_REASON_LLENO (no queda hueco en hum: el tope del motor). Antes de mirar
@@ -48,11 +50,13 @@ enum {
     // colocado; también con un rechazo. Con NO_SE_PUEDE el candidato pasa AL
     // FINAL de su lista: hire lo sacó al abrir UIPlaceStaff y cancelar lo
     // devuelve al final (UIPlaceStaff:close, place_staff.lua:69-71); los demás
-    // rechazos no tocan el mercado.
+    // rechazos no tocan el mercado. El perfil del mes anterior va al final de
+    // la lista de ahora (place_staff.lua:76-77).
     TH_ORD_CONTRATAR,
     // UIPlaceStaff:close sin colocar (place_staff.lua:55-83), con el botón
     // derecho o Escape después de hire: el candidato vuelve AL FINAL de la lista
-    // de su clase. dir: clase, qty: índice, def: resumen. Pasa antes por lo
+    // de su clase (la de ahora, también con un perfil del mes anterior).
+    // dir: clase, qty: índice, def: resumen. Pasa antes por lo
     // mismo que contratar (dialogHireStaff). Motivos: SIN_CANDIDATO y SIN_DINERO
     // (sin saldo, hire no abre UIPlaceStaff y el candidato no se mueve).
     TH_ORD_DEVOLVER,

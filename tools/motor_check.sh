@@ -28,9 +28,12 @@
 #      la misma partida jugada con el puntero hasta las 3.000 horas, que
 #      repetir.sh repite y que da el mismo registro que th64sim ventanas);
 #   4. ROM normal: compila y arranca en el menú.
-# En las dos ROM comprueba también que el bucle del dibujo no choca con las
+# En las dos ROM, y en las de make HORAS=0 MODO=4 y make MEDIR=1 (solo se
+# compilan), comprueba también que el bucle del dibujo no choca con las
 # funciones de rdpq que llama en la caché de instrucciones
-# (tools/cache_instrucciones.py).
+# (tools/cache_instrucciones.py), con el margen que queda (avisa si baja de
+# 256 B). De la ROM de pruebas, avisa también si la corrutina de la
+# simulación usa más de la mitad de su pila.
 # Uso: tools/motor_check.sh [dir_salida]   (por defecto $TH64_WORK/resultados/motor_check)
 set -euo pipefail
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -78,6 +81,13 @@ huella_n64=$(sed -n 's/.*huella golden_sim(1, 10000) = \([0-9a-f]*\).*/\1/p' "$l
 [ "$huella_n64" = "$huella_pc" ] || { echo "   FALLO: huella N64 $huella_n64 frente a PC $huella_pc"; exit 1; }
 grep "comprobaciones" "$log" | sed 's/^/   /'
 echo "   huella igual en el PC y en la N64: $huella_n64"
+# La pila de la corrutina de la simulación, pintada (simulacion.c): lo más
+# que se usó en todas las pruebas, contra la mitad de su tamaño.
+read -r pila_usada pila_total < <(sed -n 's/.*TH64 pruebas: pila de la simulacion \(-*[0-9]*\) B de \([0-9]*\).*/\1 \2/p' "$log") || true
+echo "   pila de la simulación: ${pila_usada:-?} B de ${pila_total:-?}"
+if [ -n "${pila_usada:-}" ] && [ "$pila_usada" -gt $((pila_total / 2)) ]; then
+  echo "   AVISO: la simulación usa más de la mitad de su pila (PILA en motor/platform/n64/simulacion.c)"
+fi
 if grep -q "assets ok" "$log"; then
   for f in definiciones full01 english spanish; do
     grep -q "TH64 reglas: .*/$f.trg: .*huella" "$log" || continue
@@ -217,4 +227,16 @@ hasta="TH64 menu: ROM de prueba lista"
 ARES_UNTIL="$hasta" "$REPO_DIR/tools/run_ares.sh" "$M/th64.z64" "$OUT/ares_rom" 60 > /dev/null
 grep "TH64 motor\|TH64 hito3\|TH64 menu" "$OUT/ares_rom/isviewer.log" | sed 's/^/   /'
 grep -q "$hasta" "$OUT/ares_rom/isviewer.log" || { echo "   FALLO: la ROM normal no arranca"; exit 1; }
+# Las otras dos ROM, solo compiladas: la de la partida nueva sin menú (para
+# capturas) y la de medida (tools/hito5/medir.sh). El relleno de cada una va en
+# relleno_cache.c.
+for rom in "HORAS=0 MODO=4:n64_horas/th64_horas" "MEDIR=1:n64_medir/th64_medir"; do
+  vars=${rom%%:*}
+  # shellcheck disable=SC2086
+  make -s -C "$M" $vars > "$OUT/make_${rom##*/}.log"
+  echo "   make $vars:"
+  python3 -I "$REPO_DIR/tools/cache_instrucciones.py" "$N64_INST/bin/mips64-elf-nm" "$M/build/${rom#*:}.elf" --relleno \
+    | sed 's/^/     /' \
+    || { echo "   FALLO: make $vars: el dibujo choca con rdpq en la caché de instrucciones (relleno_cache.c)"; exit 1; }
+done
 echo "== todo correcto"

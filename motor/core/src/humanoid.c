@@ -955,6 +955,13 @@ static void queue_start(th_world *w, th_humanoid *h, th_action *a)
     a->interrupt = INT_QUEUE;
     const uint16_t serial = a->serial;
     const int q = s->obj[a->obj].queue;
+    if (q == TH_NONE) {
+        // El mostrador de la cola se vendió antes de que llegara a ella. En
+        // CorsixTH la cola sigue viva sin mostrador y espera en ella para
+        // nada; aquí la cola ya no existe y la acción se acaba.
+        th_humanoid_finish_action(w, h);
+        return;
+    }
     th_sim_queue_unexpect(s, q, who(w, h));
     th_sim_queue_push(s, q, who(w, h));
     th_action idle = th_action_idle();
@@ -1508,7 +1515,8 @@ static void reception_leave(th_world *w, th_humanoid *h, th_action *a, int high)
     th_person *p = person(w, h);
     th_object *desk = &s->obj[a->obj];
     desk->receptionist = TH_NONE;
-    th_sim_desk_check_for_staff(s, a->obj);
+    if (!(desk->oflags & TH_OBJF_BEING_DESTROYED)) // «don't look for replacement if desk was picked up»
+        th_sim_desk_check_for_staff(s, a->obj);
     p->u.s.associated_desk = TH_NONE;
     int dx, dy;
     th_sim_use_tile(s, a->obj, 1, &dx, &dy);
@@ -1647,7 +1655,12 @@ static void call_interrupt(th_world *w, th_humanoid *h, th_action *a, int high)
             th_sim *s = w->sim;
             th_person *p = person(w, h);
             s->obj[a->obj].reserved_for = TH_NONE;
-            if (p->u.s.associated_desk != TH_NONE)
+            // CorsixTH busca aquí sustituta aunque el mostrador se esté
+            // quitando (being_destroyed solo lo mira action_staff_reception_interrupt),
+            // y con otra recepcionista libre la manda a un mostrador cogido o
+            // vendido; el núcleo no, para que ninguna acción apunte a un objeto
+            // que ya no existe.
+            if (p->u.s.associated_desk != TH_NONE && !(s->obj[p->u.s.associated_desk].oflags & TH_OBJF_BEING_DESTROYED))
                 th_sim_desk_check_for_staff(s, p->u.s.associated_desk);
             p->u.s.associated_desk = TH_NONE;
             h->timer = 0;
@@ -1661,6 +1674,47 @@ static void call_interrupt(th_world *w, th_humanoid *h, th_action *a, int high)
         // llegar al mostrador se irá (action_staff_reception_idle_phase).
         break;
     default: break;
+    }
+}
+
+// Humanoid:handleRemovedObject (entities/humanoid.lua:872-899): la acción que
+// usa o atiende el objeto deja sitio a deambular (la recepcionista) o a
+// quedarse quieto hasta que algo lo interrumpa (el banco; la máquina de
+// bebidas aún no está); si es la acción en curso se interrumpe con prioridad
+// alta (que deja a la persona donde estaba antes de usarlo) y, si no, se
+// quita. Si detrás de ella va una cola, la persona se recoloca en la cola.
+void th_sim_handle_removed_object(th_sim *s, int whom, int obj)
+{
+    th_world *w = &s->w;
+    th_person *p = &s->hum[whom];
+    th_humanoid *h = &p->h;
+    th_action repl = th_action_idle();
+    int has_repl = 1;
+    if (p->kind == TH_HUM_RECEPTIONIST)
+        repl = th_action_new(TH_ACTION_MEANDER);
+    else if (s->obj[obj].type == TH_OBJ_BENCH)
+        repl.flags |= TH_AF_MUST_HAPPEN;
+    else
+        has_repl = 0;
+    for (int i = 0; i < h->queue_len; i++) {
+        th_action *a = &h->queue[i];
+        if ((a->kind != TH_ACTION_USE_OBJECT && a->kind != TH_ACTION_STAFF_RECEPTION) || a->obj != obj)
+            continue;
+        if (has_repl)
+            th_humanoid_queue_action_at(w, h, repl, i + 1);
+        if (i == 0) {
+            a = &h->queue[0];
+            if (a->interrupt)
+                call_interrupt(w, h, a, 1);
+        } else {
+            memmove(&h->queue[i], &h->queue[i + 1], (unsigned)(h->queue_len - i - 1) * sizeof(th_action));
+            h->queue_len--;
+            if (p->kind != TH_HUM_PATIENT)
+                p->u.s.associated_desk = TH_NONE;
+        }
+        if (i + 1 < h->queue_len && h->queue[i + 1].kind == TH_ACTION_QUEUE)
+            th_sim_on_change_queue_position(s, whom, &h->queue[i + 1]);
+        break;
     }
 }
 

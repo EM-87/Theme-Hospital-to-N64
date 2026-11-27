@@ -34,6 +34,11 @@
 #       del hospital. Se escribe entre dos ticks (th_sim_tick terminado) y con
 #       la cola de órdenes vacía: th_sim_hash cuenta las órdenes que esperan en
 #       la cola y el PC solo repite las aplicadas.
+#   al empezar cada mes de la partida, entre dos ticks y con la cola vacía:
+#     TH64 partida: control <horas> horas, huella <hash>, saldo <saldo>, <us> us
+#       lo mismo que la del final, más lo que tardó th_sim_hash en la N64. Si
+#       falta la del final (la consola se apagó o se reinició sin salir con
+#       Z), vale la última de control y solo las órdenes de antes de ella.
 # Si el registro trae varias partidas, vale la última.
 #
 # tools/hito6/repetir.py pasa las órdenes a la lista de th64sim partida
@@ -43,9 +48,9 @@
 # escribe igual), la huella y el saldo.
 #
 # Uso: tools/hito6/repetir.sh <isviewer.log> [horas] [dir_salida]
-#   horas: por defecto, las de la línea del final; si la ROM no la escribió
-#   (se cortó la partida), hay que darlas, y entonces solo se comparan las
-#   órdenes. dir_salida: por defecto $TH64_WORK/resultados/hito6/repetir.
+#   horas: por defecto, las de la línea del final o, sin ella, las de la
+#   última de control; si la ROM no escribió ninguna (se cortó la partida en
+#   el primer mes), hay que darlas, y entonces solo se comparan las órdenes. dir_salida: por defecto $TH64_WORK/resultados/hito6/repetir.
 set -euo pipefail
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 source "$REPO_DIR/tools/env.sh"

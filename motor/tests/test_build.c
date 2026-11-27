@@ -46,7 +46,8 @@ static uint8_t trg_defs[16384], trg_nivel[8192];
 static th_rules defs, nivel;
 
 // Las definiciones que importan para colocar: clase, thob, corridor_object y
-// las huellas con su adjacent_to_solid_footprint, como las de CorsixTH. Para
+// las huellas con su adjacent_to_solid_footprint, como las de CorsixTH (y,
+// del banco, sus tres animaciones de uso, de un tick: duraciones). Para
 // las salas: gp (minimum_size 4, paredes blancas, suelo 18, un escritorio
 // obligatorio; opcionales la planta, el radiador, el sofá y un analizador, los
 // dos últimos con StartAvail 0 en el nivel: el sofá se vende porque no es
@@ -56,14 +57,18 @@ static th_rules defs, nivel;
 // los de walls/white.lua y walls/external.lua. La consulta pide un médico
 // (required_staff, como rooms/gp.lua).
 static const char *const definiciones =
-    "{\"objetos\": {"
+    "{\"duraciones\": [{\"animacion\": 1, \"duracion\": 1}, {\"animacion\": 2, \"duracion\": 1},"
+    " {\"animacion\": 3, \"duracion\": 1}],"
+    " \"objetos\": {"
     " \"bench\": {\"id\": \"bench\", \"thob\": 4, \"class\": \"Bench\", \"corridor_object\": 2, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true},"
     "                             {\"#1\": 0, \"#2\": -1, \"only_passable\": true, \"shareable\": true, \"invisible\": true}],"
     "            \"adjacent_to_solid_footprint\": [[-1, 0], [0, -1], [0, 1], [1, 0]]},"
     "  \"south\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true},"
     "                             {\"#1\": 0, \"#2\": 1, \"only_passable\": true, \"shareable\": true, \"invisible\": true}],"
-    "            \"adjacent_to_solid_footprint\": [[-1, 0], [0, -1], [0, 1], [1, 0]]}}},"
+    "            \"adjacent_to_solid_footprint\": [[-1, 0], [0, -1], [0, 1], [1, 0]]}},"
+    "  \"usage_animations\": {\"north\": {\"begin_use\": {\"Standard Male Patient\": 1},"
+    "   \"in_use\": {\"Standard Male Patient\": 2}, \"finish_use\": {\"Standard Male Patient\": 3}}}},"
     " \"plant\": {\"id\": \"plant\", \"thob\": 45, \"class\": \"Plant\", \"corridor_object\": 7, \"orientations\": {"
     "  \"north\": {\"footprint\": [{\"#1\": 0, \"#2\": 0, \"complete_cell\": true}],"
     "            \"adjacent_to_solid_footprint\": [[-1, 0], [0, -1], [0, 1], [1, 0]]}}},"
@@ -601,17 +606,22 @@ static void test_mostrador(void)
     TH_CHECK_EQ(p->h.queue[0].x, 30);
     TH_CHECK_EQ(p->h.queue[0].y, 31);
     TH_CHECK_EQ(p->h.queue[1].kind, TH_ACTION_STAFF_RECEPTION);
-    // Movido: lo mismo (coger no le quita todavía la reserva, que es el
-    // handleRemovedObject pendiente; aquí se quita a mano para verlo).
+    // Cogido: ReceptionDesk:onPickUp → resetUsageAndReservaton le quita la
+    // reserva y handleRemovedObject cambia su atender el mostrador por
+    // deambular (humanoid.lua:872-899); no hay otro mostrador al que ir.
     TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 30, 30, 0, 0, NULL), TH_REASON_OK);
-    sim.obj[0].reserved_for = TH_NONE;
-    p->u.s.associated_desk = TH_NONE;
+    TH_CHECK_EQ(sim.obj[0].reserved_for, TH_NONE);
+    TH_CHECK_EQ(p->u.s.associated_desk, TH_NONE);
+    TH_CHECK_EQ(p->h.queue_len, 2);
+    TH_CHECK_EQ(p->h.queue[1].kind, TH_ACTION_MEANDER);
+    // Movido: lo mismo que uno nuevo.
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 34, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
     TH_CHECK_EQ(sim.obj[0].reserved_for, 0);
     TH_CHECK_EQ(p->u.s.associated_desk, 0);
     // El caminar de antes se queda (must_happen); el nuevo va detrás.
-    TH_CHECK_EQ(p->h.queue_len, 4);
-    TH_CHECK_EQ(p->h.queue[2].x, 34);
+    TH_CHECK_EQ(p->h.queue_len, 3);
+    TH_CHECK_EQ(p->h.queue[1].x, 34);
+    TH_CHECK_EQ(p->h.queue[2].kind, TH_ACTION_STAFF_RECEPTION);
     // Otro mostrador, con ella ya reservada: se queda sin nadie.
     TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "reception_desk", 0, 0, 0, 1, NULL), TH_REASON_OK);
     TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "reception_desk", 40, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
@@ -623,6 +633,86 @@ static void test_mostrador(void)
     TH_CHECK_EQ(sim.n_desks, 11);
     TH_CHECK_EQ(sim.desks[10], 10);
     TH_CHECK_EQ(sim.n_queues, 11);
+    p->alive = 0;
+    sim.n_order = 0;
+    sim.w.anims = NULL;
+}
+
+// Coger o vender un banco con gente (la revisión del jugador, tanda B3):
+// Object:onPickUp y onDestroy → Bench:resetUsageAndReservaton →
+// Humanoid:handleRemovedObject (bench.lua:175-192, humanoid.lua:872-899).
+// Antes, el que iba hacia él seguía con su USE_OBJECT apuntando al banco (y,
+// vendido, a un hueco vacío: use_phase leía phase_names[105]) y el que estaba
+// sentado se quedaba sentado en el aire.
+static int usa_objeto(const th_humanoid *h, int obj)
+{
+    for (int i = 0; i < h->queue_len; i++)
+        if (h->queue[i].kind == TH_ACTION_USE_OBJECT && h->queue[i].obj == obj)
+            return 1;
+    return 0;
+}
+
+static void test_banco_con_gente(void)
+{
+    preparar();
+    static th_anims anims;
+    th_test_anims(&anims);
+    sim.w.anims = &anims;
+    sim.hosp.balance = 1000;
+    th_person *p = &sim.hum[0];
+    p->alive = 1;
+    p->kind = TH_HUM_PATIENT;
+    p->entity_seq = ++sim.entity_seq;
+    sim.order[0] = 0;
+    sim.n_order = 1;
+    th_humanoid_init(&sim.w, &p->h, th_walk_anims_find("Standard Male Patient"));
+    th_humanoid_set_tile(&sim.w, &p->h, 20, 20);
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "bench", 30, 30, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    // Va hacia el banco, que tiene reservado (action_queue_on_change_position).
+    th_action wk = th_action_walk(30, 31), use = th_action_new(TH_ACTION_USE_OBJECT);
+    wk.flags |= TH_AF_MUST_HAPPEN;
+    use.obj = 0;
+    use.flags |= TH_AF_MUST_HAPPEN;
+    th_humanoid_set_next_action(&sim.w, &p->h, wk);
+    th_humanoid_queue_action(&p->h, use);
+    sim.obj[0].reserved_for = 0;
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 30, 30, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].reserved_for, TH_NONE);
+    TH_CHECK_EQ(usa_objeto(&p->h, 0), 0);
+    TH_CHECK_EQ(p->h.queue_len, 2); // sigue caminando y después, quieto hasta nuevo aviso
+    TH_CHECK_EQ(p->h.queue[1].kind, TH_ACTION_IDLE);
+    TH_CHECK(p->h.queue[1].flags & TH_AF_MUST_HAPPEN);
+    // Vendido (cancelar la ventana): ninguna acción apunta al hueco.
+    TH_CHECK_EQ(orden(TH_ORD_CERRAR, NULL, 0, 0, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[0].def, 0);
+    TH_CHECK_EQ(usa_objeto(&p->h, 0), 0);
+    // Sentado: otro banco, y el paciente al lado lo usa hasta quedarse en
+    // in_use (la fase 0, prolongada, sin temporizador).
+    th_humanoid_set_tile(&sim.w, &p->h, 40, 21);
+    p->h.queue_len = 0;
+    TH_CHECK_EQ(orden(TH_ORD_COMPRAR, "bench", 0, 0, 0, 1, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(orden(TH_ORD_COLOCAR, "bench", 40, 20, TH_DIR_NORTH, 0, NULL), TH_REASON_OK);
+    const int b = sim.n_obj - 1;
+    use.obj = (uint8_t)b;
+    th_humanoid_queue_action_at(&sim.w, &p->h, use, 0);
+    for (int t = 0; t < 4; t++)
+        th_humanoid_tick(&sim.w, &p->h);
+    TH_CHECK_EQ(p->h.queue[0].kind, TH_ACTION_USE_OBJECT);
+    TH_CHECK_EQ(p->h.queue[0].phase, 0);
+    TH_CHECK_EQ(sim.obj[b].user, 0);
+    TH_CHECK_EQ(p->h.user_of, b);
+    TH_CHECK_EQ(p->h.tile_x, 40);
+    TH_CHECK_EQ(p->h.tile_y, 20);
+    // Cogido: se levanta en la casilla desde la que se sentó y se queda quieto.
+    TH_CHECK_EQ(orden(TH_ORD_RECOGER, NULL, 40, 20, 0, 0, NULL), TH_REASON_OK);
+    TH_CHECK_EQ(sim.obj[b].user, TH_NONE);
+    TH_CHECK_EQ(p->h.user_of, TH_NONE);
+    TH_CHECK_EQ(p->h.tile_x, 40);
+    TH_CHECK_EQ(p->h.tile_y, 21);
+    TH_CHECK_EQ(p->h.queue[0].kind, TH_ACTION_IDLE);
+    TH_CHECK_EQ(usa_objeto(&p->h, b), 0);
+    th_build_apply(&sim, &(th_order){.kind = TH_ORD_CERRAR}, NULL);
     p->alive = 0;
     sim.n_order = 0;
     sim.w.anims = NULL;
@@ -2207,13 +2297,35 @@ static void test_contratar_resumen(void)
     TH_CHECK(visto != th_staff_profile_digest(&otro));
     TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 20, 20, visto ^ 1), TH_REASON_SIN_CANDIDATO);
     TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 1, 20, 20, visto), TH_REASON_SIN_CANDIDATO);
-    // end_month regenera el mercado (World:makeAvailableStaff): la orden
-    // vista el mes anterior ya no vale.
+    // end_month rehace el mercado (World:makeAvailableStaff), pero la persona
+    // elegida el mes anterior sigue en la mano (UIPlaceStaff guarda el
+    // perfil, place_staff.lua:153-160): un clic que no vale la manda al final
+    // de la lista nueva (close, place_staff.lua:76-77) y el siguiente, con su
+    // índice nuevo, la contrata (la revisión del jugador, tanda B3: antes,
+    // sin_candidato y la ventana cerrada).
     th_sim_make_available_staff(&sim, 1);
     TH_CHECK(memcmp(&sim.available[0][0], &d0, sizeof d0) != 0);
+    const int n1 = sim.n_available[0];
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 1, 20, 20, visto), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 2, 2, visto), TH_REASON_NO_SE_PUEDE);
+    TH_CHECK_EQ(sim.n_available[0], n1 + 1);
+    TH_CHECK_EQ(resumen_de(TH_HUM_DOCTOR, n1), visto);
     TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 20, 20, visto), TH_REASON_SIN_CANDIDATO);
     TH_CHECK_EQ(sim.n_order, 0);
     TH_CHECK_EQ(sim.hosp.money_out, 0);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, n1, 20, 20, visto), TH_REASON_OK);
+    TH_CHECK_EQ(sim.n_available[0], n1);
+    TH_CHECK_EQ(sim.hum[ultima_persona()].u.s.wage, d0.wage);
+    // Contratada sin pasar por la lista nueva: el 1 del mes anterior.
+    const uint32_t visto1 = th_staff_profile_digest(&sim.prev_available[0][1]);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 1, 21, 21, visto1), TH_REASON_OK);
+    TH_CHECK_EQ(sim.n_available[0], n1);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 1, 22, 21, visto1), TH_REASON_SIN_CANDIDATO);
+    // Con dos meses en la mano ya no está.
+    const uint32_t visto2 = th_staff_profile_digest(&sim.prev_available[0][1]);
+    th_sim_make_available_staff(&sim, 2);
+    th_sim_make_available_staff(&sim, 3);
+    TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 1, 22, 21, visto2), TH_REASON_SIN_CANDIDATO);
     // Y vuelto al mes 0 (la misma semilla), la misma persona otra vez.
     th_sim_make_available_staff(&sim, 0);
     TH_CHECK_EQ(contratar_def(TH_HUM_DOCTOR, 0, 20, 20, visto), TH_REASON_OK);
@@ -2323,6 +2435,17 @@ static void test_devolver(void)
     TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, resumen_de(TH_HUM_DOCTOR, 0)), TH_REASON_OK);
     TH_CHECK_EQ(sim.place.open, 0);
     TH_CHECK_EQ(sim.hosp.balance, saldo);
+    // Con la persona en la mano al acabar el mes, cancelar la deja al final
+    // de la lista nueva (UIPlaceStaff:close, place_staff.lua:73-79), una vez.
+    const uint32_t r0 = resumen_de(TH_HUM_DOCTOR, 0);
+    th_sim_make_available_staff(&sim, 1);
+    const int n1 = sim.n_available[0];
+    TH_CHECK(resumen_de(TH_HUM_DOCTOR, 0) != r0);
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, r0), TH_REASON_OK);
+    TH_CHECK_EQ(sim.n_available[0], n1 + 1);
+    TH_CHECK_EQ(resumen_de(TH_HUM_DOCTOR, n1), r0);
+    TH_CHECK_EQ(devolver(TH_HUM_DOCTOR, 0, r0), TH_REASON_SIN_CANDIDATO);
+    TH_CHECK_EQ(sim.n_available[0], n1 + 1);
 }
 
 static void test_contratar_recepcionista(void)
@@ -3149,6 +3272,7 @@ void th_test_build(void)
     test_lleno();
     test_sala();
     test_mostrador();
+    test_banco_con_gente();
     test_cola();
     test_sala_plano();
     test_puerta();

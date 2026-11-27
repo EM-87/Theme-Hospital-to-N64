@@ -66,6 +66,14 @@ void simulacion_soltar(void);
 // tick acabado y su instantánea o su pasada de temperatura a medias, 0: la
 // temperatura no usa el buscador ni la cola.
 int simulacion_en_tick(void);
+// 1 mientras haya un tick a medias, también en su instantánea o en su pasada
+// de temperatura: el estado no es aún el de «hours» ticks enteros
+// (partida_control no escribe la huella).
+int simulacion_a_medias(void);
+// Una función que la corrutina llama al acabar cada tick entero (con su
+// instantánea y su pasada de temperatura), antes de empezar el siguiente; NULL
+// para ninguna. Corre en la pila de la corrutina.
+void simulacion_al_acabar_tick(void (*fn)(th_sim *s));
 // Sigue simulando hasta el instante limite (get_ticks) o hasta que no quede
 // nada por hacer.
 void simulacion_avanzar(uint32_t limite);
@@ -77,5 +85,12 @@ const instantanea_t *simulacion_instantanea(void);
 // está, la siguiente ya sale girada.
 void simulacion_girar(int giro);
 const simulacion_stats_t *simulacion_stats(void);
+#ifdef TH_PRUEBAS
+// Lo más que se ha usado de la pila de la corrutina (pintada al empezar), en
+// bytes, o −1 si aún no ha empezado; y su tamaño. Solo en la ROM de pruebas,
+// que lo escribe al final («TH64 pruebas: pila de la simulacion …»).
+int simulacion_pila_usada(void);
+int simulacion_pila(void);
+#endif
 
 #endif

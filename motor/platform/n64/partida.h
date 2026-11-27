@@ -62,6 +62,19 @@ bool partida_sonido_iniciar(void);
 void partida_sonido_fotograma(void);
 void partida_sonido_cerrar(void);
 
+// La línea de control de cada mes, para un registro que se corta sin la línea
+// del final (la consola apagada o reiniciada sin salir con Z): «TH64
+// partida: control <horas> horas, huella <hash>, saldo <saldo>, <us> us»,
+// como la del final más lo que tardó th_sim_hash. La llama la corrutina al
+// acabar cada tick (simulacion_al_acabar_tick, desde partida_empezar hasta
+// partida_terminar) y se escribe en el primer tick acabado de un mes nuevo de
+// la partida (th_date_month_of_game) con la cola del núcleo vacía, como pide
+// el contrato (tools/hito6/repetir.sh); con órdenes en la cola, en el
+// siguiente. Desde el bucle principal no valdría: a ×8 la corrutina casi
+// nunca está entre dos ticks al acabar el fotograma, y a medio tick (también
+// en su pasada de temperatura) la huella no es la de las horas enteras.
+void partida_control(th_sim *s);
+
 // Cierra la partida: sin órdenes nuevas, y con la simulación ya terminada
 // (simulacion_terminar: th_sim_tick acabado), descarta las que esperan (y lo
 // dice), suelta el gancho y escribe «TH64 partida: <horas> horas, huella

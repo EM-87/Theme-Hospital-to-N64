@@ -299,7 +299,8 @@ void gw_contratar_frame(th_game_ui *g)
 // medio tick) lo manda al final de su lista (order_contratar,
 // candidate_to_end), y la persona sigue en la mano. Con el índice de cuando se
 // eligió, cada clic siguiente daba sin_candidato. Si ya no está (el mercado se
-// rehízo al cambiar de mes), el de antes: el núcleo dirá sin_candidato.
+// rehízo al cambiar de mes), el de antes: el núcleo lo busca en el mercado
+// del mes anterior (th_sim.prev_available), donde ese índice es el suyo.
 static int indice_en_mano(const th_game_ui *g)
 {
     const th_staff_profile *lista;
