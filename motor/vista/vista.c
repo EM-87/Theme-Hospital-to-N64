@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "th/humanoid.h" // TH_DIR_*
+
 static uint32_t rd32(const uint8_t *p)
 {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
@@ -77,12 +79,29 @@ typedef struct {
     uint16_t key[TH_VIEW_MAX_ENTITIES]; // la casilla de cada una (tile_key)
     int n_ent;
     uint32_t occupied[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
+    // Las superposiciones (th_scene.overlays), en casillas de la vista y
+    // ordenadas por casilla, con su bloque ya girado, y un bit por casilla con
+    // una (solo se mira si n_ovl > 0).
+    uint16_t okey[TH_VIEW_MAX_OVERLAYS];
+    uint8_t oblock[TH_VIEW_MAX_OVERLAYS], oflags[TH_VIEW_MAX_OVERLAYS];
+    int n_ovl;
+    uint32_t ovl_bits[TH_MAP_WIDTH * TH_MAP_HEIGHT / 32];
 } builder;
+
+// Un solo constructor para th_view_scene y th_view_entity_on_top (es grande:
+// mejor estático que en la pila).
+static builder bd;
 
 static int has_entities(const builder *bd, int x, int y)
 {
     const unsigned i = (unsigned)(y * TH_MAP_WIDTH + x);
     return (bd->occupied[i >> 5] >> (i & 31)) & 1u;
+}
+
+static int has_overlay(const builder *bd, int x, int y)
+{
+    const unsigned i = (unsigned)(y * TH_MAP_WIDTH + x);
+    return (bd->ovl_bits[i >> 5] >> (i & 31)) & 1u;
 }
 
 // Añade un sprite si toca la pantalla. Devuelve 0 o -1 si la lista está llena.
@@ -251,6 +270,8 @@ static int add_north_wall(builder *bd, int wall_n, int sc_n, int vflags, int sx,
     return 0;
 }
 
+static const uint8_t no_layers[TH_ANIM_LAYERS];
+
 // animation::draw y animation_manager::draw_frame: los elementos del
 // fotograma que tocan a sus capas, desde la esquina de la casilla más el
 // desplazamiento de la entidad.
@@ -260,6 +281,9 @@ static int add_entity(builder *bd, const th_view_entity *e, int sx, int sy)
         return 0;
     const th_anims *a = bd->sc->anims;
     const th_sheet *sh = bd->sc->sheets[TH_SHEET_SPRITES];
+    const uint8_t *layers = e->layers ? e->layers : no_layers;
+    // thdf_alt_palette: la paleta fantasma de toda la animación.
+    const int pal = e->flags & TH_ANIM_PAL_RED ? TH_DRAW_PAL_RED : e->flags & TH_ANIM_PAL_GREY ? TH_DRAW_PAL_GREY : 0;
     const int u = bd->v->unit;
     const int x = sx + e->px * u / 32, y = sy + e->py * u / 32;
     // animation::draw con thdf_crop: solo una franja de dos casillas de ancho.
@@ -279,8 +303,7 @@ static int add_entity(builder *bd, const th_view_entity *e, int sx, int sy)
             continue;
         // Los elementos de una capa solo se dibujan si la capa tiene su id. Como
         // CorsixTH, en la capa 5 (cabezas) W1 y B1 sirven también para W2 y B2.
-        if (el.layer_id != 0 && e->layers[el.layer] != el.layer_id &&
-            !(el.layer == 5 && e->layers[5] - 4 == el.layer_id))
+        if (el.layer_id != 0 && layers[el.layer] != el.layer_id && !(el.layer == 5 && layers[5] - 4 == el.layer_id))
             continue;
         int f = el.flags;
         if ((f & (TH_ANIM_ALPHA50 | TH_ANIM_ALPHA75)) == (TH_ANIM_ALPHA50 | TH_ANIM_ALPHA75))
@@ -297,11 +320,31 @@ static int add_entity(builder *bd, const th_view_entity *e, int sx, int sy)
             px = x + ex;
         }
         int flags = (f & TH_ANIM_FLIP_H ? TH_DRAW_FLIP_H : 0) | (f & TH_ANIM_FLIP_V ? TH_DRAW_FLIP_V : 0) |
-                    (f & TH_ANIM_ALPHA50 ? TH_DRAW_ALPHA50 : 0) | (f & TH_ANIM_ALPHA75 ? TH_DRAW_ALPHA25 : 0);
+                    (f & TH_ANIM_ALPHA50 ? TH_DRAW_ALPHA50 : 0) | (f & TH_ANIM_ALPHA75 ? TH_DRAW_ALPHA25 : 0) | pal;
         if (add_sprite_crop(bd, 1, TH_SHEET_SPRITES, el.sprite, w, h, px, y + ey, flags | crop, 0, 0, cx0, cx1) < 0)
             return -1;
     }
     return 0;
+}
+
+// draw_layer(tile_layer::ui) de la casilla (x, y) de la vista, que tiene una
+// superposición: el bloque con el pie a la altura del pie del rombo
+// (th_map.cpp:1010-1020).
+static int add_overlay(builder *bd, int x, int y, int sx, int sy)
+{
+    const int key = y * TH_MAP_WIDTH + x;
+    int lo = 0, hi = bd->n_ovl;
+    while (lo < hi) {
+        const int mid = (lo + hi) / 2;
+        if (bd->okey[mid] < key)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+    if (lo >= bd->n_ovl || bd->okey[lo] != key)
+        return 0;
+    const int b = bd->oblock[lo], u = bd->v->unit;
+    return add_sprite(bd, 1, TH_SHEET_BLOCKS, b, bd->w[b], bd->h[b], sx - u, sy - bd->h[b] + u, bd->oflags[lo], 0, 0);
 }
 
 static int tile_key(const th_view_entity *e)
@@ -441,6 +484,9 @@ static inline __attribute__((always_inline)) int scene_line(builder *bd, int s, 
             return -1;
         if (sc_w && add_layer_flip(bd, 1, sc_w, sx, sy, T_FLAGS(i) & TH_VT_FLIP_SC_W) < 0)
             return -1;
+        // La capa ui, tras la pared oeste (th_map.cpp:1100-1104).
+        if (bd->n_ovl && has_overlay(bd, x, y) && add_overlay(bd, x, y, sx, sy) < 0)
+            return -1;
         int needs_redraw = (wall_n && bd->h[wall_n] > 0) || (sc_n && bd->h[sc_n] > 0);
         int animated = 0;
         if (bd->n_ent && has_entities(bd, x, y)) {
@@ -489,11 +535,55 @@ static inline __attribute__((always_inline)) int scene_line(builder *bd, int s, 
 #undef T_SC_W
 #undef T_FLAGS
 
+// Las paredes y entidades, que están al final y al revés, pasan detrás de lo
+// que hay al principio (los suelos). Devuelve el número de elementos.
+static int juntar(builder *b)
+{
+    th_drawlist *out = b->l;
+    const int nw = out->capacity - 1 - b->b;
+    th_draw *w = &out->items[b->b + 1];
+    for (int i = 0, j = nw - 1; i < j; i++, j--) {
+        th_draw tmp = w[i];
+        w[i] = w[j];
+        w[j] = tmp;
+    }
+    memmove(&out->items[b->f], w, (size_t)nw * sizeof(th_draw));
+    out->count = b->f + nw;
+    return out->count;
+}
+
+// El bloque de la superposición de la casilla (x, y) del mundo, o 0.
+static int ovl_en(const th_view_overlays *ov, int x, int y)
+{
+    for (int i = 0; i < ov->count && i < TH_VIEW_MAX_OVERLAYS; i++)
+        if (ov->items[i].x == x && ov->items[i].y == y)
+            return ov->items[i].block;
+    return 0;
+}
+
+// Si la marca de puerta de la superposición o es la mitad de una puerta
+// doble: a lo largo de su pared, 24 en la casilla de al lado y otra marca de
+// la misma pared en la siguiente (placeDoorBlueprint, edit_room.lua:1405-1418).
+static int puerta_doble(const th_view_overlays *ov, const th_view_overlay *o)
+{
+    if (o->block < 25 || o->block > 32)
+        return 0;
+    const int pared = (o->block - 25) / 2; // norte, este, sur, oeste
+    const int dx = (pared & 1) ? 0 : 1, dy = (pared & 1) ? 1 : 0;
+    for (int s = -1; s <= 1; s += 2) {
+        if (ovl_en(ov, o->x + s * dx, o->y + s * dy) != 24)
+            continue;
+        const int b = ovl_en(ov, o->x + 2 * s * dx, o->y + 2 * s * dy);
+        if (b >= 25 && b <= 32 && (b - 25) / 2 == pared)
+            return 1;
+    }
+    return 0;
+}
+
 int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
 {
     const int u = v->unit, half = v->unit / 2;
     const th_sheet *blocks = sc->sheets[TH_SHEET_BLOCKS];
-    static builder bd;
     bd.l = out;
     bd.v = v;
     bd.vw = v->w;
@@ -552,6 +642,37 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
         bd.occupied[(unsigned)k >> 5] |= 1u << (k & 31);
     }
 
+    // Las superposiciones, en su casilla de la vista, ordenadas por casilla.
+    bd.n_ovl = 0;
+    if (sc->overlays && sc->overlays->count > 0) {
+        memset(bd.ovl_bits, 0, sizeof bd.ovl_bits);
+        for (int i = 0; i < sc->overlays->count && i < TH_VIEW_MAX_OVERLAYS; i++) {
+            const th_view_overlay *o = &sc->overlays->items[i];
+            int x, y;
+            // x e y son uint8_t: una superposición puesta a mano (sin
+            // th_view_overlays_set) puede salirse del mapa; se descarta como
+            // las entidades de arriba.
+            if (o->x >= TH_MAP_WIDTH || o->y >= TH_MAP_HEIGHT)
+                continue;
+            th_rot_tile(bd.rot, o->x, o->y, &x, &y);
+            const int k = y * TH_MAP_WIDTH + x;
+            if (!o->block || ((bd.ovl_bits[(unsigned)k >> 5] >> (k & 31)) & 1u))
+                continue; // th_view_overlays_set no deja dos en una casilla
+            int j = bd.n_ovl++;
+            while (j > 0 && k < bd.okey[j - 1]) {
+                bd.okey[j] = bd.okey[j - 1];
+                bd.oblock[j] = bd.oblock[j - 1];
+                bd.oflags[j] = bd.oflags[j - 1];
+                j--;
+            }
+            bd.okey[j] = (uint16_t)k;
+            bd.oblock[j] =
+                (uint8_t)th_view_overlay_block(bd.rot, o->block, bd.rot && puerta_doble(sc->overlays, o));
+            bd.oflags[j] = o->flags & (TH_DRAW_ALPHA25 | TH_DRAW_ALPHA50 | TH_DRAW_PAL_GREY | TH_DRAW_PAL_RED);
+            bd.ovl_bits[(unsigned)k >> 5] |= 1u << (k & 31);
+        }
+    }
+
     int first = 1;
     for (int s = s0; s <= s1; s++) {
         int x0, x1;
@@ -562,18 +683,178 @@ int th_view_scene(const th_view *v, const th_scene *sc, th_drawlist *out)
         first = 0;
     }
 
-    // Las paredes y entidades, que están al final y al revés, pasan detrás de los suelos.
-    const int nw = out->capacity - 1 - bd.b;
-    th_draw *w = &out->items[bd.b + 1];
-    for (int i = 0, j = nw - 1; i < j; i++, j--) {
-        th_draw tmp = w[i];
-        w[i] = w[j];
-        w[j] = tmp;
-    }
-    memmove(&out->items[bd.f], w, (size_t)nw * sizeof(th_draw));
     out->floor_count = bd.f;
-    out->count = bd.f + nw;
-    return out->count;
+    return juntar(&bd);
+}
+
+int th_view_entity_on_top(const th_view *v, const th_scene *sc, const th_view_entity *e, th_drawlist *out)
+{
+    bd.l = out;
+    bd.v = v;
+    bd.vw = v->w;
+    bd.vh = v->h;
+    bd.sc = sc;
+    bd.f = out->count;
+    bd.b = out->capacity - 1;
+    int sx, sy;
+    th_view_tile(v, e->tile_x, e->tile_y, &sx, &sy);
+    if (add_entity(&bd, e, sx, sy) < 0)
+        return -1;
+    juntar(&bd);
+    return 0;
+}
+
+void th_view_overlays_clear(th_view_overlays *o)
+{
+    o->count = 0;
+}
+
+int th_view_overlays_set(th_view_overlays *o, int x, int y, int block, int flags)
+{
+    if (x < 0 || y < 0 || x >= TH_MAP_WIDTH || y >= TH_MAP_HEIGHT || block < 0 || block > 255)
+        return -1;
+    for (int i = 0; i < o->count; i++) {
+        th_view_overlay *e = &o->items[i];
+        if (e->x != x || e->y != y)
+            continue;
+        if (block) {
+            e->block = (uint8_t)block;
+            e->flags = (uint8_t)flags;
+        } else {
+            *e = o->items[--o->count]; // map:setCell(x, y, 4, 0)
+        }
+        return 0;
+    }
+    if (!block)
+        return 0;
+    if (o->count >= TH_VIEW_MAX_OVERLAYS)
+        return -1;
+    o->items[o->count++] =
+        (th_view_overlay){.x = (uint8_t)x, .y = (uint8_t)y, .block = (uint8_t)block, .flags = (uint8_t)flags};
+    return 0;
+}
+
+int th_view_overlay_block(int rot, int block, int doble)
+{
+    // Por dirección (norte, este, sur, oeste: girar una vez es pasar a la
+    // siguiente): las marcas de puerta sencilla (door_floor_blueprint_markers,
+    // edit_room.lua:1062-1067) y las de ventana (1069-1074). Las flechas del
+    // centro del plano, por la esquina en la que están (th_lua_map.cpp:294-312:
+    // 38 noreste, 40 sureste, 37 suroeste y 39 noroeste); girar una vez lleva
+    // cada esquina a la siguiente.
+    static const uint8_t tablas[][4] = {{26, 27, 30, 31}, {33, 34, 35, 36}, {38, 40, 37, 39}};
+    // Las mitades de las puertas dobles (edit_room.lua:1053-1060: 25 norte-
+    // oeste, 26 norte-este, 27 este-sur, 28 este-norte, 29 sur-oeste, 30 sur-
+    // este, 31 oeste-sur, 32 oeste-norte): girar una vez lleva la esquina
+    // noroeste a la noreste, así que la mitad oeste de la pared norte pasa a
+    // la mitad norte de la este, y así.
+    static const uint8_t dobles[][4] = {{25, 28, 30, 31}, {26, 27, 29, 32}};
+    rot &= 3;
+    if (!rot)
+        return block;
+    if (doble || block == 25 || block == 28 || block == 29 || block == 32)
+        for (unsigned t = 0; t < sizeof dobles / sizeof dobles[0]; t++)
+            for (int i = 0; i < 4; i++)
+                if (dobles[t][i] == block)
+                    return dobles[t][(i + rot) & 3];
+    for (unsigned t = 0; t < sizeof tablas / sizeof tablas[0]; t++)
+        for (int i = 0; i < 4; i++)
+            if (tablas[t][i] == block)
+                return tablas[t][(i + rot) & 3];
+    return block;
+}
+
+void th_view_edge(int rot, int x, int y, int dir, int *vx, int *vy, int *oeste)
+{
+    th_rot_tile(rot & 3, x, y, vx, vy);
+    const int d = th_rot_dir(rot, dir);
+    // Un borde sur o este es el norte o el oeste de la casilla vecina.
+    if (d == TH_DIR_SOUTH)
+        ++*vy;
+    else if (d == TH_DIR_EAST)
+        ++*vx;
+    *oeste = d == TH_DIR_WEST || d == TH_DIR_EAST;
+}
+
+// is_valid de updateRoomBlueprint para la casilla (vx, vy) de la vista.
+static int plano_malo(int rot, int vx, int vy, int x, int y, int w, const uint8_t *malas, int todo_malo)
+{
+    if (todo_malo)
+        return 1;
+    if (!malas)
+        return 0;
+    int wx, wy;
+    th_rot_tile_inv(rot, vx, vy, &wx, &wy);
+    return malas[(wy - y) * w + (wx - x)] != 0;
+}
+
+// Una pared del plano (set_animation, set_flags, attach_to_tile en la capa 0
+// y set_pixel_offset), si cabe.
+static int pared(th_view_entity *out, int n, int max, const th_anims *anims, int tx, int ty, unsigned anim, int flip,
+                 int dx, int dy, int malo)
+{
+    if (n >= max)
+        return n;
+    out[n] = (th_view_entity){.tile_x = (int16_t)tx, .tile_y = (int16_t)ty, .px = (int16_t)dx, .py = (int16_t)dy,
+                              .frame = th_anims_first_frame(anims, anim), .anim = (uint16_t)anim,
+                              .flags = (uint8_t)(flip | (malo ? TH_ANIM_PAL_RED : 0)), .layers = NULL,
+                              .crop = TH_VIEW_NO_CROP};
+    return n + 1;
+}
+
+int th_view_blueprint(const th_anims *anims, int x, int y, int w, int h, int rot, const uint8_t *malas, int todo_malo,
+                      th_view_overlays *ov, th_view_entity *out, int max)
+{
+    // Como luaL_argerror de th_lua_map.cpp:266-268: el plano y su borde sur y
+    // este, dentro del mapa.
+    if (x < 0 || y < 0 || w < 1 || h < 1 || x + w >= TH_MAP_WIDTH || y + h >= TH_MAP_HEIGHT)
+        return -1;
+    // Las paredes (th_lua_map.cpp:314-357) van en la vista: el rectángulo
+    // girado. Con la cámara girada, su borde sur y este de la vista es el
+    // norte u oeste del mundo, así que también tiene que caber (si no, tocar
+    // x = 0 o y = 0 dejaría tramos en la casilla 128 de la vista).
+    int ax, ay, bx, by;
+    th_rot_tile(rot, x, y, &ax, &ay);
+    th_rot_tile(rot, x + w - 1, y + h - 1, &bx, &by);
+    const int x0 = ax < bx ? ax : bx, x1 = ax < bx ? bx : ax;
+    const int y0 = ay < by ? ay : by, y1 = ay < by ? by : ay;
+    if (x1 + 1 >= TH_MAP_WIDTH || y1 + 1 >= TH_MAP_HEIGHT)
+        return -1;
+    // Los suelos (th_lua_map.cpp:281-292) y las flechas del centro (294-312).
+    for (int j = 0; j < h; j++)
+        for (int i = 0; i < w; i++) {
+            const int malo = todo_malo || (malas && malas[j * w + i]);
+            if (th_view_overlays_set(ov, x + i, y + j, malo ? 67 : 24, TH_DRAW_ALPHA50) < 0)
+                return -1;
+        }
+    if (w >= 2 && h >= 2) {
+        const int cx = (w - 2) / 2, cy = (h - 2) / 2;
+        static const int8_t centro[4][3] = {{0, 0, 2}, {1, 0, 1}, {0, 1, 0}, {1, 1, 3}};
+        for (int k = 0; k < 4; k++) {
+            const int i = cx + centro[k][0], j = cy + centro[k][1];
+            if (!todo_malo && !(malas && malas[j * w + i]) &&
+                th_view_overlays_set(ov, x + i, y + j, 37 + centro[k][2], TH_DRAW_ALPHA50) < 0)
+                return -1;
+        }
+    }
+    // Las paredes, en el rectángulo girado: la pared de la esquina norte de la
+    // vista y los tramos de sus cuatro lados. Cada tramo lleva la validez de
+    // la casilla de dentro.
+    int n = 0;
+    n = pared(out, n, max, anims, x0, y0, 124, 0, 0, 0, plano_malo(rot, x0, y0, x, y, w, malas, todo_malo));
+    for (int vx = x0; vx <= x1; vx++) {
+        if (vx != x0)
+            n = pared(out, n, max, anims, vx, y0, 120, 0, 0, 0, plano_malo(rot, vx, y0, x, y, w, malas, todo_malo));
+        n = pared(out, n, max, anims, vx, y1 + 1, 120, 0, 0, -1, plano_malo(rot, vx, y1, x, y, w, malas, todo_malo));
+    }
+    for (int vy = y0; vy <= y1; vy++) {
+        if (vy != y0)
+            n = pared(out, n, max, anims, x0, vy, 120, TH_ANIM_FLIP_H, 2, 0,
+                      plano_malo(rot, x0, vy, x, y, w, malas, todo_malo));
+        n = pared(out, n, max, anims, x1 + 1, vy, 120, TH_ANIM_FLIP_H, 2, -1,
+                  plano_malo(rot, x1, vy, x, y, w, malas, todo_malo));
+    }
+    return n;
 }
 
 int th_view_map(const th_view *v, const th_map *m, const th_sheet *blocks, th_drawlist *out)

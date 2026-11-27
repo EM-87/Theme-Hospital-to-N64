@@ -12,6 +12,12 @@
 //
 // Las texturas se cargan con LOAD_BLOCK directamente (mapa_n64.c, cargar),
 // sin rdpq_tex_upload, y solo cuando cambia el sprite.
+//
+// Las paletas fantasma (TH_DRAW_PAL_GREY y TH_DRAW_PAL_RED, vista.h): la TLUT
+// se vuelve a subir cada vez que la paleta cambia de un elemento al
+// siguiente (512 bytes). Los suelos con paleta fantasma no se agrupan: cortan
+// la agrupación como los que se salen del rombo (la vista no los pone en los
+// suelos: las superposiciones van en la segunda parte de la lista).
 #ifndef TH64_MAPA_N64_H
 #define TH64_MAPA_N64_H
 
@@ -24,6 +30,7 @@ typedef struct {
     int pixeles;  // píxeles cubiertos, contando los transparentes (relleno del RDP)
     int cortes;   // suelos que se salen del rombo y cortan la agrupación
     int entidades; // sprites de entidades (hoja de sprites)
+    int tluts;     // veces que se volvió a subir la TLUT por una paleta fantasma (y para volver a la normal)
     uint32_t ticks_suelos, ticks_paredes; // CPU de cada pasada (get_ticks); las entidades van con las paredes
 #ifdef TH_MEDIR
     // Hito 5: de ticks_paredes, lo que se van en los elementos de entidades
@@ -41,6 +48,12 @@ void mapa_n64_preparar(const hoja_t *bloques, int unidad);
 void relleno_cache(void);
 
 // hojas[TH_SHEET_*]: los bloques del mapa y los sprites de las entidades.
+// paletas[PALETA_*] (graficos.h): la normal y las fantasma gris y roja, para
+// los elementos con TH_DRAW_PAL_GREY y TH_DRAW_PAL_RED (si una es NULL, esos
+// van con la normal); paletas_t.colores sirve tal cual.
+void mapa_n64_dibujar_paletas(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS],
+                              const uint16_t *const paletas[PALETAS_MAX], int ancho, int alto, mapa_n64_stats_t *st);
+// Lo mismo con solo la paleta normal: los fantasmas, con ella.
 void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS], const uint16_t *paleta, int ancho,
                       int alto, mapa_n64_stats_t *st);
 

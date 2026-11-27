@@ -536,6 +536,24 @@ static diferencias_t comparar_con_referencia(const char *hito, surface_t *pantal
     }
     th_raster r = {.rgb = malloc(ANCHO * ALTO * 3), .mezcla = malloc(ANCHO * ALTO), .hoja = malloc(ANCHO * ALTO),
                    .w = ANCHO, .h = ALTO, .paleta = (const uint8_t(*)[3])pal8};
+    // Las paletas fantasma gris y roja (pieza 3 de la demo), si las hay: con
+    // ellas pinta la referencia los elementos con TH_DRAW_PAL_GREY o _RED.
+    static uint8_t pal_fantasma[2][256][3];
+    for (int f = 0; f < 2; f++) {
+        const uint16_t *pf = paletas.colores[PALETA_FANTASMA_GRIS + f];
+        if (!pf)
+            continue;
+        for (int i = 0; i < 256; i++) {
+            unsigned c = pf[i], cr = c >> 11 & 31, cg = c >> 6 & 31, cb = c >> 1 & 31;
+            pal_fantasma[f][i][0] = (uint8_t)(cr << 3 | cr >> 2);
+            pal_fantasma[f][i][1] = (uint8_t)(cg << 3 | cg >> 2);
+            pal_fantasma[f][i][2] = (uint8_t)(cb << 3 | cb >> 2);
+        }
+        if (f == 0)
+            r.paleta_gris = (const uint8_t(*)[3])pal_fantasma[0];
+        else
+            r.paleta_roja = (const uint8_t(*)[3])pal_fantasma[1];
+    }
     assertf(r.rgb && r.mezcla && r.hoja, "sin memoria para la referencia");
     th_raster_clear(&r, 0, 0, 0);
     th_raster_draw(&r, sheets, l);
@@ -588,6 +606,93 @@ static int comprobar_vista(const char *hito, const th_view *v)
            m.st.cargas, m.st.cortes, lista.redraws);
     display_show(pantalla);
     return d.distintos;
+}
+
+// Pieza 3 de la demo (06_plan.md): el plano de una sala de 5 × 4 en (64, 66)
+// del nivel 1, con una casilla mala (suelo 67 y paredes rojas), una puerta
+// doble en su pared norte (marcas 25, 24 y 26) y una persona fantasma gris
+// encima de todo (th_view_entity_on_top), dibujados por el RDP con las
+// paletas fantasma (mapa_n64_dibujar_paletas) frente a la referencia, sin
+// girar y con la cámara girada una vez. Mide además lo que cuesta la lista
+// con y sin las superposiciones. Es un apaño en el fichero de la pieza 6:
+// solo existe en la ROM de pruebas.
+static int comprobar_fantasmas(void)
+{
+    static th_view_overlays ov;
+    static th_view_entity paredes[32];
+    static const uint8_t malas[5 * 4] = {[3 * 5 + 4] = 1}; // (68, 69)
+    const th_walk_anims *doctor = th_walk_anims_find("Doctor");
+    int distintos = 0;
+    for (int g = 0; g < 2; g++) {
+        th_view v = vista_en(66, 68);
+        if (!girar_camara(&v, g))
+            return 1;
+        v = vista_en(66, 68);
+        th_view_overlays_clear(&ov);
+        const int n_paredes = th_view_blueprint(&anims, 64, 66, 5, 4, giro, malas, 0, &ov, paredes, 32);
+        assertf(n_paredes == 17, "el plano: %d paredes", n_paredes);
+        th_view_overlays_set(&ov, 65, 66, 25, 0);
+        th_view_overlays_set(&ov, 66, 66, 24, 0);
+        th_view_overlays_set(&ov, 67, 66, 26, 0);
+        th_view_entity fantasma;
+        int fx, fy;
+        th_rot_tile(giro, 66, 68, &fx, &fy);
+        th_vista_persona_fantasma(doctor, &anims, 66, 68, TH_DIR_EAST, giro, TH_ANIM_PAL_GREY, NULL, &fantasma);
+        const th_rot_map *giradas = NULL;
+        if (giro) {
+            th_rot_map_update(mapa_girado, &mapa, giro);
+            giradas = mapa_girado;
+        }
+        th_scene sc = {.map = &mapa, .rot = giradas, .sheets = {&sh_bloques, &sh_sprites}, .anims = &anims,
+                       .entities = paredes, .entity_count = n_paredes};
+        // La lista sin y con las superposiciones (la media de 8).
+        uint32_t t0 = get_ticks();
+        for (int k = 0; k < 8; k++) {
+            sc.overlays = NULL;
+            th_view_scene(&v, &sc, &lista);
+        }
+        uint32_t t1 = get_ticks();
+        for (int k = 0; k < 8; k++) {
+            sc.overlays = &ov;
+            th_view_scene(&v, &sc, &lista);
+        }
+        uint32_t t2 = get_ticks();
+        assertf(th_view_entity_on_top(&v, &sc, &fantasma, &lista) == 0, "el fantasma no cabe");
+        int marcas = 0, rojos = 0, grises = 0;
+        for (int i = 0; i < lista.count; i++) {
+            const th_draw *d = &lista.items[i];
+            marcas += d->sheet == TH_SHEET_BLOCKS && d->sprite >= 25 && d->sprite <= 32; // la puerta doble
+            rojos += (d->flags & TH_DRAW_PAL_RED) != 0;
+            grises += (d->flags & TH_DRAW_PAL_GREY) != 0;
+        }
+
+        surface_t *pantalla = display_get();
+        rdpq_attach(pantalla, NULL);
+        rdpq_set_mode_fill(RGBA32(0, 0, 0, 255));
+        rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
+        mapa_n64_stats_t st;
+        const uint16_t *const pals[PALETAS_MAX] = {paletas.colores[PALETA_NORMAL],
+                                                   paletas.colores[PALETA_FANTASMA_GRIS],
+                                                   paletas.colores[PALETA_FANTASMA_ROJO]};
+        uint32_t t3 = get_ticks();
+        mapa_n64_dibujar_paletas(&lista, hojas, pals, ANCHO, ALTO, &st);
+        uint32_t t4 = get_ticks();
+        const th_sheet *const sheets[TH_SHEETS] = {&sh_bloques, &sh_sprites};
+        const diferencias_t d = comparar_con_referencia("demo3", pantalla, &lista, sheets);
+        debugf("TH64 demo3: giro %d: %d pixeles comparados, %d distintos; %d de %d mezclados a 1/31; %d sprites "
+               "(%d marcas, %d rojos, %d grises), %d cargas, %d TLUT; lista %lu us sin superposiciones, %lu us con "
+               "(%d); RDP %lu us\n",
+               giro, ANCHO * ALTO, d.distintos, d.mezcla_1, d.mezclas, lista.count, marcas, rojos, grises, st.cargas,
+               st.tluts, (unsigned long)TICKS_TO_US((t1 - t0) / 8), (unsigned long)TICKS_TO_US((t2 - t1) / 8),
+               ov.count, (unsigned long)TICKS_TO_US(t4 - t3));
+        display_show(pantalla);
+        distintos += d.distintos;
+        if (marcas != 2 || !rojos || !grises || !st.tluts)
+            distintos++; // no se probó lo que se quería probar
+    }
+    th_view v = vista_en(66, 68);
+    girar_camara(&v, 0);
+    return distintos;
 }
 
 // Hito 6.1: el panel inferior, su descripción y el puntero, dibujados por el
@@ -1695,6 +1800,10 @@ int main(void)
             fallos++;
         if (nivel != 1)
             cargar_nivel(nivel = 1);
+        distintos = comprobar_fantasmas();
+        debugf("TH64 demo3: comparacion con la referencia: %d pixeles distintos en total\n", distintos);
+        if (distintos)
+            fallos++;
         recorrido_mapa(v, false);
         recorrido_mapa(v, true);
 

@@ -107,14 +107,14 @@ static void caja_huella(const th_rules *r, th_rnode spec, int *x0, int *y0, int 
     }
 }
 
-static void colocar(const th_sim *s, int i, int rot, colocacion *c)
+// El objeto def con origen en (ox, oy) del mundo y orientación odir, en la
+// vista girada rot.
+static void colocar_def(const th_rules *r, th_rnode def, int ox, int oy, int odir, int rot, colocacion *c)
 {
-    const th_rules *r = s->defs;
-    const th_object *o = &s->obj[i];
-    th_rnode ors = th_rules_get(r, o->def, "orientations");
+    th_rnode ors = th_rules_get(r, def, "orientations");
     int vx, vy;
-    th_rot_tile(rot, o->x, o->y, &vx, &vy);
-    int d = th_rot_dir(rot, o->dir);
+    th_rot_tile(rot, ox, oy, &vx, &vy);
+    int d = th_rot_dir(rot, odir);
     *c = (colocacion){.x = (int16_t)vx, .y = (int16_t)vy, .dir = (uint8_t)d};
     if (!ors) {
         // Una puerta va en el borde norte u oeste de su casilla. Si el borde
@@ -132,15 +132,15 @@ static void colocar(const th_sim *s, int i, int rot, colocacion *c)
         d = (d + 2) & 3;
         c->sustituto = 1;
         if (!th_rules_get(r, ors, dir_names[d])) {
-            d = o->dir;
+            d = odir;
             c->sustituto = 0;
         }
     }
     // Las casillas que ocupa en el mundo, giradas.
     int ax0, ay0, ax1, ay1, bx0, by0, bx1, by1;
-    caja_huella(r, th_rules_get(r, ors, dir_names[o->dir]), &ax0, &ay0, &ax1, &ay1);
-    th_rot_tile(rot, o->x + ax0, o->y + ay0, &bx0, &by0);
-    th_rot_tile(rot, o->x + ax1, o->y + ay1, &bx1, &by1);
+    caja_huella(r, th_rules_get(r, ors, dir_names[odir]), &ax0, &ay0, &ax1, &ay1);
+    th_rot_tile(rot, ox + ax0, oy + ay0, &bx0, &by0);
+    th_rot_tile(rot, ox + ax1, oy + ay1, &bx1, &by1);
     c->x0 = (int16_t)(bx0 < bx1 ? bx0 : bx1);
     c->x1 = (int16_t)(bx0 < bx1 ? bx1 : bx0);
     c->y0 = (int16_t)(by0 < by1 ? by0 : by1);
@@ -152,14 +152,19 @@ static void colocar(const th_sim *s, int i, int rot, colocacion *c)
     c->dir = (uint8_t)d;
 }
 
-static int add_object(const th_sim *s, int i, const colocacion *c, th_view_entity *out, int max)
+static void colocar(const th_sim *s, int i, int rot, colocacion *c)
 {
-    const th_rules *r = s->defs;
     const th_object *o = &s->obj[i];
-    if (o->user != TH_NONE)
-        return 0; // quien lo usa lo dibuja con su animación (makeInvisible)
+    colocar_def(s->defs, o->def, o->x, o->y, o->dir, rot, c);
+}
+
+// Las entidades del objeto def ya colocado en la vista (c), con las banderas
+// extra (TH_ANIM_PAL_*) y el orden de llegada attach_seq.
+static int add_def(const th_rules *r, const th_anims *anims, th_rnode def, const colocacion *c, uint32_t attach_seq,
+                   int extra, th_view_entity *out, int max)
+{
     const int ox0 = c->x, oy0 = c->y, dir = c->dir;
-    th_rnode idle = th_rules_get(r, o->def, "idle_animations");
+    th_rnode idle = th_rules_get(r, def, "idle_animations");
     int flags = 0;
     th_rnode an = th_rules_get(r, idle, dir_names[dir]);
     if (!an) {
@@ -169,25 +174,25 @@ static int add_object(const th_sim *s, int i, const colocacion *c, th_view_entit
     // El arte nuevo (tools/arte/importar.py): una animación propia para esta
     // orientación, sin espejo. Solo si está en las tablas cargadas: los
     // gráficos del oráculo de CorsixTH no la llevan, y ahí sigue el espejo.
-    th_rnode arte = th_rules_get(r, th_rules_get(r, o->def, "arte"), dir_names[dir]);
-    if (arte && (unsigned)th_rules_int(r, arte, 0) < s->w.anims->count) {
+    th_rnode arte = th_rules_get(r, th_rules_get(r, def, "arte"), dir_names[dir]);
+    if (arte && (unsigned)th_rules_int(r, arte, 0) < anims->count) {
         an = arte;
         flags = 0;
     }
     if (!an)
         return 0;
     const unsigned anim = (unsigned)th_rules_int(r, an, 0);
-    th_rnode spec = th_rules_get(r, th_rules_get(r, o->def, "orientations"), dir_names[dir]);
+    th_rnode spec = th_rules_get(r, th_rules_get(r, def, "orientations"), dir_names[dir]);
     int early = th_rules_bool(r, th_rules_get(r, spec, "early_list"), 0);
-    const char *cls = th_rules_str(r, th_rules_get(r, o->def, "class"), NULL);
+    const char *cls = th_rules_str(r, th_rules_get(r, def, "class"), NULL);
     if (cls && (!strcmp(cls, "Door") || !strcmp(cls, "SwingDoor")) && dir == TH_DIR_NORTH)
         early = 1; // Door:setAnimation (SwingDoor también es Door)
     int ox = 0, oy = 0;
     pair(r, th_rules_get(r, spec, "animation_offset"), &ox, &oy);
     th_view_entity base = {.tile_x = (int16_t)ox0, .tile_y = (int16_t)oy0, .px = (int16_t)ox, .py = (int16_t)oy,
-                           .frame = th_anims_first_frame(s->w.anims, anim), .anim = (uint16_t)anim,
-                           .flags = (uint8_t)flags, .drawing_layer = (uint8_t)drawing_layer(r, o->def, dir),
-                           .attach_seq = (uint32_t)i, .layers = no_layers, .crop = TH_VIEW_NO_CROP,
+                           .frame = th_anims_first_frame(anims, anim), .anim = (uint16_t)anim,
+                           .flags = (uint8_t)(flags | extra), .drawing_layer = (uint8_t)drawing_layer(r, def, dir),
+                           .attach_seq = attach_seq, .layers = no_layers, .crop = TH_VIEW_NO_CROP,
                            .early = (uint8_t)early};
     th_rnode rap = th_rules_get(r, spec, "render_attach_position");
     th_rnode first = th_rules_at(r, rap, 0);
@@ -220,6 +225,44 @@ static int add_object(const th_sim *s, int i, const colocacion *c, th_view_entit
         return 0;
     out[0] = base;
     return 1;
+}
+
+static int add_object(const th_sim *s, int i, const colocacion *c, th_view_entity *out, int max)
+{
+    const th_object *o = &s->obj[i];
+    if (o->user != TH_NONE)
+        return 0; // quien lo usa lo dibuja con su animación (makeInvisible)
+    return add_def(s->defs, s->w.anims, o->def, c, (uint32_t)i, 0, out, max);
+}
+
+int th_vista_objeto_fantasma(const th_rules *r, const th_anims *anims, th_rnode def, int x, int y, int dir, int rot,
+                             int pal, th_view_entity *out, int max)
+{
+    // Como th_vista_sim_rot con un objeto del mapa: sin girar, en su origen y
+    // con su orientación; girado, colocar.
+    colocacion c = {.x = (int16_t)x, .y = (int16_t)y, .dir = (uint8_t)(dir & 3)};
+    if (rot & 3)
+        colocar_def(r, def, x, y, dir & 3, rot & 3, &c);
+    // attach_seq 0: con la misma capa de dibujo, el último de su casilla
+    // (before_in_tile), encima de lo que haya.
+    return add_def(r, anims, def, &c, 0, pal & (TH_ANIM_PAL_GREY | TH_ANIM_PAL_RED), out, max);
+}
+
+void th_vista_persona_fantasma(const th_walk_anims *w, const th_anims *anims, int x, int y, int dir, int rot, int pal,
+                               const uint8_t *layers, th_view_entity *out)
+{
+    // La animación de quieto de action_idle (humanoid.c, idle_start): norte y
+    // este tal cual, sur y oeste en espejo de la del este y la del norte.
+    const int d = dir & 3;
+    const unsigned anim = d == TH_DIR_NORTH || d == TH_DIR_WEST ? w->idle_north : w->idle_east;
+    int vx, vy;
+    th_rot_tile(rot & 3, x, y, &vx, &vy);
+    *out = (th_view_entity){.tile_x = (int16_t)vx, .tile_y = (int16_t)vy, .frame = th_anims_first_frame(anims, anim),
+                            .anim = (uint16_t)anim,
+                            .flags = (uint8_t)((d == TH_DIR_SOUTH || d == TH_DIR_WEST ? TH_ANIM_FLIP_H : 0) |
+                                               (pal & (TH_ANIM_PAL_GREY | TH_ANIM_PAL_RED))),
+                            .drawing_layer = TH_LAYER_ENTITY, .layers = layers ? layers : no_layers,
+                            .crop = TH_VIEW_NO_CROP};
 }
 
 // El fotograma número k (desde 0) de la animación, dando la vuelta.

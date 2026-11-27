@@ -5,6 +5,7 @@
 #ifndef TH_RASTER_H
 #define TH_RASTER_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "vista.h"
@@ -18,7 +19,19 @@ typedef struct th_raster {
     // Opcional: otra paleta para una hoja (la de las descripciones de
     // CorsixTH, Font00V, usa Pref01V.pal).
     const uint8_t (*paletas[TH_SHEETS])[3];
+    // Opcionales: las paletas fantasma (thdf_alt_palette), la gris y la roja
+    // (las variantes 1 y 2 del .tpl, tools/conv/paleta.py), para los sprites con
+    // TH_DRAW_PAL_GREY o TH_DRAW_PAL_RED; con las dos banderas, la roja. Si
+    // faltan, esos sprites van con la paleta de su hoja.
+    const uint8_t (*paleta_gris)[3];
+    const uint8_t (*paleta_roja)[3];
 } th_raster;
+
+// La paleta i (0 normal, 1 fantasma gris, 2 fantasma roja) de un .tpl del
+// conversor (TPL1: 256 entradas RGBA5551 big-endian por paleta), a 8 bits por
+// componente como el RDP (los 5 bits arriba y repetidos abajo). Devuelve 0, o
+// -1 si el fichero no es un .tpl o no tiene esa paleta.
+int th_raster_paleta_tpl(const uint8_t *datos, size_t len, int i, uint8_t pal[256][3]);
 
 void th_raster_clear(th_raster *r, uint8_t cr, uint8_t cg, uint8_t cb);
 // Pinta la lista entera, con las hojas de cada sprite (sheets[TH_SHEET_*]),

@@ -55,21 +55,47 @@ static int alfa_de(const th_draw *d)
     return d->flags & TH_DRAW_ALPHA25 ? ALFA_25 : d->flags & TH_DRAW_ALPHA50 ? ALFA_50 : 255;
 }
 
+#define PAL_FANTASMA (TH_DRAW_PAL_GREY | TH_DRAW_PAL_RED)
+
+// La paleta de un elemento: la roja gana a la gris, como en raster.c.
+static const uint16_t *paleta_de(const th_draw *d, const uint16_t *const paletas[PALETAS_MAX])
+{
+    if ((d->flags & TH_DRAW_PAL_RED) && paletas[PALETA_FANTASMA_ROJO])
+        return paletas[PALETA_FANTASMA_ROJO];
+    if ((d->flags & TH_DRAW_PAL_GREY) && paletas[PALETA_FANTASMA_GRIS])
+        return paletas[PALETA_FANTASMA_GRIS];
+    return paletas[PALETA_NORMAL];
+}
+
+static const uint16_t *tlut; // la paleta que hay en la TLUT
+
+// Sube la paleta p a la TLUT si no es la que hay. La TLUT está en la mitad
+// alta de la TMEM y los sprites en la baja: el que está cargado sigue valiendo.
+static void poner_tlut(const uint16_t *p, mapa_n64_stats_t *st)
+{
+    if (p == tlut)
+        return;
+    rdpq_tex_upload_tlut((uint16_t *)p, 0, 256);
+    tlut = p;
+    st->tluts++;
+}
+
 // Índices de los elementos [ini, fin) con (flags & TH_DRAW_ALPHA25) == alfa,
-// ordenados por sprite y, dentro de cada sprite, en el orden de la lista.
+// ordenados por sprite y, dentro de cada sprite, en el orden de la lista. Los
+// de paleta fantasma no entran nunca (cortan la agrupación).
 static int agrupar(const th_drawlist *l, int ini, int fin, int alfa)
 {
     static uint16_t cuenta[257];
     memset(cuenta, 0, sizeof(cuenta));
     for (int i = ini; i < fin; i++)
-        if ((l->items[i].flags & TH_DRAW_ALPHA25) == alfa)
+        if ((l->items[i].flags & (TH_DRAW_ALPHA25 | PAL_FANTASMA)) == alfa)
             cuenta[l->items[i].sprite + 1]++;
     for (int s = 1; s <= 256; s++)
         cuenta[s] += cuenta[s - 1];
     int n = cuenta[256];
     assertf(n <= MAX_ORDEN, "lista de dibujo demasiado larga: %d", n);
     for (int i = ini; i < fin; i++)
-        if ((l->items[i].flags & TH_DRAW_ALPHA25) == alfa)
+        if ((l->items[i].flags & (TH_DRAW_ALPHA25 | PAL_FANTASMA)) == alfa)
             orden[cuenta[l->items[i].sprite]++] = (uint16_t)i;
     return n;
 }
@@ -205,9 +231,18 @@ static void dibujar(const hoja_t *const hojas[TH_SHEETS], const th_draw *d, int 
 void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS], const uint16_t *paleta, int ancho,
                       int alto, mapa_n64_stats_t *st)
 {
+    const uint16_t *const paletas[PALETAS_MAX] = {paleta, NULL, NULL};
+    mapa_n64_dibujar_paletas(l, hojas, paletas, ancho, alto, st);
+}
+
+void mapa_n64_dibujar_paletas(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS],
+                              const uint16_t *const paletas[PALETAS_MAX], int ancho, int alto, mapa_n64_stats_t *st)
+{
+    const uint16_t *paleta = paletas[PALETA_NORMAL];
     memset(st, 0, sizeof(*st));
     uint32_t t0 = get_ticks();
     graficos_modo_sprites(paleta);
+    tlut = paleta;
     preparar_tiles();
 
     // 1. Suelos, un bloque cada vez, y sus sombras (bloques 74 y 75), por
@@ -215,7 +250,7 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
     int ini = 0;
     for (int i = 0; i <= l->floor_count; i++) {
         const th_draw *d = &l->items[i];
-        if (i < l->floor_count && ((d->flags & TH_DRAW_ALPHA25) || !se_sale[d->sprite]))
+        if (i < l->floor_count && !(d->flags & PAL_FANTASMA) && ((d->flags & TH_DRAW_ALPHA25) || !se_sale[d->sprite]))
             continue;
         int n = agrupar(l, ini, i, 0);
         for (int k = 0; k < n; k++)
@@ -228,7 +263,15 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
             modo_opaco();
         }
         if (i < l->floor_count) {
+            // El que corta: con su paleta y su mezcla, si las lleva.
+            const int a = alfa_de(d);
+            poner_tlut(paleta_de(d, paletas), st);
+            if (a < 255)
+                modo_sombra(a);
             dibujar(hojas, d, ancho, alto, st);
+            if (a < 255)
+                modo_opaco();
+            poner_tlut(paleta, st);
             st->cortes++;
         }
         ini = i + 1;
@@ -247,11 +290,13 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
             rdpq_set_mode_fill(color_from_packed16(d->sprite));
             rdpq_fill_rectangle(d->x, d->y, d->x + d->clip_x1, d->y + d->clip_y1);
             graficos_modo_sprites(paleta);
+            tlut = paleta;
             preparar_tiles();
             alfa = 255;
             st->sprites++;
             continue;
         }
+        poner_tlut(paleta_de(d, paletas), st);
         int a = alfa_de(d);
         if (a != alfa) {
             if (a < 255)
@@ -271,6 +316,8 @@ void mapa_n64_dibujar(const th_drawlist *l, const hoja_t *const hojas[TH_SHEETS]
     }
     if (alfa < 255)
         modo_opaco();
+    // Quien dibuje después (la interfaz) cuenta con la paleta normal.
+    poner_tlut(paleta, st);
     st->ticks_paredes = get_ticks() - t1;
 }
 

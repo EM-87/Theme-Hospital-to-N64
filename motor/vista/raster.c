@@ -5,6 +5,22 @@
 #define ALFA25 64  // thdf_alpha_75 de CorsixTH: SDL_SetTextureAlphaMod(0x40)
 #define ALFA50 128 // thdf_alpha_50: SDL_SetTextureAlphaMod(0x80)
 
+int th_raster_paleta_tpl(const uint8_t *datos, size_t len, int i, uint8_t pal[256][3])
+{
+    if (len < 8 || memcmp(datos, "TPL1", 4) != 0 || i < 0 || i >= (datos[4] << 8 | datos[5]) ||
+        len < 8 + 512 * (size_t)(i + 1))
+        return -1;
+    const uint8_t *p = datos + 8 + 512 * i;
+    for (int k = 0; k < 256; k++) {
+        const unsigned c = (unsigned)(p[2 * k] << 8 | p[2 * k + 1]);
+        const unsigned cr = c >> 11 & 31, cg = c >> 6 & 31, cb = c >> 1 & 31;
+        pal[k][0] = (uint8_t)(cr << 3 | cr >> 2);
+        pal[k][1] = (uint8_t)(cg << 3 | cg >> 2);
+        pal[k][2] = (uint8_t)(cb << 3 | cb >> 2);
+    }
+    return 0;
+}
+
 void th_raster_clear(th_raster *r, uint8_t cr, uint8_t cg, uint8_t cb)
 {
     for (int i = 0; i < r->w * r->h; i++) {
@@ -39,6 +55,10 @@ static void pintar(th_raster *r, const th_sheet *sh, const th_draw *d)
         y1 = r->h;
     const int alfa = d->flags & TH_DRAW_ALPHA25 ? ALFA25 : d->flags & TH_DRAW_ALPHA50 ? ALFA50 : 255;
     const uint8_t(*paleta)[3] = r->paletas[d->sheet] ? r->paletas[d->sheet] : r->paleta;
+    if ((d->flags & TH_DRAW_PAL_RED) && r->paleta_roja)
+        paleta = r->paleta_roja;
+    else if ((d->flags & TH_DRAW_PAL_GREY) && r->paleta_gris)
+        paleta = r->paleta_gris;
     for (int y = y0; y < y1; y++) {
         const int fy = d->flags & TH_DRAW_FLIP_V ? h - 1 - (y - d->y) : y - d->y;
         const uint8_t *fila = px + fy * paso;
