@@ -7,6 +7,10 @@
 #                        empieza en la hora 0 con cualquier HORAS) y GIRO=r,
 #                        abre ese modo con la cámara girada sin pasar por el menú
 #   make MEDIR=1         ROM de medida del hito 5 (tools/hito5/medir.sh): th64_medir.z64
+#   make VIGILANTE=1     cualquiera de las de arriba con el vigilante de la consola
+#                        (platform/n64/vigilante.h): th64_vigilante.z64; con
+#                        SINUSB=1, además sin el registro por USB (th64_vigilante_sinusb.z64);
+#                        VIGILANTE_PRUEBA=1 atasca el fotograma 150 a propósito, para ver la pantalla
 #   ESCENARIO=hito5      el escenario de las pruebas (por defecto hito4; conviene
 #                        make clean al cambiarlo). La ROM normal los ofrece todos
 #                        en su menú
@@ -29,6 +33,11 @@ else
   ROMNAME := th64
   BUILD_DIR := build/n64
 endif
+# El vigilante (platform/n64/vigilante.h) y el registro sin USB: variantes de
+# diagnóstico para la consola, con su propio nombre y directorio.
+VSUF := $(if $(VIGILANTE),_vigilante,)$(if $(SINUSB),_sinusb,)$(if $(VIGILANTE_PRUEBA),_prueba,)
+ROMNAME := $(ROMNAME)$(VSUF)
+BUILD_DIR := $(BUILD_DIR)$(VSUF)
 
 include $(N64_INST)/include/n64.mk
 
@@ -50,6 +59,15 @@ ifdef ESCENARIO
 endif
 ifdef MEDIR
   CFLAGS += -DTH_MEDIR
+endif
+ifdef VIGILANTE
+  CFLAGS += -DTH_VIGILANTE
+endif
+ifdef SINUSB
+  CFLAGS += -DTH_SIN_USB
+endif
+ifdef VIGILANTE_PRUEBA
+  CFLAGS += -DTH_VIGILANTE_PRUEBA
 endif
 ifdef PRUEBAS
   C_FILES += tests/test_core.c tests/test_map.c tests/test_humanoid.c tests/test_rules.c tests/test_objects.c \

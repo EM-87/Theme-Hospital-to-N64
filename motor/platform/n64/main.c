@@ -35,6 +35,7 @@
 #include "partida.h"
 #include "raster.h"
 #include "simulacion.h"
+#include "vigilante.h"
 #include "th/anim.h"
 #include "th/build.h"
 #include "th/humanoid.h"
@@ -1606,9 +1607,13 @@ static int menu(int actual, bool assets, int ram_kib, bool expansion)
             if (modo_disponible(actual))
                 break;
         }
-        if ((p.a || p.start) && assets && modo_disponible(actual))
+        if ((p.a || p.start) && assets && modo_disponible(actual)) {
+            vigilante_fase(NULL, 0); // la carga de la partida no tiene límite
             return actual;
+        }
+        vigilante_fase("menu display_get", 160);
         surface_t *pantalla = display_get();
+        vigilante_fase("menu dibujar", 160);
         rdpq_attach(pantalla, NULL);
         rdpq_set_mode_fill(RGBA32(0, 0, 40, 255));
         rdpq_fill_rectangle(0, 0, ANCHO, ALTO);
@@ -1742,7 +1747,9 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
     joypad_inputs_t in;
     interfaz_leer(&in);
     recien_pulsados(in.btn);
+    uint32_t fotograma = 0;
     for (;;) {
+        vigilante_fase("mandos", 160);
         interfaz_orden_t orden = {0};
         if (interfaz)
             orden = interfaz_mandos(&in);
@@ -1812,7 +1819,17 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         v.y += sy;
         th_view_clamp(&v);
 
+        vigilante_fase("display_get", 160);
         surface_t *pantalla = display_get();
+        vigilante_fase("ticks", 160);
+        vigilante_contexto(++fotograma, hospital ? sim.hours : 0, velocidad, pausa, hospital ? sim.n_order : 0,
+                           ui ? th_game_ui_active(ui) : -1);
+#ifdef TH_VIGILANTE_PRUEBA
+        if (fotograma == 150) { // la prueba del vigilante: un atasco a propósito
+            vigilante_fase("prueba_del_vigilante", 160);
+            wait_ms(300);
+        }
+#endif
         uint32_t t0 = get_ticks();
         // El mundo avanza un tick cada 54 ms de reloj (como mucho 4 por
         // fotograma). El hospital pide los ticks a la simulación repartida, que
@@ -1856,8 +1873,10 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
         // Las ventanas, con la cámara con la que se va a dibujar, y la casilla
         // bajo el puntero (con los datos a la vista).
         int casilla_x = -1, casilla_y = -1;
+        vigilante_fase("ventanas", 160);
         if (ui)
             ventanas_fotograma(ui, &orden, pulsado.r, pausa, datos, &v, &salida, &casilla_x, &casilla_y);
+        vigilante_fase("dibujar", 160);
         if (medir_rdp)
             *DP_STATUS = DP_WSTATUS_RESET_CLOCK_COUNTER | DP_WSTATUS_RESET_CMD_COUNTER | DP_WSTATUS_RESET_PIPE_COUNTER |
                          DP_WSTATUS_RESET_TMEM_COUNTER;
@@ -1917,10 +1936,13 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
             mapa_n64_stats_t st_ui;
             interfaz_dibujar(&info, paletas.colores[PALETA_NORMAL], &st_ui);
         }
+        vigilante_fase("detach_show", 160);
         rdpq_detach_show();
         sin_extras();
+        vigilante_fase("sonido", 160);
         partida_sonido_fotograma();
         if (hospital) {
+            vigilante_fase("simulacion", 600);
             const uint32_t cpu0 = simulacion_stats()->cpu;
             simulacion_avanzar(t0 + TICKS_FROM_MS(28));
             t_rep = simulacion_stats()->cpu - cpu0;
@@ -1929,6 +1951,7 @@ static void jugar(int modo, bool assets, int ram_kib, const heap_stats_t *heap)
     // Al menú: sin órdenes nuevas, la simulación sin un tick a medias, las
     // órdenes que no llegaron a aplicarse descartadas, la línea final de la
     // partida (partida_terminar) y la cámara sin girar.
+    vigilante_fase(NULL, 0);
     if (hospital) {
         simulacion_terminar();
         partida_terminar(&sim);
@@ -2508,7 +2531,12 @@ static int comprobar_ventanas_partida(th_game_ui **ui)
 
 int main(void)
 {
+#ifdef TH_SIN_USB
+    debug_init(DEBUG_FEATURE_LOG_EMU); // la variante de diagnóstico sin el registro por USB (vigilante.h)
+#else
     debug_init(DEBUG_FEATURE_LOG_USB | DEBUG_FEATURE_LOG_EMU);
+#endif
+    vigilante_iniciar();
     const int ram_kib = get_memory_size() / 1024;
     const bool expansion = is_memory_expanded();
     debugf("TH64 motor %s: RDRAM %d KiB, Expansion Pak %s\n", TH64_VERSION, ram_kib, expansion ? "si" : "no");

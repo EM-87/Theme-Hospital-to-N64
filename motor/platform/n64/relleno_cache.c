@@ -10,6 +10,8 @@
 #define RELLENO "0"
 #elif defined(TH_MEDIR)
 #define RELLENO "5216"
+#elif defined(TH_SIN_USB)
+#define RELLENO "6048" // la variante de diagnóstico sin USB (vigilante.h): el centro de su ventana sin choques
 #else
 #define RELLENO "0"
 #endif
